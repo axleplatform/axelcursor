@@ -295,32 +295,22 @@ export default function MechanicOnboardingStep5Page() {
         const { data: existingMechanic } = await supabase.from("mechanics").select("id").eq("id", profileId).single()
 
         // Prepare mechanic data
-        const mechanicData: any = {
+        const mechanicData = {
           id: profileId,
           user_id: user.id,
+          name: profile.first_name && profile.last_name 
+            ? `${profile.first_name} ${profile.last_name}`
+            : user.user_metadata?.full_name || user.email?.split("@")[0],
+          email: user.email,
+          phone: profile.phone_number,
+          avatar_url: profileImageUrl,
+          bio: bio,
+          specialties: Array.isArray(profile.specialties) ? profile.specialties : [],
+          experience: profile.business_start_year ? `Since ${profile.business_start_year}` : null,
+          rating: 0,
+          review_count: 0,
           updated_at: new Date().toISOString(),
         }
-
-        // Add name if first_name and last_name exist
-        if (profile.first_name && profile.last_name) {
-          mechanicData.name = `${profile.first_name} ${profile.last_name}`
-        } else if (user.user_metadata?.full_name) {
-          mechanicData.name = user.user_metadata.full_name
-        } else if (user.email) {
-          mechanicData.name = user.email.split("@")[0]
-        }
-
-        // Add other fields if they exist
-        if (user.email) mechanicData.email = user.email
-        if (profile.phone_number) mechanicData.phone = profile.phone_number
-        if (profileImageUrl) mechanicData.avatar_url = profileImageUrl
-        if (bio) mechanicData.bio = bio
-        if (Array.isArray(profile.specialties)) mechanicData.specialties = profile.specialties
-        if (profile.business_start_year) mechanicData.experience = `Since ${profile.business_start_year}`
-
-        // Add default values for required fields
-        mechanicData.rating = null
-        mechanicData.review_count = 0
 
         // Add created_at only for new records
         if (!existingMechanic) {
@@ -335,14 +325,22 @@ export default function MechanicOnboardingStep5Page() {
 
         if (mechanicError) {
           console.error("Error upserting mechanic record:", mechanicError)
-          console.error("Attempted to insert:", JSON.stringify(mechanicData))
-          // Continue anyway, we'll log this but not fail the onboarding
-          console.warn("Continuing despite mechanic record creation failure")
+          throw new Error("Failed to create mechanic record: " + mechanicError.message)
+        }
+
+        // Verify mechanic record was created
+        const { data: verifyMechanic, error: verifyMechanicError } = await supabase
+          .from("mechanics")
+          .select("id")
+          .eq("id", profileId)
+          .single()
+
+        if (verifyMechanicError || !verifyMechanic) {
+          throw new Error("Failed to verify mechanic record creation")
         }
       } catch (mechanicError: any) {
-        console.error("Exception creating mechanic record:", mechanicError)
-        // Continue anyway, we'll log this but not fail the onboarding
-        console.warn("Continuing despite mechanic record creation exception")
+        console.error("Error creating mechanic record:", mechanicError)
+        throw new Error("Failed to create your mechanic profile: " + mechanicError.message)
       }
 
       // 5. Verify data was saved correctly
