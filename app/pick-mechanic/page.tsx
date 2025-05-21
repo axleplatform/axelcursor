@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
@@ -10,7 +10,7 @@ import { StarIcon, Clock, Calendar, MapPin, Car, Wrench, AlertCircle, FileText, 
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
-import { getQuotesForAppointment, selectQuoteForAppointment } from "@/lib/mechanic-quotes"
+import { getQuotesForAppointment, selectQuoteForAppointment, type MechanicQuote } from "@/lib/mechanic-quotes"
 import { useToast } from "@/components/ui/use-toast"
 
 // Define types for our data
@@ -19,10 +19,13 @@ interface Mechanic {
   first_name: string
   last_name: string
   profile_image_url: string | null
-  metadata: any
+  metadata: Record<string, any>
   quote_id: string
   price: number
-  eta: string | null
+  eta: string | undefined
+  rating: number
+  review_count: number
+  status: "pending" | "accepted" | "rejected"
 }
 
 interface Vehicle {
@@ -48,6 +51,30 @@ interface Appointment {
   mechanics: Mechanic[] | null
 }
 
+// Add type for service and issue items
+type ServiceItem = string;
+type IssueItem = string;
+
+// Add type for specialty items
+type SpecialtyItem = string;
+
+// Add type declarations for JSX elements
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      div: React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>
+      main: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+      h1: React.DetailedHTMLProps<React.HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>
+      h2: React.DetailedHTMLProps<React.HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>
+      h3: React.DetailedHTMLProps<React.HTMLAttributes<HTMLHeadingElement>, HTMLHeadingElement>
+      p: React.DetailedHTMLProps<React.HTMLAttributes<HTMLParagraphElement>, HTMLParagraphElement>
+      span: React.DetailedHTMLProps<React.HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>
+      ul: React.DetailedHTMLProps<React.HTMLAttributes<HTMLUListElement>, HTMLUListElement>
+      li: React.DetailedHTMLProps<React.LiHTMLAttributes<HTMLLIElement>, HTMLLIElement>
+    }
+  }
+}
+
 export default function PickMechanicPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -58,24 +85,25 @@ export default function PickMechanicPage() {
   const [selectedMechanic, setSelectedMechanic] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingQuotes, setIsLoadingQuotes] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Fetch appointment data and mechanic quotes
   useEffect(() => {
-    const fetchAppointmentData = async () => {
-      if (!appointmentId) {
-        setError("No appointment ID provided")
-        setIsLoading(false)
-        return
-      }
+    if (!appointmentId) {
+      setError("No appointment ID provided")
+      setIsLoading(false)
+      return
+    }
 
+    const fetchAppointmentData = async () => {
       try {
         setIsLoading(true)
         setError(null)
 
-        // Fetch appointment data
-        const { data: appointmentData, error: appointmentError } = await supabase
+        // Force refresh the schema cache
+        await supabase.rpc("reload_schema_cache")
+
+        const { data, error } = await supabase
           .from("appointments")
           .select(`
             *,
@@ -84,20 +112,18 @@ export default function PickMechanicPage() {
           .eq("id", appointmentId)
           .single()
 
-        if (appointmentError) throw appointmentError
+        if (error) throw error
 
-        // Set the appointment data first (without quotes)
-        // This ensures the order summary is visible immediately
-        setAppointment({
-          ...appointmentData,
-          mechanics: [],
-        })
-
-        // Now we can load the quotes separately
-        await fetchMechanicQuotes(appointmentId)
-      } catch (err) {
-        console.error("Error fetching appointment data:", err)
+        setAppointment(data)
+        console.log("Fetched appointment data:", data)
+      } catch (error) {
+        console.error("Error fetching appointment data:", error)
         setError("Failed to load appointment data")
+        toast({
+          title: "Error",
+          description: "Failed to load appointment data. Please try again.",
+          variant: "destructive",
+        })
       } finally {
         setIsLoading(false)
       }
@@ -116,7 +142,7 @@ export default function PickMechanicPage() {
 
         // If no quotes, return early with empty mechanics array
         if (!quotes || quotes.length === 0) {
-          setAppointment((prev) =>
+          setAppointment((prev: Appointment | null) =>
             prev
               ? {
                   ...prev,
@@ -129,8 +155,9 @@ export default function PickMechanicPage() {
         }
 
         // Format the quotes data
-        const formattedMechanics = quotes.map((quote) => {
+        const formattedMechanics = quotes.map((quote: MechanicQuote) => {
           const mechanic = quote.mechanic
+          if (!mechanic) return null
           return {
             id: mechanic.id,
             first_name: mechanic.first_name || "Unknown",
@@ -140,11 +167,14 @@ export default function PickMechanicPage() {
             quote_id: quote.id,
             price: quote.price,
             eta: quote.eta,
+            rating: mechanic.rating || 0,
+            review_count: mechanic.review_count || 0,
+            status: quote.status,
           }
-        })
+        }).filter((m): m is Mechanic => m !== null)
 
         // Update appointment data with mechanic quotes
-        setAppointment((prev) =>
+        setAppointment((prev: Appointment | null) =>
           prev
             ? {
                 ...prev,
@@ -165,7 +195,11 @@ export default function PickMechanicPage() {
         }
       } catch (err) {
         console.error("Error fetching mechanic quotes:", err)
-        // Don't set the main error state, just log it
+        toast({
+          title: "Error",
+          description: "Failed to load mechanic quotes. Please try again.",
+          variant: "destructive",
+        })
       } finally {
         setIsLoadingQuotes(false)
       }
@@ -191,11 +225,30 @@ export default function PickMechanicPage() {
       )
       .subscribe()
 
-    // Clean up subscription on unmount
+    // Set up real-time subscription for appointment changes
+    const appointmentSubscription = supabase
+      .channel("appointment-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "appointments",
+          filter: `id=eq.${appointmentId}`,
+        },
+        () => {
+          // Refresh the appointment data when there's a change
+          fetchAppointmentData()
+        },
+      )
+      .subscribe()
+
+    // Clean up subscriptions on unmount
     return () => {
       supabase.removeChannel(quotesSubscription)
+      supabase.removeChannel(appointmentSubscription)
     }
-  }, [appointmentId])
+  }, [appointmentId, toast])
 
   const handleSelectMechanic = (quoteId: string) => {
     setSelectedMechanic(quoteId)
@@ -203,7 +256,7 @@ export default function PickMechanicPage() {
 
   const getSelectedMechanic = () => {
     if (!appointment?.mechanics || !selectedMechanic) return null
-    return appointment.mechanics.find((mechanic) => mechanic.quote_id === selectedMechanic)
+    return appointment.mechanics.find((mechanic: Mechanic) => mechanic.quote_id === selectedMechanic)
   }
 
   const handleProceedToPayment = async () => {
@@ -354,7 +407,7 @@ export default function PickMechanicPage() {
                 ) : appointment.mechanics && appointment.mechanics.length > 0 ? (
                   // Mechanics list when quotes are available
                   <div className="p-4 space-y-3">
-                    {appointment.mechanics.map((mechanic) => (
+                    {appointment.mechanics.map((mechanic: Mechanic) => (
                       <Card
                         key={mechanic.quote_id}
                         className={`overflow-hidden transition-all bg-[#294a46] ${
@@ -382,7 +435,7 @@ export default function PickMechanicPage() {
                             </h3>
                             <div className="flex items-center mt-0.5">
                               {mechanic.metadata?.rating && (
-                                <>
+                                <React.Fragment>
                                   <div className="flex items-center">
                                     <StarIcon className="h-3.5 w-3.5 text-yellow-400 mr-1" />
                                     <span className="text-sm font-medium text-white">{mechanic.metadata.rating}</span>
@@ -393,25 +446,26 @@ export default function PickMechanicPage() {
                                     </span>
                                   )}
                                   <span className="mx-1.5 text-gray-400">•</span>
-                                </>
+                                </React.Fragment>
                               )}
                               <span className="text-xs text-gray-200">
                                 {mechanic.metadata?.experience || "Experienced Mechanic"}
                               </span>
                             </div>
 
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {mechanic.metadata?.specialties &&
-                                mechanic.metadata.specialties.slice(0, 3).map((specialty: string, index: number) => (
-                                  <Badge
-                                    key={index}
-                                    variant="outline"
-                                    className="px-1.5 py-0 text-xs bg-[#1e3632] text-white border-[#1e3632] font-medium"
-                                  >
-                                    {specialty}
-                                  </Badge>
+                            {mechanic.metadata?.specialties && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {mechanic.metadata.specialties.slice(0, 3).map((specialty: SpecialtyItem, index: number) => (
+                                  <div key={`specialty-${index}`}>
+                                    <Badge
+                                      className="px-1.5 py-0 text-xs bg-[#1e3632] text-white border-[#1e3632] font-medium"
+                                    >
+                                      {specialty}
+                                    </Badge>
+                                  </div>
                                 ))}
-                            </div>
+                              </div>
+                            )}
                           </div>
 
                           {/* Price and ETA - Right Side */}
@@ -509,7 +563,7 @@ export default function PickMechanicPage() {
                         <div>
                           <h3 className="font-medium text-gray-700 text-sm">Requested Services</h3>
                           <ul className="mt-1 space-y-1">
-                            {appointment.selected_services.map((service, index) => (
+                            {appointment.selected_services.map((service: ServiceItem, index: number) => (
                               <li key={index} className="flex items-center">
                                 <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
                                 <span className="text-xs text-gray-600">{service}</span>
@@ -526,7 +580,7 @@ export default function PickMechanicPage() {
                         <div>
                           <h3 className="font-medium text-gray-700 text-sm">Reported Issues</h3>
                           <ul className="mt-1 space-y-1">
-                            {appointment.selected_car_issues.map((issue, index) => (
+                            {appointment.selected_car_issues.map((issue: IssueItem, index: number) => (
                               <li key={index} className="flex items-center">
                                 <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
                                 <span className="text-xs text-gray-600">{issue}</span>
@@ -588,11 +642,11 @@ export default function PickMechanicPage() {
                           </p>
                           <div className="flex items-center">
                             {getSelectedMechanic()?.metadata?.rating && (
-                              <>
+                              <React.Fragment>
                                 <StarIcon className="h-3 w-3 text-yellow-500 mr-1" />
                                 <span className="text-xs text-gray-600">{getSelectedMechanic()?.metadata.rating}</span>
                                 <span className="mx-1 text-gray-300">•</span>
-                              </>
+                              </React.Fragment>
                             )}
                             <span className="text-xs text-gray-600">
                               {getSelectedMechanic()?.metadata?.experience || "Experienced Mechanic"}

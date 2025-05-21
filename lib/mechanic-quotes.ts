@@ -9,6 +9,16 @@ export interface MechanicQuote {
   notes?: string
   created_at: string
   updated_at: string
+  status?: "pending" | "accepted" | "rejected"
+  mechanic?: {
+    id: string
+    first_name: string
+    last_name: string
+    profile_image_url: string | null
+    metadata: Record<string, any>
+    rating: number
+    review_count: number
+  }
 }
 
 /**
@@ -22,6 +32,26 @@ export async function createOrUpdateQuote(
   notes = "",
 ): Promise<{ success: boolean; quote?: MechanicQuote; error?: string }> {
   try {
+    // Validate inputs
+    if (!mechanicId || !appointmentId || !price || price <= 0) {
+      return { success: false, error: "Invalid input parameters" }
+    }
+
+    // Check if appointment exists and is in a valid state
+    const { data: appointment, error: appointmentError } = await supabase
+      .from("appointments")
+      .select("status")
+      .eq("id", appointmentId)
+      .single()
+
+    if (appointmentError) {
+      return { success: false, error: "Appointment not found" }
+    }
+
+    if (appointment.status !== "pending") {
+      return { success: false, error: "Appointment is no longer available for quotes" }
+    }
+
     // Check if a quote already exists
     const { data: existingQuote, error: checkError } = await supabase
       .from("mechanic_quotes")
@@ -31,7 +61,6 @@ export async function createOrUpdateQuote(
       .single()
 
     if (checkError && checkError.code !== "PGRST116") {
-      // PGRST116 means no rows found, which is expected if no quote exists
       console.error("Error checking for existing quote:", checkError)
       return { success: false, error: "Failed to check for existing quote" }
     }
@@ -47,6 +76,7 @@ export async function createOrUpdateQuote(
           eta,
           notes,
           updated_at: new Date().toISOString(),
+          status: "pending", // Reset status on update
         })
         .eq("id", existingQuote.id)
         .select()
@@ -68,6 +98,9 @@ export async function createOrUpdateQuote(
           price,
           eta,
           notes,
+          status: "pending",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .select()
         .single()
@@ -88,7 +121,7 @@ export async function createOrUpdateQuote(
 }
 
 /**
- * Gets all quotes for an appointment
+ * Gets all quotes for an appointment with real-time updates
  */
 export async function getQuotesForAppointment(appointmentId: string): Promise<{
   success: boolean
@@ -105,10 +138,13 @@ export async function getQuotesForAppointment(appointmentId: string): Promise<{
           first_name,
           last_name,
           profile_image_url,
-          metadata
+          metadata,
+          rating,
+          review_count
         )
       `)
       .eq("appointment_id", appointmentId)
+      .order("created_at", { ascending: true })
 
     if (error) {
       console.error("Error getting quotes for appointment:", error)
@@ -143,7 +179,7 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
     }
 
     // Get IDs of appointments this mechanic has already quoted
-    const quotedAppointmentIds = existingQuotes?.map((q) => q.appointment_id) || []
+    const quotedAppointmentIds = existingQuotes?.map((q: { appointment_id: string }) => q.appointment_id) || []
 
     // Fetch available appointments (pending, not quoted by this mechanic yet)
     const { data: availableData, error: availableError } = await supabase
@@ -196,7 +232,7 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
 
     // Format the data to match the expected structure
     const appointments =
-      quotes?.map((quote) => ({
+      quotes?.map((quote: MechanicQuote & { appointment: any }) => ({
         ...quote.appointment,
         quote: {
           id: quote.id,
@@ -216,28 +252,72 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
 }
 
 /**
- * Selects a quote for an appointment
+ * Selects a quote for an appointment and updates all related records
  */
 export async function selectQuoteForAppointment(
   appointmentId: string,
   quoteId: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase
+    // Start a transaction
+    const { error: transactionError } = await supabase.rpc("begin_transaction")
+
+    if (transactionError) throw transactionError
+
+    // Get the quote details
+    const { data: quote, error: quoteError } = await supabase
+      .from("mechanic_quotes")
+      .select("*")
+      .eq("id", quoteId)
+      .single()
+
+    if (quoteError) throw quoteError
+
+    // Update the appointment with the selected quote
+    const { error: appointmentError } = await supabase
       .from("appointments")
       .update({
         selected_quote_id: quoteId,
+        mechanic_id: quote.mechanic_id,
         status: "pending_payment",
+        price: quote.price,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", appointmentId)
 
-    if (error) {
-      console.error("Error selecting quote:", error)
-      return { success: false, error: "Failed to select quote" }
-    }
+    if (appointmentError) throw appointmentError
+
+    // Update the selected quote status
+    const { error: quoteUpdateError } = await supabase
+      .from("mechanic_quotes")
+      .update({
+        status: "accepted",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", quoteId)
+
+    if (quoteUpdateError) throw quoteUpdateError
+
+    // Reject all other quotes for this appointment
+    const { error: rejectError } = await supabase
+      .from("mechanic_quotes")
+      .update({
+        status: "rejected",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("appointment_id", appointmentId)
+      .neq("id", quoteId)
+
+    if (rejectError) throw rejectError
+
+    // Commit the transaction
+    const { error: commitError } = await supabase.rpc("commit_transaction")
+    if (commitError) throw commitError
 
     return { success: true }
   } catch (err) {
+    // Rollback on error
+    await supabase.rpc("rollback_transaction")
     console.error("Exception in selectQuoteForAppointment:", err)
     return { success: false, error: "An unexpected error occurred" }
   }

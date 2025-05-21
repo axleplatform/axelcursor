@@ -12,6 +12,7 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 // Import the DateTimeSelector component
 import { DateTimeSelector } from "@/components/date-time-selector"
+import { toast } from "@/components/ui/use-toast"
 
 // Define types for form data
 interface AppointmentFormData {
@@ -114,15 +115,17 @@ export default function HomePage() {
       // Combine date and time for the appointment
       const appointmentDateTime = `${formData.appointmentDate}T${formData.appointmentTime}`
 
-      // First, create the appointment
+      // First, create the appointment with initial status
       const { data: appointmentData, error: appointmentError } = await supabase
         .from("appointments")
         .insert([
           {
             location: formData.address,
             appointment_date: appointmentDateTime,
-            status: "pending",
+            status: "pending", // Initial status
             notes: "Submitted via landing page",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           },
         ])
         .select()
@@ -138,16 +141,22 @@ export default function HomePage() {
           year: Number.parseInt(formData.year),
           make: formData.make,
           model: formData.model,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
       ])
 
       if (vehicleError) throw vehicleError
 
-      // Navigate directly to the book appointment page
+      // Navigate to the book appointment page
       router.push(`/book-appointment?appointmentId=${appointmentId}`)
     } catch (error) {
       console.error("Error submitting form:", error)
-      alert("There was an error submitting your appointment. Please try again.")
+      toast({
+        title: "Error",
+        description: "There was an error submitting your appointment. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsSubmitting(false)
     }
