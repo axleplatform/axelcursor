@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -21,6 +21,43 @@ export default function LoginPage() {
   const [isResendingEmail, setIsResendingEmail] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
 
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        // Check if user is a mechanic
+        const { data: mechanicProfile } = await supabase
+          .from("mechanic_profiles")
+          .select("onboarding_completed, onboarding_step")
+          .eq("user_id", session.user.id)
+          .single()
+
+        if (mechanicProfile) {
+          if (mechanicProfile.onboarding_completed) {
+            router.push("/mechanic/dashboard")
+          } else {
+            // Redirect to appropriate onboarding step
+            const step = mechanicProfile.onboarding_step || "personal_info"
+            router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
+          }
+        }
+      }
+    }
+    checkSession()
+  }, [router])
+
+  const getStepNumber = (step: string) => {
+    switch (step) {
+      case "personal_info": return "1"
+      case "professional_info": return "2"
+      case "certifications": return "3"
+      case "rates": return "4"
+      case "profile": return "5"
+      default: return "1"
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -35,7 +72,6 @@ export default function LoginPage() {
       })
 
       if (authError) {
-        // Check if the error is about email confirmation
         if (authError.message.includes("Email not confirmed")) {
           throw new Error(
             "Your email has not been confirmed. Please check your inbox or click 'Resend confirmation email' below.",
@@ -48,67 +84,41 @@ export default function LoginPage() {
         throw new Error("No user found")
       }
 
-      // Check if the user is a mechanic by querying the mechanic_profiles table
+      // Check if the user is a mechanic
       const { data: mechanicProfile, error: profileError } = await supabase
         .from("mechanic_profiles")
-        .select("id, onboarding_completed, onboarding_step")
+        .select("onboarding_completed, onboarding_step")
         .eq("user_id", data.user.id)
         .single()
 
-      // If there's no mechanic profile or there was an error, this user is not a mechanic
       if (profileError && profileError.code !== "PGRST116") {
         console.error("Error checking mechanic profile:", profileError)
         throw new Error("Error verifying account type")
       }
 
-      // If no mechanic profile found, this is not a mechanic account
       if (!mechanicProfile) {
-        // Check if this is a customer account instead
-        const { data: customerProfile, error: customerError } = await supabase
+        // Check if this is a customer account
+        const { data: customerProfile } = await supabase
           .from("customer_profiles")
           .select("id")
           .eq("user_id", data.user.id)
           .single()
 
-        if (!customerError && customerProfile) {
-          // This is a customer account, redirect to customer dashboard
+        if (customerProfile) {
           router.push("/dashboard")
           return
         }
 
-        // Neither mechanic nor customer - something is wrong
         throw new Error("Account type not recognized")
       }
 
-      // User is a mechanic, check if onboarding is completed
-      if (!mechanicProfile.onboarding_completed) {
-        // Redirect to the appropriate onboarding step
-        const onboardingStep = mechanicProfile.onboarding_step || "personal_info"
-
-        switch (onboardingStep) {
-          case "personal_info":
-            router.push("/onboarding-mechanic-1")
-            break
-          case "professional_info":
-            router.push("/onboarding-mechanic-2")
-            break
-          case "certifications":
-            router.push("/onboarding-mechanic-3")
-            break
-          case "rates":
-            router.push("/onboarding-mechanic-4")
-            break
-          case "profile":
-            router.push("/onboarding-mechanic-5")
-            break
-          default:
-            router.push("/onboarding-mechanic-1")
-        }
-        return
+      // User is a mechanic, handle redirection
+      if (mechanicProfile.onboarding_completed) {
+        router.push("/mechanic/dashboard")
+      } else {
+        const step = mechanicProfile.onboarding_step || "personal_info"
+        router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
       }
-
-      // Onboarding is complete, redirect to mechanic dashboard
-      router.push("/mechanic/dashboard")
     } catch (error: any) {
       console.error("Login error:", error)
       setError(error.message || "Failed to login. Please check your credentials and try again.")

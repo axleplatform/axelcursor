@@ -13,18 +13,55 @@ export async function middleware(req: NextRequest) {
   } = await supabase.auth.getSession()
 
   // If there's no session and the user is trying to access protected routes
-  if (!session && req.nextUrl.pathname.startsWith("/mechanic/dashboard")) {
-    // Redirect to the login page
-    const redirectUrl = req.nextUrl.clone()
-    redirectUrl.pathname = "/login"
-    redirectUrl.searchParams.set("redirectedFrom", req.nextUrl.pathname)
-    return NextResponse.redirect(redirectUrl)
+  if (!session) {
+    if (req.nextUrl.pathname.startsWith("/mechanic/dashboard")) {
+      // Redirect to the login page
+      const redirectUrl = new URL("/login", req.url)
+      redirectUrl.searchParams.set("redirectedFrom", req.nextUrl.pathname)
+      return NextResponse.redirect(redirectUrl)
+    }
+  } else {
+    // User is logged in, check if they're a mechanic
+    const { data: mechanicProfile } = await supabase
+      .from("mechanic_profiles")
+      .select("onboarding_completed, onboarding_step")
+      .eq("user_id", session.user.id)
+      .single()
+
+    if (mechanicProfile) {
+      // If trying to access dashboard but onboarding is not complete
+      if (req.nextUrl.pathname.startsWith("/mechanic/dashboard") && !mechanicProfile.onboarding_completed) {
+        const step = mechanicProfile.onboarding_step || "personal_info"
+        const stepNumber = getStepNumber(step)
+        return NextResponse.redirect(new URL(`/onboarding-mechanic-${stepNumber}`, req.url))
+      }
+
+      // If trying to access onboarding but it's already complete
+      if (req.nextUrl.pathname.startsWith("/onboarding-mechanic-") && mechanicProfile.onboarding_completed) {
+        return NextResponse.redirect(new URL("/mechanic/dashboard", req.url))
+      }
+    }
   }
 
   return res
 }
 
+// Helper function to get step number
+function getStepNumber(step: string): string {
+  switch (step) {
+    case "personal_info": return "1"
+    case "professional_info": return "2"
+    case "certifications": return "3"
+    case "rates": return "4"
+    case "profile": return "5"
+    default: return "1"
+  }
+}
+
 // Specify the paths that should be protected by the middleware
 export const config = {
-  matcher: ["/mechanic/dashboard/:path*"],
+  matcher: [
+    "/mechanic/dashboard/:path*",
+    "/onboarding-mechanic-:path*",
+  ],
 }
