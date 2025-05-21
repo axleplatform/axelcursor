@@ -121,7 +121,7 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       console.error("Login error:", error)
-      setError(error.message || "Failed to login. Please check your credentials and try again.")
+      setError(error.message || "An error occurred during login")
     } finally {
       setIsLoading(false)
     }

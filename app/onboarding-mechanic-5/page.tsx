@@ -219,160 +219,69 @@ export default function MechanicOnboardingStep5Page() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-
-    // Validate form
-    if (!validateForm()) {
-      return
-    }
-
-    if (!user) {
-      setError("You must be logged in to continue")
-      router.push("/onboarding/mechanic/signup")
-      return
-    }
-
-    if (!profileId) {
-      setError("Could not find your profile. Please complete the previous steps first.")
-      return
-    }
-
     setIsSaving(true)
 
     try {
-      // 1. Update mechanic profile in the database
-      const { error: updateError } = await supabase
+      if (!user) {
+        throw new Error("You must be logged in to continue")
+      }
+
+      if (!profileId) {
+        throw new Error("Your profile information is missing. Please complete the previous steps first.")
+      }
+
+      // Update mechanic profile
+      const { error: profileError } = await supabase
         .from("mechanic_profiles")
         .update({
           bio,
+          profile_image_url: profileImageUrl,
           vehicle_year: vehicleInfo?.year,
           vehicle_make: vehicleInfo?.make,
           vehicle_model: vehicleInfo?.model,
           license_plate: vehicleInfo?.licensePlate,
-          profile_image_url: profileImageUrl,
-          onboarding_step: "completed",
           onboarding_completed: true,
-          updated_at: new Date().toISOString(),
+          onboarding_step: "completed",
         })
         .eq("id", profileId)
 
-      if (updateError) {
-        console.error("Error updating profile:", updateError)
-        throw new Error("Failed to update your profile: " + updateError.message)
+      if (profileError) throw profileError
+
+      // Create or update mechanic record
+      const mechanicData = {
+        id: profileId,
+        user_id: user.id,
+        name: `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`.trim(),
+        email: user.email,
+        phone: user.user_metadata?.phone_number || "",
+        avatar_url: profileImageUrl,
+        bio,
+        specialties: user.user_metadata?.specialties || [],
+        experience: user.user_metadata?.experience || "",
+        rating: 0,
+        review_count: 0,
       }
 
-      // 2. Update user metadata as a backup
-      const { error: userUpdateError } = await supabase.auth.updateUser({
+      const { error: mechanicError } = await supabase
+        .from("mechanics")
+        .upsert(mechanicData, { onConflict: "id" })
+
+      if (mechanicError) throw mechanicError
+
+      // Update user metadata
+      const { error: metadataError } = await supabase.auth.updateUser({
         data: {
+          onboarding_completed: true,
+          onboarding_step: "completed",
           bio,
           profile_image_url: profileImageUrl,
           vehicle_info: vehicleInfo,
-          onboarding_step: "completed",
-          onboarding_completed: true,
-          onboarding_completed_at: new Date().toISOString(),
         },
       })
 
-      if (userUpdateError) {
-        console.warn("Error updating user metadata:", userUpdateError)
-        // Continue anyway, this is just a backup
-      }
+      if (metadataError) throw metadataError
 
-      // 3. Get profile data for creating mechanic record
-      const { data: profile, error: profileError } = await supabase
-        .from("mechanic_profiles")
-        .select("*")
-        .eq("id", profileId)
-        .single()
-
-      if (profileError) {
-        console.error("Error fetching profile data:", profileError)
-        throw new Error("Failed to fetch your profile data: " + profileError.message)
-      }
-
-      // 4. Create or update mechanic record
-      try {
-        // Check if mechanic record already exists
-        const { data: existingMechanic } = await supabase.from("mechanics").select("id").eq("id", profileId).single()
-
-        // Prepare mechanic data
-        const mechanicData = {
-          id: profileId,
-          user_id: user.id,
-          name: profile.first_name && profile.last_name 
-            ? `${profile.first_name} ${profile.last_name}`
-            : user.user_metadata?.full_name || user.email?.split("@")[0],
-          email: user.email,
-          phone: profile.phone_number,
-          avatar_url: profileImageUrl,
-          bio: bio,
-          specialties: Array.isArray(profile.specialties) ? profile.specialties : [],
-          experience: profile.business_start_year ? `Since ${profile.business_start_year}` : null,
-          rating: 0,
-          review_count: 0,
-          updated_at: new Date().toISOString(),
-        }
-
-        // Add created_at only for new records
-        if (!existingMechanic) {
-          mechanicData.created_at = new Date().toISOString()
-        }
-
-        // Upsert mechanic record
-        const { error: mechanicError } = await supabase.from("mechanics").upsert(mechanicData, {
-          onConflict: "id",
-          ignoreDuplicates: false,
-        })
-
-        if (mechanicError) {
-          console.error("Error upserting mechanic record:", mechanicError)
-          throw new Error("Failed to create mechanic record: " + mechanicError.message)
-        }
-
-        // Verify mechanic record was created
-        const { data: verifyMechanic, error: verifyMechanicError } = await supabase
-          .from("mechanics")
-          .select("id")
-          .eq("id", profileId)
-          .single()
-
-        if (verifyMechanicError || !verifyMechanic) {
-          throw new Error("Failed to verify mechanic record creation")
-        }
-      } catch (mechanicError: any) {
-        console.error("Error creating mechanic record:", mechanicError)
-        throw new Error("Failed to create your mechanic profile: " + mechanicError.message)
-      }
-
-      // 5. Verify data was saved correctly
-      try {
-        const { data: verifyProfile, error: verifyError } = await supabase
-          .from("mechanic_profiles")
-          .select(
-            "bio, vehicle_year, vehicle_make, vehicle_model, license_plate, profile_image_url, onboarding_completed",
-          )
-          .eq("id", profileId)
-          .single()
-
-        if (verifyError) {
-          console.warn("Error verifying profile data:", verifyError)
-          // Continue anyway, this is just verification
-        } else if (
-          verifyProfile.bio !== bio ||
-          verifyProfile.vehicle_year !== vehicleInfo?.year ||
-          verifyProfile.vehicle_make !== vehicleInfo?.make ||
-          verifyProfile.vehicle_model !== vehicleInfo?.model ||
-          verifyProfile.license_plate !== vehicleInfo?.licensePlate ||
-          verifyProfile.onboarding_completed !== true
-        ) {
-          console.warn("Data verification failed. Some information was not saved correctly.")
-          // Continue anyway, this is just verification
-        }
-      } catch (verifyError) {
-        console.warn("Exception verifying profile data:", verifyError)
-        // Continue anyway, this is just verification
-      }
-
-      // Success! Show toast and redirect
+      // Show success message
       toast({
         title: "Onboarding complete!",
         description: "Your profile has been created successfully. Welcome to Axle!",
@@ -381,14 +290,8 @@ export default function MechanicOnboardingStep5Page() {
       // Redirect to dashboard
       router.push("/mechanic/dashboard")
     } catch (error: any) {
-      console.error("Error saving data:", error)
-      setError("Failed to save your information. Please try again. " + (error.message || ""))
-
-      toast({
-        title: "Error",
-        description: "There was a problem completing your profile.",
-        variant: "destructive",
-      })
+      console.error("Error saving profile:", error)
+      setError(error.message || "Failed to save profile. Please try again.")
     } finally {
       setIsSaving(false)
     }

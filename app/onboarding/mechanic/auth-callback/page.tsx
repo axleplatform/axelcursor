@@ -39,7 +39,7 @@ export default function AuthCallback() {
           case "rates":
             router.push("/onboarding-mechanic-4")
             break
-          case "profile_completion":
+          case "profile":
             router.push("/onboarding-mechanic-5")
             break
           default:
