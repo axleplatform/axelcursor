@@ -380,7 +380,7 @@ export default function MechanicOnboardingStep5Page() {
         description: "Your profile has been created successfully. Welcome to Axle!",
       })
 
-      // Redirect to the mechanic dashboard
+      // Redirect to dashboard
       router.push("/mechanic/dashboard")
     } catch (error: any) {
       console.error("Error saving data:", error)
@@ -404,7 +404,7 @@ export default function MechanicOnboardingStep5Page() {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-[#294a46] mx-auto mb-4" />
-            <p className="text-gray-600">Loading your profile...</p>
+            <p className="text-gray-600">Verifying your account...</p>
           </div>
         </main>
         <Footer />
@@ -437,45 +437,24 @@ export default function MechanicOnboardingStep5Page() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="divide-y divide-gray-100">
-              {/* Profile Image Section */}
-              <div className="px-6 py-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Profile Picture</h3>
-                <p className="text-sm text-gray-500 mb-4">
-                  Upload a professional photo of yourself. This will be visible to customers.
-                </p>
-
-                {user && (
-                  <ProfileImageUpload
-                    userId={user.id}
-                    initialImageUrl={profileImageUrl}
-                    onImageChange={setProfileImageUrl}
-                  />
-                )}
-              </div>
-
+            <form onSubmit={handleSubmit} className="divide-y divide-gray-200">
               {/* Bio Section */}
               <div className="px-6 py-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">About You</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Your Bio</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Write a short bio about yourself, your experience, and your approach to auto repair.
+                  Tell potential customers about yourself and your experience.
                 </p>
 
                 <div>
-                  <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
-                    Bio <span className="text-red-500">*</span>
+                  <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
+                    Bio
                   </label>
                   <textarea
                     id="bio"
+                    name="bio"
+                    rows={4}
                     value={bio}
-                    onChange={(e) => {
-                      setBio(e.target.value)
-                      if (validationErrors.bio) {
-                        setValidationErrors((prev) => ({ ...prev, bio: undefined }))
-                      }
-                    }}
-                    rows={5}
-                    placeholder="Tell customers about your experience, specialties, and approach to auto repair..."
+                    onChange={(e) => setBio(e.target.value)}
                     className={`block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46] ${
                       validationErrors.bio ? "border-red-300 focus:border-red-500 focus:ring-red-500" : ""
                     }`}

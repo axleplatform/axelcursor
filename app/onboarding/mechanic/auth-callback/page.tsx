@@ -16,38 +16,35 @@ export default function AuthCallback() {
       if (data?.session) {
         const user = data.session.user
 
-        let redirectPath = "/mechanic/dashboard"
-
         // Check if the user has completed onboarding
         if (user.user_metadata?.onboarding_completed === true && user.user_metadata?.onboarding_step === "completed") {
           // User has completed onboarding, redirect to dashboard
-          redirectPath = "/mechanic/dashboard"
-        } else {
-          // Determine which onboarding step to redirect to
-          const onboardingStep = user.user_metadata?.onboarding_step || "personal_info"
-
-          switch (onboardingStep) {
-            case "personal_info":
-              redirectPath = "/onboarding-mechanic-1"
-              break
-            case "professional_info":
-              redirectPath = "/onboarding-mechanic-2"
-              break
-            case "certifications":
-              redirectPath = "/onboarding-mechanic-3"
-              break
-            case "rates":
-              redirectPath = "/onboarding-mechanic-4"
-              break
-            case "profile_completion":
-              redirectPath = "/onboarding-mechanic-5"
-              break
-            default:
-              redirectPath = "/onboarding-mechanic-1"
-          }
+          router.push("/mechanic/dashboard")
+          return
         }
 
-        router.push(redirectPath)
+        // Determine which onboarding step to redirect to
+        const onboardingStep = user.user_metadata?.onboarding_step || "personal_info"
+
+        switch (onboardingStep) {
+          case "personal_info":
+            router.push("/onboarding-mechanic-1")
+            break
+          case "professional_info":
+            router.push("/onboarding-mechanic-2")
+            break
+          case "certifications":
+            router.push("/onboarding-mechanic-3")
+            break
+          case "rates":
+            router.push("/onboarding-mechanic-4")
+            break
+          case "profile_completion":
+            router.push("/onboarding-mechanic-5")
+            break
+          default:
+            router.push("/onboarding-mechanic-1")
+        }
       } else {
         router.push("/login")
       }
@@ -57,8 +54,9 @@ export default function AuthCallback() {
   }, [router])
 
   return (
-    <div>
-      <h1>Authenticating...</h1>
+    <div className="flex flex-col min-h-screen items-center justify-center">
+      <h1 className="text-2xl font-semibold text-gray-800">Authenticating...</h1>
+      <p className="text-gray-600 mt-2">Please wait while we set up your account.</p>
     </div>
   )
 }
