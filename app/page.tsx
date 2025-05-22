@@ -213,7 +213,7 @@ export default function HomePage() {
       console.log("Creating appointment with data:", initialAppointmentData)
 
       // First, create the appointment with initial status
-      const { data: appointmentData, error: appointmentError } = await supabase
+      const { data: createdAppointment, error: appointmentError } = await supabase
         .from("appointments")
         .insert([initialAppointmentData])
         .select()
@@ -223,15 +223,15 @@ export default function HomePage() {
         throw new Error(`Failed to create appointment: ${appointmentError.message}`)
       }
 
-      if (!appointmentData || appointmentData.length === 0) {
+      if (!createdAppointment || createdAppointment.length === 0) {
         console.error("No appointment data returned after creation")
         throw new Error("No appointment data returned after creation")
       }
 
-      console.log("Appointment created successfully:", appointmentData)
+      console.log("Appointment created successfully:", createdAppointment)
 
       // Then, create the vehicle with the appointment_id
-      const appointmentId = appointmentData[0].id
+      const appointmentId = createdAppointment[0].id
       const vehicleData = {
         appointment_id: appointmentId,
         vin: formData.vin || null,
