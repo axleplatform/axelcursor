@@ -22,7 +22,7 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS selected_quote_id UUID REFEREN
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS mechanic_id UUID REFERENCES mechanics(id);
 
 -- Drop the incorrect column if it exists
-ALTER TABLE appointments DROP COLUMN IF EXISTS is_gues;
+ALTER TABLE appointments DROP COLUMN IF EXISTS is_gust;
 
 -- Add source and is_guest columns to appointments table if they don't exist
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS source VARCHAR(50) DEFAULT 'landing_page';
