@@ -33,7 +33,6 @@ export interface Appointment {
   mechanic_id: string | null
   selected_quote_id: string | null
   source: string | null
-  is_guest: boolean
   created_at: string
   updated_at: string
   vehicles: Vehicle | null

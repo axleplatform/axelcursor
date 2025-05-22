@@ -206,7 +206,6 @@ export default function HomePage() {
         created_at: now,
         updated_at: now,
         source: "landing_page",
-        is_guest: true,
         user_id: null,
       }
 
