@@ -61,7 +61,7 @@ export default function MechanicDashboard() {
         if (!user.user_metadata?.onboarding_completed || user.user_metadata?.onboarding_step !== "completed") {
           // Determine which onboarding step to redirect to
           const onboardingStep = user.user_metadata?.onboarding_step || "personal_info"
-          let redirectPath = "/onboarding/mechanic/signup"
+          let redirectPath = "/onboarding-mechanic-1"
 
           switch (onboardingStep) {
             case "personal_info":
@@ -76,9 +76,11 @@ export default function MechanicDashboard() {
             case "rates":
               redirectPath = "/onboarding-mechanic-4"
               break
-            case "profile_completion":
+            case "profile":
               redirectPath = "/onboarding-mechanic-5"
               break
+            default:
+              redirectPath = "/onboarding-mechanic-1"
           }
 
           toast({

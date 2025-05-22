@@ -22,11 +22,16 @@ export async function middleware(req: NextRequest) {
     }
   } else {
     // User is logged in, check if they're a mechanic
-    const { data: mechanicProfile } = await supabase
+    const { data: mechanicProfile, error: profileError } = await supabase
       .from("mechanic_profiles")
       .select("onboarding_completed, onboarding_step")
       .eq("user_id", session.user.id)
       .single()
+
+    if (profileError && profileError.code !== "PGRST116") {
+      console.error("Error checking mechanic profile:", profileError)
+      return res
+    }
 
     if (mechanicProfile) {
       // If trying to access dashboard but onboarding is not complete

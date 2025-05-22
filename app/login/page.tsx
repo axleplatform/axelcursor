@@ -24,24 +24,44 @@ export default function LoginPage() {
   // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        // Check if user is a mechanic
-        const { data: mechanicProfile } = await supabase
-          .from("mechanic_profiles")
-          .select("onboarding_completed, onboarding_step")
-          .eq("user_id", session.user.id)
-          .single()
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          // Check if user is a mechanic
+          const { data: mechanicProfile, error: profileError } = await supabase
+            .from("mechanic_profiles")
+            .select("onboarding_completed, onboarding_step")
+            .eq("user_id", session.user.id)
+            .single()
 
-        if (mechanicProfile) {
-          if (mechanicProfile.onboarding_completed) {
-            router.push("/mechanic/dashboard")
+          if (profileError && profileError.code !== "PGRST116") {
+            console.error("Error checking mechanic profile:", profileError)
+            return
+          }
+
+          if (mechanicProfile) {
+            if (mechanicProfile.onboarding_completed) {
+              router.push("/mechanic/dashboard")
+            } else {
+              // Redirect to appropriate onboarding step
+              const step = mechanicProfile.onboarding_step || "personal_info"
+              router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
+            }
           } else {
-            // Redirect to appropriate onboarding step
-            const step = mechanicProfile.onboarding_step || "personal_info"
-            router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
+            // Check if this is a customer account
+            const { data: customerProfile } = await supabase
+              .from("customer_profiles")
+              .select("id")
+              .eq("user_id", session.user.id)
+              .single()
+
+            if (customerProfile) {
+              router.push("/dashboard")
+            }
           }
         }
+      } catch (error) {
+        console.error("Session check error:", error)
       }
     }
     checkSession()
@@ -77,7 +97,7 @@ export default function LoginPage() {
             "Your email has not been confirmed. Please check your inbox or click 'Resend confirmation email' below.",
           )
         }
-        throw new Error(authError.message || "Invalid login credentials")
+        throw new Error("An error occurred during login")
       }
 
       if (!data.user) {

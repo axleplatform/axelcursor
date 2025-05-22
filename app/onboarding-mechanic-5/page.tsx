@@ -223,14 +223,14 @@ export default function MechanicOnboardingStep5Page() {
 
     try {
       if (!user) {
-        throw new Error("You must be logged in to continue")
+        throw new Error("You must be logged in to complete this step")
       }
 
       if (!profileId) {
-        throw new Error("Your profile information is missing. Please complete the previous steps first.")
+        throw new Error("Profile ID is missing. Please start over from step 1.")
       }
 
-      // Update mechanic profile
+      // Update the mechanic profile
       const { error: profileError } = await supabase
         .from("mechanic_profiles")
         .update({
@@ -247,29 +247,21 @@ export default function MechanicOnboardingStep5Page() {
 
       if (profileError) throw profileError
 
-      // Create or update mechanic record
-      const mechanicData = {
-        id: profileId,
-        user_id: user.id,
-        name: `${user.user_metadata?.first_name || ""} ${user.user_metadata?.last_name || ""}`.trim(),
-        email: user.email,
-        phone: user.user_metadata?.phone_number || "",
-        avatar_url: profileImageUrl,
-        bio,
-        specialties: user.user_metadata?.specialties || [],
-        experience: user.user_metadata?.experience || "",
-        rating: 0,
-        review_count: 0,
-      }
-
+      // Create or update the mechanic record
       const { error: mechanicError } = await supabase
         .from("mechanics")
-        .upsert(mechanicData, { onConflict: "id" })
+        .upsert({
+          user_id: user.id,
+          profile_id: profileId,
+          bio,
+          profile_image_url: profileImageUrl,
+          vehicle_info: vehicleInfo,
+        })
 
       if (mechanicError) throw mechanicError
 
       // Update user metadata
-      const { error: metadataError } = await supabase.auth.updateUser({
+      const { error: userError } = await supabase.auth.updateUser({
         data: {
           onboarding_completed: true,
           onboarding_step: "completed",
@@ -279,7 +271,7 @@ export default function MechanicOnboardingStep5Page() {
         },
       })
 
-      if (metadataError) throw metadataError
+      if (userError) throw userError
 
       // Show success message
       toast({
