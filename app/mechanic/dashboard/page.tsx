@@ -37,6 +37,7 @@ export default function MechanicDashboard() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log("Checking authentication in dashboard...")
         setIsAuthLoading(true)
 
         const {
@@ -44,10 +45,12 @@ export default function MechanicDashboard() {
           error: authError,
         } = await supabase.auth.getUser()
 
+        console.log("Auth check result:", { user: user?.id, error: authError })
+
         if (authError) throw authError
 
         if (!user) {
-          // Not authenticated, redirect to login
+          console.log("No user found, redirecting to login")
           toast({
             title: "Authentication required",
             description: "Please log in to access your dashboard",
@@ -57,13 +60,36 @@ export default function MechanicDashboard() {
           return
         }
 
-        // Check if onboarding is completed
-        if (!user.user_metadata?.onboarding_completed || user.user_metadata?.onboarding_step !== "completed") {
-          // Determine which onboarding step to redirect to
-          const onboardingStep = user.user_metadata?.onboarding_step || "personal_info"
+        // Get mechanic profile
+        console.log("Fetching mechanic profile...")
+        const { data: profile, error: profileError } = await supabase
+          .from("mechanic_profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single()
+
+        console.log("Profile fetch result:", { profile, error: profileError })
+
+        if (profileError) {
+          if (profileError.code === "PGRST116") {
+            console.log("No profile found, redirecting to onboarding")
+            toast({
+              title: "Profile not found",
+              description: "Please complete your onboarding first",
+              variant: "destructive",
+            })
+            router.push("/onboarding-mechanic-1")
+            return
+          }
+          throw profileError
+        }
+
+        if (!profile.onboarding_completed) {
+          console.log("Onboarding not completed, redirecting to appropriate step")
+          const step = profile.onboarding_step || "personal_info"
           let redirectPath = "/onboarding-mechanic-1"
 
-          switch (onboardingStep) {
+          switch (step) {
             case "personal_info":
               redirectPath = "/onboarding-mechanic-1"
               break
@@ -91,102 +117,44 @@ export default function MechanicDashboard() {
           return
         }
 
-        // Get mechanic profile
-        const { data: profile, error: profileError } = await supabase
-          .from("mechanic_profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .single()
-
-        if (profileError) {
-          if (profileError.code === "PGRST116") {
-            // No profile found, redirect to onboarding
-            toast({
-              title: "Profile not found",
-              description: "Please complete your onboarding first",
-              variant: "destructive",
-            })
-            router.push("/onboarding/mechanic/signup")
-            return
-          }
-          throw profileError
-        }
-
+        console.log("Setting mechanic profile and ID")
         setMechanicProfile(profile)
         setMechanicId(profile.id)
+
+        // Fetch appointments
+        console.log("Fetching appointments...")
+        const [available, quoted, upcoming] = await Promise.all([
+          getAvailableAppointmentsForMechanic(profile.id),
+          getQuotedAppointmentsForMechanic(profile.id),
+          supabase
+            .from("appointments")
+            .select("*, vehicles(*)")
+            .eq("mechanic_id", profile.id)
+            .eq("status", "confirmed")
+            .gte("scheduled_time", new Date().toISOString())
+            .order("scheduled_time", { ascending: true }),
+        ])
+
+        console.log("Appointments fetched:", { available, quoted, upcoming })
+        setAvailableAppointments(available || [])
+        setQuotedAppointments(quoted || [])
+        setUpcomingAppointments(upcoming.data || [])
       } catch (error: any) {
-        console.error("Auth check error:", error)
+        console.error("Dashboard initialization error:", error)
         toast({
           title: "Error",
-          description: "Failed to authenticate. Please try logging in again.",
+          description: "Failed to load dashboard. Please try again.",
           variant: "destructive",
         })
         router.push("/login")
       } finally {
         setIsAuthLoading(false)
+        setIsAppointmentsLoading(false)
       }
     }
 
     checkAuth()
   }, [router, toast])
-
-  // Load appointments when mechanic ID is available
-  useEffect(() => {
-    if (!mechanicId) return
-
-    const loadAppointments = async () => {
-      setIsAppointmentsLoading(true)
-
-      try {
-        // Get available appointments
-        const {
-          success: availableSuccess,
-          appointments: availableData,
-          error: availableError,
-        } = await getAvailableAppointmentsForMechanic(mechanicId)
-
-        if (!availableSuccess) {
-          throw new Error(availableError)
-        }
-
-        setAvailableAppointments(availableData || [])
-
-        // Get quoted appointments
-        const {
-          success: quotedSuccess,
-          appointments: quotedData,
-          error: quotedError,
-        } = await getQuotedAppointmentsForMechanic(mechanicId)
-
-        if (!quotedSuccess) {
-          throw new Error(quotedError)
-        }
-
-        // Filter quoted appointments by status
-        const quoted = quotedData || []
-        setQuotedAppointments(quoted.filter((a) => a.status === "pending"))
-
-        // Set upcoming appointments (accepted, in_progress, etc.)
-        setUpcomingAppointments(quoted.filter((a) => ["accepted", "in_progress", "pending_payment"].includes(a.status)))
-      } catch (error: any) {
-        console.error("Error loading appointments:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load appointments. Please try again.",
-          variant: "destructive",
-        })
-      } finally {
-        setIsAppointmentsLoading(false)
-      }
-    }
-
-    loadAppointments()
-
-    // Set up interval to refresh appointments every 30 seconds
-    const intervalId = setInterval(loadAppointments, 30000)
-
-    return () => clearInterval(intervalId)
-  }, [mechanicId, toast])
 
   // Handle submitting a quote
   const handleSubmitQuote = async (appointmentId: string) => {
