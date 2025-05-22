@@ -40,7 +40,7 @@ export async function createOrUpdateQuote(
     // Check if appointment exists and is in a valid state
     const { data: appointment, error: appointmentError } = await supabase
       .from("appointments")
-      .select("status")
+      .select("status, mechanic_id")
       .eq("id", appointmentId)
       .single()
 
@@ -50,6 +50,10 @@ export async function createOrUpdateQuote(
 
     if (appointment.status !== "pending") {
       return { success: false, error: "Appointment is no longer available for quotes" }
+    }
+
+    if (appointment.mechanic_id) {
+      return { success: false, error: "Appointment already has an assigned mechanic" }
     }
 
     // Check if a quote already exists
@@ -65,37 +69,36 @@ export async function createOrUpdateQuote(
       return { success: false, error: "Failed to check for existing quote" }
     }
 
-    let result
     const now = new Date().toISOString()
+    let result
 
     if (existingQuote) {
       // Update existing quote
-      const { data, error } = await supabase
+      const { data: updatedQuote, error: updateError } = await supabase
         .from("mechanic_quotes")
         .update({
           price,
           eta,
           notes,
-          status: "pending", // Reset status on update
           updated_at: now,
         })
         .eq("id", existingQuote.id)
         .select()
         .single()
 
-      if (error) {
-        console.error("Error updating quote:", error)
+      if (updateError) {
+        console.error("Error updating quote:", updateError)
         return { success: false, error: "Failed to update quote" }
       }
 
-      result = { success: true, quote: data }
+      result = updatedQuote
     } else {
       // Create new quote
-      const { data, error } = await supabase
+      const { data: newQuote, error: insertError } = await supabase
         .from("mechanic_quotes")
         .insert({
-          mechanic_id: mechanicId,
           appointment_id: appointmentId,
+          mechanic_id: mechanicId,
           price,
           eta,
           notes,
@@ -106,28 +109,31 @@ export async function createOrUpdateQuote(
         .select()
         .single()
 
-      if (error) {
-        console.error("Error creating quote:", error)
+      if (insertError) {
+        console.error("Error creating quote:", insertError)
         return { success: false, error: "Failed to create quote" }
       }
 
-      // Update appointment status to quoted
-      const { error: appointmentError } = await supabase
-        .from("appointments")
-        .update({ status: "quoted" })
-        .eq("id", appointmentId)
-
-      if (appointmentError) {
-        console.error("Error updating appointment status:", appointmentError)
-        // Don't fail the whole operation if this fails
-      }
-
-      result = { success: true, quote: data }
+      result = newQuote
     }
 
-    return result
-  } catch (err) {
-    console.error("Exception in createOrUpdateQuote:", err)
+    // Update appointment status to quoted
+    const { error: updateAppointmentError } = await supabase
+      .from("appointments")
+      .update({
+        status: "quoted",
+        updated_at: now,
+      })
+      .eq("id", appointmentId)
+
+    if (updateAppointmentError) {
+      console.error("Error updating appointment status:", updateAppointmentError)
+      // Don't fail the whole operation if this fails
+    }
+
+    return { success: true, quote: result }
+  } catch (error) {
+    console.error("Error in createOrUpdateQuote:", error)
     return { success: false, error: "An unexpected error occurred" }
   }
 }
@@ -331,6 +337,87 @@ export async function selectQuoteForAppointment(
     // Rollback on error
     await supabase.rpc("rollback_transaction")
     console.error("Exception in selectQuoteForAppointment:", err)
+    return { success: false, error: "An unexpected error occurred" }
+  }
+}
+
+/**
+ * Accepts a quote and updates the appointment status
+ */
+export async function acceptQuote(
+  quoteId: string,
+  appointmentId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Start a transaction
+    const { data: quote, error: quoteError } = await supabase
+      .from("mechanic_quotes")
+      .select("mechanic_id, price")
+      .eq("id", quoteId)
+      .eq("appointment_id", appointmentId)
+      .single()
+
+    if (quoteError) {
+      return { success: false, error: "Quote not found" }
+    }
+
+    const now = new Date().toISOString()
+
+    // Update the quote status to accepted
+    const { error: updateQuoteError } = await supabase
+      .from("mechanic_quotes")
+      .update({
+        status: "accepted",
+        updated_at: now,
+      })
+      .eq("id", quoteId)
+
+    if (updateQuoteError) {
+      return { success: false, error: "Failed to update quote status" }
+    }
+
+    // Update the appointment status and assign the mechanic
+    const { error: updateAppointmentError } = await supabase
+      .from("appointments")
+      .update({
+        status: "confirmed",
+        mechanic_id: quote.mechanic_id,
+        selected_quote_id: quoteId,
+        price: quote.price,
+        updated_at: now,
+      })
+      .eq("id", appointmentId)
+
+    if (updateAppointmentError) {
+      // Try to revert the quote status if appointment update fails
+      await supabase
+        .from("mechanic_quotes")
+        .update({
+          status: "pending",
+          updated_at: now,
+        })
+        .eq("id", quoteId)
+      return { success: false, error: "Failed to update appointment status" }
+    }
+
+    // Reject all other quotes for this appointment
+    const { error: rejectQuotesError } = await supabase
+      .from("mechanic_quotes")
+      .update({
+        status: "rejected",
+        updated_at: now,
+      })
+      .eq("appointment_id", appointmentId)
+      .neq("id", quoteId)
+
+    if (rejectQuotesError) {
+      console.error("Error rejecting other quotes:", rejectQuotesError)
+      // Don't fail the whole operation if this fails
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error in acceptQuote:", error)
     return { success: false, error: "An unexpected error occurred" }
   }
 }

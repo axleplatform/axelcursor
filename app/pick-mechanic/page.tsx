@@ -10,7 +10,7 @@ import { StarIcon, Clock, Calendar, MapPin, Car, Wrench, AlertCircle, FileText, 
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
-import { getQuotesForAppointment, selectQuoteForAppointment, type MechanicQuote } from "@/lib/mechanic-quotes"
+import { getQuotesForAppointment, selectQuoteForAppointment, type MechanicQuote, acceptQuote } from "@/lib/mechanic-quotes"
 import { useToast } from "@/components/ui/use-toast"
 
 // Define types for our data
@@ -264,6 +264,44 @@ export default function PickMechanicPage() {
     }
   }
 
+  const handleAcceptQuote = async (quoteId: string) => {
+    if (!appointmentId) {
+      toast({
+        title: "Error",
+        description: "No appointment ID found",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsProcessing(true)
+
+    try {
+      const { success, error } = await acceptQuote(quoteId, appointmentId)
+
+      if (!success) {
+        throw new Error(error)
+      }
+
+      toast({
+        title: "Success",
+        description: "Quote accepted successfully!",
+      })
+
+      // Navigate to appointment confirmation page
+      router.push(`/appointment-confirmation?appointmentId=${appointmentId}`)
+    } catch (error) {
+      console.error("Error accepting quote:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to accept quote. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   const getSelectedMechanic = () => {
     if (!appointment?.mechanics || !selectedMechanic) return null
     return appointment.mechanics.find((mechanic: Mechanic) => mechanic.quote_id === selectedMechanic)
@@ -450,7 +488,7 @@ export default function PickMechanicPage() {
 
                             <div className="mt-4">
                               <button
-                                onClick={() => handleSelectMechanic(mechanic.quote_id)}
+                                onClick={() => handleAcceptQuote(mechanic.quote_id)}
                                 disabled={isProcessing || selectedMechanic === mechanic.quote_id}
                                 className={`w-full py-2 px-4 rounded-md transition-colors ${
                                   selectedMechanic === mechanic.quote_id

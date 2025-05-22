@@ -655,6 +655,8 @@ export default function BookAppointmentPage() {
           car_runs: formData.carRuns,
           selected_services: formData.selectedServices,
           selected_car_issues: formData.selectedCarIssues,
+          status: "pending",
+          notes: "Appointment details completed, ready for mechanic review"
         })
         .eq("id", appointmentId)
 

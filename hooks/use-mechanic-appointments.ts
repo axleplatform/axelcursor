@@ -4,15 +4,18 @@ import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
 
-export type AppointmentStatus = "pending" | "quoted" | "confirmed" | "in_progress" | "completed" | "cancelled"
+export type AppointmentStatus = "draft" | "pending" | "quoted" | "confirmed" | "in_progress" | "completed" | "cancelled"
 
 export interface Vehicle {
   id: string
+  appointment_id: string
+  vin: string | null
   year: number
   make: string
   model: string
-  vin: string | null
-  mileage: string | null
+  mileage: number | null
+  created_at: string
+  updated_at: string
 }
 
 export interface Appointment {
@@ -27,8 +30,13 @@ export interface Appointment {
   selected_services: string[] | null
   selected_car_issues: string[] | null
   notes: string | null
+  user_id: string | null
   mechanic_id: string | null
+  selected_quote_id: string | null
+  source: string | null
+  is_guest: boolean
   created_at: string
+  updated_at: string
   vehicles: Vehicle | null
 }
 
@@ -50,7 +58,7 @@ export function useMechanicAppointments(mechanicId: string) {
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
   const [availableAppointments, setAvailableAppointments] = useState<Appointment[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<Error | null>(null)
   const [mechanicColumn, setMechanicColumn] = useState<string | null>(null)
   const { toast } = useToast()
 
@@ -105,7 +113,7 @@ export function useMechanicAppointments(mechanicId: string) {
 
         if (quotesError && quotesError.code === "PGRST116") {
           // Table doesn't exist
-          setError("The mechanic quotes system is not set up. Please contact support.")
+          setError(new Error("The mechanic quotes system is not set up. Please contact support."))
           toast({
             title: "System Error",
             description: "The mechanic quotes system is not properly configured. Please contact support.",
@@ -117,15 +125,15 @@ export function useMechanicAppointments(mechanicId: string) {
         // Get IDs of appointments this mechanic has already quoted
         const quotedAppointmentIds = existingQuotes?.map((q: { appointment_id: string }) => q.appointment_id) || []
 
-        // Fetch upcoming appointments (accepted by this mechanic)
+        // Fetch upcoming appointments (confirmed or in progress)
         const { data: upcomingData, error: upcomingError } = await supabase
           .from("appointments")
           .select(`
             *,
             vehicles(*)
           `)
-          .in("status", ["confirmed", "in_progress"])
           .eq("mechanic_id", mechanicId)
+          .in("status", ["confirmed", "in_progress"])
           .order("appointment_date", { ascending: true })
 
         if (upcomingError) throw upcomingError
@@ -147,7 +155,7 @@ export function useMechanicAppointments(mechanicId: string) {
         setAvailableAppointments(availableData as Appointment[])
       } catch (err) {
         console.error("Error fetching appointments:", err)
-        setError("Failed to load appointments")
+        setError(err instanceof Error ? err : new Error("Failed to load appointments"))
         toast({
           title: "Error",
           description: "Failed to load appointments. Please try again.",
@@ -194,9 +202,85 @@ export function useMechanicAppointments(mechanicId: string) {
       )
       .subscribe()
 
+    // Subscribe to real-time updates
+    const subscription = supabase
+      .channel("mechanic-appointments")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "appointments",
+        },
+        (payload) => {
+          console.log("Real-time update received:", payload)
+          if (payload.eventType === "INSERT") {
+            const newAppointment = payload.new as Appointment
+            if (newAppointment.status === "pending") {
+              setAvailableAppointments((prev) => [...prev, newAppointment])
+            } else if (
+              newAppointment.mechanic_id === mechanicId &&
+              (newAppointment.status === "confirmed" || newAppointment.status === "in_progress")
+            ) {
+              setUpcomingAppointments((prev) => [...prev, newAppointment])
+            }
+          } else if (payload.eventType === "UPDATE") {
+            const updatedAppointment = payload.new as Appointment
+            const oldAppointment = payload.old as Appointment
+
+            // Handle status changes
+            if (updatedAppointment.status === "pending") {
+              setAvailableAppointments((prev) =>
+                prev.map((appointment) =>
+                  appointment.id === updatedAppointment.id ? updatedAppointment : appointment,
+                ),
+              )
+            } else if (
+              updatedAppointment.mechanic_id === mechanicId &&
+              (updatedAppointment.status === "confirmed" || updatedAppointment.status === "in_progress")
+            ) {
+              setUpcomingAppointments((prev) =>
+                prev.map((appointment) =>
+                  appointment.id === updatedAppointment.id ? updatedAppointment : appointment,
+                ),
+              )
+            }
+
+            // Remove from available if no longer pending
+            if (oldAppointment.status === "pending" && updatedAppointment.status !== "pending") {
+              setAvailableAppointments((prev) =>
+                prev.filter((appointment) => appointment.id !== updatedAppointment.id),
+              )
+            }
+
+            // Remove from upcoming if no longer confirmed/in_progress
+            if (
+              oldAppointment.mechanic_id === mechanicId &&
+              (oldAppointment.status === "confirmed" || oldAppointment.status === "in_progress") &&
+              updatedAppointment.status !== "confirmed" &&
+              updatedAppointment.status !== "in_progress"
+            ) {
+              setUpcomingAppointments((prev) =>
+                prev.filter((appointment) => appointment.id !== updatedAppointment.id),
+              )
+            }
+          } else if (payload.eventType === "DELETE") {
+            const deletedAppointment = payload.old as Appointment
+            setAvailableAppointments((prev) =>
+              prev.filter((appointment) => appointment.id !== deletedAppointment.id),
+            )
+            setUpcomingAppointments((prev) =>
+              prev.filter((appointment) => appointment.id !== deletedAppointment.id),
+            )
+          }
+        },
+      )
+      .subscribe()
+
     return () => {
       supabase.removeChannel(appointmentsSubscription)
       supabase.removeChannel(quotesSubscription)
+      subscription.unsubscribe()
     }
   }, [mechanicId, toast, mechanicColumn])
 
@@ -246,6 +330,9 @@ export function useMechanicAppointments(mechanicId: string) {
         mechanic_id: mechanicId,
         price,
         eta: "1-2 hours", // Default ETA
+        status: "pending",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
 
       if (quoteError) {
@@ -254,7 +341,10 @@ export function useMechanicAppointments(mechanicId: string) {
           // Update the existing quote instead
           const { error: updateError } = await supabase
             .from("mechanic_quotes")
-            .update({ price, updated_at: new Date().toISOString() })
+            .update({
+              price,
+              updated_at: new Date().toISOString(),
+            })
             .eq("appointment_id", appointmentId)
             .eq("mechanic_id", mechanicId)
 
@@ -264,8 +354,19 @@ export function useMechanicAppointments(mechanicId: string) {
         }
       }
 
+      // Update appointment status to quoted
+      const { error: updateAppointmentError } = await supabase
+        .from("appointments")
+        .update({
+          status: "quoted",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", appointmentId)
+
+      if (updateAppointmentError) throw updateAppointmentError
+
       // Remove from available appointments
-      setAvailableAppointments((prev: Appointment[]) => prev.filter((a) => a.id !== appointmentId))
+      setAvailableAppointments((prev) => prev.filter((a) => a.id !== appointmentId))
 
       return true
     } catch (err) {
@@ -327,12 +428,86 @@ export function useMechanicAppointments(mechanicId: string) {
 
   // Start an appointment
   const startAppointment = async (appointmentId: string): Promise<boolean> => {
-    return updateAppointmentStatus(appointmentId, "in_progress")
+    try {
+      const { error } = await supabase
+        .from("appointments")
+        .update({
+          status: "in_progress",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", appointmentId)
+        .eq("mechanic_id", mechanicId)
+
+      if (error) throw error
+
+      // Update local state
+      setUpcomingAppointments((prev) =>
+        prev.map((appointment) =>
+          appointment.id === appointmentId ? { ...appointment, status: "in_progress" } : appointment,
+        ),
+      )
+
+      return true
+    } catch (err) {
+      console.error("Error starting appointment:", err)
+      return false
+    }
+  }
+
+  // Complete an appointment
+  const completeAppointment = async (appointmentId: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from("appointments")
+        .update({
+          status: "completed",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", appointmentId)
+        .eq("mechanic_id", mechanicId)
+
+      if (error) throw error
+
+      // Update local state
+      setUpcomingAppointments((prev) =>
+        prev.map((appointment) =>
+          appointment.id === appointmentId ? { ...appointment, status: "completed" } : appointment,
+        ),
+      )
+
+      return true
+    } catch (err) {
+      console.error("Error completing appointment:", err)
+      return false
+    }
   }
 
   // Cancel an appointment
   const cancelAppointment = async (appointmentId: string): Promise<boolean> => {
-    return updateAppointmentStatus(appointmentId, "cancelled")
+    try {
+      const { error } = await supabase
+        .from("appointments")
+        .update({
+          status: "cancelled",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", appointmentId)
+        .eq("mechanic_id", mechanicId)
+
+      if (error) throw error
+
+      // Update local state
+      setUpcomingAppointments((prev) =>
+        prev.map((appointment) =>
+          appointment.id === appointmentId ? { ...appointment, status: "cancelled" } : appointment,
+        ),
+      )
+
+      return true
+    } catch (err) {
+      console.error("Error cancelling appointment:", err)
+      return false
+    }
   }
 
   return {
@@ -342,6 +517,7 @@ export function useMechanicAppointments(mechanicId: string) {
     error,
     mechanicColumn,
     startAppointment,
+    completeAppointment,
     cancelAppointment,
     acceptAppointment,
     denyAppointment,

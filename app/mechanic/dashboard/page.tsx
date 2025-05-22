@@ -1,8 +1,9 @@
 "use client"
 
+import React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Search, User, Loader2, Clock, MapPin, Check, X } from "lucide-react"
+import { Search, User, Loader2, Clock, MapPin, Check, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { UpcomingAppointments } from "@/components/upcoming-appointments"
 import { useToast } from "@/components/ui/use-toast"
@@ -17,6 +18,36 @@ import {
 import { formatDate } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 
+interface Appointment {
+  id: string
+  status: string
+  appointment_date: string
+  location: string
+  issue_description?: string
+  car_runs?: boolean
+  selected_services?: string[]
+  vehicles?: {
+    year: string
+    make: string
+    model: string
+    vin?: string
+    mileage?: number
+  }
+  quote?: {
+    id: string
+    price: number
+    created_at: string
+  }
+}
+
+interface UpcomingAppointmentsProps {
+  appointments: Appointment[]
+  isLoading: boolean
+  onStart: (id: string) => Promise<boolean>
+  onCancel: (id: string) => Promise<boolean>
+  onUpdatePrice: (id: string, price: number) => Promise<boolean>
+}
+
 export default function MechanicDashboard() {
   const { toast } = useToast()
   const router = useRouter()
@@ -25,13 +56,77 @@ export default function MechanicDashboard() {
   const [isAuthLoading, setIsAuthLoading] = useState(true)
 
   // Appointment states
-  const [availableAppointments, setAvailableAppointments] = useState<any[]>([])
-  const [quotedAppointments, setQuotedAppointments] = useState<any[]>([])
-  const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([])
+  const [availableAppointments, setAvailableAppointments] = useState<Appointment[]>([])
+  const [quotedAppointments, setQuotedAppointments] = useState<Appointment[]>([])
+  const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
   const [isAppointmentsLoading, setIsAppointmentsLoading] = useState(true)
   const [currentAvailableIndex, setCurrentAvailableIndex] = useState(0)
   const [priceInput, setPriceInput] = useState<string>("")
   const [isProcessing, setIsProcessing] = useState(false)
+
+  // Real-time subscription handlers
+  useEffect(() => {
+    if (!mechanicId) return
+
+    // Subscribe to appointment changes
+    const appointmentsSubscription = supabase
+      .channel('appointments_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'appointments',
+          filter: `mechanic_id=eq.${mechanicId}`,
+        },
+        async (payload) => {
+          console.log('Appointment change received:', payload)
+          
+          // Refresh appointments based on the change
+          const [available, quoted, upcoming] = await Promise.all([
+            getAvailableAppointmentsForMechanic(mechanicId),
+            getQuotedAppointmentsForMechanic(mechanicId),
+            supabase
+              .from("appointments")
+              .select("*, vehicles(*)")
+              .eq("mechanic_id", mechanicId)
+              .eq("status", "confirmed")
+              .gte("scheduled_time", new Date().toISOString())
+              .order("scheduled_time", { ascending: true }),
+          ])
+
+          setAvailableAppointments(available || [])
+          setQuotedAppointments(quoted || [])
+          setUpcomingAppointments(upcoming.data || [])
+        }
+      )
+      .subscribe()
+
+    // Subscribe to quote changes
+    const quotesSubscription = supabase
+      .channel('quotes_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'mechanic_quotes',
+          filter: `mechanic_id=eq.${mechanicId}`,
+        },
+        async () => {
+          console.log('Quote change received')
+          const quoted = await getQuotedAppointmentsForMechanic(mechanicId)
+          setQuotedAppointments(quoted || [])
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscriptions
+    return () => {
+      appointmentsSubscription.unsubscribe()
+      quotesSubscription.unsubscribe()
+    }
+  }, [mechanicId])
 
   // Check if user is authenticated and get mechanic ID
   useEffect(() => {
@@ -154,24 +249,50 @@ export default function MechanicDashboard() {
     }
 
     checkAuth()
+
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        router.push('/login')
+      } else if (event === 'TOKEN_REFRESHED') {
+        // Refresh appointments when token is refreshed
+        if (mechanicId) {
+          checkAuth()
+        }
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [router, toast])
 
   // Handle submitting a quote
-  const handleSubmitQuote = async (appointmentId: string) => {
+  const handleSubmitQuote = async (appointmentId: string): Promise<boolean> => {
     if (!mechanicId || !priceInput || Number.parseFloat(priceInput) <= 0) {
       toast({
         title: "Invalid price",
         description: "Please enter a valid price",
         variant: "destructive",
       })
-      return
+      return false
+    }
+
+    const price = Number.parseFloat(priceInput)
+    
+    // Validate price range
+    if (price < 10 || price > 10000) {
+      toast({
+        title: "Invalid price range",
+        description: "Price must be between $10 and $10,000",
+        variant: "destructive",
+      })
+      return false
     }
 
     setIsProcessing(true)
 
     try {
-      const price = Number.parseFloat(priceInput)
-
       const { success, error } = await createOrUpdateQuote(mechanicId, appointmentId, price)
 
       if (!success) {
@@ -179,7 +300,7 @@ export default function MechanicDashboard() {
       }
 
       // Update local state - remove from available appointments
-      setAvailableAppointments((prev) => prev.filter((a) => a.id !== appointmentId))
+      setAvailableAppointments((prev: Appointment[]) => prev.filter((a: Appointment) => a.id !== appointmentId))
 
       // Reset price input
       setPriceInput("")
@@ -192,45 +313,142 @@ export default function MechanicDashboard() {
 
       // Move to next available appointment if there are more
       if (availableAppointments.length > 1) {
-        setCurrentAvailableIndex((prev) => (prev >= availableAppointments.length - 1 ? 0 : prev + 1))
+        setCurrentAvailableIndex((prev: number) => (prev >= availableAppointments.length - 1 ? 0 : prev + 1))
       }
+
+      return true
     } catch (error: any) {
       console.error("Error submitting quote:", error)
       toast({
         title: "Error",
-        description: "Failed to submit quote. Please try again.",
+        description: error.message || "Failed to submit quote. Please try again.",
         variant: "destructive",
       })
+      return false
     } finally {
       setIsProcessing(false)
     }
   }
 
-  // Handle skipping an appointment
-  const handleSkipAppointment = (appointmentId: string) => {
-    // Just remove from local state - we don't need to update the backend
-    setAvailableAppointments((prev) => prev.filter((a) => a.id !== appointmentId))
+  // Handle starting an appointment
+  const handleStartAppointment = async (id: string): Promise<boolean> => {
+    try {
+      setIsProcessing(true)
+      const { error } = await supabase
+        .from("appointments")
+        .update({ status: "in_progress" })
+        .eq("id", id)
+        .eq("mechanic_id", mechanicId)
 
-    // Reset price input
-    setPriceInput("")
+      if (error) throw error
 
-    // Move to next available appointment if there are more
-    if (availableAppointments.length > 1) {
-      setCurrentAvailableIndex((prev) => (prev >= availableAppointments.length - 1 ? 0 : prev + 1))
+      // Update local state
+      setUpcomingAppointments((prev: Appointment[]) =>
+        prev.map((appointment: Appointment) => (appointment.id === id ? { ...appointment, status: "in_progress" } : appointment)),
+      )
+
+      toast({
+        title: "Success",
+        description: "Appointment started successfully.",
+      })
+
+      return true
+    } catch (error) {
+      console.error("Error starting appointment:", error)
+      toast({
+        title: "Error",
+        description: "Failed to start appointment.",
+        variant: "destructive",
+      })
+      return false
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  // Handle cancelling an appointment
+  const handleCancelAppointment = async (id: string): Promise<boolean> => {
+    try {
+      setIsProcessing(true)
+      const { error } = await supabase
+        .from("appointments")
+        .update({ status: "cancelled" })
+        .eq("id", id)
+        .eq("mechanic_id", mechanicId)
+
+      if (error) throw error
+
+      // Update local state
+      setUpcomingAppointments((prev: Appointment[]) =>
+        prev.map((appointment: Appointment) => (appointment.id === id ? { ...appointment, status: "cancelled" } : appointment)),
+      )
+
+      toast({
+        title: "Success",
+        description: "Appointment cancelled successfully.",
+      })
+
+      return true
+    } catch (error) {
+      console.error("Error cancelling appointment:", error)
+      toast({
+        title: "Error",
+        description: "Failed to cancel appointment.",
+        variant: "destructive",
+      })
+      return false
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  // Handle updating price
+  const handleUpdatePrice = async (id: string, price: number): Promise<boolean> => {
+    try {
+      setIsProcessing(true)
+      const { error } = await supabase
+        .from("appointments")
+        .update({ price })
+        .eq("id", id)
+        .eq("mechanic_id", mechanicId)
+
+      if (error) throw error
+
+      // Update local state
+      setUpcomingAppointments((prev: Appointment[]) =>
+        prev.map((appointment: Appointment) => (appointment.id === id ? { ...appointment, price } : appointment)),
+      )
+
+      toast({
+        title: "Success",
+        description: "Price updated successfully.",
+      })
+
+      return true
+    } catch (error) {
+      console.error("Error updating price:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update price.",
+        variant: "destructive",
+      })
+      return false
+    } finally {
+      setIsProcessing(false)
     }
   }
 
   // Navigate through available appointments
   const goToNextAvailable = () => {
     if (availableAppointments.length > 1) {
-      setCurrentAvailableIndex((prev) => (prev + 1) % availableAppointments.length)
+      setCurrentAvailableIndex((prev: number) => (prev + 1) % availableAppointments.length)
       setPriceInput("")
     }
   }
 
   const goToPrevAvailable = () => {
     if (availableAppointments.length > 1) {
-      setCurrentAvailableIndex((prev) => (prev === 0 ? availableAppointments.length - 1 : prev - 1))
+      setCurrentAvailableIndex((prev: number) => (prev === 0 ? availableAppointments.length - 1 : prev - 1))
       setPriceInput("")
     }
   }
@@ -288,9 +506,9 @@ export default function MechanicDashboard() {
           <UpcomingAppointments
             appointments={upcomingAppointments}
             isLoading={isAppointmentsLoading}
-            onStart={() => {}}
-            onCancel={() => {}}
-            onUpdatePrice={() => {}}
+            onStart={handleStartAppointment}
+            onCancel={handleCancelAppointment}
+            onUpdatePrice={handleUpdatePrice}
           />
 
           {/* Column 2: Schedule */}
@@ -317,172 +535,131 @@ export default function MechanicDashboard() {
                 {/* Navigation buttons for multiple appointments */}
                 {availableAppointments.length > 1 && (
                   <>
-                    <button
-                      onClick={goToPrevAvailable}
-                      className="absolute top-1/2 -left-4 transform -translate-y-1/2 z-10 bg-white/20 hover:bg-white/30 rounded-full p-1"
-                      aria-label="Previous appointment"
-                      disabled={isProcessing}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-5 w-5"
+                    <div className="absolute top-1/2 -left-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
+                      <button
+                        onClick={goToPrevAvailable}
+                        className="bg-white/20 hover:bg-white/30 rounded-full p-1"
+                        aria-label="Previous appointment"
+                        disabled={isProcessing}
                       >
-                        <path d="m15 18-6-6 6-6" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={goToNextAvailable}
-                      className="absolute top-1/2 -right-4 transform -translate-y-1/2 z-10 bg-white/20 hover:bg-white/30 rounded-full p-1"
-                      aria-label="Next appointment"
-                      disabled={isProcessing}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-5 w-5"
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                    </div>
+                    <div className="absolute top-1/2 -right-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
+                      <button
+                        onClick={goToNextAvailable}
+                        className="bg-white/20 hover:bg-white/30 rounded-full p-1"
+                        aria-label="Next appointment"
+                        disabled={isProcessing}
                       >
-                        <path d="m9 18 6-6-6-6" />
-                      </svg>
-                    </button>
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                    </div>
                   </>
                 )}
 
                 {/* Current appointment details */}
                 {availableAppointments[currentAvailableIndex] && (
-                  <>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-xs font-medium text-gray-900">
-                          {currentAvailableIndex + 1}
-                        </div>
-                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
-                          <MapPin className="h-4 w-4 text-gray-700" />
-                        </div>
-                        <span className="text-white line-clamp-1">
-                          {availableAppointments[currentAvailableIndex].location}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => handleSkipAppointment(availableAppointments[currentAvailableIndex].id)}
-                        className="text-gray-200 hover:text-white"
-                        aria-label="Skip appointment"
-                        disabled={isProcessing}
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
+                  <div className="bg-white/10 rounded-lg p-6">
+                    {/* Vehicle Information */}
+                    <div className="mb-6">
+                      <h3 className="text-lg font-medium mb-2">
+                        {availableAppointments[currentAvailableIndex].vehicles?.year}{" "}
+                        {availableAppointments[currentAvailableIndex].vehicles?.make}{" "}
+                        {availableAppointments[currentAvailableIndex].vehicles?.model}
+                      </h3>
+                      {availableAppointments[currentAvailableIndex].vehicles?.vin && (
+                        <p className="text-sm text-white/70">
+                          VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}
+                        </p>
+                      )}
+                      {availableAppointments[currentAvailableIndex].vehicles?.mileage && (
+                        <p className="text-sm text-white/70">
+                          Mileage: {availableAppointments[currentAvailableIndex].vehicles.mileage} miles
+                        </p>
+                      )}
                     </div>
 
-                    <div className="mb-4 flex justify-center">
-                      <div className="flex items-center border border-gray-300 rounded-md px-3 py-2 w-fit bg-white">
-                        <span className="text-2xl font-bold mr-2 text-gray-900">$</span>
+                    {/* Location and Date */}
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        <span className="text-sm">{availableAppointments[currentAvailableIndex].location}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        <span className="text-sm">{formatDate(availableAppointments[currentAvailableIndex].appointment_date)}</span>
+                      </div>
+                    </div>
+
+                    {/* Issue Description */}
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium mb-2">Issue Description</h4>
+                      <p className="text-sm text-white/70 bg-white/5 p-3 rounded-md">
+                        {availableAppointments[currentAvailableIndex].issue_description || "No description provided"}
+                      </p>
+                    </div>
+
+                    {/* Selected Services */}
+                    {availableAppointments[currentAvailableIndex].selected_services && (
+                      <div className="mb-6">
+                        <h4 className="text-sm font-medium mb-2">Selected Services</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {availableAppointments[currentAvailableIndex].selected_services.map((service: string, index: number) => (
+                            <span
+                              key={index}
+                              className="bg-white/20 text-xs px-3 py-1 rounded-full"
+                            >
+                              {service}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Car Status */}
+                    {availableAppointments[currentAvailableIndex].car_runs !== null && (
+                      <div className="mb-6">
+                        <h4 className="text-sm font-medium mb-2">Car Status</h4>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${availableAppointments[currentAvailableIndex].car_runs ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                          <span className="text-sm">
+                            {availableAppointments[currentAvailableIndex].car_runs
+                              ? "Car is running"
+                              : "Car is not running"}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quote Input */}
+                    <div className="mb-6">
+                      <label htmlFor="price" className="block text-sm font-medium mb-2">
+                        Your Quote (USD)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/70">$</span>
                         <input
                           type="number"
+                          id="price"
                           value={priceInput}
                           onChange={(e) => setPriceInput(e.target.value)}
-                          placeholder="Enter price"
-                          className="border-none outline-none text-2xl font-bold bg-transparent w-32 text-gray-900"
+                          placeholder="Enter your price"
+                          className="w-full bg-white/10 border border-white/20 rounded-md pl-8 pr-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
                           disabled={isProcessing}
+                          min="10"
+                          max="10000"
+                          step="0.01"
                         />
                       </div>
                     </div>
 
-                    <div className="text-white mb-4 text-center">
-                      {formatDate(availableAppointments[currentAvailableIndex].appointment_date)}
-                    </div>
-
-                    <div className="bg-[#e6eeec] p-4 rounded-md mb-4 text-gray-900">
-                      <div className="flex items-center justify-center mb-3">
-                        <span className="mr-2">Does car run?</span>
-                        <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                          {availableAppointments[currentAvailableIndex].car_runs ? (
-                            <Check className="h-3 w-3 text-white" />
-                          ) : (
-                            <X className="h-3 w-3 text-white" />
-                          )}
-                        </div>
-                        <span className="ml-1">
-                          {availableAppointments[currentAvailableIndex].car_runs ? "Yes" : "No"}
-                        </span>
-                      </div>
-
-                      {availableAppointments[currentAvailableIndex].selected_services &&
-                        availableAppointments[currentAvailableIndex].selected_services.length > 0 && (
-                          <div className="mb-3">
-                            <div className="font-semibold mb-1">Recommended Services:</div>
-                            <ul className="list-disc pl-5 space-y-1">
-                              {availableAppointments[currentAvailableIndex].selected_services.map(
-                                (service: string, index: number) => (
-                                  <li key={index}>{service}</li>
-                                ),
-                              )}
-                            </ul>
-                          </div>
-                        )}
-
-                      {availableAppointments[currentAvailableIndex].selected_car_issues &&
-                        availableAppointments[currentAvailableIndex].selected_car_issues.length > 0 && (
-                          <div className="mb-3">
-                            <div className="font-semibold mb-1">Reported Issues:</div>
-                            <ul className="list-disc pl-5 space-y-1">
-                              {availableAppointments[currentAvailableIndex].selected_car_issues.map(
-                                (issue: string, index: number) => (
-                                  <li key={index}>{issue}</li>
-                                ),
-                              )}
-                            </ul>
-                          </div>
-                        )}
-
-                      {availableAppointments[currentAvailableIndex].issue_description && (
-                        <div>
-                          <div className="font-semibold mb-1">Customer Description:</div>
-                          <p className="italic text-gray-700">
-                            "{availableAppointments[currentAvailableIndex].issue_description}"
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {availableAppointments[currentAvailableIndex].vehicles && (
-                      <div className="text-center mb-6">
-                        <div className="font-semibold text-lg text-white">
-                          {availableAppointments[currentAvailableIndex].vehicles.year}{" "}
-                          {availableAppointments[currentAvailableIndex].vehicles.make}{" "}
-                          {availableAppointments[currentAvailableIndex].vehicles.model}
-                        </div>
-                        {availableAppointments[currentAvailableIndex].vehicles.vin && (
-                          <div className="text-gray-200 text-sm">
-                            VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}
-                          </div>
-                        )}
-                        {availableAppointments[currentAvailableIndex].vehicles.mileage && (
-                          <div className="text-gray-200 text-sm">
-                            Mileage: {availableAppointments[currentAvailableIndex].vehicles.mileage} miles
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex gap-4">
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
                       <button
                         onClick={() => handleSubmitQuote(availableAppointments[currentAvailableIndex].id)}
                         disabled={isProcessing || !priceInput || Number.parseFloat(priceInput) <= 0}
-                        className="bg-white text-[#294a46] font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-gray-100 hover:shadow-md active:scale-[0.99] flex-1 disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="flex-1 bg-white text-[#294a46] font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-gray-100 hover:shadow-md active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed"
                       >
                         {isProcessing ? (
                           <span className="flex items-center justify-center">
@@ -494,7 +671,7 @@ export default function MechanicDashboard() {
                         )}
                       </button>
                       <button
-                        onClick={() => handleSkipAppointment(availableAppointments[currentAvailableIndex].id)}
+                        onClick={() => handleCancelAppointment(availableAppointments[currentAvailableIndex].id)}
                         disabled={isProcessing}
                         className="border border-white text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99] flex-1 disabled:opacity-70 disabled:cursor-not-allowed"
                       >
@@ -502,17 +679,18 @@ export default function MechanicDashboard() {
                       </button>
                     </div>
 
+                    {/* Pagination Dots */}
                     {availableAppointments.length > 1 && (
                       <div className="flex justify-center mt-4 gap-1">
-                        {availableAppointments.map((_: any, index: number) => (
+                        {availableAppointments.map((_: Appointment, index: number) => (
                           <div
                             key={index}
-                            className={`w-2 h-2 rounded-full ${index === currentAvailableIndex ? "bg-white" : "bg-gray-300"}`}
+                            className={`w-2 h-2 rounded-full ${index === currentAvailableIndex ? "bg-white" : "bg-white/30"}`}
                           ></div>
                         ))}
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             )}
@@ -535,7 +713,7 @@ export default function MechanicDashboard() {
                       </div>
                     </div>
                     <div className="bg-[#294a46] text-white px-3 py-1 rounded-md">
-                      <p className="text-lg font-bold">${appointment.quote.price}</p>
+                      <p className="text-lg font-bold">${appointment.quote?.price}</p>
                     </div>
                   </div>
 
@@ -553,7 +731,7 @@ export default function MechanicDashboard() {
                   <div className="text-sm text-gray-600">
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 mr-1" />
-                      <span>Quote submitted: {new Date(appointment.quote.created_at).toLocaleDateString()}</span>
+                      <span>Quote submitted: {new Date(appointment.quote?.created_at || "").toLocaleDateString()}</span>
                     </div>
                     <div className="mt-1 text-xs bg-yellow-50 p-2 rounded border border-yellow-100">
                       Waiting for customer selection

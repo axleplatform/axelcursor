@@ -8,50 +8,97 @@ import { formatDate } from "@/lib/utils"
 interface UpcomingAppointmentCardProps {
   appointment: Appointment
   onStart: (id: string) => Promise<boolean>
+  onComplete: (id: string) => Promise<boolean>
   onCancel: (id: string) => Promise<boolean>
   onUpdatePrice: (id: string, price: number) => Promise<boolean>
   currentIndex: number
   totalAppointments: number
 }
 
-export function UpcomingAppointmentCard({
+export default function UpcomingAppointmentCard({
   appointment,
   onStart,
+  onComplete,
   onCancel,
   onUpdatePrice,
   currentIndex,
   totalAppointments,
 }: UpcomingAppointmentCardProps) {
   const [isProcessing, setIsProcessing] = useState(false)
-  const [price, setPrice] = useState(appointment.price || 0)
   const [isEditingPrice, setIsEditingPrice] = useState(false)
+  const [price, setPrice] = useState(appointment.price || 0)
 
   const handleStart = async () => {
     setIsProcessing(true)
-    await onStart(appointment.id)
+    const success = await onStart(appointment.id)
     setIsProcessing(false)
+    return success
+  }
+
+  const handleComplete = async () => {
+    setIsProcessing(true)
+    const success = await onComplete(appointment.id)
+    setIsProcessing(false)
+    return success
   }
 
   const handleCancel = async () => {
     setIsProcessing(true)
-    await onCancel(appointment.id)
+    const success = await onCancel(appointment.id)
     setIsProcessing(false)
+    return success
   }
 
   const handlePriceUpdate = async () => {
-    if (price > 0) {
-      await onUpdatePrice(appointment.id, price)
+    setIsProcessing(true)
+    const success = await onUpdatePrice(appointment.id, price)
+    setIsProcessing(false)
+    if (success) {
       setIsEditingPrice(false)
+    }
+    return success
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "bg-blue-100 text-blue-800"
+      case "in_progress":
+        return "bg-yellow-100 text-yellow-800"
+      case "completed":
+        return "bg-green-100 text-green-800"
+      case "cancelled":
+        return "bg-red-100 text-red-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "Confirmed"
+      case "in_progress":
+        return "In Progress"
+      case "completed":
+        return "Completed"
+      case "cancelled":
+        return "Cancelled"
+      default:
+        return status
     }
   }
 
   return (
-    <div className="relative">
-      <div className="flex items-center gap-2 text-gray-600 mb-4">
-        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
-          <MapPin className="h-4 w-4" />
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <MapPin className="h-5 w-5 text-gray-500" />
+          <span className="text-gray-700">{appointment.location}</span>
         </div>
-        <span>{appointment.location}</span>
+        <span className={`px-2 py-1 rounded-full text-sm font-medium ${getStatusColor(appointment.status)}`}>
+          {getStatusText(appointment.status)}
+        </span>
       </div>
 
       <div className="flex justify-center w-full mb-4">
@@ -135,40 +182,56 @@ export function UpcomingAppointmentCard({
       )}
 
       <div className="flex gap-4">
-        <button
-          onClick={handleStart}
-          disabled={isProcessing || appointment.status === "in_progress"}
-          className={`bg-[#294a46] hover:bg-[#1e3632] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99] flex-1 ${
-            (isProcessing || appointment.status === "in_progress") && "opacity-70 cursor-not-allowed"
-          }`}
-        >
-          {isProcessing ? (
-            <span className="flex items-center justify-center">
-              <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></span>
-              Processing...
-            </span>
-          ) : appointment.status === "in_progress" ? (
-            "In Progress"
-          ) : (
-            "Start"
-          )}
-        </button>
-        <button
-          onClick={handleCancel}
-          disabled={isProcessing}
-          className={`bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99] flex-1 ${
-            isProcessing && "opacity-70 cursor-not-allowed"
-          }`}
-        >
-          {isProcessing ? (
-            <span className="flex items-center justify-center">
-              <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-gray-700 rounded-full mr-2"></span>
-              Processing...
-            </span>
-          ) : (
-            "Cancel"
-          )}
-        </button>
+        {appointment.status === "confirmed" && (
+          <button
+            onClick={handleStart}
+            disabled={isProcessing}
+            className="bg-[#294a46] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99] flex-1 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isProcessing ? (
+              <span className="flex items-center justify-center">
+                <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></span>
+                Processing...
+              </span>
+            ) : (
+              "Start"
+            )}
+          </button>
+        )}
+
+        {appointment.status === "in_progress" && (
+          <button
+            onClick={handleComplete}
+            disabled={isProcessing}
+            className="bg-green-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99] flex-1 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isProcessing ? (
+              <span className="flex items-center justify-center">
+                <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></span>
+                Processing...
+              </span>
+            ) : (
+              "Complete"
+            )}
+          </button>
+        )}
+
+        {appointment.status !== "completed" && appointment.status !== "cancelled" && (
+          <button
+            onClick={handleCancel}
+            disabled={isProcessing}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99] flex-1 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isProcessing ? (
+              <span className="flex items-center justify-center">
+                <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-gray-700 rounded-full mr-2"></span>
+                Processing...
+              </span>
+            ) : (
+              "Cancel"
+            )}
+          </button>
+        )}
       </div>
 
       <div className="flex justify-center mt-4 gap-1">

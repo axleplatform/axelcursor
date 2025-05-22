@@ -2,7 +2,7 @@
 ALTER TABLE appointments 
   DROP CONSTRAINT IF EXISTS appointments_status_check,
   ADD CONSTRAINT appointments_status_check 
-  CHECK (status IN ('pending', 'quoted', 'confirmed', 'in_progress', 'completed', 'cancelled'));
+  CHECK (status IN ('draft', 'pending', 'quoted', 'confirmed', 'in_progress', 'completed', 'cancelled'));
 
 -- Standardize mechanic quote statuses
 ALTER TABLE mechanic_quotes 

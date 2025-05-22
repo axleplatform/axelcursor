@@ -1,0 +1,23 @@
+# A string used to distinguish different environments (e.g. local, staging, prod)
+environment = "development"
+
+# The database connection string
+db_url = "postgresql://postgres:postgres@localhost:54322/postgres"
+
+# The schema to use for migrations
+schema = "public"
+
+# The directory containing migration files
+migrations_dir = "migrations"
+
+# The table to use for tracking migrations
+migrations_table = "schema_migrations"
+
+# Whether to automatically apply migrations on startup
+auto_apply = true
+
+# Whether to allow destructive migrations
+allow_destructive = false
+
+# The maximum number of migrations to apply at once
+max_migrations = 100 

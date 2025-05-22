@@ -3,15 +3,18 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 
-export type AppointmentStatus = "pending" | "accepted" | "in_progress" | "completed" | "cancelled"
+export type AppointmentStatus = "pending" | "quoted" | "confirmed" | "in_progress" | "completed" | "cancelled"
 
 export interface Vehicle {
   id: string
+  appointment_id: string
+  vin: string | null
   year: number
   make: string
   model: string
-  vin: string | null
-  mileage: string | null
+  mileage: number | null
+  created_at: string
+  updated_at: string
 }
 
 export interface Appointment {
@@ -27,24 +30,24 @@ export interface Appointment {
   selected_car_issues: string[] | null
   notes: string | null
   user_id: string | null
+  mechanic_id: string | null
+  selected_quote_id: string | null
+  source: string | null
+  is_guest: boolean
   created_at: string
+  updated_at: string
   vehicles: Vehicle | null
 }
 
 export function useAppointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<Error | null>(null)
 
-  // Fetch appointments
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        setIsLoading(true)
-        setError(null)
-
-        // Fetch all appointments with vehicle data
-        const { data, error: fetchError } = await supabase
+        const { data, error } = await supabase
           .from("appointments")
           .select(`
             *,
@@ -52,12 +55,12 @@ export function useAppointments() {
           `)
           .order("appointment_date", { ascending: true })
 
-        if (fetchError) throw fetchError
+        if (error) throw error
 
-        setAppointments(data as Appointment[])
+        setAppointments(data || [])
       } catch (err) {
         console.error("Error fetching appointments:", err)
-        setError("Failed to load appointments")
+        setError(err instanceof Error ? err : new Error("Failed to fetch appointments"))
       } finally {
         setIsLoading(false)
       }
@@ -65,9 +68,9 @@ export function useAppointments() {
 
     fetchAppointments()
 
-    // Set up real-time subscription
-    const appointmentsSubscription = supabase
-      .channel("appointments-changes")
+    // Subscribe to real-time updates
+    const subscription = supabase
+      .channel("appointments")
       .on(
         "postgres_changes",
         {
@@ -76,27 +79,45 @@ export function useAppointments() {
           table: "appointments",
         },
         (payload) => {
-          // Refresh appointments when changes occur
-          fetchAppointments()
+          console.log("Real-time update received:", payload)
+          if (payload.eventType === "INSERT") {
+            setAppointments((prev) => [...prev, payload.new as Appointment])
+          } else if (payload.eventType === "UPDATE") {
+            setAppointments((prev) =>
+              prev.map((appointment) =>
+                appointment.id === payload.new.id ? (payload.new as Appointment) : appointment,
+              ),
+            )
+          } else if (payload.eventType === "DELETE") {
+            setAppointments((prev) => prev.filter((appointment) => appointment.id !== payload.old.id))
+          }
         },
       )
       .subscribe()
 
     return () => {
-      supabase.removeChannel(appointmentsSubscription)
+      subscription.unsubscribe()
     }
   }, [])
 
   // Update appointment status
   const updateAppointmentStatus = async (appointmentId: string, status: AppointmentStatus) => {
     try {
-      const { error } = await supabase.from("appointments").update({ status }).eq("id", appointmentId)
+      const { error } = await supabase
+        .from("appointments")
+        .update({
+          status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", appointmentId)
 
       if (error) throw error
 
       // Update local state
       setAppointments((prev) =>
-        prev.map((appointment) => (appointment.id === appointmentId ? { ...appointment, status } : appointment)),
+        prev.map((appointment) =>
+          appointment.id === appointmentId ? { ...appointment, status } : appointment,
+        ),
       )
 
       return true
@@ -109,13 +130,21 @@ export function useAppointments() {
   // Update appointment price
   const updateAppointmentPrice = async (appointmentId: string, price: number) => {
     try {
-      const { error } = await supabase.from("appointments").update({ price }).eq("id", appointmentId)
+      const { error } = await supabase
+        .from("appointments")
+        .update({
+          price,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", appointmentId)
 
       if (error) throw error
 
       // Update local state
       setAppointments((prev) =>
-        prev.map((appointment) => (appointment.id === appointmentId ? { ...appointment, price } : appointment)),
+        prev.map((appointment) =>
+          appointment.id === appointmentId ? { ...appointment, price } : appointment,
+        ),
       )
 
       return true
@@ -130,6 +159,11 @@ export function useAppointments() {
     return updateAppointmentStatus(appointmentId, "in_progress")
   }
 
+  // Complete an appointment
+  const completeAppointment = async (appointmentId: string) => {
+    return updateAppointmentStatus(appointmentId, "completed")
+  }
+
   // Cancel an appointment
   const cancelAppointment = async (appointmentId: string) => {
     return updateAppointmentStatus(appointmentId, "cancelled")
@@ -140,6 +174,7 @@ export function useAppointments() {
     isLoading,
     error,
     startAppointment,
+    completeAppointment,
     cancelAppointment,
     updateAppointmentPrice,
   }
