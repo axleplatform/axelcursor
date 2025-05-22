@@ -41,14 +41,12 @@ export async function middleware(request: NextRequest) {
     console.log("Session found, checking mechanic profile")
     const { data: mechanicProfile, error: profileError } = await supabase
       .from("mechanic_profiles")
-      .select("onboarding_completed, onboarding_step, id")
+      .select("id")
       .eq("user_id", session.user.id)
       .single()
 
     console.log("Mechanic profile check in middleware:", {
       hasProfile: !!mechanicProfile,
-      onboarding_completed: mechanicProfile?.onboarding_completed,
-      onboarding_step: mechanicProfile?.onboarding_step,
       error: profileError
     })
 
@@ -64,20 +62,15 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(redirectUrl)
       }
 
-      // If onboarding is not completed, redirect to appropriate step
-      if (!mechanicProfile.onboarding_completed) {
-        console.log("Onboarding not completed, checking current step")
-        const step = mechanicProfile.onboarding_step || "personal_info"
-        const currentStep = request.nextUrl.pathname.split("-").pop()
-        
-        // If trying to access a step that's not the current one, redirect to current step
-        if (currentStep !== getStepNumber(step)) {
-          console.log("Redirecting to correct onboarding step:", step)
-          return NextResponse.redirect(new URL(`/onboarding-mechanic-${getStepNumber(step)}`, request.url))
-        }
-      } else if (request.nextUrl.pathname.startsWith("/onboarding-mechanic-")) {
-        // If onboarding is completed but trying to access onboarding, redirect to dashboard
-        console.log("Onboarding completed, redirecting to dashboard")
+      // Allow access to dashboard regardless of onboarding status
+      if (request.nextUrl.pathname.startsWith("/mechanic/dashboard")) {
+        console.log("Allowing access to mechanic dashboard")
+        return res
+      }
+
+      // If trying to access onboarding, redirect to dashboard
+      if (request.nextUrl.pathname.startsWith("/onboarding-mechanic-")) {
+        console.log("Redirecting to dashboard")
         return NextResponse.redirect(new URL("/mechanic/dashboard", request.url))
       }
     }

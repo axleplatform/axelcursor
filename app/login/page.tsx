@@ -131,17 +131,12 @@ export default function LoginPage() {
       console.log("Checking mechanic profile for user:", data.user.id)
       const { data: mechanicProfile, error: profileError } = await supabase
         .from("mechanic_profiles")
-        .select("onboarding_completed, onboarding_step, id, first_name")
+        .select("id")
         .eq("user_id", data.user.id)
         .single()
 
       console.log("Mechanic profile check result:", { 
-        profile: mechanicProfile ? {
-          id: mechanicProfile.id,
-          onboarding_completed: mechanicProfile.onboarding_completed,
-          onboarding_step: mechanicProfile.onboarding_step,
-          first_name: mechanicProfile.first_name
-        } : null,
+        hasProfile: !!mechanicProfile,
         error: profileError 
       })
 
@@ -173,23 +168,10 @@ export default function LoginPage() {
         throw new Error("Account type not recognized. Please contact support.")
       }
 
-      // User is a mechanic, handle redirection
-      console.log("Mechanic profile found:", {
-        onboarding_completed: mechanicProfile.onboarding_completed,
-        onboarding_step: mechanicProfile.onboarding_step,
-        first_name: mechanicProfile.first_name
-      })
+      // User is a mechanic, redirect directly to dashboard
+      console.log("Mechanic profile found, redirecting to dashboard...")
+      router.push("/mechanic/dashboard")
       
-      if (mechanicProfile.onboarding_completed) {
-        console.log("Onboarding completed, redirecting to mechanic dashboard...")
-        // Use router.push for client-side navigation
-        router.push("/mechanic/dashboard")
-      } else {
-        const step = mechanicProfile.onboarding_step || "personal_info"
-        console.log("Onboarding not completed, redirecting to step:", step)
-        // Use router.push for client-side navigation
-        router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
-      }
     } catch (error: any) {
       console.error("Login error:", error)
       setError(error.message || "An error occurred during login. Please try again.")
