@@ -34,45 +34,6 @@ export async function middleware(request: NextRequest) {
         redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname)
         return NextResponse.redirect(redirectUrl)
       }
-      return res
-    }
-
-    // If there is a session, check if it's a mechanic
-    console.log("Session found, checking mechanic profile")
-    const { data: mechanicProfile, error: profileError } = await supabase
-      .from("mechanic_profiles")
-      .select("id")
-      .eq("user_id", session.user.id)
-      .single()
-
-    console.log("Mechanic profile check in middleware:", {
-      hasProfile: !!mechanicProfile,
-      error: profileError
-    })
-
-    // If accessing mechanic dashboard or onboarding
-    if (request.nextUrl.pathname.startsWith("/mechanic/dashboard") ||
-        request.nextUrl.pathname.startsWith("/onboarding-mechanic-")) {
-      
-      // If no mechanic profile, redirect to login
-      if (!mechanicProfile) {
-        console.log("No mechanic profile found, redirecting to login")
-        const redirectUrl = new URL("/login", request.url)
-        redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname)
-        return NextResponse.redirect(redirectUrl)
-      }
-
-      // Allow access to dashboard regardless of onboarding status
-      if (request.nextUrl.pathname.startsWith("/mechanic/dashboard")) {
-        console.log("Allowing access to mechanic dashboard")
-        return res
-      }
-
-      // If trying to access onboarding, redirect to dashboard
-      if (request.nextUrl.pathname.startsWith("/onboarding-mechanic-")) {
-        console.log("Redirecting to dashboard")
-        return NextResponse.redirect(new URL("/mechanic/dashboard", request.url))
-      }
     }
 
     // If we get here, allow the request to continue

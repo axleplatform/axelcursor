@@ -127,49 +127,8 @@ export default function LoginPage() {
         throw new Error("No user found in response")
       }
 
-      // Check if the user is a mechanic
-      console.log("Checking mechanic profile for user:", data.user.id)
-      const { data: mechanicProfile, error: profileError } = await supabase
-        .from("mechanic_profiles")
-        .select("id")
-        .eq("user_id", data.user.id)
-        .single()
-
-      console.log("Mechanic profile check result:", { 
-        hasProfile: !!mechanicProfile,
-        error: profileError 
-      })
-
-      if (profileError && profileError.code !== "PGRST116") {
-        console.error("Error checking mechanic profile:", profileError)
-        throw new Error(`Error verifying account type: ${profileError.message}`)
-      }
-
-      if (!mechanicProfile) {
-        // Check if this is a customer account
-        console.log("Checking customer profile for user:", data.user.id)
-        const { data: customerProfile, error: customerError } = await supabase
-          .from("customer_profiles")
-          .select("id")
-          .eq("user_id", data.user.id)
-          .single()
-
-        console.log("Customer profile check result:", { 
-          profile: customerProfile,
-          error: customerError 
-        })
-
-        if (customerProfile) {
-          console.log("Redirecting to customer dashboard...")
-          router.push("/dashboard")
-          return
-        }
-
-        throw new Error("Account type not recognized. Please contact support.")
-      }
-
-      // User is a mechanic, redirect directly to dashboard
-      console.log("Mechanic profile found, redirecting to dashboard...")
+      // User is authenticated, redirect to mechanic dashboard
+      console.log("User authenticated, redirecting to dashboard...")
       router.push("/mechanic/dashboard")
       
     } catch (error: any) {
