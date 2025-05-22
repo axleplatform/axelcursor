@@ -111,6 +111,17 @@ export async function createOrUpdateQuote(
         return { success: false, error: "Failed to create quote" }
       }
 
+      // Update appointment status to quoted
+      const { error: appointmentError } = await supabase
+        .from("appointments")
+        .update({ status: "quoted" })
+        .eq("id", appointmentId)
+
+      if (appointmentError) {
+        console.error("Error updating appointment status:", appointmentError)
+        // Don't fail the whole operation if this fails
+      }
+
       result = { success: true, quote: data }
     }
 
@@ -280,7 +291,7 @@ export async function selectQuoteForAppointment(
       .update({
         selected_quote_id: quoteId,
         mechanic_id: quote.mechanic_id,
-        status: "pending_payment",
+        status: "confirmed",
         price: quote.price,
         updated_at: new Date().toISOString(),
       })

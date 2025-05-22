@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
 
-export type AppointmentStatus = "pending" | "accepted" | "in_progress" | "completed" | "cancelled" | "pending_payment"
+export type AppointmentStatus = "pending" | "quoted" | "confirmed" | "in_progress" | "completed" | "cancelled"
 
 export interface Vehicle {
   id: string
@@ -27,17 +27,13 @@ export interface Appointment {
   selected_services: string[] | null
   selected_car_issues: string[] | null
   notes: string | null
-  // We'll make this flexible to handle different column names
-  mechanic_id?: string | null
-  provider_id?: string | null
-  technician_id?: string | null
-  assigned_to?: string | null
+  mechanic_id: string | null
   created_at: string
   vehicles: Vehicle | null
 }
 
 // This function helps us determine which column is used for mechanic assignment
-function getMechanicColumn(appointment: any): string | null {
+function getMechanicColumn(appointment: Record<string, unknown>): string | null {
   // Check for common column names
   const possibleColumns = ["mechanic_id", "provider_id", "technician_id", "assigned_to"]
 
@@ -119,7 +115,7 @@ export function useMechanicAppointments(mechanicId: string) {
         }
 
         // Get IDs of appointments this mechanic has already quoted
-        const quotedAppointmentIds = existingQuotes?.map((q) => q.appointment_id) || []
+        const quotedAppointmentIds = existingQuotes?.map((q: { appointment_id: string }) => q.appointment_id) || []
 
         // Fetch upcoming appointments (accepted by this mechanic)
         const { data: upcomingData, error: upcomingError } = await supabase
@@ -128,8 +124,8 @@ export function useMechanicAppointments(mechanicId: string) {
             *,
             vehicles(*)
           `)
-          .in("status", ["accepted", "in_progress", "pending_payment"])
-          .eq(mechanicColumn, mechanicId)
+          .in("status", ["confirmed", "in_progress"])
+          .eq("mechanic_id", mechanicId)
           .order("appointment_date", { ascending: true })
 
         if (upcomingError) throw upcomingError
@@ -205,7 +201,7 @@ export function useMechanicAppointments(mechanicId: string) {
   }, [mechanicId, toast, mechanicColumn])
 
   // Update appointment status
-  const updateAppointmentStatus = async (appointmentId: string, status: AppointmentStatus) => {
+  const updateAppointmentStatus = async (appointmentId: string, status: AppointmentStatus): Promise<boolean> => {
     if (!mechanicColumn || !mechanicId) {
       toast({
         title: "Error",
@@ -221,7 +217,7 @@ export function useMechanicAppointments(mechanicId: string) {
       if (error) throw error
 
       // Update local state
-      setUpcomingAppointments((prev) =>
+      setUpcomingAppointments((prev: Appointment[]) =>
         prev.map((appointment) => (appointment.id === appointmentId ? { ...appointment, status } : appointment)),
       )
 
@@ -233,7 +229,7 @@ export function useMechanicAppointments(mechanicId: string) {
   }
 
   // Accept an available appointment by creating a quote
-  const acceptAppointment = async (appointmentId: string, price: number) => {
+  const acceptAppointment = async (appointmentId: string, price: number): Promise<boolean> => {
     if (!mechanicId) {
       toast({
         title: "Error",
@@ -269,7 +265,7 @@ export function useMechanicAppointments(mechanicId: string) {
       }
 
       // Remove from available appointments
-      setAvailableAppointments((prev) => prev.filter((a) => a.id !== appointmentId))
+      setAvailableAppointments((prev: Appointment[]) => prev.filter((a) => a.id !== appointmentId))
 
       return true
     } catch (err) {
@@ -279,7 +275,7 @@ export function useMechanicAppointments(mechanicId: string) {
   }
 
   // Update price for an appointment
-  const updateAppointmentPrice = async (appointmentId: string, price: number) => {
+  const updateAppointmentPrice = async (appointmentId: string, price: number): Promise<boolean> => {
     if (!mechanicId) return false
 
     try {
@@ -297,7 +293,7 @@ export function useMechanicAppointments(mechanicId: string) {
         if (error) throw error
 
         // Update local state
-        setUpcomingAppointments((prev) => prev.map((a) => (a.id === appointmentId ? { ...a, price } : a)))
+        setUpcomingAppointments((prev: Appointment[]) => prev.map((a) => (a.id === appointmentId ? { ...a, price } : a)))
       } else {
         // Quote update
         const { error } = await supabase
@@ -317,11 +313,11 @@ export function useMechanicAppointments(mechanicId: string) {
   }
 
   // Deny an available appointment
-  const denyAppointment = async (appointmentId: string) => {
+  const denyAppointment = async (appointmentId: string): Promise<boolean> => {
     try {
       // For denying, we just remove it from the available list for this mechanic
       // We don't update the backend status since other mechanics might want to accept it
-      setAvailableAppointments((prev) => prev.filter((a) => a.id !== appointmentId))
+      setAvailableAppointments((prev: Appointment[]) => prev.filter((a) => a.id !== appointmentId))
       return true
     } catch (err) {
       console.error("Error denying appointment:", err)
@@ -330,12 +326,12 @@ export function useMechanicAppointments(mechanicId: string) {
   }
 
   // Start an appointment
-  const startAppointment = async (appointmentId: string) => {
+  const startAppointment = async (appointmentId: string): Promise<boolean> => {
     return updateAppointmentStatus(appointmentId, "in_progress")
   }
 
   // Cancel an appointment
-  const cancelAppointment = async (appointmentId: string) => {
+  const cancelAppointment = async (appointmentId: string): Promise<boolean> => {
     return updateAppointmentStatus(appointmentId, "cancelled")
   }
 
