@@ -21,6 +21,9 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS selected_quote_id UUID REFEREN
 -- Add mechanic_id column to appointments table if it doesn't exist
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS mechanic_id UUID REFERENCES mechanics(id);
 
+-- Drop the incorrect column if it exists
+ALTER TABLE appointments DROP COLUMN IF EXISTS is_gues;
+
 -- Add source and is_guest columns to appointments table if they don't exist
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS source VARCHAR(50) DEFAULT 'landing_page';
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS is_guest BOOLEAN DEFAULT true;
