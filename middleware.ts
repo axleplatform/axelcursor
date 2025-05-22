@@ -30,7 +30,7 @@ export async function middleware(req: NextRequest) {
     console.log("Checking mechanic profile in middleware")
     const { data: mechanicProfile, error: profileError } = await supabase
       .from("mechanic_profiles")
-      .select("onboarding_completed, onboarding_step")
+      .select("onboarding_completed, onboarding_step, id")
       .eq("user_id", session.user.id)
       .single()
 
@@ -58,6 +58,12 @@ export async function middleware(req: NextRequest) {
       if (req.nextUrl.pathname.startsWith("/onboarding-mechanic-") && mechanicProfile.onboarding_completed) {
         console.log("Onboarding complete, redirecting to dashboard in middleware")
         return NextResponse.redirect(new URL("/mechanic/dashboard", req.url))
+      }
+
+      // Allow access to dashboard if onboarding is complete
+      if (req.nextUrl.pathname.startsWith("/mechanic/dashboard") && mechanicProfile.onboarding_completed) {
+        console.log("Onboarding complete, allowing access to dashboard")
+        return res
       }
     }
   }

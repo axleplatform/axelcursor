@@ -126,7 +126,7 @@ export default function LoginPage() {
       console.log("Checking mechanic profile after login...")
       const { data: mechanicProfile, error: profileError } = await supabase
         .from("mechanic_profiles")
-        .select("onboarding_completed, onboarding_step")
+        .select("onboarding_completed, onboarding_step, id")
         .eq("user_id", data.user.id)
         .single()
 
@@ -162,11 +162,13 @@ export default function LoginPage() {
       
       if (mechanicProfile.onboarding_completed) {
         console.log("Redirecting to mechanic dashboard...")
-        router.push("/mechanic/dashboard")
+        // Force a hard navigation to ensure the page reloads
+        window.location.href = "/mechanic/dashboard"
       } else {
         const step = mechanicProfile.onboarding_step || "personal_info"
         console.log("Redirecting to onboarding step:", step)
-        router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
+        // Force a hard navigation to ensure the page reloads
+        window.location.href = `/onboarding-mechanic-${getStepNumber(step)}`
       }
     } catch (error: any) {
       console.error("Login error:", error)
