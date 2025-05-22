@@ -212,7 +212,7 @@ export default function HomePage() {
 
       console.log("Creating appointment with data:", initialAppointmentData)
 
-      // First, create the appointment with initial status
+      // Create the appointment with initial status
       const { data: createdAppointment, error: appointmentError } = await supabase
         .from("appointments")
         .insert([initialAppointmentData])
@@ -230,7 +230,7 @@ export default function HomePage() {
 
       console.log("Appointment created successfully:", createdAppointment)
 
-      // Then, create the vehicle with the appointment_id
+      // Create the vehicle with the appointment_id
       const appointmentId = createdAppointment[0].id
       const vehicleData = {
         appointment_id: appointmentId,
