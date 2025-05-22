@@ -127,10 +127,68 @@ export default function LoginPage() {
         throw new Error("No user found in response")
       }
 
-      // User is authenticated, redirect to mechanic dashboard
-      console.log("User authenticated, redirecting to dashboard...")
-      router.push("/mechanic/dashboard")
+      // Check if the user is a mechanic
+      console.log("Checking mechanic profile for user:", data.user.id)
+      const { data: mechanicProfile, error: profileError } = await supabase
+        .from("mechanic_profiles")
+        .select("onboarding_completed, onboarding_step, id, first_name")
+        .eq("user_id", data.user.id)
+        .single()
+
+      console.log("Mechanic profile check result:", { 
+        profile: mechanicProfile ? {
+          id: mechanicProfile.id,
+          onboarding_completed: mechanicProfile.onboarding_completed,
+          onboarding_step: mechanicProfile.onboarding_step,
+          first_name: mechanicProfile.first_name
+        } : null,
+        error: profileError 
+      })
+
+      if (profileError && profileError.code !== "PGRST116") {
+        console.error("Error checking mechanic profile:", profileError)
+        throw new Error(`Error verifying account type: ${profileError.message}`)
+      }
+
+      if (!mechanicProfile) {
+        // Check if this is a customer account
+        console.log("Checking customer profile for user:", data.user.id)
+        const { data: customerProfile, error: customerError } = await supabase
+          .from("customer_profiles")
+          .select("id")
+          .eq("user_id", data.user.id)
+          .single()
+
+        console.log("Customer profile check result:", { 
+          profile: customerProfile,
+          error: customerError 
+        })
+
+        if (customerProfile) {
+          console.log("Redirecting to customer dashboard...")
+          router.push("/dashboard")
+          return
+        }
+
+        throw new Error("Account type not recognized. Please contact support.")
+      }
+
+      // User is a mechanic, handle redirection
+      console.log("Mechanic profile found:", {
+        onboarding_completed: mechanicProfile.onboarding_completed,
+        onboarding_step: mechanicProfile.onboarding_step,
+        first_name: mechanicProfile.first_name
+      })
       
+      if (mechanicProfile.onboarding_completed) {
+        console.log("Onboarding completed, redirecting to demo dashboard...")
+        // Redirect to demo dashboard instead
+        router.push("/demo-mechanic-dashboard")
+      } else {
+        const step = mechanicProfile.onboarding_step || "personal_info"
+        console.log("Onboarding not completed, redirecting to step:", step)
+        router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
+      }
     } catch (error: any) {
       console.error("Login error:", error)
       setError(error.message || "An error occurred during login. Please try again.")

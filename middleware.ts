@@ -34,6 +34,52 @@ export async function middleware(request: NextRequest) {
         redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname)
         return NextResponse.redirect(redirectUrl)
       }
+      return res
+    }
+
+    // If there is a session, check if it's a mechanic
+    console.log("Session found, checking mechanic profile")
+    const { data: mechanicProfile, error: profileError } = await supabase
+      .from("mechanic_profiles")
+      .select("onboarding_completed, onboarding_step, id")
+      .eq("user_id", session.user.id)
+      .single()
+
+    console.log("Mechanic profile check in middleware:", {
+      hasProfile: !!mechanicProfile,
+      onboarding_completed: mechanicProfile?.onboarding_completed,
+      onboarding_step: mechanicProfile?.onboarding_step,
+      error: profileError
+    })
+
+    // If accessing mechanic dashboard or onboarding
+    if (request.nextUrl.pathname.startsWith("/mechanic/dashboard") ||
+        request.nextUrl.pathname.startsWith("/onboarding-mechanic-")) {
+      
+      // If no mechanic profile, redirect to login
+      if (!mechanicProfile) {
+        console.log("No mechanic profile found, redirecting to login")
+        const redirectUrl = new URL("/login", request.url)
+        redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname)
+        return NextResponse.redirect(redirectUrl)
+      }
+
+      // If onboarding is not completed, redirect to appropriate step
+      if (!mechanicProfile.onboarding_completed) {
+        console.log("Onboarding not completed, checking current step")
+        const step = mechanicProfile.onboarding_step || "personal_info"
+        const currentStep = request.nextUrl.pathname.split("-").pop()
+        
+        // If trying to access a step that's not the current one, redirect to current step
+        if (currentStep !== getStepNumber(step)) {
+          console.log("Redirecting to correct onboarding step:", step)
+          return NextResponse.redirect(new URL(`/onboarding-mechanic-${getStepNumber(step)}`, request.url))
+        }
+      } else if (request.nextUrl.pathname.startsWith("/onboarding-mechanic-")) {
+        // If onboarding is completed but trying to access onboarding, redirect to demo dashboard
+        console.log("Onboarding completed, redirecting to demo dashboard")
+        return NextResponse.redirect(new URL("/demo-mechanic-dashboard", request.url))
+      }
     }
 
     // If we get here, allow the request to continue
