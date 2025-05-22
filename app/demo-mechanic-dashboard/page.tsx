@@ -36,28 +36,73 @@ export default function MechanicDashboard() {
         setIsAppointmentsLoading(true)
         console.log("Fetching appointments for demo mechanic...")
 
-        // Fetch all types of appointments
-        const [available, quoted, upcoming] = await Promise.all([
-          supabase
-            .from("appointments")
-            .select("*, vehicles(*)")
-            .is("mechanic_id", null)
-            .eq("status", "pending")
-            .order("created_at", { ascending: false }),
-          getQuotedAppointmentsForMechanic(DEMO_MECHANIC_ID),
-          supabase
-            .from("appointments")
-            .select("*, vehicles(*)")
-            .eq("mechanic_id", DEMO_MECHANIC_ID)
-            .eq("status", "confirmed")
-            .gte("scheduled_time", new Date().toISOString())
-            .order("scheduled_time", { ascending: true }),
-        ])
+        // First, get all pending appointments
+        const { data: pendingAppointments, error: pendingError } = await supabase
+          .from("appointments")
+          .select("*, vehicles(*)")
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
 
-        console.log("Appointments fetched:", { available, quoted, upcoming })
-        setAvailableAppointments(available?.data || [])
-        setQuotedAppointments(quoted?.appointments || [])
-        setUpcomingAppointments(upcoming?.data || [])
+        if (pendingError) {
+          console.error("Error fetching pending appointments:", pendingError)
+          throw pendingError
+        }
+
+        console.log("Pending appointments:", pendingAppointments)
+
+        // Filter out appointments that have been quoted by this mechanic
+        const { data: quotedAppointments, error: quotedError } = await supabase
+          .from("mechanic_quotes")
+          .select("appointment_id")
+          .eq("mechanic_id", DEMO_MECHANIC_ID)
+
+        if (quotedError) {
+          console.error("Error fetching quoted appointments:", quotedError)
+          throw quotedError
+        }
+
+        const quotedAppointmentIds = quotedAppointments?.map(q => q.appointment_id) || []
+        console.log("Quoted appointment IDs:", quotedAppointmentIds)
+
+        // Filter available appointments
+        const available = pendingAppointments?.filter(app => !quotedAppointmentIds.includes(app.id)) || []
+        console.log("Available appointments:", available)
+
+        // Get quoted appointments with full details
+        const { data: quotedDetails, error: quotedDetailsError } = await supabase
+          .from("mechanic_quotes")
+          .select(`
+            *,
+            appointment:appointment_id(*, vehicles(*))
+          `)
+          .eq("mechanic_id", DEMO_MECHANIC_ID)
+
+        if (quotedDetailsError) {
+          console.error("Error fetching quoted details:", quotedDetailsError)
+          throw quotedDetailsError
+        }
+
+        const quoted = quotedDetails?.map(q => q.appointment) || []
+        console.log("Quoted appointments with details:", quoted)
+
+        // Get upcoming appointments
+        const { data: upcoming, error: upcomingError } = await supabase
+          .from("appointments")
+          .select("*, vehicles(*)")
+          .eq("mechanic_id", DEMO_MECHANIC_ID)
+          .in("status", ["accepted", "in_progress", "pending_payment"])
+          .order("appointment_date", { ascending: true })
+
+        if (upcomingError) {
+          console.error("Error fetching upcoming appointments:", upcomingError)
+          throw upcomingError
+        }
+
+        console.log("Upcoming appointments:", upcoming)
+
+        setAvailableAppointments(available)
+        setQuotedAppointments(quoted)
+        setUpcomingAppointments(upcoming || [])
       } catch (error) {
         console.error("Error fetching appointments:", error)
         toast({
@@ -81,9 +126,9 @@ export default function MechanicDashboard() {
           event: "*",
           schema: "public",
           table: "appointments",
-          filter: `status=eq.pending`,
         },
         () => {
+          console.log("Appointment change detected, refreshing...")
           fetchAppointments()
         },
       )
@@ -97,9 +142,9 @@ export default function MechanicDashboard() {
           event: "*",
           schema: "public",
           table: "mechanic_quotes",
-          filter: `mechanic_id=eq.${DEMO_MECHANIC_ID}`,
         },
         () => {
+          console.log("Quote change detected, refreshing...")
           fetchAppointments()
         },
       )

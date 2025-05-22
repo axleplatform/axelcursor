@@ -114,6 +114,7 @@ export default function HomePage() {
     try {
       // Combine date and time for the appointment
       const appointmentDateTime = `${formData.appointmentDate}T${formData.appointmentTime}`
+      const now = new Date().toISOString()
 
       // First, create the appointment with initial status
       const { data: appointmentData, error: appointmentError } = await supabase
@@ -124,13 +125,19 @@ export default function HomePage() {
             appointment_date: appointmentDateTime,
             status: "pending", // Initial status
             notes: "Submitted via landing page",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            mechanic_id: null, // Explicitly set to null
+            created_at: now,
+            updated_at: now,
           },
         ])
         .select()
 
-      if (appointmentError) throw appointmentError
+      if (appointmentError) {
+        console.error("Error creating appointment:", appointmentError)
+        throw appointmentError
+      }
+
+      console.log("Appointment created:", appointmentData)
 
       // Then, create the vehicle with the appointment_id
       const appointmentId = appointmentData[0].id
@@ -141,20 +148,26 @@ export default function HomePage() {
           year: Number.parseInt(formData.year),
           make: formData.make,
           model: formData.model,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          mileage: formData.mileage ? Number.parseInt(formData.mileage) : null,
+          created_at: now,
+          updated_at: now,
         },
       ])
 
-      if (vehicleError) throw vehicleError
+      if (vehicleError) {
+        console.error("Error creating vehicle:", vehicleError)
+        throw vehicleError
+      }
+
+      console.log("Vehicle created for appointment:", appointmentId)
 
       // Navigate to the book appointment page
       router.push(`/book-appointment?appointmentId=${appointmentId}`)
     } catch (error) {
-      console.error("Error submitting form:", error)
+      console.error("Error creating appointment:", error)
       toast({
         title: "Error",
-        description: "There was an error submitting your appointment. Please try again.",
+        description: "Failed to create appointment. Please try again.",
         variant: "destructive",
       })
     } finally {

@@ -66,6 +66,7 @@ export async function createOrUpdateQuote(
     }
 
     let result
+    const now = new Date().toISOString()
 
     if (existingQuote) {
       // Update existing quote
@@ -75,8 +76,8 @@ export async function createOrUpdateQuote(
           price,
           eta,
           notes,
-          updated_at: new Date().toISOString(),
           status: "pending", // Reset status on update
+          updated_at: now,
         })
         .eq("id", existingQuote.id)
         .select()
@@ -99,8 +100,8 @@ export async function createOrUpdateQuote(
           eta,
           notes,
           status: "pending",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          created_at: now,
+          updated_at: now,
         })
         .select()
         .single()
