@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useCallback, type FormEvent } from "react"
+import { useState, useCallback, type FormEvent, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { MapPin, Calendar, ChevronRight, User, Settings, Home } from "lucide-react"
@@ -40,6 +40,23 @@ export default function HomePage() {
     appointmentDate: "",
     appointmentTime: "",
   })
+
+  // Add debug logging
+  useEffect(() => {
+    console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log("Supabase Anon Key exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    
+    // Test Supabase connection
+    supabase.from('appointments').select('count').then(
+      ({ data, error }) => {
+        if (error) {
+          console.error("Supabase connection error:", error)
+        } else {
+          console.log("Supabase connection successful:", data)
+        }
+      }
+    )
+  }, [])
 
   // Common car makes for the dropdown
   const makes = [
@@ -112,9 +129,24 @@ export default function HomePage() {
     setIsSubmitting(true)
 
     try {
+      // Check Supabase connection first
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        throw new Error("Supabase environment variables are not configured")
+      }
+
       // Combine date and time for the appointment
       const appointmentDateTime = `${formData.appointmentDate}T${formData.appointmentTime}`
       const now = new Date().toISOString()
+
+      console.log("Creating appointment with data:", {
+        location: formData.address,
+        appointment_date: appointmentDateTime,
+        status: "pending",
+        notes: "Submitted via landing page",
+        mechanic_id: null,
+        created_at: now,
+        updated_at: now,
+      })
 
       // First, create the appointment with initial status
       const { data: appointmentData, error: appointmentError } = await supabase
@@ -128,13 +160,17 @@ export default function HomePage() {
             mechanic_id: null, // Explicitly set to null
             created_at: now,
             updated_at: now,
+            // Add additional fields for better tracking
+            source: "landing_page",
+            is_guest: true,
+            user_id: null, // Allow null for guest appointments
           },
         ])
         .select()
 
       if (appointmentError) {
         console.error("Error creating appointment:", appointmentError)
-        throw appointmentError
+        throw new Error(`Failed to create appointment: ${appointmentError.message}`)
       }
 
       console.log("Appointment created:", appointmentData)
@@ -156,18 +192,24 @@ export default function HomePage() {
 
       if (vehicleError) {
         console.error("Error creating vehicle:", vehicleError)
-        throw vehicleError
+        throw new Error(`Failed to create vehicle: ${vehicleError.message}`)
       }
 
       console.log("Vehicle created for appointment:", appointmentId)
 
+      // Show success message
+      toast({
+        title: "Success",
+        description: "Appointment created successfully! Redirecting to next step...",
+      })
+
       // Navigate to the book appointment page
       router.push(`/book-appointment?appointmentId=${appointmentId}`)
     } catch (error) {
-      console.error("Error creating appointment:", error)
+      console.error("Error in appointment creation:", error)
       toast({
         title: "Error",
-        description: "Failed to create appointment. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to create appointment. Please try again.",
         variant: "destructive",
       })
     } finally {
