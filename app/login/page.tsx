@@ -25,14 +25,21 @@ export default function LoginPage() {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        console.log("Checking session...")
         const { data: { session } } = await supabase.auth.getSession()
+        console.log("Session data:", session)
+        
         if (session) {
           // Check if user is a mechanic
+          console.log("Checking mechanic profile for user:", session.user.id)
           const { data: mechanicProfile, error: profileError } = await supabase
             .from("mechanic_profiles")
             .select("onboarding_completed, onboarding_step")
             .eq("user_id", session.user.id)
             .single()
+
+          console.log("Mechanic profile data:", mechanicProfile)
+          console.log("Profile error:", profileError)
 
           if (profileError && profileError.code !== "PGRST116") {
             console.error("Error checking mechanic profile:", profileError)
@@ -40,15 +47,21 @@ export default function LoginPage() {
           }
 
           if (mechanicProfile) {
+            console.log("Onboarding completed:", mechanicProfile.onboarding_completed)
+            console.log("Onboarding step:", mechanicProfile.onboarding_step)
+            
             if (mechanicProfile.onboarding_completed) {
+              console.log("Redirecting to dashboard...")
               router.push("/mechanic/dashboard")
             } else {
               // Redirect to appropriate onboarding step
               const step = mechanicProfile.onboarding_step || "personal_info"
+              console.log("Redirecting to onboarding step:", step)
               router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
             }
           } else {
             // Check if this is a customer account
+            console.log("Checking customer profile...")
             const { data: customerProfile } = await supabase
               .from("customer_profiles")
               .select("id")
@@ -56,6 +69,7 @@ export default function LoginPage() {
               .single()
 
             if (customerProfile) {
+              console.log("Redirecting to customer dashboard...")
               router.push("/dashboard")
             }
           }
@@ -85,11 +99,15 @@ export default function LoginPage() {
     setResendSuccess(false)
 
     try {
+      console.log("Attempting login...")
       // Authenticate with Supabase
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
+
+      console.log("Auth response:", data)
+      console.log("Auth error:", authError)
 
       if (authError) {
         if (authError.message.includes("Email not confirmed")) {
@@ -105,11 +123,15 @@ export default function LoginPage() {
       }
 
       // Check if the user is a mechanic
+      console.log("Checking mechanic profile after login...")
       const { data: mechanicProfile, error: profileError } = await supabase
         .from("mechanic_profiles")
         .select("onboarding_completed, onboarding_step")
         .eq("user_id", data.user.id)
         .single()
+
+      console.log("Mechanic profile after login:", mechanicProfile)
+      console.log("Profile error after login:", profileError)
 
       if (profileError && profileError.code !== "PGRST116") {
         console.error("Error checking mechanic profile:", profileError)
@@ -118,6 +140,7 @@ export default function LoginPage() {
 
       if (!mechanicProfile) {
         // Check if this is a customer account
+        console.log("Checking customer profile after login...")
         const { data: customerProfile } = await supabase
           .from("customer_profiles")
           .select("id")
@@ -125,6 +148,7 @@ export default function LoginPage() {
           .single()
 
         if (customerProfile) {
+          console.log("Redirecting to customer dashboard...")
           router.push("/dashboard")
           return
         }
@@ -133,10 +157,15 @@ export default function LoginPage() {
       }
 
       // User is a mechanic, handle redirection
+      console.log("Onboarding completed:", mechanicProfile.onboarding_completed)
+      console.log("Onboarding step:", mechanicProfile.onboarding_step)
+      
       if (mechanicProfile.onboarding_completed) {
+        console.log("Redirecting to mechanic dashboard...")
         router.push("/mechanic/dashboard")
       } else {
         const step = mechanicProfile.onboarding_step || "personal_info"
+        console.log("Redirecting to onboarding step:", step)
         router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
       }
     } catch (error: any) {
