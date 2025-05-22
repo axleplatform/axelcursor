@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { StarIcon, Clock, Calendar, MapPin, Car, Wrench, AlertCircle, FileText, CreditCard } from "lucide-react"
+import { StarIcon, Clock, Calendar, MapPin, Car, Wrench, AlertCircle, FileText, CreditCard, User } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -250,42 +250,38 @@ export default function PickMechanicPage() {
     }
   }, [appointmentId, toast])
 
-  const handleSelectMechanic = (quoteId: string) => {
-    setSelectedMechanic(quoteId)
-  }
-
-  const getSelectedMechanic = () => {
-    if (!appointment?.mechanics || !selectedMechanic) return null
-    return appointment.mechanics.find((mechanic: Mechanic) => mechanic.quote_id === selectedMechanic)
-  }
-
-  const handleProceedToPayment = async () => {
-    if (!appointmentId || !selectedMechanic) return
-
+  const handleSelectMechanic = async (quoteId: string) => {
     try {
       setIsProcessing(true)
-
-      // Select the quote for this appointment
-      const { success, error } = await selectQuoteForAppointment(appointmentId, selectedMechanic)
+      const { success, error } = await selectQuoteForAppointment(appointmentId!, quoteId)
 
       if (!success) {
         throw new Error(error)
       }
 
-      // Navigate to payment confirmation page
-      router.push(`/appointment-confirmation?appointmentId=${appointmentId}`)
-    } catch (err) {
-      console.error("Error updating appointment:", err)
-      setError("Failed to process selection")
+      setSelectedMechanic(quoteId)
+      toast({
+        title: "Success",
+        description: "Mechanic selected successfully.",
+      })
 
+      // Redirect to appointment confirmation
+      router.push(`/appointment-confirmation?appointmentId=${appointmentId}`)
+    } catch (error) {
+      console.error("Error selecting mechanic:", error)
       toast({
         title: "Error",
-        description: "Failed to process your selection. Please try again.",
+        description: "Failed to select mechanic. Please try again.",
         variant: "destructive",
       })
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  const getSelectedMechanic = () => {
+    if (!appointment?.mechanics || !selectedMechanic) return null
+    return appointment.mechanics.find((mechanic: Mechanic) => mechanic.quote_id === selectedMechanic)
   }
 
   // Format date for display
@@ -395,123 +391,119 @@ export default function PickMechanicPage() {
                   <h2 className="text-xl font-semibold text-[#294a46]">Available Mechanics</h2>
                 </div>
 
-                {isLoadingQuotes ? (
-                  // Loading state for mechanics section
-                  <div className="p-8 flex flex-col items-center justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#294a46]"></div>
-                    <p className="mt-4 text-gray-600">Waiting for mechanic quotes...</p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Mechanics are reviewing your request. This page will update automatically when quotes arrive.
-                    </p>
-                  </div>
-                ) : appointment.mechanics && appointment.mechanics.length > 0 ? (
-                  // Mechanics list when quotes are available
-                  <div className="p-4 space-y-3">
-                    {appointment.mechanics.map((mechanic: Mechanic) => (
-                      <Card
+                <div className="space-y-4">
+                  {isLoadingQuotes ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#294a46]"></div>
+                    </div>
+                  ) : appointment?.mechanics && appointment.mechanics.length > 0 ? (
+                    appointment.mechanics.map((mechanic) => (
+                      <div
                         key={mechanic.quote_id}
-                        className={`overflow-hidden transition-all bg-[#294a46] ${
+                        className={`border rounded-lg p-4 transition-colors ${
                           selectedMechanic === mechanic.quote_id
-                            ? "ring-2 ring-white shadow-md"
-                            : "hover:shadow-md border-[#294a46]"
+                            ? "border-[#294a46] bg-[#294a46]/5"
+                            : "border-gray-200 hover:border-[#294a46]/50"
                         }`}
-                        onClick={() => handleSelectMechanic(mechanic.quote_id)}
                       >
-                        <div className="flex items-center p-3">
-                          {/* Profile Image */}
-                          <div className="relative h-14 w-14 rounded-full overflow-hidden flex-shrink-0 border-2 border-white">
-                            <Image
-                              src={mechanic.profile_image_url || "/placeholder.svg?height=56&width=56&query=mechanic"}
-                              alt={`${mechanic.first_name} ${mechanic.last_name}`}
-                              fill
-                              className="object-cover"
-                            />
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0">
+                            {mechanic.profile_image_url ? (
+                              <img
+                                src={mechanic.profile_image_url}
+                                alt={`${mechanic.first_name} ${mechanic.last_name}`}
+                                className="w-16 h-16 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+                                <User className="h-8 w-8 text-gray-400" />
+                              </div>
+                            )}
                           </div>
 
-                          {/* Mechanic Info - Left Side */}
-                          <div className="ml-3 flex-grow">
-                            <h3 className="text-base font-semibold text-white truncate">
-                              {mechanic.first_name} {mechanic.last_name}
-                            </h3>
-                            <div className="flex items-center mt-0.5">
-                              {mechanic.metadata?.rating && (
-                                <React.Fragment>
+                          <div className="flex-grow">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h3 className="font-semibold text-lg">
+                                  {mechanic.first_name} {mechanic.last_name}
+                                </h3>
+                                <div className="flex items-center gap-2 mt-1">
                                   <div className="flex items-center">
-                                    <StarIcon className="h-3.5 w-3.5 text-yellow-400 mr-1" />
-                                    <span className="text-sm font-medium text-white">{mechanic.metadata.rating}</span>
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star
+                                        key={i}
+                                        className={`h-4 w-4 ${
+                                          i < Math.floor(mechanic.rating)
+                                            ? "text-yellow-400 fill-yellow-400"
+                                            : "text-gray-300"
+                                        }`}
+                                      />
+                                    ))}
                                   </div>
-                                  {mechanic.metadata?.review_count && (
-                                    <span className="text-xs text-gray-200 ml-1">
-                                      ({mechanic.metadata.review_count})
-                                    </span>
-                                  )}
-                                  <span className="mx-1.5 text-gray-400">•</span>
-                                </React.Fragment>
-                              )}
-                              <span className="text-xs text-gray-200">
-                                {mechanic.metadata?.experience || "Experienced Mechanic"}
-                              </span>
+                                  <span className="text-sm text-gray-600">
+                                    ({mechanic.review_count} reviews)
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="text-right">
+                                <div className="text-2xl font-bold text-[#294a46]">${mechanic.price}</div>
+                                <div className="text-sm text-gray-600">ETA: {mechanic.eta}</div>
+                              </div>
                             </div>
 
                             {mechanic.metadata?.specialties && (
-                              <div className="mt-1 flex flex-wrap gap-1">
-                                {mechanic.metadata.specialties.slice(0, 3).map((specialty: SpecialtyItem, index: number) => (
-                                  <div key={`specialty-${index}`}>
-                                    <Badge
-                                      className="px-1.5 py-0 text-xs bg-[#1e3632] text-white border-[#1e3632] font-medium"
+                              <div className="mt-3">
+                                <h4 className="text-sm font-medium text-gray-700 mb-2">Specialties</h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {mechanic.metadata.specialties.map((specialty: string, index: number) => (
+                                    <span
+                                      key={index}
+                                      className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
                                     >
                                       {specialty}
-                                    </Badge>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Price and ETA - Right Side */}
-                          <div className="flex flex-col items-end ml-2 mr-2">
-                            <div className="bg-[#1e3632] px-3 py-1 rounded-md">
-                              <p className="text-2xl font-bold text-white">${mechanic.price}</p>
-                            </div>
-                            {mechanic.eta && (
-                              <div className="flex items-center mt-1.5 bg-[#1e3632] px-2 py-0.5 rounded text-white">
-                                <Clock className="h-3.5 w-3.5 mr-1 text-gray-200" />
-                                <span className="text-sm font-medium">{mechanic.eta}</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Selection Indicator */}
-                          <div className="flex-shrink-0">
-                            <div
-                              className={`w-5 h-5 rounded-full border-2 ${
-                                selectedMechanic === mechanic.quote_id ? "border-white bg-white" : "border-gray-200"
-                              }`}
-                            >
-                              {selectedMechanic === mechanic.quote_id && (
-                                <div className="h-full w-full flex items-center justify-center">
-                                  <div className="h-2 w-2 rounded-full bg-[#294a46]"></div>
+                                    </span>
+                                  ))}
                                 </div>
-                              )}
+                              </div>
+                            )}
+
+                            <div className="mt-4">
+                              <button
+                                onClick={() => handleSelectMechanic(mechanic.quote_id)}
+                                disabled={isProcessing || selectedMechanic === mechanic.quote_id}
+                                className={`w-full py-2 px-4 rounded-md transition-colors ${
+                                  selectedMechanic === mechanic.quote_id
+                                    ? "bg-[#294a46] text-white cursor-not-allowed"
+                                    : "bg-[#294a46] text-white hover:bg-[#1e3632]"
+                                }`}
+                              >
+                                {isProcessing && selectedMechanic === mechanic.quote_id ? (
+                                  <span className="flex items-center justify-center">
+                                    <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></span>
+                                    Processing...
+                                  </span>
+                                ) : selectedMechanic === mechanic.quote_id ? (
+                                  "Selected"
+                                ) : (
+                                  "Select Mechanic"
+                                )}
+                              </button>
                             </div>
                           </div>
                         </div>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  // No quotes available yet
-                  <div className="p-8 flex flex-col items-center justify-center">
-                    <Clock className="h-12 w-12 text-[#294a46] mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">No Quotes Yet</h3>
-                    <p className="text-gray-600 text-center mb-2">
-                      Mechanics are reviewing your request. Please wait for quotes to arrive.
-                    </p>
-                    <p className="text-sm text-gray-500 text-center">
-                      This page will update automatically when mechanics respond.
-                    </p>
-                  </div>
-                )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Quotes Yet</h3>
+                      <p className="text-gray-600">
+                        Mechanics are reviewing your appointment. Check back soon for quotes.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </Card>
             </div>
 
@@ -673,22 +665,6 @@ export default function PickMechanicPage() {
                       <div className="h-9 bg-white rounded border border-gray-200"></div>
                     </div>
                   </div>
-
-                  <Button
-                    className="w-full mt-4 bg-[#294a46] hover:bg-[#1e3632] text-white"
-                    size="default"
-                    disabled={!selectedMechanic || isProcessing}
-                    onClick={handleProceedToPayment}
-                  >
-                    {isProcessing ? (
-                      <span className="flex items-center justify-center">
-                        <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></span>
-                        Processing...
-                      </span>
-                    ) : (
-                      "Proceed to Payment"
-                    )}
-                  </Button>
                 </div>
               </Card>
             </div>

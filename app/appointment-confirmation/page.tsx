@@ -5,10 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, Calendar, MapPin, Car, Wrench, AlertCircle, FileText } from "lucide-react"
+import { CheckCircle, Calendar, MapPin, Car, Wrench, AlertCircle, FileText, User, Star } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
+import { toast } from "@/components/ui/use-toast"
 
 interface Mechanic {
   id: string
@@ -43,6 +44,22 @@ interface Appointment {
   selected_car_issues: string[] | null
   vehicles: Vehicle | null
   selected_mechanic: Mechanic | null
+  selected_quote: {
+    id: string
+    price: number
+    eta: string
+    mechanic: {
+      id: string
+      first_name: string
+      last_name: string
+      profile_image_url: string | null
+      metadata: {
+        specialties: string[]
+      } | null
+      rating: number
+      review_count: number
+    }
+  } | null
 }
 
 export default function AppointmentConfirmationPage() {
@@ -56,74 +73,79 @@ export default function AppointmentConfirmationPage() {
 
   // Fetch appointment data
   useEffect(() => {
-    const fetchAppointmentData = async () => {
-      if (!appointmentId) {
-        setError("No appointment ID provided")
-        setIsLoading(false)
-        return
-      }
+    if (!appointmentId) {
+      setError("No appointment ID provided")
+      setIsLoading(false)
+      return
+    }
 
+    const fetchAppointmentData = async () => {
       try {
         setIsLoading(true)
         setError(null)
 
-        // Force refresh the schema cache
-        await supabase.rpc("reload_schema_cache")
-
-        // Fetch appointment data
-        const { data: appointmentData, error: appointmentError } = await supabase
+        // Fetch appointment with selected quote and mechanic details
+        const { data, error } = await supabase
           .from("appointments")
           .select(`
             *,
             vehicles(*),
-            selected_quote_id
+            selected_quote:selected_quote_id(
+              *,
+              mechanic:mechanic_id(
+                id,
+                first_name,
+                last_name,
+                profile_image_url,
+                metadata,
+                rating,
+                review_count
+              )
+            )
           `)
           .eq("id", appointmentId)
           .single()
 
-        if (appointmentError) throw appointmentError
+        if (error) throw error
 
-        // Fetch selected mechanic quote
-        if (appointmentData.selected_quote_id) {
-          const { data: quoteData, error: quoteError } = await supabase
-            .from("mechanic_quotes")
-            .select(`
-              *,
-              mechanics(id, name, avatar_url, rating, review_count, specialties, experience)
-            `)
-            .eq("id", appointmentData.selected_quote_id)
-            .single()
-
-          if (quoteError) throw quoteError
-
-          // Format mechanic data
-          const selectedMechanic = {
-            id: quoteData.mechanics.id,
-            name: quoteData.mechanics.name,
-            avatar_url: quoteData.mechanics.avatar_url,
-            rating: quoteData.mechanics.rating,
-            review_count: quoteData.mechanics.review_count,
-            price: quoteData.price,
-            eta: quoteData.eta,
-            specialties: quoteData.mechanics.specialties,
-            experience: quoteData.mechanics.experience,
-          }
-
-          // Update appointment data with selected mechanic
-          appointmentData.selected_mechanic = selectedMechanic
-        }
-
-        setAppointment(appointmentData)
-      } catch (err) {
-        console.error("Error fetching data:", err)
+        setAppointment(data)
+        console.log("Fetched appointment data:", data)
+      } catch (error) {
+        console.error("Error fetching appointment data:", error)
         setError("Failed to load appointment data")
+        toast({
+          title: "Error",
+          description: "Failed to load appointment data. Please try again.",
+          variant: "destructive",
+        })
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchAppointmentData()
-  }, [appointmentId])
+
+    // Set up real-time subscription for appointment changes
+    const appointmentSubscription = supabase
+      .channel("appointment-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "appointments",
+          filter: `id=eq.${appointmentId}`,
+        },
+        () => {
+          fetchAppointmentData()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(appointmentSubscription)
+    }
+  }, [appointmentId, toast])
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -211,91 +233,159 @@ export default function AppointmentConfirmationPage() {
                 </p>
               </div>
 
-              <div className="space-y-4 mt-6">
-                <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                  <Calendar className="h-5 w-5 text-[#294a46] mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-medium text-gray-700">Appointment Details</h3>
-                    <p className="text-gray-600">{formatDate(appointment.appointment_date)}</p>
-                    <div className="flex items-start mt-1">
-                      <MapPin className="h-4 w-4 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
-                      <p className="text-gray-500">{appointment.location}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {appointment.selected_mechanic && (
-                  <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                    <div className="flex-shrink-0 mt-0.5">
-                      <div className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-[#294a46]">
-                        <Image
-                          src={
-                            appointment.selected_mechanic.avatar_url ||
-                            "/placeholder.svg?height=48&width=48&query=mechanic"
-                          }
-                          alt={appointment.selected_mechanic.name}
-                          fill
-                          className="object-cover"
-                        />
+              <div className="space-y-6">
+                {/* Selected Mechanic */}
+                {appointment?.selected_quote?.mechanic && (
+                  <div className="bg-white rounded-lg shadow-sm p-6">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Selected Mechanic</h2>
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0">
+                        {appointment.selected_quote.mechanic.profile_image_url ? (
+                          <img
+                            src={appointment.selected_quote.mechanic.profile_image_url}
+                            alt={`${appointment.selected_quote.mechanic.first_name} ${appointment.selected_quote.mechanic.last_name}`}
+                            className="w-16 h-16 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+                            <User className="h-8 w-8 text-gray-400" />
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-gray-700">Your Mechanic</h3>
-                      <p className="text-gray-600 font-medium">{appointment.selected_mechanic.name}</p>
-                      <div className="flex items-center mt-1">
-                        <p className="text-[#294a46] font-bold text-lg">${appointment.selected_mechanic.price}</p>
-                        {appointment.selected_mechanic.eta && (
-                          <>
-                            <span className="mx-2 text-gray-300">•</span>
-                            <p className="text-gray-600">ETA: {appointment.selected_mechanic.eta}</p>
-                          </>
+
+                      <div className="flex-grow">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-semibold text-lg">
+                              {appointment.selected_quote.mechanic.first_name}{" "}
+                              {appointment.selected_quote.mechanic.last_name}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="flex items-center">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`h-4 w-4 ${
+                                      i < Math.floor(appointment.selected_quote.mechanic.rating)
+                                        ? "text-yellow-400 fill-yellow-400"
+                                        : "text-gray-300"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-sm text-gray-600">
+                                ({appointment.selected_quote.mechanic.review_count} reviews)
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-[#294a46]">
+                              ${appointment.selected_quote.price}
+                            </div>
+                            <div className="text-sm text-gray-600">ETA: {appointment.selected_quote.eta}</div>
+                          </div>
+                        </div>
+
+                        {appointment.selected_quote.mechanic.metadata?.specialties && (
+                          <div className="mt-3">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Specialties</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {appointment.selected_quote.mechanic.metadata.specialties.map(
+                                (specialty: string, index: number) => (
+                                  <span
+                                    key={index}
+                                    className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
+                                  >
+                                    {specialty}
+                                  </span>
+                                ),
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
                   </div>
                 )}
 
-                {appointment.vehicles && (
-                  <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                    <Car className="h-5 w-5 text-[#294a46] mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h3 className="font-medium text-gray-700">Vehicle</h3>
-                      <p className="text-gray-600">
-                        {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
-                      </p>
-                      {appointment.vehicles.color && (
-                        <p className="text-gray-500">Color: {appointment.vehicles.color}</p>
-                      )}
+                {/* Appointment Details */}
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Appointment Details</h2>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-gray-400" />
+                      <span className="text-gray-600">
+                        {formatDate(appointment?.appointment_date)}
+                      </span>
                     </div>
-                  </div>
-                )}
 
-                {appointment.selected_services && appointment.selected_services.length > 0 && (
-                  <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                    <Wrench className="h-5 w-5 text-[#294a46] mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h3 className="font-medium text-gray-700">Requested Services</h3>
-                      <ul className="mt-1 space-y-1">
-                        {appointment.selected_services.map((service, index) => (
-                          <li key={index} className="flex items-center">
-                            <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
-                            <span className="text-gray-600">{service}</span>
-                          </li>
-                        ))}
-                      </ul>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-gray-400" />
+                      <span className="text-gray-600">{appointment?.location}</span>
                     </div>
-                  </div>
-                )}
 
-                {appointment.issue_description && (
-                  <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                    <FileText className="h-5 w-5 text-[#294a46] mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h3 className="font-medium text-gray-700">Description</h3>
-                      <p className="text-gray-600 mt-1">{appointment.issue_description}</p>
+                    {appointment?.vehicles && (
+                      <div className="flex items-center gap-2">
+                        <Car className="h-5 w-5 text-gray-400" />
+                        <span className="text-gray-600">
+                          {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
+                        </span>
+                      </div>
+                    )}
+
+                    {appointment?.issue_description && (
+                      <div className="flex items-start gap-2">
+                        <Wrench className="h-5 w-5 text-gray-400 mt-1" />
+                        <span className="text-gray-600">{appointment.issue_description}</span>
+                      </div>
+                    )}
+
+                    {appointment?.selected_services && appointment.selected_services.length > 0 && (
+                      <div className="flex items-start gap-2">
+                        <FileText className="h-5 w-5 text-gray-400 mt-1" />
+                        <div className="flex flex-wrap gap-2">
+                          {appointment.selected_services.map((service: string, index: number) => (
+                            <span
+                              key={index}
+                              className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
+                            >
+                              {service}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {appointment?.car_runs !== null && (
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="h-5 w-5 text-gray-400" />
+                        <span className="text-gray-600">
+                          Car is {appointment.car_runs ? "running" : "not running"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Payment Section */}
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Payment Details</h2>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Service Price</span>
+                      <span className="font-semibold">${appointment?.selected_quote?.price}</span>
+                    </div>
+                    <div className="border-t pt-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-semibold">Total</span>
+                        <span className="text-2xl font-bold text-[#294a46]">
+                          ${appointment?.selected_quote?.price}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
 
               <div className="mt-6 bg-gray-50 p-4 rounded-md border border-gray-200">

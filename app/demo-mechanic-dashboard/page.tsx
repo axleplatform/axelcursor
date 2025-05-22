@@ -175,18 +175,20 @@ export default function MechanicDashboard() {
 
     try {
       setIsProcessing(true)
-      const { error } = await createOrUpdateQuote({
+      const { success, error } = await createOrUpdateQuote({
         appointment_id: id,
         mechanic_id: DEMO_MECHANIC_ID,
         price,
         eta: "1-2 hours", // Default ETA for demo
       })
 
-      if (error) throw error
+      if (!success) {
+        throw new Error(error)
+      }
 
       toast({
         title: "Success",
-        description: "Appointment accepted successfully.",
+        description: "Quote submitted successfully.",
       })
 
       // Move to the next available appointment if there are more
@@ -199,10 +201,10 @@ export default function MechanicDashboard() {
 
       return true
     } catch (error) {
-      console.error("Error accepting appointment:", error)
+      console.error("Error submitting quote:", error)
       toast({
         title: "Error",
-        description: "Failed to accept appointment.",
+        description: "Failed to submit quote. Please try again.",
         variant: "destructive",
       })
       return false
@@ -406,29 +408,28 @@ export default function MechanicDashboard() {
               <div className="relative">
                 {/* Navigation buttons for multiple appointments */}
                 {availableAppointments.length > 1 && (
-                  <div className="absolute top-1/2 -left-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
-                    <button
-                      onClick={goToPrevAvailable}
-                      className="bg-white/20 hover:bg-white/30 rounded-full p-1"
-                      aria-label="Previous appointment"
-                      disabled={isProcessing}
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-                  </div>
-                )}
-
-                {availableAppointments.length > 1 && (
-                  <div className="absolute top-1/2 -right-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
-                    <button
-                      onClick={goToNextAvailable}
-                      className="bg-white/20 hover:bg-white/30 rounded-full p-1"
-                      aria-label="Next appointment"
-                      disabled={isProcessing}
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </button>
-                  </div>
+                  <>
+                    <div className="absolute top-1/2 -left-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
+                      <button
+                        onClick={goToPrevAvailable}
+                        className="bg-white/20 hover:bg-white/30 rounded-full p-1"
+                        aria-label="Previous appointment"
+                        disabled={isProcessing}
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                    </div>
+                    <div className="absolute top-1/2 -right-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
+                      <button
+                        onClick={goToNextAvailable}
+                        className="bg-white/20 hover:bg-white/30 rounded-full p-1"
+                        aria-label="Next appointment"
+                        disabled={isProcessing}
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </>
                 )}
 
                 {/* Current appointment details */}
@@ -462,7 +463,7 @@ export default function MechanicDashboard() {
                         <div>
                           <h4 className="text-sm font-medium mb-1">Selected Services</h4>
                           <div className="flex flex-wrap gap-2">
-                            {availableAppointments[currentAvailableIndex].selected_services.map((service, index) => (
+                            {availableAppointments[currentAvailableIndex].selected_services.map((service: string, index: number) => (
                               <span
                                 key={index}
                                 className="bg-white/20 text-xs px-2 py-1 rounded-full"
@@ -523,7 +524,7 @@ export default function MechanicDashboard() {
                           ) : (
                             <>
                               <Check className="h-4 w-4" />
-                              Accept
+                              Submit Quote
                             </>
                           )}
                         </button>
@@ -540,7 +541,7 @@ export default function MechanicDashboard() {
                           ) : (
                             <>
                               <X className="h-4 w-4" />
-                              Deny
+                              Skip
                             </>
                           )}
                         </button>
