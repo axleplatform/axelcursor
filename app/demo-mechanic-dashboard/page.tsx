@@ -1,13 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, MapPin, X, Check, ChevronLeft, ChevronRight, User, Clock } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
-import { useMechanicAppointments } from "@/hooks/use-mechanic-appointments"
 import { UpcomingAppointments } from "@/components/upcoming-appointments"
 import { useToast } from "@/components/ui/use-toast"
 import { formatDate } from "@/lib/utils"
 import Footer from "@/components/footer"
+import { supabase } from "@/lib/supabase"
+import {
+  getAvailableAppointmentsForMechanic,
+  getQuotedAppointmentsForMechanic,
+  createOrUpdateQuote,
+} from "@/lib/mechanic-quotes"
 
 // Mock mechanic ID - in a real app, this would come from authentication
 const DEMO_MECHANIC_ID = "demo-mechanic-123"
@@ -15,51 +20,147 @@ const DEMO_MECHANIC_ID = "demo-mechanic-123"
 export default function MechanicDashboard() {
   const { toast } = useToast()
   const [currentAvailableIndex, setCurrentAvailableIndex] = useState(0)
+  const [priceInput, setPriceInput] = useState<string>("")
+  const [isProcessing, setIsProcessing] = useState(false)
 
-  const {
-    upcomingAppointments,
-    availableAppointments,
-    isLoading,
-    error,
-    startAppointment,
-    cancelAppointment,
-    acceptAppointment,
-    denyAppointment,
-  } = useMechanicAppointments(DEMO_MECHANIC_ID)
+  // Appointment states
+  const [availableAppointments, setAvailableAppointments] = useState<any[]>([])
+  const [quotedAppointments, setQuotedAppointments] = useState<any[]>([])
+  const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([])
+  const [isAppointmentsLoading, setIsAppointmentsLoading] = useState(true)
+
+  // Fetch appointments
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        setIsAppointmentsLoading(true)
+        console.log("Fetching appointments for demo mechanic...")
+
+        // Fetch all types of appointments
+        const [available, quoted, upcoming] = await Promise.all([
+          getAvailableAppointmentsForMechanic(DEMO_MECHANIC_ID),
+          getQuotedAppointmentsForMechanic(DEMO_MECHANIC_ID),
+          supabase
+            .from("appointments")
+            .select("*, vehicles(*)")
+            .eq("mechanic_id", DEMO_MECHANIC_ID)
+            .eq("status", "confirmed")
+            .gte("scheduled_time", new Date().toISOString())
+            .order("scheduled_time", { ascending: true }),
+        ])
+
+        console.log("Appointments fetched:", { available, quoted, upcoming })
+        setAvailableAppointments(available?.appointments || [])
+        setQuotedAppointments(quoted?.appointments || [])
+        setUpcomingAppointments(upcoming?.data || [])
+      } catch (error) {
+        console.error("Error fetching appointments:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load appointments. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsAppointmentsLoading(false)
+      }
+    }
+
+    fetchAppointments()
+
+    // Set up real-time subscriptions
+    const appointmentsSubscription = supabase
+      .channel("appointments-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "appointments",
+        },
+        () => {
+          fetchAppointments()
+        },
+      )
+      .subscribe()
+
+    const quotesSubscription = supabase
+      .channel("mechanic-quotes-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "mechanic_quotes",
+        },
+        () => {
+          fetchAppointments()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(appointmentsSubscription)
+      supabase.removeChannel(quotesSubscription)
+    }
+  }, [toast])
 
   // Handlers with toast notifications
   const handleStartAppointment = async (id: string) => {
-    const success = await startAppointment(id)
-    if (success) {
+    try {
+      setIsProcessing(true)
+      const { error } = await supabase
+        .from("appointments")
+        .update({ status: "in_progress" })
+        .eq("id", id)
+        .eq("mechanic_id", DEMO_MECHANIC_ID)
+
+      if (error) throw error
+
       toast({
         title: "Success",
         description: "Appointment started successfully.",
       })
-    } else {
+      return true
+    } catch (error) {
+      console.error("Error starting appointment:", error)
       toast({
         title: "Error",
         description: "Failed to start appointment.",
         variant: "destructive",
       })
+      return false
+    } finally {
+      setIsProcessing(false)
     }
-    return success
   }
 
   const handleCancelAppointment = async (id: string) => {
-    const success = await cancelAppointment(id)
-    if (success) {
+    try {
+      setIsProcessing(true)
+      const { error } = await supabase
+        .from("appointments")
+        .update({ status: "cancelled" })
+        .eq("id", id)
+        .eq("mechanic_id", DEMO_MECHANIC_ID)
+
+      if (error) throw error
+
       toast({
         title: "Success",
         description: "Appointment cancelled successfully.",
       })
-    } else {
+      return true
+    } catch (error) {
+      console.error("Error cancelling appointment:", error)
       toast({
         title: "Error",
         description: "Failed to cancel appointment.",
         variant: "destructive",
       })
+      return false
+    } finally {
+      setIsProcessing(false)
     }
-    return success
   }
 
   const handleAcceptAppointment = async (id: string, price: number) => {
@@ -72,12 +173,22 @@ export default function MechanicDashboard() {
       return false
     }
 
-    const success = await acceptAppointment(id, price)
-    if (success) {
+    try {
+      setIsProcessing(true)
+      const { error } = await createOrUpdateQuote({
+        appointment_id: id,
+        mechanic_id: DEMO_MECHANIC_ID,
+        price,
+        eta: "1-2 hours", // Default ETA for demo
+      })
+
+      if (error) throw error
+
       toast({
         title: "Success",
         description: "Appointment accepted successfully.",
       })
+
       // Move to the next available appointment if there are more
       if (currentAvailableIndex < availableAppointments.length - 1) {
         setCurrentAvailableIndex(currentAvailableIndex + 1)
@@ -85,23 +196,31 @@ export default function MechanicDashboard() {
         // If we're at the last one, go back to the first one
         setCurrentAvailableIndex(0)
       }
-    } else {
+
+      return true
+    } catch (error) {
+      console.error("Error accepting appointment:", error)
       toast({
         title: "Error",
         description: "Failed to accept appointment.",
         variant: "destructive",
       })
+      return false
+    } finally {
+      setIsProcessing(false)
     }
-    return success
   }
 
   const handleDenyAppointment = async (id: string) => {
-    const success = await denyAppointment(id)
-    if (success) {
+    try {
+      setIsProcessing(true)
+      // For denying, we just remove it from the available list
+      setAvailableAppointments((prev) => prev.filter((a) => a.id !== id))
       toast({
         title: "Success",
         description: "Appointment removed from your list.",
       })
+
       // Move to the next available appointment if there are more
       if (currentAvailableIndex < availableAppointments.length - 1) {
         setCurrentAvailableIndex(currentAvailableIndex + 1)
@@ -109,14 +228,19 @@ export default function MechanicDashboard() {
         // If we're at the last one, go back to the first one
         setCurrentAvailableIndex(0)
       }
-    } else {
+
+      return true
+    } catch (error) {
+      console.error("Error denying appointment:", error)
       toast({
         title: "Error",
         description: "Failed to remove appointment.",
         variant: "destructive",
       })
+      return false
+    } finally {
+      setIsProcessing(false)
     }
-    return success
   }
 
   // Navigate through available appointments
@@ -132,9 +256,6 @@ export default function MechanicDashboard() {
     }
   }
 
-  // State for price input in available appointments
-  const [priceInput, setPriceInput] = useState<string>("")
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Standard Site Header */}
@@ -144,12 +265,6 @@ export default function MechanicDashboard() {
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 w-full">
-              <p>{error}</p>
-            </div>
-          )}
 
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -176,7 +291,7 @@ export default function MechanicDashboard() {
           {/* Column 1: Upcoming Appointments */}
           <UpcomingAppointments
             appointments={upcomingAppointments}
-            isLoading={isLoading}
+            isLoading={isAppointmentsLoading}
             onStart={handleStartAppointment}
             onCancel={handleCancelAppointment}
             onUpdatePrice={(id, price) => {
@@ -275,7 +390,7 @@ export default function MechanicDashboard() {
           <div className="bg-[#294a46] rounded-lg shadow-sm p-6 text-white">
             <h2 className="text-xl font-semibold mb-6">Available Appointments</h2>
 
-            {isLoading ? (
+            {isAppointmentsLoading ? (
               <div className="flex items-center justify-center h-[400px]">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
               </div>
@@ -296,6 +411,7 @@ export default function MechanicDashboard() {
                       onClick={goToPrevAvailable}
                       className="bg-white/20 hover:bg-white/30 rounded-full p-1"
                       aria-label="Previous appointment"
+                      disabled={isProcessing}
                     >
                       <ChevronLeft className="h-5 w-5" />
                     </button>
@@ -308,6 +424,7 @@ export default function MechanicDashboard() {
                       onClick={goToNextAvailable}
                       className="bg-white/20 hover:bg-white/30 rounded-full p-1"
                       aria-label="Next appointment"
+                      disabled={isProcessing}
                     >
                       <ChevronRight className="h-5 w-5" />
                     </button>
@@ -388,23 +505,44 @@ export default function MechanicDashboard() {
                           onChange={(e) => setPriceInput(e.target.value)}
                           placeholder="Enter your price"
                           className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                          disabled={isProcessing}
                         />
                       </div>
 
                       <div className="flex gap-3">
                         <button
                           onClick={() => handleAcceptAppointment(availableAppointments[currentAvailableIndex].id, Number(priceInput))}
-                          className="flex-1 bg-white text-[#294a46] px-4 py-2 rounded-md hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
+                          className="flex-1 bg-white text-[#294a46] px-4 py-2 rounded-md hover:bg-white/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                          disabled={isProcessing || !priceInput || Number(priceInput) <= 0}
                         >
-                          <Check className="h-4 w-4" />
-                          Accept
+                          {isProcessing ? (
+                            <span className="flex items-center justify-center">
+                              <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-[#294a46] rounded-full mr-2"></span>
+                              Processing...
+                            </span>
+                          ) : (
+                            <>
+                              <Check className="h-4 w-4" />
+                              Accept
+                            </>
+                          )}
                         </button>
                         <button
                           onClick={() => handleDenyAppointment(availableAppointments[currentAvailableIndex].id)}
-                          className="flex-1 bg-white/10 text-white px-4 py-2 rounded-md hover:bg-white/20 transition-colors flex items-center justify-center gap-2"
+                          className="flex-1 bg-white/10 text-white px-4 py-2 rounded-md hover:bg-white/20 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                          disabled={isProcessing}
                         >
-                          <X className="h-4 w-4" />
-                          Deny
+                          {isProcessing ? (
+                            <span className="flex items-center justify-center">
+                              <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></span>
+                              Processing...
+                            </span>
+                          ) : (
+                            <>
+                              <X className="h-4 w-4" />
+                              Deny
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
