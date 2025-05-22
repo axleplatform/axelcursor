@@ -197,7 +197,7 @@ export default function HomePage() {
         throw new Error("Appointment date must be in the future")
       }
 
-      const appointmentData = {
+      const initialAppointmentData = {
         location: formData.address,
         appointment_date: appointmentDateTime,
         status: "draft",
@@ -210,12 +210,12 @@ export default function HomePage() {
         user_id: null,
       }
 
-      console.log("Creating appointment with data:", appointmentData)
+      console.log("Creating appointment with data:", initialAppointmentData)
 
       // First, create the appointment with initial status
       const { data: appointmentData, error: appointmentError } = await supabase
         .from("appointments")
-        .insert([appointmentData])
+        .insert([initialAppointmentData])
         .select()
 
       if (appointmentError) {
