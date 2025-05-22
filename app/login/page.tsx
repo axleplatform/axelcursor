@@ -166,7 +166,7 @@ export default function LoginPage() {
 
         if (customerProfile) {
           console.log("Redirecting to customer dashboard...")
-          window.location.href = "/dashboard"
+          router.push("/dashboard")
           return
         }
 
@@ -182,13 +182,13 @@ export default function LoginPage() {
       
       if (mechanicProfile.onboarding_completed) {
         console.log("Onboarding completed, redirecting to mechanic dashboard...")
-        // Force a hard navigation to ensure the page reloads
-        window.location.href = "/mechanic/dashboard"
+        // Use router.push for client-side navigation
+        router.push("/mechanic/dashboard")
       } else {
         const step = mechanicProfile.onboarding_step || "personal_info"
         console.log("Onboarding not completed, redirecting to step:", step)
-        // Force a hard navigation to ensure the page reloads
-        window.location.href = `/onboarding-mechanic-${getStepNumber(step)}`
+        // Use router.push for client-side navigation
+        router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
       }
     } catch (error: any) {
       console.error("Login error:", error)

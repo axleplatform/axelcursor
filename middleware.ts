@@ -30,7 +30,9 @@ export async function middleware(request: NextRequest) {
 
       if (isProtectedRoute) {
         console.log("Protected route accessed without session, redirecting to login")
-        return NextResponse.redirect(new URL("/login", request.url))
+        const redirectUrl = new URL("/login", request.url)
+        redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname)
+        return NextResponse.redirect(redirectUrl)
       }
       return res
     }
@@ -57,7 +59,9 @@ export async function middleware(request: NextRequest) {
       // If no mechanic profile, redirect to login
       if (!mechanicProfile) {
         console.log("No mechanic profile found, redirecting to login")
-        return NextResponse.redirect(new URL("/login", request.url))
+        const redirectUrl = new URL("/login", request.url)
+        redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname)
+        return NextResponse.redirect(redirectUrl)
       }
 
       // If onboarding is not completed, redirect to appropriate step
@@ -78,6 +82,8 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    // If we get here, allow the request to continue
+    console.log("Middleware allowing request to continue")
     return res
   } catch (error) {
     console.error("Middleware error:", error)
