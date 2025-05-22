@@ -316,144 +316,99 @@ export default function MechanicDashboard() {
 
                 {/* Current appointment details */}
                 {availableAppointments[currentAvailableIndex] && (
-                  <>
-                    <div className="flex items-center justify-between mb-4">
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-medium mb-1">
+                          {availableAppointments[currentAvailableIndex].vehicles?.make}{" "}
+                          {availableAppointments[currentAvailableIndex].vehicles?.model}
+                        </h3>
+                        <p className="text-sm text-white/70">
+                          {availableAppointments[currentAvailableIndex].vehicles?.year}
+                        </p>
+                      </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-xs font-medium text-gray-900">
-                          {currentAvailableIndex + 1}
-                        </div>
-                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
-                          <MapPin className="h-4 w-4 text-gray-700" />
-                        </div>
-                        <span className="text-white line-clamp-1">
-                          {availableAppointments[currentAvailableIndex].location}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => handleDenyAppointment(availableAppointments[currentAvailableIndex].id)}
-                        className="text-gray-200 hover:text-white"
-                        aria-label="Deny appointment"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
-
-                    <div className="mb-4 flex justify-center">
-                      <div className="flex items-center border border-gray-300 rounded-md px-3 py-2 w-fit bg-white">
-                        <span className="text-2xl font-bold mr-2 text-gray-900">$</span>
-                        <input
-                          type="number"
-                          value={priceInput}
-                          onChange={(e) => setPriceInput(e.target.value)}
-                          placeholder="Enter price"
-                          className="border-none outline-none text-2xl font-bold bg-transparent w-32 text-gray-900"
-                        />
+                        <MapPin className="h-4 w-4" />
+                        <span className="text-sm">{availableAppointments[currentAvailableIndex].location}</span>
                       </div>
                     </div>
 
-                    <div className="text-white mb-4 text-center">
-                      {formatDate(availableAppointments[currentAvailableIndex].appointment_date)}
-                    </div>
-
-                    <div className="bg-[#e6eeec] p-4 rounded-md mb-4 text-gray-900">
-                      <div className="flex items-center justify-center mb-3">
-                        <span className="mr-2">Does car run?</span>
-                        <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                          {availableAppointments[currentAvailableIndex].car_runs ? (
-                            <Check className="h-3 w-3 text-white" />
-                          ) : (
-                            <X className="h-3 w-3 text-white" />
-                          )}
-                        </div>
-                        <span className="ml-1">
-                          {availableAppointments[currentAvailableIndex].car_runs ? "Yes" : "No"}
-                        </span>
+                    <div className="space-y-3 mb-6">
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Issue Description</h4>
+                        <p className="text-sm text-white/70">
+                          {availableAppointments[currentAvailableIndex].issue_description || "No description provided"}
+                        </p>
                       </div>
 
-                      {availableAppointments[currentAvailableIndex].selected_services &&
-                        availableAppointments[currentAvailableIndex].selected_services!.length > 0 && (
-                          <div className="mb-3">
-                            <div className="font-semibold mb-1">Recommended Services:</div>
-                            <ul className="list-disc pl-5 space-y-1">
-                              {availableAppointments[currentAvailableIndex].selected_services!.map((service, index) => (
-                                <li key={index}>{service}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                      {availableAppointments[currentAvailableIndex].selected_car_issues &&
-                        availableAppointments[currentAvailableIndex].selected_car_issues!.length > 0 && (
-                          <div className="mb-3">
-                            <div className="font-semibold mb-1">Reported Issues:</div>
-                            <ul className="list-disc pl-5 space-y-1">
-                              {availableAppointments[currentAvailableIndex].selected_car_issues!.map((issue, index) => (
-                                <li key={index}>{issue}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                      {availableAppointments[currentAvailableIndex].issue_description && (
+                      {availableAppointments[currentAvailableIndex].selected_services && (
                         <div>
-                          <div className="font-semibold mb-1">Customer Description:</div>
-                          <p className="italic text-gray-700">
-                            "{availableAppointments[currentAvailableIndex].issue_description}"
+                          <h4 className="text-sm font-medium mb-1">Selected Services</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {availableAppointments[currentAvailableIndex].selected_services.map((service, index) => (
+                              <span
+                                key={index}
+                                className="bg-white/20 text-xs px-2 py-1 rounded-full"
+                              >
+                                {service}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <h4 className="text-sm font-medium mb-1">Appointment Date</h4>
+                        <p className="text-sm text-white/70">
+                          {formatDate(availableAppointments[currentAvailableIndex].appointment_date)}
+                        </p>
+                      </div>
+
+                      {availableAppointments[currentAvailableIndex].car_runs !== null && (
+                        <div>
+                          <h4 className="text-sm font-medium mb-1">Car Status</h4>
+                          <p className="text-sm text-white/70">
+                            {availableAppointments[currentAvailableIndex].car_runs
+                              ? "Car is running"
+                              : "Car is not running"}
                           </p>
                         </div>
                       )}
                     </div>
 
-                    {availableAppointments[currentAvailableIndex].vehicles && (
-                      <div className="text-center mb-6">
-                        <div className="font-semibold text-lg text-white">
-                          {availableAppointments[currentAvailableIndex].vehicles.year}{" "}
-                          {availableAppointments[currentAvailableIndex].vehicles.make}{" "}
-                          {availableAppointments[currentAvailableIndex].vehicles.model}
-                        </div>
-                        {availableAppointments[currentAvailableIndex].vehicles.vin && (
-                          <div className="text-gray-200 text-sm">
-                            VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}
-                          </div>
-                        )}
-                        {availableAppointments[currentAvailableIndex].vehicles.mileage && (
-                          <div className="text-gray-200 text-sm">
-                            Mileage: {availableAppointments[currentAvailableIndex].vehicles.mileage} miles
-                          </div>
-                        )}
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="price" className="block text-sm font-medium mb-1">
+                          Your Quote (USD)
+                        </label>
+                        <input
+                          type="number"
+                          id="price"
+                          value={priceInput}
+                          onChange={(e) => setPriceInput(e.target.value)}
+                          placeholder="Enter your price"
+                          className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                        />
                       </div>
-                    )}
 
-                    <div className="flex gap-4">
-                      <button
-                        onClick={() =>
-                          handleAcceptAppointment(availableAppointments[currentAvailableIndex].id, Number(priceInput))
-                        }
-                        className="bg-white text-[#294a46] font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-gray-100 hover:shadow-md active:scale-[0.99] flex-1"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => handleDenyAppointment(availableAppointments[currentAvailableIndex].id)}
-                        className="border border-white text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99] flex-1"
-                      >
-                        Deny
-                      </button>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleAcceptAppointment(availableAppointments[currentAvailableIndex].id, Number(priceInput))}
+                          className="flex-1 bg-white text-[#294a46] px-4 py-2 rounded-md hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Check className="h-4 w-4" />
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => handleDenyAppointment(availableAppointments[currentAvailableIndex].id)}
+                          className="flex-1 bg-white/10 text-white px-4 py-2 rounded-md hover:bg-white/20 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <X className="h-4 w-4" />
+                          Deny
+                        </button>
+                      </div>
                     </div>
-
-                    {availableAppointments.length > 1 && (
-                      <div className="flex justify-center mt-4 gap-1">
-                        {availableAppointments.map((_, index) => (
-                          <div
-                            key={index}
-                            className={`w-2 h-2 rounded-full ${
-                              index === currentAvailableIndex ? "bg-white" : "bg-gray-300"
-                            }`}
-                          ></div>
-                        ))}
-                      </div>
-                    )}
-                  </>
+                  </div>
                 )}
               </div>
             )}
