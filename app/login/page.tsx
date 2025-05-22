@@ -99,80 +99,100 @@ export default function LoginPage() {
     setResendSuccess(false)
 
     try {
-      console.log("Attempting login...")
+      console.log("Attempting login with email:", email)
       // Authenticate with Supabase
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      console.log("Auth response:", data)
-      console.log("Auth error:", authError)
+      console.log("Auth response:", { 
+        user: data?.user?.id,
+        session: data?.session ? "exists" : "none",
+        error: authError 
+      })
 
       if (authError) {
+        console.error("Authentication error:", authError)
         if (authError.message.includes("Email not confirmed")) {
           throw new Error(
             "Your email has not been confirmed. Please check your inbox or click 'Resend confirmation email' below.",
           )
         }
-        throw new Error("An error occurred during login")
+        throw new Error(`Login failed: ${authError.message}`)
       }
 
       if (!data.user) {
-        throw new Error("No user found")
+        console.error("No user data in response")
+        throw new Error("No user found in response")
       }
 
       // Check if the user is a mechanic
-      console.log("Checking mechanic profile after login...")
+      console.log("Checking mechanic profile for user:", data.user.id)
       const { data: mechanicProfile, error: profileError } = await supabase
         .from("mechanic_profiles")
-        .select("onboarding_completed, onboarding_step, id")
+        .select("onboarding_completed, onboarding_step, id, first_name")
         .eq("user_id", data.user.id)
         .single()
 
-      console.log("Mechanic profile after login:", mechanicProfile)
-      console.log("Profile error after login:", profileError)
+      console.log("Mechanic profile check result:", { 
+        profile: mechanicProfile ? {
+          id: mechanicProfile.id,
+          onboarding_completed: mechanicProfile.onboarding_completed,
+          onboarding_step: mechanicProfile.onboarding_step,
+          first_name: mechanicProfile.first_name
+        } : null,
+        error: profileError 
+      })
 
       if (profileError && profileError.code !== "PGRST116") {
         console.error("Error checking mechanic profile:", profileError)
-        throw new Error("Error verifying account type")
+        throw new Error(`Error verifying account type: ${profileError.message}`)
       }
 
       if (!mechanicProfile) {
         // Check if this is a customer account
-        console.log("Checking customer profile after login...")
-        const { data: customerProfile } = await supabase
+        console.log("Checking customer profile for user:", data.user.id)
+        const { data: customerProfile, error: customerError } = await supabase
           .from("customer_profiles")
           .select("id")
           .eq("user_id", data.user.id)
           .single()
 
+        console.log("Customer profile check result:", { 
+          profile: customerProfile,
+          error: customerError 
+        })
+
         if (customerProfile) {
           console.log("Redirecting to customer dashboard...")
-          router.push("/dashboard")
+          window.location.href = "/dashboard"
           return
         }
 
-        throw new Error("Account type not recognized")
+        throw new Error("Account type not recognized. Please contact support.")
       }
 
       // User is a mechanic, handle redirection
-      console.log("Onboarding completed:", mechanicProfile.onboarding_completed)
-      console.log("Onboarding step:", mechanicProfile.onboarding_step)
+      console.log("Mechanic profile found:", {
+        onboarding_completed: mechanicProfile.onboarding_completed,
+        onboarding_step: mechanicProfile.onboarding_step,
+        first_name: mechanicProfile.first_name
+      })
       
       if (mechanicProfile.onboarding_completed) {
-        console.log("Redirecting to mechanic dashboard...")
+        console.log("Onboarding completed, redirecting to mechanic dashboard...")
         // Force a hard navigation to ensure the page reloads
         window.location.href = "/mechanic/dashboard"
       } else {
         const step = mechanicProfile.onboarding_step || "personal_info"
-        console.log("Redirecting to onboarding step:", step)
+        console.log("Onboarding not completed, redirecting to step:", step)
         // Force a hard navigation to ensure the page reloads
         window.location.href = `/onboarding-mechanic-${getStepNumber(step)}`
       }
     } catch (error: any) {
       console.error("Login error:", error)
-      setError(error.message || "An error occurred during login")
+      setError(error.message || "An error occurred during login. Please try again.")
     } finally {
       setIsLoading(false)
     }
