@@ -38,7 +38,12 @@ export default function MechanicDashboard() {
 
         // Fetch all types of appointments
         const [available, quoted, upcoming] = await Promise.all([
-          getAvailableAppointmentsForMechanic(DEMO_MECHANIC_ID),
+          supabase
+            .from("appointments")
+            .select("*, vehicles(*)")
+            .is("mechanic_id", null)
+            .eq("status", "pending")
+            .order("created_at", { ascending: false }),
           getQuotedAppointmentsForMechanic(DEMO_MECHANIC_ID),
           supabase
             .from("appointments")
@@ -50,7 +55,7 @@ export default function MechanicDashboard() {
         ])
 
         console.log("Appointments fetched:", { available, quoted, upcoming })
-        setAvailableAppointments(available?.appointments || [])
+        setAvailableAppointments(available?.data || [])
         setQuotedAppointments(quoted?.appointments || [])
         setUpcomingAppointments(upcoming?.data || [])
       } catch (error) {
@@ -76,6 +81,7 @@ export default function MechanicDashboard() {
           event: "*",
           schema: "public",
           table: "appointments",
+          filter: `status=eq.pending`,
         },
         () => {
           fetchAppointments()
@@ -91,6 +97,7 @@ export default function MechanicDashboard() {
           event: "*",
           schema: "public",
           table: "mechanic_quotes",
+          filter: `mechanic_id=eq.${DEMO_MECHANIC_ID}`,
         },
         () => {
           fetchAppointments()

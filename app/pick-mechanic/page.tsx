@@ -100,9 +100,6 @@ export default function PickMechanicPage() {
         setIsLoading(true)
         setError(null)
 
-        // Force refresh the schema cache
-        await supabase.rpc("reload_schema_cache")
-
         const { data, error } = await supabase
           .from("appointments")
           .select(`
@@ -115,7 +112,6 @@ export default function PickMechanicPage() {
         if (error) throw error
 
         setAppointment(data)
-        console.log("Fetched appointment data:", data)
       } catch (error) {
         console.error("Error fetching appointment data:", error)
         setError("Failed to load appointment data")
@@ -133,14 +129,12 @@ export default function PickMechanicPage() {
       try {
         setIsLoadingQuotes(true)
 
-        // Get quotes for this appointment
         const { success, quotes, error: quotesError } = await getQuotesForAppointment(appointmentId)
 
         if (!success) {
           throw new Error(quotesError)
         }
 
-        // If no quotes, return early with empty mechanics array
         if (!quotes || quotes.length === 0) {
           setAppointment((prev: Appointment | null) =>
             prev
@@ -154,7 +148,6 @@ export default function PickMechanicPage() {
           return
         }
 
-        // Format the quotes data
         const formattedMechanics = quotes.map((quote: MechanicQuote) => {
           const mechanic = quote.mechanic
           if (!mechanic) return null
@@ -173,7 +166,6 @@ export default function PickMechanicPage() {
           }
         }).filter((m): m is Mechanic => m !== null)
 
-        // Update appointment data with mechanic quotes
         setAppointment((prev: Appointment | null) =>
           prev
             ? {
@@ -183,7 +175,6 @@ export default function PickMechanicPage() {
             : null,
         )
 
-        // If there's a selected quote, select it
         const { data: appointmentData } = await supabase
           .from("appointments")
           .select("selected_quote_id")
@@ -207,7 +198,6 @@ export default function PickMechanicPage() {
 
     fetchAppointmentData()
 
-    // Set up real-time subscription for mechanic quotes
     const quotesSubscription = supabase
       .channel("mechanic-quotes-changes")
       .on(
@@ -219,13 +209,11 @@ export default function PickMechanicPage() {
           filter: `appointment_id=eq.${appointmentId}`,
         },
         () => {
-          // Refresh the quotes when there's a change
           fetchMechanicQuotes(appointmentId!)
         },
       )
       .subscribe()
 
-    // Set up real-time subscription for appointment changes
     const appointmentSubscription = supabase
       .channel("appointment-changes")
       .on(
@@ -237,13 +225,11 @@ export default function PickMechanicPage() {
           filter: `id=eq.${appointmentId}`,
         },
         () => {
-          // Refresh the appointment data when there's a change
           fetchAppointmentData()
         },
       )
       .subscribe()
 
-    // Clean up subscriptions on unmount
     return () => {
       supabase.removeChannel(quotesSubscription)
       supabase.removeChannel(appointmentSubscription)
@@ -265,7 +251,6 @@ export default function PickMechanicPage() {
         description: "Mechanic selected successfully.",
       })
 
-      // Redirect to appointment confirmation
       router.push(`/appointment-confirmation?appointmentId=${appointmentId}`)
     } catch (error) {
       console.error("Error selecting mechanic:", error)
@@ -284,7 +269,6 @@ export default function PickMechanicPage() {
     return appointment.mechanics.find((mechanic: Mechanic) => mechanic.quote_id === selectedMechanic)
   }
 
-  // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString("en-US", {
@@ -297,7 +281,6 @@ export default function PickMechanicPage() {
     })
   }
 
-  // Loading state for the entire page
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -341,7 +324,6 @@ export default function PickMechanicPage() {
     )
   }
 
-  // Error state
   if (error || !appointment) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -372,7 +354,6 @@ export default function PickMechanicPage() {
     )
   }
 
-  // Main content with order summary always visible
   return (
     <div className="flex flex-col min-h-screen">
       <SiteHeader />
@@ -384,7 +365,6 @@ export default function PickMechanicPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6 max-w-5xl mx-auto">
-            {/* Left Column - Mechanics List (3/5 width) */}
             <div className="md:col-span-3">
               <Card className="overflow-hidden h-full bg-white">
                 <div className="p-4 border-b">
@@ -507,7 +487,6 @@ export default function PickMechanicPage() {
               </Card>
             </div>
 
-            {/* Right Column - Order Summary & Payment (2/5 width) */}
             <div className="md:col-span-2">
               <Card className="p-0 sticky top-8 h-full bg-white">
                 <div className="p-4 border-b">
