@@ -28,112 +28,62 @@ export async function createOrUpdateQuote(
   mechanicId: string,
   appointmentId: string,
   price: number,
-  eta = "1-2 hours",
-  notes = "",
-): Promise<{ success: boolean; quote?: MechanicQuote; error?: string }> {
+  eta: string,
+  notes: string
+): Promise<{ success: boolean; error?: string }> {
   try {
-    // Validate inputs
-    if (!mechanicId || !appointmentId || !price || price <= 0) {
-      return { success: false, error: "Invalid input parameters" }
-    }
-
-    // Check if appointment exists and is in a valid state
+    // First, check if the appointment is still available for quoting
     const { data: appointment, error: appointmentError } = await supabase
       .from("appointments")
-      .select("status, mechanic_id")
+      .select("status")
       .eq("id", appointmentId)
       .single()
 
     if (appointmentError) {
-      return { success: false, error: "Appointment not found" }
+      console.error("Error checking appointment status:", appointmentError)
+      return { success: false, error: "Failed to check appointment status" }
     }
 
-    if (appointment.status !== "pending") {
-      return { success: false, error: "Appointment is no longer available for quotes" }
+    if (!appointment || appointment.status !== "pending") {
+      return { success: false, error: "Appointment is no longer available for quoting" }
     }
 
-    if (appointment.mechanic_id) {
-      return { success: false, error: "Appointment already has an assigned mechanic" }
-    }
-
-    // Check if a quote already exists
-    const { data: existingQuote, error: checkError } = await supabase
+    // Create or update the quote
+    const { error: quoteError } = await supabase
       .from("mechanic_quotes")
-      .select("*")
-      .eq("mechanic_id", mechanicId)
-      .eq("appointment_id", appointmentId)
-      .single()
+      .upsert({
+        mechanic_id: mechanicId,
+        appointment_id: appointmentId,
+        price,
+        eta,
+        notes,
+        status: "pending",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
 
-    if (checkError && checkError.code !== "PGRST116") {
-      console.error("Error checking for existing quote:", checkError)
-      return { success: false, error: "Failed to check for existing quote" }
-    }
-
-    const now = new Date().toISOString()
-    let result
-
-    if (existingQuote) {
-      // Update existing quote
-      const { data: updatedQuote, error: updateError } = await supabase
-        .from("mechanic_quotes")
-        .update({
-          price,
-          eta,
-          notes,
-          updated_at: now,
-        })
-        .eq("id", existingQuote.id)
-        .select()
-        .single()
-
-      if (updateError) {
-        console.error("Error updating quote:", updateError)
-        return { success: false, error: "Failed to update quote" }
-      }
-
-      result = updatedQuote
-    } else {
-      // Create new quote
-      const { data: newQuote, error: insertError } = await supabase
-        .from("mechanic_quotes")
-        .insert({
-          appointment_id: appointmentId,
-          mechanic_id: mechanicId,
-          price,
-          eta,
-          notes,
-          status: "pending",
-          created_at: now,
-          updated_at: now,
-        })
-        .select()
-        .single()
-
-      if (insertError) {
-        console.error("Error creating quote:", insertError)
-        return { success: false, error: "Failed to create quote" }
-      }
-
-      result = newQuote
+    if (quoteError) {
+      console.error("Error creating/updating quote:", quoteError)
+      return { success: false, error: "Failed to create/update quote" }
     }
 
     // Update appointment status to quoted
-    const { error: updateAppointmentError } = await supabase
+    const { error: updateError } = await supabase
       .from("appointments")
       .update({
         status: "quoted",
-        updated_at: now,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", appointmentId)
 
-    if (updateAppointmentError) {
-      console.error("Error updating appointment status:", updateAppointmentError)
-      // Don't fail the whole operation if this fails
+    if (updateError) {
+      console.error("Error updating appointment status:", updateError)
+      return { success: false, error: "Failed to update appointment status" }
     }
 
-    return { success: true, quote: result }
-  } catch (error) {
-    console.error("Error in createOrUpdateQuote:", error)
+    return { success: true }
+  } catch (err) {
+    console.error("Exception in createOrUpdateQuote:", err)
     return { success: false, error: "An unexpected error occurred" }
   }
 }

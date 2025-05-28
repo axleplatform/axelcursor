@@ -13,12 +13,14 @@ import {
   getQuotedAppointmentsForMechanic,
   createOrUpdateQuote,
 } from "@/lib/mechanic-quotes"
+import { useRouter } from "next/navigation"
 
 // Mock mechanic ID - in a real app, this would come from authentication
 const DEMO_MECHANIC_ID = "demo-mechanic-123"
 
 export default function MechanicDashboard() {
   const { toast } = useToast()
+  const router = useRouter()
   const [currentAvailableIndex, setCurrentAvailableIndex] = useState(0)
   const [priceInput, setPriceInput] = useState<string>("")
   const [isProcessing, setIsProcessing] = useState(false)
@@ -28,6 +30,24 @@ export default function MechanicDashboard() {
   const [quotedAppointments, setQuotedAppointments] = useState<any[]>([])
   const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([])
   const [isAppointmentsLoading, setIsAppointmentsLoading] = useState(true)
+
+  // Check if demo mode is enabled
+  useEffect(() => {
+    // DEMO DASHBOARD IS CURRENTLY DISABLED
+    // This dashboard is kept for future reference but should not be accessible
+    // TODO: Remove or properly implement demo mode in the future
+    toast({
+      title: "Access Denied",
+      description: "Demo dashboard is currently disabled",
+      variant: "destructive",
+    })
+    router.push('/login')
+  }, [router, toast])
+
+  // IMPORTANT: This is a demo dashboard that is currently disabled
+  // It uses a hardcoded DEMO_MECHANIC_ID and shows all pending appointments
+  // This should not be used in production and is kept for reference only
+  // Real mechanics should use /mechanic/dashboard instead
 
   // Fetch appointments
   useEffect(() => {
@@ -41,6 +61,7 @@ export default function MechanicDashboard() {
           .from("appointments")
           .select("*, vehicles(*)")
           .eq("status", "pending")
+          .is("mechanic_id", null)  // Only show unassigned appointments
           .order("created_at", { ascending: false })
 
         if (pendingError) {
@@ -50,11 +71,11 @@ export default function MechanicDashboard() {
 
         console.log("Pending appointments:", pendingAppointments)
 
-        // Filter out appointments that have been quoted by this mechanic
+        // Filter out appointments that have been quoted by any mechanic
         const { data: quotedAppointments, error: quotedError } = await supabase
           .from("mechanic_quotes")
           .select("appointment_id")
-          .eq("mechanic_id", DEMO_MECHANIC_ID)
+          .in("appointment_id", pendingAppointments?.map(a => a.id) || [])
 
         if (quotedError) {
           console.error("Error fetching quoted appointments:", quotedError)
@@ -64,7 +85,7 @@ export default function MechanicDashboard() {
         const quotedAppointmentIds = quotedAppointments?.map(q => q.appointment_id) || []
         console.log("Quoted appointment IDs:", quotedAppointmentIds)
 
-        // Filter available appointments
+        // Filter available appointments - only show unquoted appointments
         const available = pendingAppointments?.filter(app => !quotedAppointmentIds.includes(app.id)) || []
         console.log("Available appointments:", available)
 
@@ -227,12 +248,13 @@ export default function MechanicDashboard() {
 
     try {
       setIsProcessing(true)
-      const { success, error } = await createOrUpdateQuote({
-        appointment_id: id,
-        mechanic_id: DEMO_MECHANIC_ID,
+      const { success, error } = await createOrUpdateQuote(
+        DEMO_MECHANIC_ID,
+        id,
         price,
-        eta: "1-2 hours", // Default ETA for demo
-      })
+        "1-2 hours", // Default ETA for demo
+        "" // Default notes
+      )
 
       if (!success) {
         throw new Error(error)

@@ -181,9 +181,9 @@ export default function LoginPage() {
       })
       
       if (mechanicProfile.onboarding_completed) {
-        console.log("Onboarding completed, redirecting to demo dashboard...")
-        // Redirect to demo dashboard instead
-        router.push("/demo-mechanic-dashboard")
+        console.log("Onboarding completed, redirecting to dashboard...")
+        // Redirect to real dashboard
+        router.push("/mechanic/dashboard")
       } else {
         const step = mechanicProfile.onboarding_step || "personal_info"
         console.log("Onboarding not completed, redirecting to step:", step)

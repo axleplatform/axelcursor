@@ -323,35 +323,15 @@ export function useMechanicAppointments(mechanicId: string) {
     }
 
     try {
-      // Create a quote for this appointment
-      const { error: quoteError } = await supabase.from("mechanic_quotes").insert({
-        appointment_id: appointmentId,
-        mechanic_id: mechanicId,
+      const { success, error } = await createOrUpdateQuote(
+        mechanicId,
+        appointmentId,
         price,
-        eta: "1-2 hours", // Default ETA
-        status: "pending",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+        "1-2 hours", // Default ETA
+        "" // Default notes
+      )
 
-      if (quoteError) {
-        // If it's a unique constraint violation, the mechanic already quoted this appointment
-        if (quoteError.code === "23505") {
-          // Update the existing quote instead
-          const { error: updateError } = await supabase
-            .from("mechanic_quotes")
-            .update({
-              price,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("appointment_id", appointmentId)
-            .eq("mechanic_id", mechanicId)
-
-          if (updateError) throw updateError
-        } else {
-          throw quoteError
-        }
-      }
+      if (error) throw error
 
       // Update appointment status to quoted
       const { error: updateAppointmentError } = await supabase

@@ -22,6 +22,7 @@ import {
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
+import { toast } from "@/components/ui/use-toast"
 
 // Define types for form data
 interface BookingFormData {
@@ -679,6 +680,17 @@ export default function BookAppointmentPage() {
 
   // Get all available services
   const allServices = getAllServices(aiSuggestions)
+
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
+      toast({
+        title: "Access Denied",
+        description: "Demo dashboard is only available in demo mode",
+        variant: "destructive",
+      })
+      router.push('/login')
+    }
+  }, [router, toast])
 
   if (isLoading) {
     return (

@@ -77,12 +77,11 @@ export default function MechanicDashboard() {
           event: '*',
           schema: 'public',
           table: 'appointments',
-          filter: `mechanic_id=eq.${mechanicId}`,
         },
         async (payload) => {
           console.log('Appointment change received:', payload)
           
-          // Refresh appointments based on the change
+          // Refresh all appointments when any change occurs
           const [available, quoted, upcoming] = await Promise.all([
             getAvailableAppointmentsForMechanic(mechanicId),
             getQuotedAppointmentsForMechanic(mechanicId),
@@ -90,13 +89,12 @@ export default function MechanicDashboard() {
               .from("appointments")
               .select("*, vehicles(*)")
               .eq("mechanic_id", mechanicId)
-              .eq("status", "confirmed")
-              .gte("scheduled_time", new Date().toISOString())
-              .order("scheduled_time", { ascending: true }),
+              .in("status", ["accepted", "in_progress", "pending_payment"])
+              .order("appointment_date", { ascending: true }),
           ])
 
-          setAvailableAppointments(available || [])
-          setQuotedAppointments(quoted || [])
+          if (available.success) setAvailableAppointments(available.appointments || [])
+          if (quoted.success) setQuotedAppointments(quoted.appointments || [])
           setUpcomingAppointments(upcoming.data || [])
         }
       )
@@ -111,12 +109,18 @@ export default function MechanicDashboard() {
           event: '*',
           schema: 'public',
           table: 'mechanic_quotes',
-          filter: `mechanic_id=eq.${mechanicId}`,
         },
-        async () => {
-          console.log('Quote change received')
-          const quoted = await getQuotedAppointmentsForMechanic(mechanicId)
-          setQuotedAppointments(quoted || [])
+        async (payload) => {
+          console.log('Quote change received:', payload)
+          
+          // Refresh available and quoted appointments when quotes change
+          const [available, quoted] = await Promise.all([
+            getAvailableAppointmentsForMechanic(mechanicId),
+            getQuotedAppointmentsForMechanic(mechanicId),
+          ])
+
+          if (available.success) setAvailableAppointments(available.appointments || [])
+          if (quoted.success) setQuotedAppointments(quoted.appointments || [])
         }
       )
       .subscribe()
@@ -293,7 +297,13 @@ export default function MechanicDashboard() {
     setIsProcessing(true)
 
     try {
-      const { success, error } = await createOrUpdateQuote(mechanicId, appointmentId, price)
+      const { success, error } = await createOrUpdateQuote(
+        mechanicId,
+        appointmentId,
+        price,
+        "1-2 hours", // Default ETA
+        "" // Default notes
+      )
 
       if (!success) {
         throw new Error(error)
