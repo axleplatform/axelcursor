@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS mechanic_quotes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   appointment_id UUID NOT NULL REFERENCES appointments(id),
-  mechanic_id UUID NOT NULL REFERENCES mechanics(id),
+  mechanic_id UUID NOT NULL REFERENCES mechanic_profiles(id),
   price DECIMAL(10, 2) NOT NULL,
   eta VARCHAR(255),
   notes TEXT,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS mechanic_quotes (
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS selected_quote_id UUID REFERENCES mechanic_quotes(id);
 
 -- Add mechanic_id column to appointments table if it doesn't exist
-ALTER TABLE appointments ADD COLUMN IF NOT EXISTS mechanic_id UUID REFERENCES mechanics(id);
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS mechanic_id UUID REFERENCES mechanic_profiles(id);
 
 -- Drop the incorrect column if it exists
 ALTER TABLE appointments DROP COLUMN IF EXISTS is_gust;
