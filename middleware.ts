@@ -20,7 +20,8 @@ export async function middleware(request: NextRequest) {
       hasSession: !!session,
       userId: session?.user?.id,
       error: sessionError,
-      path: request.nextUrl.pathname
+      path: request.nextUrl.pathname,
+      cookies: request.cookies.toString()
     })
 
     // If there's no session and trying to access protected routes, redirect to login
@@ -46,6 +47,13 @@ export async function middleware(request: NextRequest) {
       .eq("user_id", session.user.id)
       .single()
 
+    console.log("Mechanic profile check result:", {
+      hasProfile: !!mechanicProfile,
+      error: profileError,
+      onboardingCompleted: mechanicProfile?.onboarding_completed,
+      onboardingStep: mechanicProfile?.onboarding_step
+    })
+
     // If accessing mechanic routes but not a mechanic, redirect to home
     if (request.nextUrl.pathname.startsWith("/mechanic/") && (!mechanicProfile || profileError)) {
       console.log("Non-mechanic accessing mechanic route, redirecting to home")
@@ -65,11 +73,24 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    // Add session cookie to response if it exists
+    if (session) {
+      res.cookies.set("sb-auth-token", session.access_token, {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7 // 1 week
+      })
+    }
+
     return res
   } catch (error) {
     console.error("Middleware error:", error)
-    // On error, redirect to login
-    return NextResponse.redirect(new URL("/login", request.url))
+    // On error, redirect to login with error message
+    const redirectUrl = new URL("/login", request.url)
+    redirectUrl.searchParams.set("error", "Authentication error. Please try again.")
+    return NextResponse.redirect(redirectUrl)
   }
 }
 

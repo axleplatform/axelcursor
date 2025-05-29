@@ -490,7 +490,8 @@ export default function BookAppointment() {
   const { toast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const appointmentId = searchParams.get("appointmentId")
+  const pathname = router.pathname
+  const appointmentId = searchParams.get("appointmentId") || pathname.split("/").pop()
 
   const [formData, setFormData] = useState<BookingFormData>({
     issueDescription: "",
@@ -703,7 +704,7 @@ export default function BookAppointment() {
       })
       
       // Redirect to confirmation page
-      router.push(`/appointment-confirmation/${appointment.id}`)
+      router.push(`/appointment-confirmation?appointmentId=${appointment.id}`)
 
     } catch (err) {
       console.error("Error creating appointment:", err)
