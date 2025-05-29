@@ -75,9 +75,18 @@ export async function middleware(request: NextRequest) {
 
     // Add session cookie to response if it exists
     if (session) {
+      // Set both httpOnly and non-httpOnly cookies for better compatibility
       res.cookies.set("sb-auth-token", session.access_token, {
         path: "/",
         httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7 // 1 week
+      })
+
+      // Also set a non-httpOnly cookie for client-side access
+      res.cookies.set("sb-auth-token-client", session.access_token, {
+        path: "/",
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         maxAge: 60 * 60 * 24 * 7 // 1 week

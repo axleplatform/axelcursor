@@ -491,7 +491,7 @@ export default function BookAppointment() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = router.pathname
-  const appointmentId = searchParams.get("appointmentId") || pathname.split("/").pop()
+  const appointmentId = searchParams.get("appointmentId")
 
   const [formData, setFormData] = useState<BookingFormData>({
     issueDescription: "",

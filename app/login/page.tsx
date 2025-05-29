@@ -119,6 +119,13 @@ function LoginContent() {
       // Wait for session to be fully established
       await new Promise(resolve => setTimeout(resolve, 1000))
 
+      // Verify session is established
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError || !session) {
+        console.error("Session verification failed:", sessionError)
+        throw new Error("Failed to establish session")
+      }
+
       // Check if user is a mechanic
       const { data: mechanicProfile, error: profileError } = await supabase
         .from("mechanic_profiles")
