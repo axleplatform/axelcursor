@@ -665,18 +665,15 @@ export default function BookAppointment() {
       // Prepare appointment data
       const appointmentData = {
         user_id: userId,
-        location: "Mobile Service", // Default to mobile service
-        appointment_date: new Date().toISOString(), // Use current time as default
+        location: "Mobile Service",
+        appointment_date: new Date().toISOString(),
         status: "pending",
         source: "web",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
         car_runs: formData.carRuns,
         issue_description: formData.issueDescription,
         selected_services: formData.selectedServices,
         selected_car_issues: formData.selectedCarIssues,
-        phone_number: formData.phoneNumber,
-        vehicle_id: formData.vehicleId
+        phone_number: formData.phoneNumber
       }
 
       console.log("Creating appointment with data:", appointmentData)
@@ -698,7 +695,10 @@ export default function BookAppointment() {
       }
 
       // Show success message
-      toast.success("Appointment booked successfully!")
+      toast({
+        title: "Success!",
+        description: "Your appointment has been booked successfully.",
+      })
       
       // Redirect to confirmation page
       router.push(`/appointment-confirmation/${appointment.id}`)
@@ -706,7 +706,11 @@ export default function BookAppointment() {
     } catch (err) {
       console.error("Error creating appointment:", err)
       setValidationError(err instanceof Error ? err.message : "Failed to create appointment")
-      toast.error("Failed to create appointment. Please try again.")
+      toast({
+        title: "Error",
+        description: "Failed to create appointment. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setIsSubmitting(false)
     }
