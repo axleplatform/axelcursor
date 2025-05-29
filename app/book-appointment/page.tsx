@@ -703,8 +703,8 @@ export default function BookAppointment() {
         description: "Your appointment has been booked successfully.",
       })
       
-      // Redirect to confirmation page
-      router.push(`/appointment-confirmation?appointmentId=${appointment.id}`)
+      // Redirect to pick mechanic page
+      router.push(`/pick-mechanic?appointmentId=${appointment.id}`)
 
     } catch (err) {
       console.error("Error creating appointment:", err)
