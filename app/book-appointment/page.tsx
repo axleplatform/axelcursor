@@ -653,7 +653,7 @@ export default function BookAppointment() {
         appointment_date: new Date().toISOString(), // Use current time as default
         status: "pending",
         source: "landing_page",
-        is_guest: true,
+        is_guest: true, // Explicitly set is_guest for guest appointments
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         // Convert camelCase to snake_case for database columns
@@ -669,7 +669,7 @@ export default function BookAppointment() {
       // First, verify the schema
       const { data: schemaData, error: schemaError } = await supabase
         .from("appointments")
-        .select("car_runs")
+        .select("car_runs, is_guest")
         .limit(1)
 
       if (schemaError) {
@@ -692,10 +692,10 @@ export default function BookAppointment() {
 
       console.log("Appointment created successfully:", appointment)
 
-      // Verify the appointment was created with correct status
+      // Verify the appointment was created with correct status and is_guest
       const { data: verifyData, error: verifyError } = await supabase
         .from("appointments")
-        .select("id, status, car_runs")
+        .select("id, status, car_runs, is_guest")
         .eq("id", appointment.id)
         .single()
 
@@ -707,6 +707,11 @@ export default function BookAppointment() {
       if (verifyData.status !== "pending") {
         console.error("Appointment created with incorrect status:", verifyData)
         throw new Error("Appointment was not created with pending status")
+      }
+
+      if (verifyData.is_guest !== true) {
+        console.error("Appointment created with incorrect is_guest value:", verifyData)
+        throw new Error("Appointment was not created with correct guest status")
       }
 
       console.log("Appointment verified successfully:", verifyData)
