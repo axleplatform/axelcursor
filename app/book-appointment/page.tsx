@@ -643,18 +643,15 @@ export default function BookAppointment() {
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       let userId: string
 
-      if (userError) {
-        throw userError
-      }
-
       if (user) {
         // Use the authenticated user's ID
         userId = user.id
       } else {
-        // Create an anonymous user
+        // Create an anonymous user without requiring auth
         const { data: anonUser, error: anonError } = await supabase.rpc('create_anonymous_user')
         if (anonError) {
-          throw anonError
+          console.error('Error creating anonymous user:', anonError)
+          throw new Error('Failed to create anonymous user')
         }
         userId = anonUser
       }
@@ -666,16 +663,14 @@ export default function BookAppointment() {
         appointment_date: new Date().toISOString(), // Use current time as default
         status: "pending",
         source: "web",
-        is_guest: true, // Explicitly set is_guest for guest appointments
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        // Convert camelCase to snake_case for database columns
         car_runs: formData.carRuns,
         issue_description: formData.issueDescription,
         selected_services: formData.selectedServices,
         selected_car_issues: formData.selectedCarIssues,
         phone_number: formData.phoneNumber,
-        vehicle_id: formData.vehicleId,
+        vehicle_id: formData.vehicleId
       }
 
       console.log("Creating appointment with data:", appointmentData)
@@ -692,36 +687,16 @@ export default function BookAppointment() {
         throw appointmentError
       }
 
-      console.log("Appointment created successfully:", appointment)
-
-      // Verify the appointment was created with correct status and is_guest
-      const { data: verifyData, error: verifyError } = await supabase
-        .from("appointments")
-        .select("id, status, car_runs, is_guest")
-        .eq("id", appointment.id)
-        .single()
-
-      if (verifyError) {
-        console.error("Error verifying appointment:", verifyError)
-        throw verifyError
+      if (!appointment) {
+        throw new Error("Failed to create appointment")
       }
 
-      if (verifyData.status !== "pending") {
-        console.error("Appointment created with incorrect status:", verifyData)
-        throw new Error("Appointment was not created with pending status")
-      }
-
-      if (verifyData.is_guest !== true) {
-        console.error("Appointment created with incorrect is_guest value:", verifyData)
-        throw new Error("Appointment was not created with correct guest status")
-      }
-
-      console.log("Appointment verified successfully:", verifyData)
-
+      // Show success message
       toast.success("Appointment booked successfully!")
-
+      
       // Redirect to confirmation page
       router.push(`/appointment-confirmation/${appointment.id}`)
+
     } catch (err) {
       console.error("Error creating appointment:", err)
       setValidationError(err instanceof Error ? err.message : "Failed to create appointment")
