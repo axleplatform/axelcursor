@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
     // If there's no session and trying to access protected routes, redirect to login
     if (!session) {
       console.log("No session found, checking if path is protected")
-      const isProtectedRoute = request.nextUrl.pathname.startsWith("/mechanic/dashboard") ||
+      const isProtectedRoute = request.nextUrl.pathname.startsWith("/mechanic-dashboard") ||
         request.nextUrl.pathname.startsWith("/onboarding-mechanic-")
 
       if (isProtectedRoute) {
@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
     })
 
     // If accessing mechanic routes but not a mechanic, redirect to home
-    if (request.nextUrl.pathname.startsWith("/mechanic/") && (!mechanicProfile || profileError)) {
+    if (request.nextUrl.pathname.startsWith("/mechanic-dashboard") && (!mechanicProfile || profileError)) {
       console.log("Non-mechanic accessing mechanic route, redirecting to home")
       return NextResponse.redirect(new URL("/", request.url))
     }
@@ -118,7 +118,7 @@ function getStepNumber(step: string): string {
 // Configure which routes to run middleware on
 export const config = {
   matcher: [
-    "/mechanic/:path*",
+    "/mechanic-dashboard",
     "/onboarding-mechanic-:path*",
     "/dashboard/:path*"
   ]

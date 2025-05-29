@@ -52,7 +52,7 @@ function LoginContent() {
             
             if (mechanicProfile.onboarding_completed) {
               console.log("Redirecting to dashboard...")
-              router.push("/mechanic/dashboard")
+              router.push("/mechanic-dashboard")
             } else {
               // Redirect to appropriate onboarding step
               const step = mechanicProfile.onboarding_step || "personal_info"
@@ -150,7 +150,7 @@ function LoginContent() {
           console.log("Redirecting to mechanic dashboard")
           // Add a small delay to ensure session is established
           setTimeout(() => {
-            router.push("/mechanic/dashboard")
+            router.push("/mechanic-dashboard")
           }, 500)
         }
       } else {
