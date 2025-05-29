@@ -20,8 +20,7 @@ export async function middleware(request: NextRequest) {
       hasSession: !!session,
       userId: session?.user?.id,
       error: sessionError,
-      path: request.nextUrl.pathname,
-      cookies: request.cookies.toString()
+      path: request.nextUrl.pathname
     })
 
     // If there's no session and trying to access protected routes, redirect to login
@@ -37,40 +36,6 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(redirectUrl)
       }
       return res
-    }
-
-    // If there is a session, check if it's a mechanic
-    console.log("Session found, checking mechanic profile")
-    const { data: mechanicProfile, error: profileError } = await supabase
-      .from("mechanic_profiles")
-      .select("onboarding_completed, onboarding_step, id")
-      .eq("user_id", session.user.id)
-      .single()
-
-    console.log("Mechanic profile check result:", {
-      hasProfile: !!mechanicProfile,
-      error: profileError,
-      onboardingCompleted: mechanicProfile?.onboarding_completed,
-      onboardingStep: mechanicProfile?.onboarding_step
-    })
-
-    // If accessing mechanic routes but not a mechanic, redirect to home
-    if (request.nextUrl.pathname.startsWith("/mechanic-dashboard") && (!mechanicProfile || profileError)) {
-      console.log("Non-mechanic accessing mechanic route, redirecting to home")
-      return NextResponse.redirect(new URL("/", request.url))
-    }
-
-    // If mechanic hasn't completed onboarding, redirect to appropriate step
-    if (mechanicProfile && !mechanicProfile.onboarding_completed) {
-      const step = mechanicProfile.onboarding_step || "personal_info"
-      const stepNumber = getStepNumber(step)
-      const onboardingPath = `/onboarding-mechanic-${stepNumber}`
-
-      // Only redirect if not already on an onboarding page
-      if (!request.nextUrl.pathname.startsWith("/onboarding-mechanic-")) {
-        console.log("Mechanic hasn't completed onboarding, redirecting to step:", stepNumber)
-        return NextResponse.redirect(new URL(onboardingPath, request.url))
-      }
     }
 
     // Add session cookie to response if it exists
@@ -103,23 +68,10 @@ export async function middleware(request: NextRequest) {
   }
 }
 
-// Helper function to get step number
-function getStepNumber(step: string): string {
-  switch (step) {
-    case "personal_info": return "1"
-    case "professional_info": return "2"
-    case "certifications": return "3"
-    case "rates": return "4"
-    case "profile": return "5"
-    default: return "1"
-  }
-}
-
 // Configure which routes to run middleware on
 export const config = {
   matcher: [
     "/mechanic-dashboard",
-    "/onboarding-mechanic-:path*",
-    "/dashboard/:path*"
+    "/onboarding-mechanic-:path*"
   ]
 }

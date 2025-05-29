@@ -144,7 +144,7 @@ export default function MechanicDashboard() {
     }
   }, [mechanicId])
 
-  // Check if user is authenticated and get mechanic ID
+  // Check if user is authenticated
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -171,116 +171,35 @@ export default function MechanicDashboard() {
           return
         }
 
-        // Get mechanic profile
-        console.log("Fetching mechanic profile...")
-        const { data: profile, error: profileError } = await supabase
-          .from("mechanic_profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .single()
-
-        console.log("Profile fetch result:", { profile, error: profileError })
-
-        if (profileError) {
-          if (profileError.code === "PGRST116") {
-            console.log("No profile found, redirecting to onboarding")
-            toast({
-              title: "Profile not found",
-              description: "Please complete your onboarding first",
-              variant: "destructive",
-            })
-            router.push("/onboarding-mechanic-1")
-            return
-          }
-          throw profileError
-        }
-
-        if (!profile.onboarding_completed) {
-          console.log("Onboarding not completed, redirecting to appropriate step")
-          const step = profile.onboarding_step || "personal_info"
-          let redirectPath = "/onboarding-mechanic-1"
-
-          switch (step) {
-            case "personal_info":
-              redirectPath = "/onboarding-mechanic-1"
-              break
-            case "professional_info":
-              redirectPath = "/onboarding-mechanic-2"
-              break
-            case "certifications":
-              redirectPath = "/onboarding-mechanic-3"
-              break
-            case "rates":
-              redirectPath = "/onboarding-mechanic-4"
-              break
-            case "profile":
-              redirectPath = "/onboarding-mechanic-5"
-              break
-            default:
-              redirectPath = "/onboarding-mechanic-1"
-          }
-
-          toast({
-            title: "Complete your profile",
-            description: "Please complete your onboarding process first",
-          })
-          router.push(redirectPath)
-          return
-        }
-
-        console.log("Setting mechanic profile and ID")
-        setMechanicProfile(profile)
-        setMechanicId(profile.id)
-
         // Fetch appointments
         console.log("Fetching appointments...")
         const [available, quoted, upcoming] = await Promise.all([
-          getAvailableAppointmentsForMechanic(profile.id),
-          getQuotedAppointmentsForMechanic(profile.id),
+          getAvailableAppointmentsForMechanic(user.id),
+          getQuotedAppointmentsForMechanic(user.id),
           supabase
             .from("appointments")
             .select("*, vehicles(*)")
-            .eq("mechanic_id", profile.id)
-            .eq("status", "confirmed")
-            .gte("scheduled_time", new Date().toISOString())
-            .order("scheduled_time", { ascending: true }),
+            .in("status", ["confirmed", "in_progress", "pending_payment"])
+            .order("appointment_date", { ascending: true }),
         ])
 
         console.log("Appointments fetched:", { available, quoted, upcoming })
         setAvailableAppointments(available || [])
         setQuotedAppointments(quoted || [])
-        setUpcomingAppointments(upcoming.data || [])
-      } catch (error: any) {
-        console.error("Dashboard initialization error:", error)
+        setUpcomingAppointments(upcoming?.data || [])
+      } catch (error) {
+        console.error("Error in auth check:", error)
         toast({
           title: "Error",
           description: "Failed to load dashboard. Please try again.",
           variant: "destructive",
         })
-        router.push("/login")
       } finally {
         setIsAuthLoading(false)
-        setIsAppointmentsLoading(false)
       }
     }
 
     checkAuth()
-
-    // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        router.push('/login')
-      } else if (event === 'TOKEN_REFRESHED') {
-        // Refresh appointments when token is refreshed
-        if (mechanicId) {
-          checkAuth()
-        }
-      }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
   }, [router, toast])
 
   // Handle submitting a quote
