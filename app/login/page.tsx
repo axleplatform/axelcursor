@@ -98,12 +98,19 @@ function LoginContent() {
     setError(null)
 
     try {
+      console.log("Attempting login for email:", email)
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) throw error
+      if (error) {
+        console.error("Auth error:", error)
+        throw error
+      }
+
+      console.log("Login successful, checking mechanic profile for user:", data.user.id)
 
       // Check if user is a mechanic
       const { data: mechanicProfile, error: profileError } = await supabase
@@ -113,20 +120,26 @@ function LoginContent() {
         .single()
 
       if (profileError && profileError.code !== "PGRST116") {
+        console.error("Error checking mechanic profile:", profileError)
         throw profileError
       }
+
+      console.log("Mechanic profile check result:", mechanicProfile)
 
       // If user is a mechanic, redirect to appropriate page
       if (mechanicProfile) {
         if (!mechanicProfile.onboarding_completed) {
           const step = mechanicProfile.onboarding_step || "personal_info"
+          console.log("Redirecting to onboarding step:", step)
           router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
         } else {
+          console.log("Redirecting to mechanic dashboard")
           router.push("/mechanic/dashboard")
         }
       } else {
         // For non-mechanics, redirect to home or specified redirect
         const redirectTo = searchParams.get("redirectedFrom") || "/"
+        console.log("Redirecting to:", redirectTo)
         router.push(redirectTo)
       }
     } catch (error: any) {

@@ -622,6 +622,13 @@ export default function BookAppointment() {
     setIsSubmitting(true)
 
     try {
+      console.log("Starting appointment creation with data:", {
+        ...formData,
+        status: "pending",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+
       // Create appointment without authentication check
       const { data: appointment, error } = await supabase
         .from("appointments")
@@ -636,7 +643,12 @@ export default function BookAppointment() {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error("Supabase error creating appointment:", error)
+        throw new Error(`Failed to create appointment: ${error.message}`)
+      }
+
+      console.log("Appointment created successfully:", appointment)
 
       toast({
         title: "Success!",
@@ -649,7 +661,7 @@ export default function BookAppointment() {
       console.error("Error creating appointment:", error)
       toast({
         title: "Error",
-        description: "Failed to create appointment. Please try again.",
+        description: error.message || "Failed to create appointment. Please try again.",
         variant: "destructive",
       })
     } finally {
