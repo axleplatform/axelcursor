@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -75,7 +75,10 @@ interface RealtimePayload {
 export default function AppointmentConfirmationPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const appointmentId = searchParams.get("appointmentId")
+  const pathname = usePathname()
+  
+  // Get appointment ID from either query param or path
+  const appointmentId = searchParams.get("appointmentId") || pathname.split("/").pop()
   const { toast } = useToast()
 
   const [appointmentData, setAppointmentData] = React.useState<AppointmentData | null>(null)

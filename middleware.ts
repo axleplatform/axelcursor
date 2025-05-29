@@ -46,76 +46,50 @@ export async function middleware(request: NextRequest) {
       .eq("user_id", session.user.id)
       .single()
 
-    console.log("Mechanic profile check in middleware:", {
-      hasProfile: !!mechanicProfile,
-      onboarding_completed: mechanicProfile?.onboarding_completed,
-      onboarding_step: mechanicProfile?.onboarding_step,
-      error: profileError,
-      userId: session.user.id
-    })
+    // If accessing mechanic routes but not a mechanic, redirect to home
+    if (request.nextUrl.pathname.startsWith("/mechanic/") && (!mechanicProfile || profileError)) {
+      console.log("Non-mechanic accessing mechanic route, redirecting to home")
+      return NextResponse.redirect(new URL("/", request.url))
+    }
 
-    // If accessing mechanic dashboard or onboarding
-    if (request.nextUrl.pathname.startsWith("/mechanic/dashboard") ||
-        request.nextUrl.pathname.startsWith("/onboarding-mechanic-")) {
-      
-      // If no mechanic profile, redirect to login
-      if (!mechanicProfile) {
-        console.log("No mechanic profile found, redirecting to login")
-        const redirectUrl = new URL("/login", request.url)
-        redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname)
-        return NextResponse.redirect(redirectUrl)
-      }
+    // If mechanic hasn't completed onboarding, redirect to appropriate step
+    if (mechanicProfile && !mechanicProfile.onboarding_completed) {
+      const step = mechanicProfile.onboarding_step || "personal_info"
+      const stepNumber = getStepNumber(step)
+      const onboardingPath = `/onboarding-mechanic-${stepNumber}`
 
-      // If onboarding is not completed, redirect to appropriate step
-      if (!mechanicProfile.onboarding_completed) {
-        console.log("Onboarding not completed, checking current step")
-        const step = mechanicProfile.onboarding_step || "personal_info"
-        const currentStep = request.nextUrl.pathname.split("-").pop()
-        
-        // If trying to access a step that's not the current one, redirect to current step
-        if (currentStep !== getStepNumber(step)) {
-          console.log("Redirecting to correct onboarding step:", step)
-          return NextResponse.redirect(new URL(`/onboarding-mechanic-${getStepNumber(step)}`, request.url))
-        }
-      } else if (request.nextUrl.pathname.startsWith("/onboarding-mechanic-")) {
-        // If onboarding is completed but trying to access onboarding, redirect to real dashboard
-        console.log("Onboarding completed, redirecting to real dashboard")
-        return NextResponse.redirect(new URL("/mechanic/dashboard", request.url))
+      // Only redirect if not already on an onboarding page
+      if (!request.nextUrl.pathname.startsWith("/onboarding-mechanic-")) {
+        console.log("Mechanic hasn't completed onboarding, redirecting to step:", stepNumber)
+        return NextResponse.redirect(new URL(onboardingPath, request.url))
       }
     }
 
-    // If we get here, allow the request to continue
-    console.log("Middleware allowing request to continue")
     return res
   } catch (error) {
     console.error("Middleware error:", error)
-    // On error, allow the request to continue
-    return NextResponse.next()
+    // On error, redirect to login
+    return NextResponse.redirect(new URL("/login", request.url))
   }
 }
 
 // Helper function to get step number
 function getStepNumber(step: string): string {
   switch (step) {
-    case "personal_info":
-      return "1"
-    case "professional_info":
-      return "2"
-    case "certifications":
-      return "3"
-    case "rates":
-      return "4"
-    case "profile":
-      return "5"
-    default:
-      return "1"
+    case "personal_info": return "1"
+    case "professional_info": return "2"
+    case "certifications": return "3"
+    case "rates": return "4"
+    case "profile": return "5"
+    default: return "1"
   }
 }
 
-// Specify which routes this middleware should run on
+// Configure which routes to run middleware on
 export const config = {
   matcher: [
-    "/mechanic/dashboard/:path*",
+    "/mechanic/:path*",
     "/onboarding-mechanic-:path*",
-  ],
+    "/dashboard/:path*"
+  ]
 }

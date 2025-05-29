@@ -110,6 +110,10 @@ function LoginContent() {
         throw error
       }
 
+      if (!data.user) {
+        throw new Error("No user data returned")
+      }
+
       console.log("Login successful, checking mechanic profile for user:", data.user.id)
 
       // Check if user is a mechanic

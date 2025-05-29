@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
+import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 export type AppointmentStatus = "draft" | "pending" | "quoted" | "confirmed" | "in_progress" | "completed" | "cancelled"
 
@@ -53,76 +54,22 @@ function getMechanicColumn(appointment: Record<string, unknown>): string | null 
   return null
 }
 
+type SubscriptionStatus = 'SUBSCRIBED' | 'CLOSED' | 'CHANNEL_ERROR'
+
 export function useMechanicAppointments(mechanicId: string) {
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
   const [availableAppointments, setAvailableAppointments] = useState<Appointment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
-  const [mechanicColumn, setMechanicColumn] = useState<string | null>(null)
   const { toast } = useToast()
 
-  // First, determine which column is used for mechanic assignment
   useEffect(() => {
     if (!mechanicId) return
-
-    const detectMechanicColumn = async () => {
-      try {
-        // Get a sample appointment to check its structure
-        const { data, error: sampleError } = await supabase.from("appointments").select("*").limit(1)
-
-        if (sampleError) {
-          throw sampleError
-        }
-
-        if (data && data.length > 0) {
-          const column = getMechanicColumn(data[0])
-          console.log("Detected mechanic column:", column)
-          setMechanicColumn(column)
-        } else {
-          console.log("No appointments found to detect schema")
-          // Default to mechanic_id if we can't detect
-          setMechanicColumn("mechanic_id")
-        }
-      } catch (err) {
-        console.error("Error detecting mechanic column:", err)
-        // Default to mechanic_id if we can't detect
-        setMechanicColumn("mechanic_id")
-      }
-    }
-
-    detectMechanicColumn()
-  }, [mechanicId])
-
-  // Fetch appointments once we know the mechanic column
-  useEffect(() => {
-    if (!mechanicColumn || !mechanicId) return
 
     const fetchAppointments = async () => {
       try {
         setIsLoading(true)
-        setError(null)
-
-        console.log(`Using ${mechanicColumn} to filter appointments for mechanic ${mechanicId}`)
-
-        // First, get all quotes this mechanic has already submitted
-        const { data: existingQuotes, error: quotesError } = await supabase
-          .from("mechanic_quotes")
-          .select("appointment_id")
-          .eq("mechanic_id", mechanicId)
-
-        if (quotesError && quotesError.code === "PGRST116") {
-          // Table doesn't exist
-          setError(new Error("The mechanic quotes system is not set up. Please contact support."))
-          toast({
-            title: "System Error",
-            description: "The mechanic quotes system is not properly configured. Please contact support.",
-            variant: "destructive",
-          })
-          throw quotesError
-        }
-
-        // Get IDs of appointments this mechanic has already quoted
-        const quotedAppointmentIds = existingQuotes?.map((q: { appointment_id: string }) => q.appointment_id) || []
+        console.log("Fetching appointments for mechanic:", mechanicId)
 
         // Fetch upcoming appointments (confirmed or in progress)
         const { data: upcomingData, error: upcomingError } = await supabase
@@ -136,6 +83,16 @@ export function useMechanicAppointments(mechanicId: string) {
           .order("appointment_date", { ascending: true })
 
         if (upcomingError) throw upcomingError
+
+        // Get IDs of appointments already quoted by this mechanic
+        const { data: quotedData, error: quotedError } = await supabase
+          .from("mechanic_quotes")
+          .select("appointment_id")
+          .eq("mechanic_id", mechanicId)
+
+        if (quotedError) throw quotedError
+
+        const quotedAppointmentIds = quotedData?.map((quote) => quote.appointment_id) || []
 
         // Fetch available appointments (pending, not quoted by this mechanic yet)
         const { data: availableData, error: availableError } = await supabase
@@ -152,6 +109,10 @@ export function useMechanicAppointments(mechanicId: string) {
 
         setUpcomingAppointments(upcomingData as Appointment[])
         setAvailableAppointments(availableData as Appointment[])
+        console.log("Fetched appointments:", {
+          upcoming: upcomingData?.length,
+          available: availableData?.length
+        })
       } catch (err) {
         console.error("Error fetching appointments:", err)
         setError(err instanceof Error ? err : new Error("Failed to load appointments"))
@@ -177,12 +138,29 @@ export function useMechanicAppointments(mechanicId: string) {
           schema: "public",
           table: "appointments",
         },
-        () => {
+        (payload: RealtimePostgresChangesPayload<Appointment>) => {
+          console.log("Appointment change detected:", payload)
           // Refresh appointments when changes occur
           fetchAppointments()
         },
       )
-      .subscribe()
+      .subscribe((status: SubscriptionStatus) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to appointments changes')
+        } else if (status === 'CLOSED') {
+          console.log('Subscription closed, attempting to reconnect...')
+          // Attempt to reconnect after a delay
+          setTimeout(() => {
+            appointmentsSubscription.subscribe()
+          }, 1000)
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Subscription error, attempting to reconnect...')
+          // Attempt to reconnect after a delay
+          setTimeout(() => {
+            appointmentsSubscription.subscribe()
+          }, 1000)
+        }
+      })
 
     // Set up real-time subscription for mechanic quotes
     const quotesSubscription = supabase
@@ -194,98 +172,39 @@ export function useMechanicAppointments(mechanicId: string) {
           schema: "public",
           table: "mechanic_quotes",
         },
-        () => {
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          console.log("Quote change detected:", payload)
           // Refresh appointments when quotes change
           fetchAppointments()
         },
       )
-      .subscribe()
-
-    // Subscribe to real-time updates
-    const subscription = supabase
-      .channel("mechanic-appointments")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "appointments",
-        },
-        (payload) => {
-          console.log("Real-time update received:", payload)
-          if (payload.eventType === "INSERT") {
-            const newAppointment = payload.new as Appointment
-            if (newAppointment.status === "pending") {
-              setAvailableAppointments((prev) => [...prev, newAppointment])
-            } else if (
-              newAppointment.mechanic_id === mechanicId &&
-              (newAppointment.status === "confirmed" || newAppointment.status === "in_progress")
-            ) {
-              setUpcomingAppointments((prev) => [...prev, newAppointment])
-            }
-          } else if (payload.eventType === "UPDATE") {
-            const updatedAppointment = payload.new as Appointment
-            const oldAppointment = payload.old as Appointment
-
-            // Handle status changes
-            if (updatedAppointment.status === "pending") {
-              setAvailableAppointments((prev) =>
-                prev.map((appointment) =>
-                  appointment.id === updatedAppointment.id ? updatedAppointment : appointment,
-                ),
-              )
-            } else if (
-              updatedAppointment.mechanic_id === mechanicId &&
-              (updatedAppointment.status === "confirmed" || updatedAppointment.status === "in_progress")
-            ) {
-              setUpcomingAppointments((prev) =>
-                prev.map((appointment) =>
-                  appointment.id === updatedAppointment.id ? updatedAppointment : appointment,
-                ),
-              )
-            }
-
-            // Remove from available if no longer pending
-            if (oldAppointment.status === "pending" && updatedAppointment.status !== "pending") {
-              setAvailableAppointments((prev) =>
-                prev.filter((appointment) => appointment.id !== updatedAppointment.id),
-              )
-            }
-
-            // Remove from upcoming if no longer confirmed/in_progress
-            if (
-              oldAppointment.mechanic_id === mechanicId &&
-              (oldAppointment.status === "confirmed" || oldAppointment.status === "in_progress") &&
-              updatedAppointment.status !== "confirmed" &&
-              updatedAppointment.status !== "in_progress"
-            ) {
-              setUpcomingAppointments((prev) =>
-                prev.filter((appointment) => appointment.id !== updatedAppointment.id),
-              )
-            }
-          } else if (payload.eventType === "DELETE") {
-            const deletedAppointment = payload.old as Appointment
-            setAvailableAppointments((prev) =>
-              prev.filter((appointment) => appointment.id !== deletedAppointment.id),
-            )
-            setUpcomingAppointments((prev) =>
-              prev.filter((appointment) => appointment.id !== deletedAppointment.id),
-            )
-          }
-        },
-      )
-      .subscribe()
+      .subscribe((status: SubscriptionStatus) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to quotes changes')
+        } else if (status === 'CLOSED') {
+          console.log('Subscription closed, attempting to reconnect...')
+          // Attempt to reconnect after a delay
+          setTimeout(() => {
+            quotesSubscription.subscribe()
+          }, 1000)
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Subscription error, attempting to reconnect...')
+          // Attempt to reconnect after a delay
+          setTimeout(() => {
+            quotesSubscription.subscribe()
+          }, 1000)
+        }
+      })
 
     return () => {
       supabase.removeChannel(appointmentsSubscription)
       supabase.removeChannel(quotesSubscription)
-      subscription.unsubscribe()
     }
-  }, [mechanicId, toast, mechanicColumn])
+  }, [mechanicId, toast])
 
   // Update appointment status
   const updateAppointmentStatus = async (appointmentId: string, status: AppointmentStatus): Promise<boolean> => {
-    if (!mechanicColumn || !mechanicId) {
+    if (!mechanicId) {
       toast({
         title: "Error",
         description: "Could not determine how mechanics are assigned to appointments",
@@ -368,7 +287,7 @@ export function useMechanicAppointments(mechanicId: string) {
           .from("appointments")
           .update({ price })
           .eq("id", appointmentId)
-          .eq(mechanicColumn!, mechanicId)
+          .eq("mechanic_id", mechanicId)
 
         if (error) throw error
 
@@ -494,7 +413,6 @@ export function useMechanicAppointments(mechanicId: string) {
     availableAppointments,
     isLoading,
     error,
-    mechanicColumn,
     startAppointment,
     completeAppointment,
     cancelAppointment,
