@@ -135,6 +135,8 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
   error?: string
 }> {
   try {
+    console.log("Fetching available appointments for mechanic:", mechanicId)
+
     // Get IDs of appointments this mechanic has already quoted
     const { data: existingQuotes, error: quotesError } = await supabase
       .from("mechanic_quotes")
@@ -148,6 +150,7 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
 
     // Get IDs of appointments this mechanic has already quoted
     const quotedAppointmentIds = existingQuotes?.map((q: { appointment_id: string }) => q.appointment_id) || []
+    console.log("Appointments already quoted by mechanic:", quotedAppointmentIds)
 
     // Fetch available appointments (pending, not quoted by this mechanic yet)
     const { data: availableData, error: availableError } = await supabase
@@ -170,7 +173,12 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
       mechanicId,
       totalAppointments: availableData?.length || 0,
       quotedAppointmentIds,
-      firstAppointment: availableData?.[0]
+      firstAppointment: availableData?.[0],
+      query: {
+        status: "pending",
+        excludedIds: quotedAppointmentIds,
+        orderBy: "created_at DESC"
+      }
     })
 
     return { success: true, appointments: availableData }

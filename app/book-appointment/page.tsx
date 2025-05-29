@@ -622,24 +622,23 @@ export default function BookAppointment() {
     setIsSubmitting(true)
 
     try {
-      console.log("Starting appointment creation with data:", {
+      // Prepare appointment data with all required fields
+      const appointmentData = {
         ...formData,
+        location: "Mobile Service", // Default to mobile service
+        appointment_date: new Date().toISOString(), // Use current time as default
         status: "pending",
+        source: "landing_page",
+        is_guest: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      })
+      }
 
-      // Create appointment without authentication check
+      console.log("Creating appointment with data:", appointmentData)
+
       const { data: appointment, error } = await supabase
         .from("appointments")
-        .insert([
-          {
-            ...formData,
-            status: "pending",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ])
+        .insert([appointmentData])
         .select()
         .single()
 
@@ -655,7 +654,7 @@ export default function BookAppointment() {
         description: "Your appointment request has been submitted. Mechanics will be notified and you'll receive quotes soon.",
       })
 
-      // Redirect to confirmation page instead of login
+      // Redirect to confirmation page
       router.push(`/appointment-confirmation/${appointment.id}`)
     } catch (error: any) {
       console.error("Error creating appointment:", error)

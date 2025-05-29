@@ -19,7 +19,8 @@ export async function middleware(request: NextRequest) {
     console.log("Session check in middleware:", {
       hasSession: !!session,
       userId: session?.user?.id,
-      error: sessionError
+      error: sessionError,
+      path: request.nextUrl.pathname
     })
 
     // If there's no session and trying to access protected routes, redirect to login
@@ -49,7 +50,8 @@ export async function middleware(request: NextRequest) {
       hasProfile: !!mechanicProfile,
       onboarding_completed: mechanicProfile?.onboarding_completed,
       onboarding_step: mechanicProfile?.onboarding_step,
-      error: profileError
+      error: profileError,
+      userId: session.user.id
     })
 
     // If accessing mechanic dashboard or onboarding
