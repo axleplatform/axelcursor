@@ -640,7 +640,7 @@ export default function BookAppointment() {
     try {
       // Force refresh the schema cache
       console.log("Refreshing schema cache...")
-      const { error: cacheError } = await supabase.rpc("reload_schema_cache")
+      const { error: cacheError } = await supabase.rpc("refresh_schema_cache")
       if (cacheError) {
         console.error("Error refreshing schema cache:", cacheError)
         throw new Error("Failed to refresh schema cache")
@@ -665,18 +665,6 @@ export default function BookAppointment() {
       }
 
       console.log("Creating appointment with data:", appointmentData)
-
-      // First, verify the schema
-      const { data: schemaData, error: schemaError } = await supabase
-        .from("appointments")
-        .select("car_runs, is_guest")
-        .limit(1)
-
-      if (schemaError) {
-        console.error("Error verifying schema:", schemaError)
-        throw new Error(`Schema verification failed: ${schemaError.message}`)
-      }
-      console.log("Schema verification successful:", schemaData)
 
       // Create the appointment
       const { data: appointment, error } = await supabase
