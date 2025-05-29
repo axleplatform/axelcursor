@@ -639,7 +639,7 @@ export default function BookAppointment() {
     setValidationError(null)
 
     try {
-      // Get the current user or create an anonymous user
+      // Get the current user or sign in anonymously
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       let userId: string
 
@@ -647,13 +647,19 @@ export default function BookAppointment() {
         // Use the authenticated user's ID
         userId = user.id
       } else {
-        // Create an anonymous user without requiring auth
-        const { data: anonUser, error: anonError } = await supabase.rpc('create_anonymous_user')
+        // Sign in anonymously using Supabase's built-in function
+        const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously()
+        
         if (anonError) {
-          console.error('Error creating anonymous user:', anonError)
-          throw new Error('Failed to create anonymous user')
+          console.error('Error signing in anonymously:', anonError)
+          throw new Error('Failed to create anonymous user. Please try again.')
         }
-        userId = anonUser
+
+        if (!anonData.user) {
+          throw new Error('Failed to create anonymous user. Please try again.')
+        }
+
+        userId = anonData.user.id
       }
 
       // Prepare appointment data
