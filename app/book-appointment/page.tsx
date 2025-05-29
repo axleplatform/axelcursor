@@ -638,14 +638,23 @@ export default function BookAppointment() {
     setIsSubmitting(true)
 
     try {
-      // Force refresh the schema cache
-      console.log("Refreshing schema cache...")
-      const { error: cacheError } = await supabase.rpc("refresh_schema_cache")
-      if (cacheError) {
-        console.error("Error refreshing schema cache:", cacheError)
-        throw new Error("Failed to refresh schema cache")
+      // Try to refresh schema cache, but continue even if it fails
+      console.log("Attempting to refresh schema cache...")
+      try {
+        const { error: cacheError } = await supabase.rpc("refresh_schema_cache")
+        if (cacheError) {
+          console.warn("Warning: Schema cache refresh failed:", cacheError)
+          // Try the simpler function as fallback
+          const { error: notifyError } = await supabase.rpc("notify_schema_reload")
+          if (notifyError) {
+            console.warn("Warning: Schema reload notification failed:", notifyError)
+          }
+        } else {
+          console.log("Schema cache refreshed successfully")
+        }
+      } catch (error) {
+        console.warn("Warning: Schema cache refresh failed:", error)
       }
-      console.log("Schema cache refreshed successfully")
 
       // Prepare appointment data with all required fields
       const appointmentData = {
