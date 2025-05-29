@@ -34,6 +34,22 @@ interface BookingFormData {
   selectedCarIssues: string[]
 }
 
+// Define database schema types
+interface AppointmentData {
+  location: string
+  appointment_date: string
+  status: string
+  source: string
+  is_guest: boolean
+  created_at: string
+  updated_at: string
+  car_runs: boolean | null
+  issue_description: string
+  selected_services: string[]
+  selected_car_issues: string[]
+  phone_number: string
+}
+
 // Default recommended services to show before user input
 const defaultRecommendedServices = [
   {
@@ -632,6 +648,12 @@ export default function BookAppointment() {
         is_guest: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        // Convert camelCase to snake_case for database columns
+        car_runs: formData.carRuns,
+        issue_description: formData.issueDescription,
+        selected_services: formData.selectedServices,
+        selected_car_issues: formData.selectedCarIssues,
+        phone_number: formData.phoneNumber
       }
 
       console.log("Creating appointment with data:", appointmentData)
