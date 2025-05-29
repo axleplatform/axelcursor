@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import type { Appointment } from "@/hooks/use-appointments"
-import { UpcomingAppointmentCard } from "./upcoming-appointment-card"
+import UpcomingAppointmentCard from "@/components/upcoming-appointment-card"
 
 interface UpcomingAppointmentsProps {
   appointments: Appointment[]
