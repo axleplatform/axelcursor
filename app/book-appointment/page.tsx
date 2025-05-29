@@ -673,7 +673,9 @@ export default function BookAppointment() {
         issue_description: formData.issueDescription,
         selected_services: formData.selectedServices,
         selected_car_issues: formData.selectedCarIssues,
-        phone_number: formData.phoneNumber
+        phone_number: formData.phoneNumber,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
 
       console.log("Creating appointment with data:", appointmentData)

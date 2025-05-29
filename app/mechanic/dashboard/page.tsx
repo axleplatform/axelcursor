@@ -77,6 +77,7 @@ export default function MechanicDashboard() {
           event: '*',
           schema: 'public',
           table: 'appointments',
+          filter: `status=eq.pending`
         },
         async (payload) => {
           console.log('Appointment change received:', payload)
@@ -90,7 +91,7 @@ export default function MechanicDashboard() {
               .select("*, vehicles(*)")
               .eq("mechanic_id", mechanicId)
               .in("status", ["confirmed", "in_progress", "pending_payment"])
-              .order("scheduled_time", { ascending: true }),
+              .order("appointment_date", { ascending: true }),
           ])
 
           console.log('Refreshed appointments:', {
@@ -136,6 +137,7 @@ export default function MechanicDashboard() {
       )
       .subscribe()
 
+    // Cleanup subscription on unmount
     return () => {
       appointmentsSubscription.unsubscribe()
       quotesSubscription.unsubscribe()

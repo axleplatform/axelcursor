@@ -28,7 +28,8 @@ CREATE TABLE public.appointments (
     phone_number TEXT,
     vehicle_id UUID REFERENCES public.vehicles(id),
     mechanic_id UUID REFERENCES public.mechanic_profiles(id),
-    selected_quote_id UUID REFERENCES public.mechanic_quotes(id)
+    selected_quote_id UUID REFERENCES public.mechanic_quotes(id),
+    CONSTRAINT valid_status CHECK (status IN ('pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'pending_payment'))
 );
 
 -- Restore the data from the temporary table
@@ -98,6 +99,7 @@ CREATE INDEX IF NOT EXISTS idx_appointments_status ON public.appointments(status
 CREATE INDEX IF NOT EXISTS idx_appointments_appointment_date ON public.appointments(appointment_date);
 CREATE INDEX IF NOT EXISTS idx_appointments_mechanic_id ON public.appointments(mechanic_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_vehicle_id ON public.appointments(vehicle_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_created_at ON public.appointments(created_at);
 
 -- Grant permissions
 GRANT ALL ON public.appointments TO authenticated;
