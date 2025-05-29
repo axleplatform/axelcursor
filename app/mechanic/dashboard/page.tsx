@@ -89,9 +89,15 @@ export default function MechanicDashboard() {
               .from("appointments")
               .select("*, vehicles(*)")
               .eq("mechanic_id", mechanicId)
-              .in("status", ["accepted", "in_progress", "pending_payment"])
-              .order("appointment_date", { ascending: true }),
+              .in("status", ["confirmed", "in_progress", "pending_payment"])
+              .order("scheduled_time", { ascending: true }),
           ])
+
+          console.log('Refreshed appointments:', {
+            available: available.appointments?.length || 0,
+            quoted: quoted.appointments?.length || 0,
+            upcoming: upcoming.data?.length || 0
+          })
 
           if (available.success) setAvailableAppointments(available.appointments || [])
           if (quoted.success) setQuotedAppointments(quoted.appointments || [])
@@ -119,13 +125,17 @@ export default function MechanicDashboard() {
             getQuotedAppointmentsForMechanic(mechanicId),
           ])
 
+          console.log('Refreshed appointments after quote change:', {
+            available: available.appointments?.length || 0,
+            quoted: quoted.appointments?.length || 0
+          })
+
           if (available.success) setAvailableAppointments(available.appointments || [])
           if (quoted.success) setQuotedAppointments(quoted.appointments || [])
         }
       )
       .subscribe()
 
-    // Cleanup subscriptions
     return () => {
       appointmentsSubscription.unsubscribe()
       quotesSubscription.unsubscribe()

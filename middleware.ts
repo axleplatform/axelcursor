@@ -76,9 +76,9 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(new URL(`/onboarding-mechanic-${getStepNumber(step)}`, request.url))
         }
       } else if (request.nextUrl.pathname.startsWith("/onboarding-mechanic-")) {
-        // If onboarding is completed but trying to access onboarding, redirect to demo dashboard
-        console.log("Onboarding completed, redirecting to demo dashboard")
-        return NextResponse.redirect(new URL("/demo-mechanic-dashboard", request.url))
+        // If onboarding is completed but trying to access onboarding, redirect to real dashboard
+        console.log("Onboarding completed, redirecting to real dashboard")
+        return NextResponse.redirect(new URL("/mechanic/dashboard", request.url))
       }
     }
 

@@ -158,12 +158,20 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
       `)
       .eq("status", "pending")
       .not("id", "in", quotedAppointmentIds.length > 0 ? `(${quotedAppointmentIds.join(",")})` : "(0)")
-      .order("appointment_date", { ascending: true })
+      .order("created_at", { ascending: false }) // Show newest appointments first
 
     if (availableError) {
       console.error("Error getting available appointments:", availableError)
       return { success: false, error: "Failed to get available appointments" }
     }
+
+    // Log the results for debugging
+    console.log("Available appointments for mechanic:", {
+      mechanicId,
+      totalAppointments: availableData?.length || 0,
+      quotedAppointmentIds,
+      firstAppointment: availableData?.[0]
+    })
 
     return { success: true, appointments: availableData }
   } catch (err) {

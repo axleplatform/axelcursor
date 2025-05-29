@@ -23,6 +23,7 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 
 // Define types for form data
 interface BookingFormData {
@@ -469,7 +470,8 @@ const getAllServices = (aiSuggestions: Array<{ service: string; description: str
   return services
 }
 
-export default function BookAppointmentPage() {
+export default function BookAppointment() {
+  const { toast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
   const appointmentId = searchParams.get("appointmentId")
@@ -617,57 +619,39 @@ export default function BookAppointmentPage() {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    // Clear previous validation errors
-    setValidationError(null)
-
-    // Prevent multiple submissions
-    if (isSubmitting) return
-
-    // Check for validation errors
-    if (!formData.phoneNumber) {
-      setValidationError("Please enter your phone number")
-      return
-    }
-
-    // New validation logic: Either description OR service selection is required
-    if (!formData.issueDescription && formData.selectedServices.length === 0) {
-      setValidationError("Please describe your car issue or select a service")
-      return
-    }
-
-    if (!appointmentId) {
-      setValidationError("No appointment ID found. Please try again.")
-      return
-    }
-
     setIsSubmitting(true)
 
     try {
-      // Force refresh the schema cache before updating
-      await supabase.rpc("reload_schema_cache")
-
-      // Update the existing appointment record with the new details
-      const { error } = await supabase
+      // Create appointment without authentication check
+      const { data: appointment, error } = await supabase
         .from("appointments")
-        .update({
-          issue_description: formData.issueDescription,
-          phone_number: formData.phoneNumber,
-          car_runs: formData.carRuns,
-          selected_services: formData.selectedServices,
-          selected_car_issues: formData.selectedCarIssues,
-          status: "pending",
-          notes: "Appointment details completed, ready for mechanic review"
-        })
-        .eq("id", appointmentId)
+        .insert([
+          {
+            ...formData,
+            status: "pending",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ])
+        .select()
+        .single()
 
       if (error) throw error
 
-      // Navigate to the next step
-      router.push(`/pick-mechanic?appointmentId=${appointmentId}`)
-    } catch (error) {
-      console.error("Error updating appointment:", error)
-      setValidationError("There was an error updating your appointment. Please try again.")
+      toast({
+        title: "Success!",
+        description: "Your appointment request has been submitted. Mechanics will be notified and you'll receive quotes soon.",
+      })
+
+      // Redirect to confirmation page instead of login
+      router.push(`/appointment-confirmation/${appointment.id}`)
+    } catch (error: any) {
+      console.error("Error creating appointment:", error)
+      toast({
+        title: "Error",
+        description: "Failed to create appointment. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -680,17 +664,6 @@ export default function BookAppointmentPage() {
 
   // Get all available services
   const allServices = getAllServices(aiSuggestions)
-
-  useEffect(() => {
-    if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
-      toast({
-        title: "Access Denied",
-        description: "Demo dashboard is only available in demo mode",
-        variant: "destructive",
-      })
-      router.push('/login')
-    }
-  }, [router, toast])
 
   if (isLoading) {
     return (
