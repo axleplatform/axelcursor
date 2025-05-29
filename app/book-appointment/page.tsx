@@ -638,9 +638,17 @@ export default function BookAppointment() {
     setIsSubmitting(true)
 
     try {
+      // Force refresh the schema cache
+      console.log("Refreshing schema cache...")
+      const { error: cacheError } = await supabase.rpc("reload_schema_cache")
+      if (cacheError) {
+        console.error("Error refreshing schema cache:", cacheError)
+        throw new Error("Failed to refresh schema cache")
+      }
+      console.log("Schema cache refreshed successfully")
+
       // Prepare appointment data with all required fields
       const appointmentData = {
-        ...formData,
         location: "Mobile Service", // Default to mobile service
         appointment_date: new Date().toISOString(), // Use current time as default
         status: "pending",
@@ -658,6 +666,19 @@ export default function BookAppointment() {
 
       console.log("Creating appointment with data:", appointmentData)
 
+      // First, verify the schema
+      const { data: schemaData, error: schemaError } = await supabase
+        .from("appointments")
+        .select("car_runs")
+        .limit(1)
+
+      if (schemaError) {
+        console.error("Error verifying schema:", schemaError)
+        throw new Error(`Schema verification failed: ${schemaError.message}`)
+      }
+      console.log("Schema verification successful:", schemaData)
+
+      // Create the appointment
       const { data: appointment, error } = await supabase
         .from("appointments")
         .insert([appointmentData])
@@ -670,6 +691,25 @@ export default function BookAppointment() {
       }
 
       console.log("Appointment created successfully:", appointment)
+
+      // Verify the appointment was created with correct status
+      const { data: verifyData, error: verifyError } = await supabase
+        .from("appointments")
+        .select("id, status, car_runs")
+        .eq("id", appointment.id)
+        .single()
+
+      if (verifyError) {
+        console.error("Error verifying appointment:", verifyError)
+        throw new Error("Failed to verify appointment creation")
+      }
+
+      if (verifyData.status !== "pending") {
+        console.error("Appointment created with incorrect status:", verifyData)
+        throw new Error("Appointment was not created with pending status")
+      }
+
+      console.log("Appointment verified successfully:", verifyData)
 
       toast({
         title: "Success!",
