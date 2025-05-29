@@ -636,47 +636,36 @@ export default function BookAppointment() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setValidationError(null)
 
     try {
-      // Try to refresh schema cache with enhanced error handling
-      console.log("Attempting to refresh schema cache...")
-      let schemaCacheRefreshed = false
-      let schemaCacheVerified = false
+      // Get the current user or create an anonymous user
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      let userId: string
 
-      try {
-        // First attempt to refresh the schema cache
-        const { data: refreshData, error: refreshError } = await supabase.rpc("refresh_schema_cache")
-        if (refreshError) {
-          console.warn("Warning: Schema cache refresh failed:", refreshError)
-        } else {
-          console.log("Schema cache refresh response:", refreshData)
-          schemaCacheRefreshed = refreshData?.success || false
-        }
-
-        // Then verify the schema cache
-        const { data: verifyData, error: verifyError } = await supabase.rpc("verify_schema_cache")
-        if (verifyError) {
-          console.warn("Warning: Schema cache verification failed:", verifyError)
-        } else {
-          console.log("Schema cache verification response:", verifyData)
-          schemaCacheVerified = verifyData?.success || false
-        }
-
-        // If both operations failed, throw an error
-        if (!schemaCacheRefreshed && !schemaCacheVerified) {
-          throw new Error("Failed to refresh and verify schema cache")
-        }
-      } catch (error) {
-        console.warn("Warning: Schema cache operations failed:", error)
-        // Continue with appointment creation even if cache refresh fails
+      if (userError) {
+        throw userError
       }
 
-      // Prepare appointment data with all required fields
+      if (user) {
+        // Use the authenticated user's ID
+        userId = user.id
+      } else {
+        // Create an anonymous user
+        const { data: anonUser, error: anonError } = await supabase.rpc('create_anonymous_user')
+        if (anonError) {
+          throw anonError
+        }
+        userId = anonUser
+      }
+
+      // Prepare appointment data
       const appointmentData = {
+        user_id: userId,
         location: "Mobile Service", // Default to mobile service
         appointment_date: new Date().toISOString(), // Use current time as default
         status: "pending",
-        source: "landing_page",
+        source: "web",
         is_guest: true, // Explicitly set is_guest for guest appointments
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -685,21 +674,22 @@ export default function BookAppointment() {
         issue_description: formData.issueDescription,
         selected_services: formData.selectedServices,
         selected_car_issues: formData.selectedCarIssues,
-        phone_number: formData.phoneNumber
+        phone_number: formData.phoneNumber,
+        vehicle_id: formData.vehicleId,
       }
 
       console.log("Creating appointment with data:", appointmentData)
 
       // Create the appointment
-      const { data: appointment, error } = await supabase
+      const { data: appointment, error: appointmentError } = await supabase
         .from("appointments")
         .insert([appointmentData])
         .select()
         .single()
 
-      if (error) {
-        console.error("Supabase error creating appointment:", error)
-        throw new Error(`Failed to create appointment: ${error.message}`)
+      if (appointmentError) {
+        console.error("Supabase error creating appointment:", appointmentError)
+        throw appointmentError
       }
 
       console.log("Appointment created successfully:", appointment)
@@ -713,7 +703,7 @@ export default function BookAppointment() {
 
       if (verifyError) {
         console.error("Error verifying appointment:", verifyError)
-        throw new Error("Failed to verify appointment creation")
+        throw verifyError
       }
 
       if (verifyData.status !== "pending") {
@@ -728,20 +718,14 @@ export default function BookAppointment() {
 
       console.log("Appointment verified successfully:", verifyData)
 
-      toast({
-        title: "Success!",
-        description: "Your appointment request has been submitted. Mechanics will be notified and you'll receive quotes soon.",
-      })
+      toast.success("Appointment booked successfully!")
 
       // Redirect to confirmation page
       router.push(`/appointment-confirmation/${appointment.id}`)
-    } catch (error: any) {
-      console.error("Error creating appointment:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create appointment. Please try again.",
-        variant: "destructive",
-      })
+    } catch (err) {
+      console.error("Error creating appointment:", err)
+      setValidationError(err instanceof Error ? err.message : "Failed to create appointment")
+      toast.error("Failed to create appointment. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
