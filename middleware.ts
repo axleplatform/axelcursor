@@ -2,6 +2,7 @@ import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
+// Middleware for handling authentication and protected routes
 export async function middleware(request: NextRequest) {
   try {
     console.log("Middleware executing for path:", request.nextUrl.pathname)
