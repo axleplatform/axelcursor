@@ -121,21 +121,39 @@ function LoginContent() {
         metadata: data.user.user_metadata
       })
 
-      // Wait for session to be fully established
-      console.log("Waiting for session establishment...")
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // More robust session verification with retries
+      console.log("Starting session verification...")
+      let retries = 3
+      let session = null
+      
+      while (retries > 0) {
+        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
+        if (sessionError) {
+          console.error("Session verification error:", sessionError)
+          throw sessionError
+        }
+        
+        if (currentSession) {
+          session = currentSession
+          console.log("Session verified on attempt", 4 - retries)
+          break
+        }
+        
+        console.log("Session not found, retrying...", { retriesLeft: retries - 1 })
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        retries--
+      }
 
-      // Verify session is established
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError || !session) {
-        console.error("Session verification failed:", sessionError)
+      if (!session) {
+        console.error("Failed to establish session after retries")
         throw new Error("Failed to establish session")
       }
 
-      console.log("Session verified:", {
+      console.log("Session state:", {
         hasSession: !!session,
         userId: session?.user?.id,
-        metadata: session?.user?.user_metadata
+        cookies: document.cookie,
+        timestamp: new Date().toISOString()
       })
 
       // Check if user is a mechanic
@@ -161,10 +179,9 @@ function LoginContent() {
           router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
         } else {
           console.log("Redirecting to mechanic dashboard")
-          // Add a small delay to ensure session is established
-          setTimeout(() => {
-            router.push("/mechanic/dashboard")
-          }, 500)
+          // Add a longer delay to ensure session is fully established
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          router.push("/mechanic/dashboard")
         }
       } else {
         // For non-mechanics, redirect to home or specified redirect

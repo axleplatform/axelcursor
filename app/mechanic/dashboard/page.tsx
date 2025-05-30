@@ -151,17 +151,16 @@ export default function MechanicDashboard() {
         console.log("Checking authentication in dashboard...")
         setIsAuthLoading(true)
 
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser()
+        // First try to get the session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error("Session error:", sessionError)
+          throw sessionError
+        }
 
-        console.log("Auth check result:", { user: user?.id, error: authError })
-
-        if (authError) throw authError
-
-        if (!user) {
-          console.log("No user found, redirecting to login")
+        if (!session) {
+          console.log("No session found, redirecting to login")
           toast({
             title: "Authentication required",
             description: "Please log in to access your dashboard",
@@ -171,14 +170,42 @@ export default function MechanicDashboard() {
           return
         }
 
+        console.log("Session found:", {
+          userId: session.user.id,
+          email: session.user.email
+        })
+
+        // Get mechanic profile
+        const { data: profile, error: profileError } = await supabase
+          .from("mechanic_profiles")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .single()
+
+        if (profileError) {
+          console.error("Error fetching mechanic profile:", profileError)
+          throw profileError
+        }
+
+        if (!profile) {
+          console.log("No mechanic profile found, redirecting to onboarding")
+          router.push("/onboarding-mechanic-1")
+          return
+        }
+
+        console.log("Mechanic profile found:", profile)
+        setMechanicId(session.user.id)
+        setMechanicProfile(profile)
+
         // Fetch appointments
         console.log("Fetching appointments...")
         const [available, quoted, upcoming] = await Promise.all([
-          getAvailableAppointmentsForMechanic(user.id),
-          getQuotedAppointmentsForMechanic(user.id),
+          getAvailableAppointmentsForMechanic(session.user.id),
+          getQuotedAppointmentsForMechanic(session.user.id),
           supabase
             .from("appointments")
             .select("*, vehicles(*)")
+            .eq("mechanic_id", session.user.id)
             .in("status", ["confirmed", "in_progress", "pending_payment"])
             .order("appointment_date", { ascending: true }),
         ])
@@ -194,8 +221,10 @@ export default function MechanicDashboard() {
           description: "Failed to load dashboard. Please try again.",
           variant: "destructive",
         })
+        router.push("/login")
       } finally {
         setIsAuthLoading(false)
+        setIsAppointmentsLoading(false)
       }
     }
 
@@ -444,13 +473,30 @@ export default function MechanicDashboard() {
       <div className="container mx-auto px-4 pb-12 flex-grow">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Column 1: Upcoming Appointments */}
-          <UpcomingAppointments
-            appointments={upcomingAppointments}
-            isLoading={isAppointmentsLoading}
-            onStart={handleStartAppointment}
-            onCancel={handleCancelAppointment}
-            onUpdatePrice={handleUpdatePrice}
-          />
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-xl font-semibold mb-6">Upcoming Appointments</h2>
+            {isAppointmentsLoading ? (
+              <div className="flex items-center justify-center h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-[#294a46]" />
+              </div>
+            ) : upcomingAppointments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[400px] text-center">
+                <Clock className="h-16 w-16 mb-4 text-gray-400" />
+                <h3 className="text-xl font-medium mb-2">No Upcoming Appointments</h3>
+                <p className="text-gray-600">
+                  You don't have any upcoming appointments. New appointments will appear here when they're scheduled.
+                </p>
+              </div>
+            ) : (
+              <UpcomingAppointments
+                appointments={upcomingAppointments}
+                isLoading={isAppointmentsLoading}
+                onStart={handleStartAppointment}
+                onCancel={handleCancelAppointment}
+                onUpdatePrice={handleUpdatePrice}
+              />
+            )}
+          </div>
 
           {/* Column 2: Schedule */}
           <MechanicSchedule />
@@ -470,6 +516,12 @@ export default function MechanicDashboard() {
                 <p className="text-white/70">
                   There are no pending appointments at this time. Check back later for new requests.
                 </p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="mt-4 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full transition-colors"
+                >
+                  Refresh
+                </button>
               </div>
             ) : (
               <div className="relative">
@@ -680,6 +732,35 @@ export default function MechanicDashboard() {
                   </div>
                 </Card>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State for No Appointments */}
+        {!isAppointmentsLoading && 
+         availableAppointments.length === 0 && 
+         upcomingAppointments.length === 0 && 
+         quotedAppointments.length === 0 && (
+          <div className="mt-8 bg-white rounded-lg shadow-sm p-8 text-center">
+            <Clock className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+            <h2 className="text-2xl font-semibold mb-2">Welcome to Your Dashboard</h2>
+            <p className="text-gray-600 mb-6">
+              You don't have any appointments yet. When customers request service in your area, 
+              you'll see them appear here.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button 
+                onClick={() => window.location.reload()}
+                className="bg-[#294a46] text-white px-6 py-2 rounded-full hover:bg-[#1e3632] transition-colors"
+              >
+                Refresh
+              </button>
+              <button 
+                onClick={() => router.push('/mechanic/profile')}
+                className="border border-[#294a46] text-[#294a46] px-6 py-2 rounded-full hover:bg-[#294a46] hover:text-white transition-colors"
+              >
+                Update Profile
+              </button>
             </div>
           </div>
         )}

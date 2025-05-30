@@ -49,4 +49,20 @@ const AppointmentCard = ({ appointment }) => {
       </CardContent>
     </Card>
   );
-}; 
+};
+
+// Verify session multiple times
+let retries = 3;
+while (retries > 0) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session) break;
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  retries--;
+}
+
+console.log("Session state:", {
+  hasSession: !!session,
+  userId: session?.user?.id,
+  cookies: document.cookie,
+  timestamp: new Date().toISOString()
+}) 

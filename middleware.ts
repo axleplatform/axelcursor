@@ -24,7 +24,8 @@ export async function middleware(request: NextRequest) {
       userId: session?.user?.id,
       error: sessionError,
       path: request.nextUrl.pathname,
-      cookies: Object.fromEntries(request.cookies.entries())
+      cookies: Object.fromEntries(request.cookies.entries()),
+      timestamp: new Date().toISOString()
     })
 
     // If there's no session and trying to access protected routes, redirect to login
@@ -56,6 +57,14 @@ export async function middleware(request: NextRequest) {
 
       // Also set a non-httpOnly cookie for client-side access
       res.cookies.set("sb-auth-token-client", session.access_token, {
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7 // 1 week
+      })
+
+      // Add a timestamp cookie to track session age
+      res.cookies.set("sb-session-timestamp", new Date().toISOString(), {
         path: "/",
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
