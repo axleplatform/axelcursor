@@ -6,6 +6,7 @@ import type { NextRequest } from "next/server"
 export async function middleware(request: NextRequest) {
   try {
     console.log("Middleware executing for path:", request.nextUrl.pathname)
+    console.log("Request headers:", Object.fromEntries(request.headers.entries()))
     
     // Create a Supabase client configured to use cookies
     const res = NextResponse.next()
@@ -21,7 +22,8 @@ export async function middleware(request: NextRequest) {
       hasSession: !!session,
       userId: session?.user?.id,
       error: sessionError,
-      path: request.nextUrl.pathname
+      path: request.nextUrl.pathname,
+      cookies: Object.fromEntries(request.cookies.entries())
     })
 
     // If there's no session and trying to access protected routes, redirect to login
@@ -41,6 +43,7 @@ export async function middleware(request: NextRequest) {
 
     // Add session cookie to response if it exists
     if (session) {
+      console.log("Setting session cookies for user:", session.user.id)
       // Set both httpOnly and non-httpOnly cookies for better compatibility
       res.cookies.set("sb-auth-token", session.access_token, {
         path: "/",

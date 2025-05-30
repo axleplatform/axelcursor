@@ -98,7 +98,7 @@ function LoginContent() {
     setError(null)
 
     try {
-      console.log("Attempting login for email:", email)
+      console.log("Starting login process for email:", email)
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -106,17 +106,23 @@ function LoginContent() {
       })
 
       if (error) {
-        console.error("Auth error:", error)
+        console.error("Auth error during login:", error)
         throw error
       }
 
       if (!data.user) {
+        console.error("No user data returned after login")
         throw new Error("No user data returned")
       }
 
-      console.log("Login successful, checking mechanic profile for user:", data.user.id)
+      console.log("Login successful, user data:", {
+        userId: data.user.id,
+        email: data.user.email,
+        metadata: data.user.user_metadata
+      })
 
       // Wait for session to be fully established
+      console.log("Waiting for session establishment...")
       await new Promise(resolve => setTimeout(resolve, 1000))
 
       // Verify session is established
@@ -126,7 +132,14 @@ function LoginContent() {
         throw new Error("Failed to establish session")
       }
 
+      console.log("Session verified:", {
+        hasSession: !!session,
+        userId: session?.user?.id,
+        metadata: session?.user?.user_metadata
+      })
+
       // Check if user is a mechanic
+      console.log("Checking mechanic profile for user:", data.user.id)
       const { data: mechanicProfile, error: profileError } = await supabase
         .from("mechanic_profiles")
         .select("onboarding_completed, onboarding_step")
