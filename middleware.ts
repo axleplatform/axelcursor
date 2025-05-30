@@ -26,7 +26,7 @@ export async function middleware(request: NextRequest) {
     // If there's no session and trying to access protected routes, redirect to login
     if (!session) {
       console.log("No session found, checking if path is protected")
-      const isProtectedRoute = request.nextUrl.pathname.startsWith("/mechanic-dashboard") ||
+      const isProtectedRoute = request.nextUrl.pathname.startsWith("/mechanic/") ||
         request.nextUrl.pathname.startsWith("/onboarding-mechanic-")
 
       if (isProtectedRoute) {
@@ -71,7 +71,7 @@ export async function middleware(request: NextRequest) {
 // Configure which routes to run middleware on
 export const config = {
   matcher: [
-    "/mechanic-dashboard",
+    "/mechanic/:path*",
     "/onboarding-mechanic-:path*"
   ]
 }
