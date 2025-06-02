@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client"
 
-// Enhanced login flow with improved session handling and error logging
+// Enhanced login flow with improved session handling and error logging - Deployment v2
 import type React from "react"
 import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
