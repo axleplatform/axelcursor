@@ -2,17 +2,18 @@ import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-// Enhanced middleware for robust authentication and session handling
-// Includes detailed logging and improved error handling
-export async function middleware(req: NextRequest) {
-  console.log("Middleware executing for path:", req.nextUrl.pathname)
-  console.log("Request headers:", Object.fromEntries(req.headers.entries()))
-
+// Middleware for handling authentication and protected routes
+// This middleware ensures proper session handling and route protection
+export async function middleware(request: NextRequest) {
   try {
+    console.log("Middleware executing for path:", request.nextUrl.pathname)
+    console.log("Request headers:", Object.fromEntries(request.headers.entries()))
+    
+    // Create a Supabase client configured to use cookies
     const res = NextResponse.next()
-    const supabase = createMiddlewareClient({ req, res })
+    const supabase = createMiddlewareClient({ req: request, res })
 
-    // Check session
+    // Refresh session if expired - required for Server Components
     const {
       data: { session },
       error: sessionError,
@@ -21,58 +22,63 @@ export async function middleware(req: NextRequest) {
     console.log("Session check in middleware:", {
       hasSession: !!session,
       userId: session?.user?.id,
-      error: sessionError?.message,
-      path: req.nextUrl.pathname
+      error: sessionError,
+      path: request.nextUrl.pathname,
+      cookies: Object.fromEntries(request.cookies.entries()),
+      timestamp: new Date().toISOString()
     })
 
-    // Set session cookie if we have a session
-    if (session) {
-      console.log("Setting session cookie in middleware")
-      res.cookies.set('supabase-auth-token', session.access_token, {
-        path: '/',
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-      })
-    }
+    // If there's no session and trying to access protected routes, redirect to login
+    if (!session) {
+      console.log("No session found, checking if path is protected")
+      const isProtectedRoute = request.nextUrl.pathname.startsWith("/mechanic/") ||
+        request.nextUrl.pathname.startsWith("/onboarding-mechanic-")
 
-    // Protected routes
-    const protectedRoutes = ['/mechanic/dashboard', '/mechanic/profile']
-    const isProtectedRoute = protectedRoutes.some(route => 
-      req.nextUrl.pathname.startsWith(route)
-    )
-
-    if (isProtectedRoute) {
-      console.log("Checking protected route access:", req.nextUrl.pathname)
-      
-      if (!session) {
-        console.log("No session found, redirecting to login")
-        const redirectUrl = new URL('/login', req.url)
-        redirectUrl.searchParams.set('redirectedFrom', req.nextUrl.pathname)
+      if (isProtectedRoute) {
+        console.log("Protected route accessed without session, redirecting to login")
+        const redirectUrl = new URL("/login", request.url)
+        redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname)
         return NextResponse.redirect(redirectUrl)
       }
+      return res
+    }
 
-      // Check if user is a mechanic
-      const { data: profile, error: profileError } = await supabase
-        .from('mechanic_profiles')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .single()
-
-      console.log("Mechanic profile check in middleware:", {
-        hasProfile: !!profile,
-        error: profileError?.message
+    // Add session cookie to response if it exists
+    if (session) {
+      console.log("Setting session cookies for user:", session.user.id)
+      // Set both httpOnly and non-httpOnly cookies for better compatibility
+      res.cookies.set("sb-auth-token", session.access_token, {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7 // 1 week
       })
 
-      if (!profile) {
-        console.log("No mechanic profile found, redirecting to onboarding")
-        return NextResponse.redirect(new URL('/onboarding-mechanic-1', req.url))
-      }
+      // Also set a non-httpOnly cookie for client-side access
+      res.cookies.set("sb-auth-token-client", session.access_token, {
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7 // 1 week
+      })
+
+      // Add a timestamp cookie to track session age
+      res.cookies.set("sb-session-timestamp", new Date().toISOString(), {
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7 // 1 week
+      })
     }
 
     return res
   } catch (error) {
     console.error("Middleware error:", error)
-    return NextResponse.next()
+    // On error, redirect to login with error message
+    const redirectUrl = new URL("/login", request.url)
+    redirectUrl.searchParams.set("error", "Authentication error. Please try again.")
+    return NextResponse.redirect(redirectUrl)
   }
 }
 
