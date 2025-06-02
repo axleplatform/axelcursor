@@ -1,5 +1,6 @@
 "use client"
 
+// Enhanced login flow with improved session handling and error logging
 import type React from "react"
 import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
