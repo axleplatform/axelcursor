@@ -16,7 +16,7 @@ import {
   createOrUpdateQuote,
 } from "@/lib/mechanic-quotes"
 import { formatDate } from "@/lib/utils"
-import { Card } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 
 interface Appointment {
   id: string
@@ -26,6 +26,13 @@ interface Appointment {
   issue_description?: string
   car_runs?: boolean
   selected_services?: string[]
+  users?: {
+    id: string
+    email: string
+    raw_user_meta_data?: {
+      is_anonymous?: boolean
+    }
+  }
   vehicles?: {
     year: string
     make: string
@@ -46,6 +53,7 @@ export default function MechanicDashboard() {
   const [mechanicId, setMechanicId] = useState<string | null>(null)
   const [mechanicProfile, setMechanicProfile] = useState<any>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
+  const [appointments, setAppointments] = useState<Appointment[]>([])
   const supabase = createClientComponentClient()
 
   // Appointment states
@@ -163,7 +171,7 @@ export default function MechanicDashboard() {
       }
 
       // Transform the data to include user information
-      const transformedAppointments = appointments.map(appointment => ({
+      const transformedAppointments = appointments.map((appointment: Appointment) => ({
         ...appointment,
         is_guest: appointment.users?.raw_user_meta_data?.is_anonymous || false,
         user_email: appointment.users?.email || 'Anonymous User'
@@ -172,12 +180,16 @@ export default function MechanicDashboard() {
       setAppointments(transformedAppointments);
     } catch (error) {
       console.error('Error fetching appointments:', error);
-      toast.error('Failed to fetch appointments');
+      toast({
+        title: "Error",
+        description: "Failed to fetch appointments",
+        variant: "destructive",
+      });
     }
   };
 
   // Update the appointment card to show user information
-  const AppointmentCard = ({ appointment }) => {
+  const AppointmentCard = ({ appointment }: { appointment: Appointment }) => {
     const isGuest = appointment.users?.raw_user_meta_data?.is_anonymous || false;
     
     return (
@@ -198,20 +210,27 @@ export default function MechanicDashboard() {
   };
 
   // Verify session multiple times
-  let retries = 3;
-  while (retries > 0) {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session) break;
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    retries--;
-  }
+  useEffect(() => {
+    const verifySession = async () => {
+      let retries = 3;
+      while (retries > 0) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          console.log("Session state:", {
+            hasSession: true,
+            userId: session.user.id,
+            cookies: document.cookie,
+            timestamp: new Date().toISOString()
+          });
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        retries--;
+      }
+    };
 
-  console.log("Session state:", {
-    hasSession: !!session,
-    userId: session?.user?.id,
-    cookies: document.cookie,
-    timestamp: new Date().toISOString()
-  })
+    verifySession();
+  }, [supabase]);
 
   return (
     <div className="flex flex-col h-screen">
