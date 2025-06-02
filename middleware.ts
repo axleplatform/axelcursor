@@ -2,8 +2,8 @@ import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-// Middleware for handling authentication and protected routes
-// This middleware ensures proper session handling and route protection
+// Enhanced middleware for robust authentication and session handling
+// Includes detailed logging and improved error handling
 export async function middleware(req: NextRequest) {
   console.log("Middleware executing for path:", req.nextUrl.pathname)
   console.log("Request headers:", Object.fromEntries(req.headers.entries()))
