@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
-import { supabase } from "@/lib/supabase"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 function LoginContent() {
   const router = useRouter()
@@ -20,14 +20,25 @@ function LoginContent() {
   const [error, setError] = useState<string | null>(null)
   const [isResendingEmail, setIsResendingEmail] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
+  const supabase = createClientComponentClient()
 
   // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
       try {
         console.log("Checking session...")
-        const { data: { session } } = await supabase.auth.getSession()
-        console.log("Session data:", session)
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error("Session check error:", sessionError)
+          return
+        }
+
+        console.log("Session data:", {
+          hasSession: !!session,
+          userId: session?.user?.id,
+          email: session?.user?.email
+        })
         
         if (session) {
           // Check if user is a mechanic
@@ -52,12 +63,12 @@ function LoginContent() {
             
             if (mechanicProfile.onboarding_completed) {
               console.log("Redirecting to dashboard...")
-              router.push("/mechanic/dashboard")
+              router.replace("/mechanic/dashboard")
             } else {
               // Redirect to appropriate onboarding step
               const step = mechanicProfile.onboarding_step || "personal_info"
               console.log("Redirecting to onboarding step:", step)
-              router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
+              router.replace(`/onboarding-mechanic-${getStepNumber(step)}`)
             }
           } else {
             // Check if this is a customer account
@@ -70,7 +81,7 @@ function LoginContent() {
 
             if (customerProfile) {
               console.log("Redirecting to customer dashboard...")
-              router.push("/dashboard")
+              router.replace("/dashboard")
             }
           }
         }
@@ -79,7 +90,7 @@ function LoginContent() {
       }
     }
     checkSession()
-  }, [router])
+  }, [router, supabase])
 
   const getStepNumber = (step: string) => {
     switch (step) {
@@ -123,7 +134,7 @@ function LoginContent() {
 
       // More robust session verification with retries
       console.log("Starting session verification...")
-      let retries = 3
+      let retries = 5 // Increased retries
       let session = null
       
       while (retries > 0) {
@@ -135,12 +146,12 @@ function LoginContent() {
         
         if (currentSession) {
           session = currentSession
-          console.log("Session verified on attempt", 4 - retries)
+          console.log("Session verified on attempt", 6 - retries)
           break
         }
         
         console.log("Session not found, retrying...", { retriesLeft: retries - 1 })
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise(resolve => setTimeout(resolve, 1500)) // Increased delay
         retries--
       }
 
@@ -176,18 +187,18 @@ function LoginContent() {
         if (!mechanicProfile.onboarding_completed) {
           const step = mechanicProfile.onboarding_step || "personal_info"
           console.log("Redirecting to onboarding step:", step)
-          router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
+          router.replace(`/onboarding-mechanic-${getStepNumber(step)}`)
         } else {
           console.log("Redirecting to mechanic dashboard")
           // Add a longer delay to ensure session is fully established
           await new Promise(resolve => setTimeout(resolve, 2000))
-          router.push("/mechanic/dashboard")
+          router.replace("/mechanic/dashboard")
         }
       } else {
         // For non-mechanics, redirect to home or specified redirect
         const redirectTo = searchParams.get("redirectedFrom") || "/"
         console.log("Redirecting to:", redirectTo)
-        router.push(redirectTo)
+        router.replace(redirectTo)
       }
     } catch (error: any) {
       console.error("Login error:", error)
