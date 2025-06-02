@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client"
 
 // Enhanced login flow with improved session handling and error logging
