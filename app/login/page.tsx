@@ -156,6 +156,9 @@ function LoginContent() {
         timestamp: new Date().toISOString()
       })
 
+      // Wait for session to be fully established
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
       // Check if user is a mechanic
       console.log("Checking mechanic profile for user:", data.user.id)
       const { data: mechanicProfile, error: profileError } = await supabase
@@ -179,8 +182,6 @@ function LoginContent() {
           router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
         } else {
           console.log("Redirecting to mechanic dashboard")
-          // Add a longer delay to ensure session is fully established
-          await new Promise(resolve => setTimeout(resolve, 2000))
           router.push("/mechanic/dashboard")
         }
       } else {

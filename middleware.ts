@@ -7,30 +7,26 @@ import type { NextRequest } from "next/server"
 export async function middleware(request: NextRequest) {
   try {
     console.log("Middleware executing for path:", request.nextUrl.pathname)
-    console.log("Request headers:", Object.fromEntries(request.headers.entries()))
     
     // Create a Supabase client configured to use cookies
     const res = NextResponse.next()
     const supabase = createMiddlewareClient({ req: request, res })
 
-    // Refresh session if expired - required for Server Components
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession()
-
+    // Check for existing session cookie
+    const sessionCookie = request.cookies.get("sb-auth-token")
+    const sessionTimestamp = request.cookies.get("sb-session-timestamp")
+    
     console.log("Session check in middleware:", {
-      hasSession: !!session,
-      userId: session?.user?.id,
-      error: sessionError,
+      hasSessionCookie: !!sessionCookie,
+      sessionTimestamp: sessionTimestamp?.value,
       path: request.nextUrl.pathname,
       cookies: Object.fromEntries(request.cookies.entries()),
       timestamp: new Date().toISOString()
     })
 
-    // If there's no session and trying to access protected routes, redirect to login
-    if (!session) {
-      console.log("No session found, checking if path is protected")
+    // If there's no session cookie and trying to access protected routes, redirect to login
+    if (!sessionCookie) {
+      console.log("No session cookie found, checking if path is protected")
       const isProtectedRoute = request.nextUrl.pathname.startsWith("/mechanic/") ||
         request.nextUrl.pathname.startsWith("/onboarding-mechanic-")
 
@@ -43,34 +39,53 @@ export async function middleware(request: NextRequest) {
       return res
     }
 
-    // Add session cookie to response if it exists
-    if (session) {
-      console.log("Setting session cookies for user:", session.user.id)
-      // Set both httpOnly and non-httpOnly cookies for better compatibility
-      res.cookies.set("sb-auth-token", session.access_token, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7 // 1 week
-      })
+    // Verify session with Supabase
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession()
 
-      // Also set a non-httpOnly cookie for client-side access
-      res.cookies.set("sb-auth-token-client", session.access_token, {
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7 // 1 week
-      })
-
-      // Add a timestamp cookie to track session age
-      res.cookies.set("sb-session-timestamp", new Date().toISOString(), {
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7 // 1 week
-      })
+    if (sessionError) {
+      console.error("Session verification error:", sessionError)
+      const redirectUrl = new URL("/login", request.url)
+      redirectUrl.searchParams.set("error", "Session verification failed")
+      return NextResponse.redirect(redirectUrl)
     }
+
+    if (!session) {
+      console.log("No valid session found, redirecting to login")
+      const redirectUrl = new URL("/login", request.url)
+      redirectUrl.searchParams.set("error", "Session expired")
+      return NextResponse.redirect(redirectUrl)
+    }
+
+    // Session is valid, set cookies
+    console.log("Setting session cookies for user:", session.user.id)
+    
+    // Set both httpOnly and non-httpOnly cookies for better compatibility
+    res.cookies.set("sb-auth-token", session.access_token, {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7 // 1 week
+    })
+
+    // Also set a non-httpOnly cookie for client-side access
+    res.cookies.set("sb-auth-token-client", session.access_token, {
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7 // 1 week
+    })
+
+    // Add a timestamp cookie to track session age
+    res.cookies.set("sb-session-timestamp", new Date().toISOString(), {
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7 // 1 week
+    })
 
     return res
   } catch (error) {
