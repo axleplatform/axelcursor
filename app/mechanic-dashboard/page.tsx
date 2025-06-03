@@ -1,5 +1,6 @@
 "use client"
 
+// Mechanic Dashboard - Handles authentication, session management, and appointment display
 import React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
