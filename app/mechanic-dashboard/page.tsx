@@ -82,14 +82,10 @@ export default function MechanicDashboard() {
         }
 
         if (!session) {
-          console.log("No session found, redirecting to login")
-          toast({
-            title: "Authentication required",
-            description: "Please log in to access your dashboard",
-            variant: "destructive",
-          })
-          router.push("/login")
-          return
+          const isProtectedRoute = request.nextUrl.pathname.startsWith("/mechanic/")
+          if (isProtectedRoute) {
+            return NextResponse.redirect(redirectUrl)
+          }
         }
 
         console.log("Session found:", {
