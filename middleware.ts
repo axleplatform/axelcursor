@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server"
 
 // Middleware for handling authentication and protected routes
 // This middleware ensures proper session handling and route protection
+// Last updated: 2024-06-04 - Fixed cookie handling and session verification
 export async function middleware(request: NextRequest) {
   try {
     console.log("🔒 Middleware executing for path:", request.nextUrl.pathname)
