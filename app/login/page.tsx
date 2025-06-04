@@ -152,33 +152,21 @@ function LoginContent() {
         throw new Error("Failed to establish session")
       }
 
-      // Get mechanic profile
-      const { data: mechanicProfile, error: profileError } = await supabase
+      // Check if user has completed onboarding
+      const { data: profile, error: profileError } = await supabase
         .from("mechanic_profiles")
-        .select("*")
+        .select("onboarding_completed")
         .eq("user_id", user.id)
         .single()
 
-      if (profileError) {
+      if (profileError && profileError.code !== "PGRST116") {
         console.error("❌ Error fetching mechanic profile:", profileError)
         throw profileError
       }
 
-      if (!mechanicProfile) {
-        console.error("❌ No mechanic profile found")
-        throw new Error("No mechanic profile found")
-      }
-
-      console.log("✅ Mechanic profile found:", {
-        userId: mechanicProfile.user_id,
-        onboardingCompleted: mechanicProfile.onboarding_completed,
-        onboardingStep: mechanicProfile.onboarding_step
-      })
-
-      if (!mechanicProfile.onboarding_completed) {
-        const step = mechanicProfile.onboarding_step || "personal_info"
-        console.log("🔄 Redirecting to onboarding step:", step)
-        router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
+      if (!profile || !profile.onboarding_completed) {
+        console.log("🔄 User needs to complete onboarding")
+        router.push("/onboarding-mechanic-1")
       } else {
         console.log("🔄 Redirecting to mechanic dashboard")
         // Add a longer delay before redirect to ensure cookies are set
@@ -195,20 +183,6 @@ function LoginContent() {
         if (!finalSession) {
           console.error("❌ Session lost before redirect")
           throw new Error("Session lost before redirect")
-        }
-        
-        // Verify cookies are set
-        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-          const [key, value] = cookie.trim().split('=')
-          acc[key] = value
-          return acc
-        }, {} as Record<string, string>)
-        
-        console.log("🍪 Cookies before redirect:", cookies)
-        
-        if (!cookies['sb-auth-token'] && !cookies['sb-auth-token-client']) {
-          console.error("❌ Session cookies not found")
-          throw new Error("Session cookies not set")
         }
 
         // Verify Supabase environment variables

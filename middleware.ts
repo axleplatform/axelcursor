@@ -81,7 +81,7 @@ export async function middleware(request: NextRequest) {
     res.cookies.set("sb-auth-token", session.access_token, {
       path: "/",
       httpOnly: true,
-      secure: true, // Always use secure in production
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7 // 1 week
     })
@@ -89,25 +89,24 @@ export async function middleware(request: NextRequest) {
     // Also set a non-httpOnly cookie for client-side access
     res.cookies.set("sb-auth-token-client", session.access_token, {
       path: "/",
-      secure: true, // Always use secure in production
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7 // 1 week
     })
 
-    // Add a timestamp cookie to track session age
-    res.cookies.set("sb-session-timestamp", new Date().toISOString(), {
+    // Set a timestamp cookie to track session age
+    res.cookies.set("sb-session-timestamp", Date.now().toString(), {
       path: "/",
-      secure: true, // Always use secure in production
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7 // 1 week
     })
 
-    console.log("✅ Session cookies set successfully")
     return res
   } catch (error) {
     console.error("❌ Middleware error:", error)
     const redirectUrl = new URL("/login", request.url)
-    redirectUrl.searchParams.set("error", "Authentication error. Please try again.")
+    redirectUrl.searchParams.set("error", "Internal server error")
     return NextResponse.redirect(redirectUrl)
   }
 }
