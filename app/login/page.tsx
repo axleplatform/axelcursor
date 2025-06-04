@@ -126,10 +126,10 @@ function LoginContent() {
       // Wait for session to be fully established with retries
       console.log("⏳ Waiting for session to be fully established...")
       let currentSession = null
-      let retries = 3
+      let retries = 5 // Increased retries
       
       while (retries > 0) {
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise(resolve => setTimeout(resolve, 2000)) // Increased delay
         const { data: { session: newSession }, error: sessionError } = await supabase.auth.getSession()
         
         if (sessionError) {
@@ -139,7 +139,7 @@ function LoginContent() {
         
         if (newSession) {
           currentSession = newSession
-          console.log("✅ Session established on attempt", 4 - retries)
+          console.log("✅ Session established on attempt", 6 - retries)
           break
         }
         
@@ -152,99 +152,79 @@ function LoginContent() {
         throw new Error("Failed to establish session")
       }
 
-      console.log("✅ Session verified:", {
-        userId: currentSession.user.id,
-        email: currentSession.user.email,
-        expiresAt: currentSession.expires_at,
-        cookies: document.cookie
-      })
-
-      // Check if user is a mechanic
-      console.log("🔧 Checking mechanic profile for user:", user.id)
+      // Get mechanic profile
       const { data: mechanicProfile, error: profileError } = await supabase
         .from("mechanic_profiles")
-        .select("onboarding_completed, onboarding_step")
+        .select("*")
         .eq("user_id", user.id)
         .single()
 
-      if (profileError && profileError.code !== "PGRST116") {
-        console.error("❌ Error checking mechanic profile:", profileError)
+      if (profileError) {
+        console.error("❌ Error fetching mechanic profile:", profileError)
         throw profileError
       }
 
-      console.log("📋 Mechanic profile check result:", mechanicProfile)
+      if (!mechanicProfile) {
+        console.error("❌ No mechanic profile found")
+        throw new Error("No mechanic profile found")
+      }
 
-      // If user is a mechanic, redirect to appropriate page
-      if (mechanicProfile) {
-        if (!mechanicProfile.onboarding_completed) {
-          const step = mechanicProfile.onboarding_step || "personal_info"
-          console.log("🔄 Redirecting to onboarding step:", step)
-          router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
-        } else {
-          console.log("🔄 Redirecting to mechanic dashboard")
-          // Add a longer delay before redirect to ensure cookies are set
-          await new Promise(resolve => setTimeout(resolve, 3000))
-          
-          // Verify session one last time before redirect
-          const { data: { session: finalSession }, error: finalSessionError } = await supabase.auth.getSession()
-          
-          if (finalSessionError) {
-            console.error("❌ Final session check failed:", finalSessionError)
-            throw finalSessionError
-          }
-          
-          if (!finalSession) {
-            console.error("❌ Session lost before redirect")
-            throw new Error("Session lost before redirect")
-          }
-          
-          // Verify cookies are set
-          const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-            const [key, value] = cookie.trim().split('=')
-            acc[key] = value
-            return acc
-          }, {} as Record<string, string>)
-          
-          console.log("🍪 Cookies before redirect:", cookies)
-          
-          if (!cookies['sb-auth-token'] && !cookies['sb-auth-token-client']) {
-            console.error("❌ Session cookies not found")
-            throw new Error("Session cookies not set")
-          }
+      console.log("✅ Mechanic profile found:", {
+        userId: mechanicProfile.user_id,
+        onboardingCompleted: mechanicProfile.onboarding_completed,
+        onboardingStep: mechanicProfile.onboarding_step
+      })
 
-          // Verify Supabase environment variables
-          console.log("🔧 Checking Supabase configuration:", {
-            hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-            hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-            url: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 10) + '...',
-            anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 10) + '...'
-          })
-          
-          // Verify mechanic profile access
-          const { data: profileCheck, error: profileCheckError } = await supabase
-            .from("mechanic_profiles")
-            .select("id, user_id")
-            .eq("user_id", finalSession.user.id)
-            .single()
-          
-          console.log("🔍 Final mechanic profile check:", {
-            success: !!profileCheck,
-            error: profileCheckError,
-            profileId: profileCheck?.id
-          })
-          
-          console.log("✅ Final session check passed, redirecting to dashboard")
-          router.push("/mechanic/dashboard")
-        }
+      if (!mechanicProfile.onboarding_completed) {
+        const step = mechanicProfile.onboarding_step || "personal_info"
+        console.log("🔄 Redirecting to onboarding step:", step)
+        router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
       } else {
-        // For non-mechanics, redirect to home or specified redirect
-        const redirectTo = searchParams.get("redirectedFrom") || "/"
-        console.log("🔄 Redirecting to:", redirectTo)
-        router.push(redirectTo)
+        console.log("🔄 Redirecting to mechanic dashboard")
+        // Add a longer delay before redirect to ensure cookies are set
+        await new Promise(resolve => setTimeout(resolve, 5000)) // Increased delay
+        
+        // Verify session one last time before redirect
+        const { data: { session: finalSession }, error: finalSessionError } = await supabase.auth.getSession()
+        
+        if (finalSessionError) {
+          console.error("❌ Final session check failed:", finalSessionError)
+          throw finalSessionError
+        }
+        
+        if (!finalSession) {
+          console.error("❌ Session lost before redirect")
+          throw new Error("Session lost before redirect")
+        }
+        
+        // Verify cookies are set
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=')
+          acc[key] = value
+          return acc
+        }, {} as Record<string, string>)
+        
+        console.log("🍪 Cookies before redirect:", cookies)
+        
+        if (!cookies['sb-auth-token'] && !cookies['sb-auth-token-client']) {
+          console.error("❌ Session cookies not found")
+          throw new Error("Session cookies not set")
+        }
+
+        // Verify Supabase environment variables
+        console.log("🔧 Checking Supabase configuration:", {
+          hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+          hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          url: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 10) + '...',
+          anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 10) + '...'
+        })
+
+        // Redirect to dashboard
+        router.push("/mechanic/dashboard")
       }
     } catch (error: any) {
       console.error("❌ Login error:", error)
-      setError(error.message)
+      setError(error.message || "An error occurred during login")
     } finally {
       setIsLoading(false)
     }

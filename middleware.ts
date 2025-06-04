@@ -8,7 +8,6 @@ import type { NextRequest } from "next/server"
 export async function middleware(request: NextRequest) {
   try {
     console.log("🔒 Middleware executing for path:", request.nextUrl.pathname)
-    console.log("🔍 Request headers:", Object.fromEntries(request.headers.entries()))
     
     // Create a Supabase client configured to use cookies
     const res = NextResponse.next()
@@ -82,7 +81,7 @@ export async function middleware(request: NextRequest) {
     res.cookies.set("sb-auth-token", session.access_token, {
       path: "/",
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true, // Always use secure in production
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7 // 1 week
     })
@@ -90,7 +89,7 @@ export async function middleware(request: NextRequest) {
     // Also set a non-httpOnly cookie for client-side access
     res.cookies.set("sb-auth-token-client", session.access_token, {
       path: "/",
-      secure: process.env.NODE_ENV === "production",
+      secure: true, // Always use secure in production
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7 // 1 week
     })
@@ -98,7 +97,7 @@ export async function middleware(request: NextRequest) {
     // Add a timestamp cookie to track session age
     res.cookies.set("sb-session-timestamp", new Date().toISOString(), {
       path: "/",
-      secure: process.env.NODE_ENV === "production",
+      secure: true, // Always use secure in production
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7 // 1 week
     })
