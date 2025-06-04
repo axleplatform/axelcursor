@@ -20,7 +20,9 @@ export async function middleware(request: NextRequest) {
       hasAuthTokenClient: cookies.has("sb-auth-token-client"),
       hasAccessToken: cookies.has("sb-access-token"),
       hasRefreshToken: cookies.has("sb-refresh-token"),
-      allCookies: Object.fromEntries(cookies.entries())
+      allCookies: Object.fromEntries(
+        Array.from(cookies.getAll()).map(cookie => [cookie.name, cookie.value] as [string, string])
+      )
     }
     
     console.log("🍪 Cookie check in middleware:", cookieDetails)
