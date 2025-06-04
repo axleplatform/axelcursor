@@ -17,6 +17,7 @@ import {
 } from "@/lib/mechanic-quotes"
 import { formatDate } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 interface Appointment {
   id: string
@@ -54,6 +55,7 @@ export default function MechanicDashboard() {
   const [mechanicId, setMechanicId] = useState<string | null>(null)
   const [mechanicProfile, setMechanicProfile] = useState<any>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
+  const supabase = createClientComponentClient()
 
   // Appointment states
   const [availableAppointments, setAvailableAppointments] = useState<Appointment[]>([])
@@ -151,16 +153,31 @@ export default function MechanicDashboard() {
         console.log("Checking authentication in dashboard...")
         setIsAuthLoading(true)
 
-        // First try to get the session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        // First try to get the session with retries
+        let session = null
+        let retries = 3
         
-        if (sessionError) {
-          console.error("Session error:", sessionError)
-          throw sessionError
+        while (retries > 0) {
+          const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
+          
+          if (sessionError) {
+            console.error("Session error:", sessionError)
+            throw sessionError
+          }
+          
+          if (currentSession) {
+            session = currentSession
+            console.log("Session found on attempt", 4 - retries)
+            break
+          }
+          
+          console.log("Session not found, retrying...", { retriesLeft: retries - 1 })
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          retries--
         }
 
         if (!session) {
-          console.log("No session found, redirecting to login")
+          console.log("No session found after retries, redirecting to login")
           toast({
             title: "Authentication required",
             description: "Please log in to access your dashboard",
@@ -172,8 +189,13 @@ export default function MechanicDashboard() {
 
         console.log("Session found:", {
           userId: session.user.id,
-          email: session.user.email
+          email: session.user.email,
+          cookies: document.cookie,
+          timestamp: new Date().toISOString()
         })
+
+        // Wait for session to be fully established
+        await new Promise(resolve => setTimeout(resolve, 1000))
 
         // Get mechanic profile
         const { data: profile, error: profileError } = await supabase
@@ -229,7 +251,7 @@ export default function MechanicDashboard() {
     }
 
     checkAuth()
-  }, [router, toast])
+  }, [router, toast, supabase])
 
   // Handle submitting a quote
   const handleSubmitQuote = async (appointmentId: string): Promise<boolean> => {
