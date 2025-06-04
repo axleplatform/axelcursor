@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Check, MapPin, X } from "lucide-react"
 import type { Appointment } from "@/hooks/use-appointments"
-import { formatDate } from "@/lib/utils"
+import { formatDate } from "../lib/utils"
 
 interface UpcomingAppointmentCardProps {
   appointment: Appointment
