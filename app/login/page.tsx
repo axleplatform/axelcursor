@@ -122,27 +122,40 @@ function LoginContent() {
         metadata: user.user_metadata
       })
 
-      // Wait for session to be fully established
+      // Wait for session to be fully established with retries
       console.log("⏳ Waiting for session to be fully established...")
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      // Verify session is established
-      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
+      let currentSession = null
+      let retries = 3
       
-      if (sessionError) {
-        console.error("❌ Session verification error:", sessionError)
-        throw sessionError
+      while (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        const { data: { session: newSession }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error("❌ Session verification error:", sessionError)
+          throw sessionError
+        }
+        
+        if (newSession) {
+          currentSession = newSession
+          console.log("✅ Session established on attempt", 4 - retries)
+          break
+        }
+        
+        console.log("⏳ Session not found, retrying...", { retriesLeft: retries - 1 })
+        retries--
       }
 
       if (!currentSession) {
-        console.error("❌ No session found after login")
+        console.error("❌ No session found after retries")
         throw new Error("Failed to establish session")
       }
 
       console.log("✅ Session verified:", {
         userId: currentSession.user.id,
         email: currentSession.user.email,
-        expiresAt: currentSession.expires_at
+        expiresAt: currentSession.expires_at,
+        cookies: document.cookie
       })
 
       // Check if user is a mechanic
@@ -168,6 +181,16 @@ function LoginContent() {
           router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
         } else {
           console.log("🔄 Redirecting to mechanic dashboard")
+          // Add a longer delay before redirect to ensure cookies are set
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          
+          // Verify session one last time before redirect
+          const { data: { session: finalSession } } = await supabase.auth.getSession()
+          if (!finalSession) {
+            throw new Error("Session lost before redirect")
+          }
+          
+          console.log("✅ Final session check passed, redirecting to dashboard")
           router.push("/mechanic/dashboard")
         }
       } else {

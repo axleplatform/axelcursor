@@ -55,6 +55,7 @@ export default function MechanicDashboard() {
   const [mechanicId, setMechanicId] = useState<string | null>(null)
   const [mechanicProfile, setMechanicProfile] = useState<any>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
+  const [authError, setAuthError] = useState<string | null>(null)
   const supabase = createClientComponentClient()
 
   // Appointment states
@@ -152,12 +153,14 @@ export default function MechanicDashboard() {
       try {
         console.log("Checking authentication in dashboard...")
         setIsAuthLoading(true)
+        setAuthError(null)
 
         // First try to get the session with retries
         let session = null
         let retries = 3
         
         while (retries > 0) {
+          console.log("Attempting to get session, attempt", 4 - retries)
           const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
           
           if (sessionError) {
@@ -178,6 +181,7 @@ export default function MechanicDashboard() {
 
         if (!session) {
           console.log("No session found after retries, redirecting to login")
+          setAuthError("No valid session found")
           toast({
             title: "Authentication required",
             description: "Please log in to access your dashboard",
@@ -211,6 +215,7 @@ export default function MechanicDashboard() {
 
         if (!profile) {
           console.log("No mechanic profile found, redirecting to onboarding")
+          setAuthError("No mechanic profile found")
           router.push("/onboarding-mechanic-1")
           return
         }
@@ -236,8 +241,9 @@ export default function MechanicDashboard() {
         setAvailableAppointments(available || [])
         setQuotedAppointments(quoted || [])
         setUpcomingAppointments(upcoming?.data || [])
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error in auth check:", error)
+        setAuthError(error.message || "Failed to load dashboard")
         toast({
           title: "Error",
           description: "Failed to load dashboard. Please try again.",
@@ -454,6 +460,31 @@ export default function MechanicDashboard() {
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-[#294a46] mx-auto mb-4" />
             <p className="text-gray-600">Loading your dashboard...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  // Error state
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <SiteHeader />
+        <div className="flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <X className="h-12 w-12 mx-auto" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Authentication Error</h2>
+            <p className="text-gray-600 mb-4">{authError}</p>
+            <button
+              onClick={() => router.push("/login")}
+              className="bg-[#294a46] text-white px-4 py-2 rounded-md hover:bg-[#1e3632] transition-colors"
+            >
+              Return to Login
+            </button>
           </div>
         </div>
         <Footer />

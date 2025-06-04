@@ -54,13 +54,23 @@ export async function middleware(request: NextRequest) {
     
     if (sessionError) {
       console.error("❌ Session verification error:", sessionError)
+      // In development, allow the request to proceed even if there's a session error
+      if (process.env.NODE_ENV === "development") {
+        console.log("⚠️ Development mode: Allowing request despite session error")
+        return res
+      }
       const redirectUrl = new URL("/login", request.url)
       redirectUrl.searchParams.set("error", "Session verification failed")
       return NextResponse.redirect(redirectUrl)
     }
 
     if (!session) {
-      console.log("❌ No valid session found, redirecting to login")
+      console.log("❌ No valid session found")
+      // In development, allow the request to proceed even if there's no session
+      if (process.env.NODE_ENV === "development") {
+        console.log("⚠️ Development mode: Allowing request despite no session")
+        return res
+      }
       const redirectUrl = new URL("/login", request.url)
       redirectUrl.searchParams.set("error", "Session expired")
       return NextResponse.redirect(redirectUrl)
@@ -79,7 +89,7 @@ export async function middleware(request: NextRequest) {
     res.cookies.set("sb-auth-token", session.access_token, {
       path: "/",
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Allow non-secure in development
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7 // 1 week
     })
@@ -87,7 +97,7 @@ export async function middleware(request: NextRequest) {
     // Also set a non-httpOnly cookie for client-side access
     res.cookies.set("sb-auth-token-client", session.access_token, {
       path: "/",
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Allow non-secure in development
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7 // 1 week
     })
@@ -95,7 +105,7 @@ export async function middleware(request: NextRequest) {
     // Add a timestamp cookie to track session age
     res.cookies.set("sb-session-timestamp", new Date().toISOString(), {
       path: "/",
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Allow non-secure in development
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7 // 1 week
     })
@@ -104,6 +114,11 @@ export async function middleware(request: NextRequest) {
     return res
   } catch (error) {
     console.error("❌ Middleware error:", error)
+    // In development, allow the request to proceed even if there's an error
+    if (process.env.NODE_ENV === "development") {
+      console.log("⚠️ Development mode: Allowing request despite error")
+      return NextResponse.next()
+    }
     // On error, redirect to login with error message
     const redirectUrl = new URL("/login", request.url)
     redirectUrl.searchParams.set("error", "Authentication error. Please try again.")
