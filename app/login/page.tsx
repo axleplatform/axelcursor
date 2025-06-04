@@ -183,13 +183,55 @@ function LoginContent() {
         } else {
           console.log("🔄 Redirecting to mechanic dashboard")
           // Add a longer delay before redirect to ensure cookies are set
-          await new Promise(resolve => setTimeout(resolve, 2000))
+          await new Promise(resolve => setTimeout(resolve, 3000))
           
           // Verify session one last time before redirect
-          const { data: { session: finalSession } } = await supabase.auth.getSession()
+          const { data: { session: finalSession }, error: finalSessionError } = await supabase.auth.getSession()
+          
+          if (finalSessionError) {
+            console.error("❌ Final session check failed:", finalSessionError)
+            throw finalSessionError
+          }
+          
           if (!finalSession) {
+            console.error("❌ Session lost before redirect")
             throw new Error("Session lost before redirect")
           }
+          
+          // Verify cookies are set
+          const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+            const [key, value] = cookie.trim().split('=')
+            acc[key] = value
+            return acc
+          }, {} as Record<string, string>)
+          
+          console.log("🍪 Cookies before redirect:", cookies)
+          
+          if (!cookies['sb-auth-token'] && !cookies['sb-auth-token-client']) {
+            console.error("❌ Session cookies not found")
+            throw new Error("Session cookies not set")
+          }
+
+          // Verify Supabase environment variables
+          console.log("🔧 Checking Supabase configuration:", {
+            hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+            hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+            url: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 10) + '...',
+            anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 10) + '...'
+          })
+          
+          // Verify mechanic profile access
+          const { data: profileCheck, error: profileCheckError } = await supabase
+            .from("mechanic_profiles")
+            .select("id, user_id")
+            .eq("user_id", finalSession.user.id)
+            .single()
+          
+          console.log("🔍 Final mechanic profile check:", {
+            success: !!profileCheck,
+            error: profileCheckError,
+            profileId: profileCheck?.id
+          })
           
           console.log("✅ Final session check passed, redirecting to dashboard")
           router.push("/mechanic/dashboard")

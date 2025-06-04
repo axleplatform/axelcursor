@@ -151,36 +151,48 @@ export default function MechanicDashboard() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        console.log("Checking authentication in dashboard...")
+        console.log("🔍 Starting authentication check in dashboard...")
         setIsAuthLoading(true)
         setAuthError(null)
+
+        // Verify Supabase configuration
+        console.log("🔧 Checking Supabase configuration:", {
+          hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+          hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          url: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 10) + '...',
+          anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 10) + '...'
+        })
 
         // First try to get the session with retries
         let session = null
         let retries = 3
         
         while (retries > 0) {
-          console.log("Attempting to get session, attempt", 4 - retries)
+          console.log("🔄 Attempting to get session, attempt", 4 - retries)
           const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
           
           if (sessionError) {
-            console.error("Session error:", sessionError)
+            console.error("❌ Session error:", sessionError)
             throw sessionError
           }
           
           if (currentSession) {
             session = currentSession
-            console.log("Session found on attempt", 4 - retries)
+            console.log("✅ Session found on attempt", 4 - retries, {
+              userId: session.user.id,
+              email: session.user.email,
+              expiresAt: session.expires_at
+            })
             break
           }
           
-          console.log("Session not found, retrying...", { retriesLeft: retries - 1 })
+          console.log("⏳ Session not found, retrying...", { retriesLeft: retries - 1 })
           await new Promise(resolve => setTimeout(resolve, 1000))
           retries--
         }
 
         if (!session) {
-          console.log("No session found after retries, redirecting to login")
+          console.log("❌ No session found after retries, redirecting to login")
           setAuthError("No valid session found")
           toast({
             title: "Authentication required",
@@ -191,17 +203,25 @@ export default function MechanicDashboard() {
           return
         }
 
-        console.log("Session found:", {
-          userId: session.user.id,
-          email: session.user.email,
-          cookies: document.cookie,
-          timestamp: new Date().toISOString()
-        })
+        // Verify cookies are set
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=')
+          acc[key] = value
+          return acc
+        }, {} as Record<string, string>)
+        
+        console.log("🍪 Cookies in dashboard:", cookies)
+        
+        if (!cookies['sb-auth-token'] && !cookies['sb-auth-token-client']) {
+          console.error("❌ Session cookies not found in dashboard")
+          throw new Error("Session cookies not set")
+        }
 
         // Wait for session to be fully established
         await new Promise(resolve => setTimeout(resolve, 1000))
 
-        // Get mechanic profile
+        // Get mechanic profile with detailed logging
+        console.log("🔍 Fetching mechanic profile for user:", session.user.id)
         const { data: profile, error: profileError } = await supabase
           .from("mechanic_profiles")
           .select("*")
@@ -209,23 +229,29 @@ export default function MechanicDashboard() {
           .single()
 
         if (profileError) {
-          console.error("Error fetching mechanic profile:", profileError)
+          console.error("❌ Error fetching mechanic profile:", profileError)
           throw profileError
         }
 
         if (!profile) {
-          console.log("No mechanic profile found, redirecting to onboarding")
+          console.log("❌ No mechanic profile found, redirecting to onboarding")
           setAuthError("No mechanic profile found")
           router.push("/onboarding-mechanic-1")
           return
         }
 
-        console.log("Mechanic profile found:", profile)
+        console.log("✅ Mechanic profile found:", {
+          id: profile.id,
+          userId: profile.user_id,
+          onboardingCompleted: profile.onboarding_completed,
+          onboardingStep: profile.onboarding_step
+        })
+
         setMechanicId(session.user.id)
         setMechanicProfile(profile)
 
-        // Fetch appointments
-        console.log("Fetching appointments...")
+        // Fetch appointments with detailed logging
+        console.log("📅 Fetching appointments...")
         const [available, quoted, upcoming] = await Promise.all([
           getAvailableAppointmentsForMechanic(session.user.id),
           getQuotedAppointmentsForMechanic(session.user.id),
@@ -237,12 +263,17 @@ export default function MechanicDashboard() {
             .order("appointment_date", { ascending: true }),
         ])
 
-        console.log("Appointments fetched:", { available, quoted, upcoming })
+        console.log("📊 Appointments fetched:", {
+          available: available?.length || 0,
+          quoted: quoted?.length || 0,
+          upcoming: upcoming?.data?.length || 0
+        })
+
         setAvailableAppointments(available || [])
         setQuotedAppointments(quoted || [])
         setUpcomingAppointments(upcoming?.data || [])
       } catch (error: any) {
-        console.error("Error in auth check:", error)
+        console.error("❌ Error in auth check:", error)
         setAuthError(error.message || "Failed to load dashboard")
         toast({
           title: "Error",
