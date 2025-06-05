@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { MapPin, X, Check, ChevronLeft, ChevronRight, Clock } from "lucide-react"
-import { formatDate } from "../lib/utils"
+import { formatDate } from "@/lib/utils"
 import type { Appointment } from "@/hooks/use-mechanic-appointments"
 
 interface AvailableAppointmentsProps {

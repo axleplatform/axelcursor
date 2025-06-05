@@ -11,7 +11,7 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
 import { useToast } from "@/components/ui/use-toast"
-import { formatDate } from "../../lib/utils"
+import { formatDate } from "@/lib/utils"
 
 interface Mechanic {
   id: string

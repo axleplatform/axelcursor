@@ -15,7 +15,7 @@ import {
   getQuotedAppointmentsForMechanic,
   createOrUpdateQuote,
 } from "@/lib/mechanic-quotes"
-import { formatDate } from "../../../lib/utils"
+import { formatDate } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
