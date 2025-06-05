@@ -5,7 +5,12 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatDate(dateString: string): string {
+/**
+ * Formats a date string into a readable format
+ * @param dateString - The date string to format
+ * @returns A formatted date string in the format "YYYY-MM-DD @ HH:MM AM/PM"
+ */
+export const formatDate = (dateString: string): string => {
   try {
     const date = new Date(dateString)
 
