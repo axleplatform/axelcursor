@@ -13,27 +13,9 @@ export async function middleware(request: NextRequest) {
     const res = NextResponse.next()
     const supabase = createMiddlewareClient({ req: request, res })
 
-    // Check for any Supabase session cookie
-    const cookies = request.cookies
-    const cookieDetails = {
-      hasAuthToken: cookies.has("sb-auth-token"),
-      hasAuthTokenClient: cookies.has("sb-auth-token-client"),
-      hasAccessToken: cookies.has("sb-access-token"),
-      hasRefreshToken: cookies.has("sb-refresh-token"),
-      allCookies: Object.fromEntries(
-        Array.from(cookies.getAll()).map(cookie => [cookie.name, cookie.value] as [string, string])
-      )
-    }
-    
-    console.log("🍪 Cookie check in middleware:", cookieDetails)
-
-    // If there's no session cookie and trying to access protected routes, redirect to login
-    const hasSessionCookie = cookieDetails.hasAuthToken || 
-                           cookieDetails.hasAuthTokenClient ||
-                           cookieDetails.hasAccessToken ||
-                           cookieDetails.hasRefreshToken
-    
-    console.log("🔑 Session check result:", { hasSessionCookie })
+    // Check for session cookie
+    const hasSessionCookie = request.cookies.has("sb-auth-token") || 
+                           request.cookies.has("sb-auth-token-client")
 
     const isProtectedRoute = request.nextUrl.pathname.startsWith("/mechanic/") ||
       request.nextUrl.pathname.startsWith("/onboarding-mechanic-")
@@ -46,38 +28,20 @@ export async function middleware(request: NextRequest) {
     }
 
     if (!hasSessionCookie) {
-      console.log("✅ Non-protected route, proceeding without session")
       return res
     }
 
     // Verify session with Supabase
-    console.log("🔄 Starting session verification...")
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     
-    if (sessionError) {
-      console.error("❌ Session verification error:", sessionError)
-      const redirectUrl = new URL("/login", request.url)
-      redirectUrl.searchParams.set("error", "Session verification failed")
-      return NextResponse.redirect(redirectUrl)
-    }
-
-    if (!session) {
-      console.log("❌ No valid session found")
+    if (sessionError || !session) {
+      console.log("❌ Invalid session, redirecting to login")
       const redirectUrl = new URL("/login", request.url)
       redirectUrl.searchParams.set("error", "Session expired")
       return NextResponse.redirect(redirectUrl)
     }
 
-    console.log("✅ Session verified:", {
-      userId: session.user.id,
-      email: session.user.email,
-      expiresAt: session.expires_at
-    })
-
     // Session is valid, set cookies
-    console.log("🔐 Setting session cookies for user:", session.user.id)
-    
-    // Set both httpOnly and non-httpOnly cookies for better compatibility
     res.cookies.set("sb-auth-token", session.access_token, {
       path: "/",
       httpOnly: true,
@@ -86,16 +50,7 @@ export async function middleware(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 7 // 1 week
     })
 
-    // Also set a non-httpOnly cookie for client-side access
     res.cookies.set("sb-auth-token-client", session.access_token, {
-      path: "/",
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7 // 1 week
-    })
-
-    // Set a timestamp cookie to track session age
-    res.cookies.set("sb-session-timestamp", Date.now().toString(), {
       path: "/",
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

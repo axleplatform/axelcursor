@@ -26,57 +26,50 @@ function LoginContent() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        console.log("Checking session...")
+        console.log("🔍 Checking session...")
         const { data: { session } } = await supabase.auth.getSession()
-        console.log("Session data:", session)
         
         if (session) {
+          console.log("✅ Session found, checking user type...")
+          
           // Check if user is a mechanic
-          console.log("Checking mechanic profile for user:", session.user.id)
           const { data: mechanicProfile, error: profileError } = await supabase
             .from("mechanic_profiles")
             .select("onboarding_completed, onboarding_step")
             .eq("user_id", session.user.id)
             .single()
 
-          console.log("Mechanic profile data:", mechanicProfile)
-          console.log("Profile error:", profileError)
-
           if (profileError && profileError.code !== "PGRST116") {
-            console.error("Error checking mechanic profile:", profileError)
+            console.error("❌ Error checking mechanic profile:", profileError)
             return
           }
 
           if (mechanicProfile) {
-            console.log("Onboarding completed:", mechanicProfile.onboarding_completed)
-            console.log("Onboarding step:", mechanicProfile.onboarding_step)
-            
             if (mechanicProfile.onboarding_completed) {
-              console.log("Redirecting to dashboard...")
-              router.push("/mechanic/dashboard")
+              console.log("✅ Mechanic profile complete, redirecting to dashboard")
+              router.replace("/mechanic/dashboard")
             } else {
-              // Redirect to appropriate onboarding step
               const step = mechanicProfile.onboarding_step || "personal_info"
-              console.log("Redirecting to onboarding step:", step)
-              router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
+              console.log("🔄 Redirecting to onboarding step:", step)
+              router.replace(`/onboarding-mechanic-${getStepNumber(step)}`)
             }
-          } else {
-            // Check if this is a customer account
-            console.log("Checking customer profile...")
-            const { data: customerProfile } = await supabase
-              .from("customer_profiles")
-              .select("id")
-              .eq("user_id", session.user.id)
-              .single()
+            return
+          }
 
-            if (customerProfile) {
-              console.log("Redirecting to customer dashboard...")
-              router.push("/dashboard")
-            }
+          // Check if this is a customer account
+          const { data: customerProfile } = await supabase
+            .from("customer_profiles")
+            .select("id")
+            .eq("user_id", session.user.id)
+            .single()
+
+          if (customerProfile) {
+            console.log("✅ Customer profile found, redirecting to dashboard")
+            router.replace("/dashboard")
           }
         }
       } catch (error) {
-        console.error("Session check error:", error)
+        console.error("❌ Session check error:", error)
       }
     }
     checkSession()
@@ -99,7 +92,7 @@ function LoginContent() {
     setError(null)
 
     try {
-      console.log("🔑 Starting login process for email:", email)
+      console.log("🔑 Starting login process...")
       
       // Sign in with password
       const { data: { session, user }, error: signInError } = await supabase.auth.signInWithPassword({
@@ -108,54 +101,20 @@ function LoginContent() {
       })
 
       if (signInError) {
-        console.error("❌ Auth error during login:", signInError)
+        console.error("❌ Auth error:", signInError)
         throw signInError
       }
 
       if (!user) {
-        console.error("❌ No user data returned after login")
         throw new Error("No user data returned")
       }
 
-      console.log("✅ Login successful, user data:", {
-        userId: user.id,
-        email: user.email,
-        metadata: user.user_metadata
-      })
-
-      // Wait for session to be fully established with retries
-      console.log("⏳ Waiting for session to be fully established...")
-      let currentSession = null
-      let retries = 5 // Increased retries
-      
-      while (retries > 0) {
-        await new Promise(resolve => setTimeout(resolve, 2000)) // Increased delay
-        const { data: { session: newSession }, error: sessionError } = await supabase.auth.getSession()
-        
-        if (sessionError) {
-          console.error("❌ Session verification error:", sessionError)
-          throw sessionError
-        }
-        
-        if (newSession) {
-          currentSession = newSession
-          console.log("✅ Session established on attempt", 6 - retries)
-          break
-        }
-        
-        console.log("⏳ Session not found, retrying...", { retriesLeft: retries - 1 })
-        retries--
-      }
-
-      if (!currentSession) {
-        console.error("❌ No session found after retries")
-        throw new Error("Failed to establish session")
-      }
+      console.log("✅ Login successful")
 
       // Check if user has completed onboarding
       const { data: profile, error: profileError } = await supabase
         .from("mechanic_profiles")
-        .select("onboarding_completed")
+        .select("onboarding_completed, onboarding_step")
         .eq("user_id", user.id)
         .single()
 
@@ -165,40 +124,15 @@ function LoginContent() {
       }
 
       if (!profile || !profile.onboarding_completed) {
-        console.log("🔄 User needs to complete onboarding")
-        router.push("/onboarding-mechanic-1")
+        console.log("🔄 Redirecting to onboarding")
+        router.replace("/onboarding-mechanic-1")
       } else {
         console.log("🔄 Redirecting to mechanic dashboard")
-        // Add a longer delay before redirect to ensure cookies are set
-        await new Promise(resolve => setTimeout(resolve, 5000)) // Increased delay
-        
-        // Verify session one last time before redirect
-        const { data: { session: finalSession }, error: finalSessionError } = await supabase.auth.getSession()
-        
-        if (finalSessionError) {
-          console.error("❌ Final session check failed:", finalSessionError)
-          throw finalSessionError
-        }
-        
-        if (!finalSession) {
-          console.error("❌ Session lost before redirect")
-          throw new Error("Session lost before redirect")
-        }
-
-        // Verify Supabase environment variables
-        console.log("🔧 Checking Supabase configuration:", {
-          hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-          hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-          url: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 10) + '...',
-          anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 10) + '...'
-        })
-
-        // Redirect to dashboard
-        router.push("/mechanic/dashboard")
+        router.replace("/mechanic/dashboard")
       }
     } catch (error: any) {
       console.error("❌ Login error:", error)
-      setError(error.message || "An error occurred during login")
+      setError(error.message || "Failed to log in")
     } finally {
       setIsLoading(false)
     }

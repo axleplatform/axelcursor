@@ -155,20 +155,12 @@ export default function MechanicDashboard() {
         setIsAuthLoading(true)
         setAuthError(null)
 
-        // Verify Supabase configuration
-        console.log("🔧 Checking Supabase configuration:", {
-          hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-          hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-          url: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 10) + '...',
-          anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 10) + '...'
-        })
-
         // First try to get the session with retries
         let session = null
-        let retries = 3
+        let retries = 5 // Increased retries
         
         while (retries > 0) {
-          console.log("🔄 Attempting to get session, attempt", 4 - retries)
+          console.log("🔄 Attempting to get session, attempt", 6 - retries)
           const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
           
           if (sessionError) {
@@ -178,7 +170,7 @@ export default function MechanicDashboard() {
           
           if (currentSession) {
             session = currentSession
-            console.log("✅ Session found on attempt", 4 - retries, {
+            console.log("✅ Session found on attempt", 6 - retries, {
               userId: session.user.id,
               email: session.user.email,
               expiresAt: session.expires_at
@@ -187,7 +179,7 @@ export default function MechanicDashboard() {
           }
           
           console.log("⏳ Session not found, retrying...", { retriesLeft: retries - 1 })
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          await new Promise(resolve => setTimeout(resolve, 2000)) // Increased delay
           retries--
         }
 
@@ -202,23 +194,6 @@ export default function MechanicDashboard() {
           router.push("/login")
           return
         }
-
-        // Verify cookies are set
-        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-          const [key, value] = cookie.trim().split('=')
-          acc[key] = value
-          return acc
-        }, {} as Record<string, string>)
-        
-        console.log("🍪 Cookies in dashboard:", cookies)
-        
-        if (!cookies['sb-auth-token'] && !cookies['sb-auth-token-client']) {
-          console.error("❌ Session cookies not found in dashboard")
-          throw new Error("Session cookies not set")
-        }
-
-        // Wait for session to be fully established
-        await new Promise(resolve => setTimeout(resolve, 1000))
 
         // Get mechanic profile with detailed logging
         console.log("🔍 Fetching mechanic profile for user:", session.user.id)
@@ -237,6 +212,13 @@ export default function MechanicDashboard() {
           console.log("❌ No mechanic profile found, redirecting to onboarding")
           setAuthError("No mechanic profile found")
           router.push("/onboarding-mechanic-1")
+          return
+        }
+
+        if (!profile.onboarding_completed) {
+          console.log("❌ Onboarding not completed, redirecting to appropriate step")
+          const step = profile.onboarding_step || "personal_info"
+          router.push(`/onboarding-mechanic-${getStepNumber(step)}`)
           return
         }
 
@@ -289,6 +271,17 @@ export default function MechanicDashboard() {
 
     checkAuth()
   }, [router, toast, supabase])
+
+  const getStepNumber = (step: string) => {
+    switch (step) {
+      case "personal_info": return "1"
+      case "professional_info": return "2"
+      case "certifications": return "3"
+      case "rates": return "4"
+      case "profile": return "5"
+      default: return "1"
+    }
+  }
 
   // Handle submitting a quote
   const handleSubmitQuote = async (appointmentId: string): Promise<boolean> => {
