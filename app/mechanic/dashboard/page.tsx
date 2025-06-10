@@ -201,26 +201,49 @@ export default function MechanicDashboard() {
           
           try {
             // Refresh all appointments when any change occurs
-            const [available, quoted, upcoming] = await Promise.all([
-              getAvailableAppointmentsForMechanic(mechanicId),
-              getQuotedAppointmentsForMechanic(mechanicId),
-              supabase
-                .from("appointments")
-                .select("*, vehicles(*)")
-                .eq("mechanic_id", mechanicId)
-                .in("status", ["confirmed", "in_progress", "pending_payment"])
-                .order("appointment_date", { ascending: true }),
-            ])
+            const { data: appointments, error: appointmentsError } = await supabase
+              .from('appointments')
+              .select(`
+                *,
+                vehicles!inner (
+                  id,
+                  year,
+                  make,
+                  model,
+                  vin,
+                  mileage,
+                  color
+                )
+              `)
+              .eq('status', 'pending')
+              .order('appointment_date', { ascending: true });
+
+            if (appointmentsError) {
+              console.error('Error fetching appointments:', appointmentsError);
+              return;
+            }
+
+            // Filter out appointments that have been skipped by this mechanic
+            const { data: skippedAppointments, error: skippedError } = await supabase
+              .from('mechanic_skipped_appointments')
+              .select('appointment_id')
+              .eq('mechanic_id', mechanicId);
+
+            if (skippedError) {
+              console.error('Error fetching skipped appointments:', skippedError);
+              return;
+            }
+
+            const skippedIds = new Set(skippedAppointments?.map(skip => skip.appointment_id) || []);
+            const filteredAppointments = appointments?.filter(app => !skippedIds.has(app.id)) || [];
 
             console.log('Refreshed appointments:', {
-              available: available.appointments?.length || 0,
-              quoted: quoted.appointments?.length || 0,
-              upcoming: upcoming.data?.length || 0
+              available: filteredAppointments.length,
+              quoted: 0,
+              upcoming: 0
             })
 
-            if (available.success) setAvailableAppointments(available.appointments || [])
-            if (quoted.success) setQuotedAppointments(quoted.appointments || [])
-            setUpcomingAppointments(upcoming.data || [])
+            setAvailableAppointments(filteredAppointments)
           } catch (error) {
             console.error("Error refreshing appointments:", error)
             toast({
@@ -248,18 +271,43 @@ export default function MechanicDashboard() {
           
           try {
             // Refresh available and quoted appointments when quotes change
-            const [available, quoted] = await Promise.all([
-              getAvailableAppointmentsForMechanic(mechanicId),
-              getQuotedAppointmentsForMechanic(mechanicId),
-            ])
+            const { data: quotedData, error: quotedError } = await supabase
+              .from('appointments')
+              .select(`
+                *,
+                vehicles(*),
+                mechanic_quotes!inner(*)
+              `)
+              .eq('mechanic_quotes.mechanic_id', mechanicId)
+              .eq('status', 'pending')
+              .order('appointment_date', { ascending: true });
+
+            if (quotedError) {
+              console.error("❌ Error fetching quoted appointments:", quotedError);
+              throw new Error("Failed to fetch quoted appointments");
+            }
+
+            // Get upcoming appointments
+            const { data: upcomingData, error: upcomingError } = await supabase
+              .from('appointments')
+              .select('*, vehicles(*)')
+              .eq('mechanic_id', mechanicId)
+              .in('status', ['confirmed', 'in_progress', 'pending_payment'])
+              .order('appointment_date', { ascending: true });
+
+            if (upcomingError) {
+              console.error("❌ Error fetching upcoming appointments:", upcomingError);
+              throw new Error("Failed to fetch upcoming appointments");
+            }
 
             console.log('Refreshed appointments after quote change:', {
-              available: available.appointments?.length || 0,
-              quoted: quoted.appointments?.length || 0
+              available: 0,
+              quoted: quotedData?.length || 0,
+              upcoming: upcomingData?.length || 0
             })
 
-            if (available.success) setAvailableAppointments(available.appointments || [])
-            if (quoted.success) setQuotedAppointments(quoted.appointments || [])
+            setQuotedAppointments(quotedData || [])
+            setUpcomingAppointments(upcomingData || [])
           } catch (error) {
             console.error("Error refreshing appointments after quote change:", error)
             toast({
@@ -302,7 +350,8 @@ export default function MechanicDashboard() {
               make,
               model,
               year,
-              license_plate
+              vin,
+              mileage
             ),
             quotes(
               id,
