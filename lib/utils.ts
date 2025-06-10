@@ -8,9 +8,9 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Formats a date string into a readable format
  * @param dateString - The date string to format
- * @returns A formatted date string in the format "YYYY-MM-DD @ HH:MM AM/PM"
+ * @returns A formatted date string in the format "Mon, Dec 25, 2023 at 2:30 PM"
  */
-export const formatDate = (dateString: string): string => {
+export function formatDate(dateString: string): string {
   try {
     const date = new Date(dateString)
 
@@ -19,21 +19,51 @@ export const formatDate = (dateString: string): string => {
       return "Invalid date"
     }
 
-    // Format date: YYYY-MM-DD @ HH:MM AM/PM
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-
-    let hours = date.getHours()
-    const minutes = String(date.getMinutes()).padStart(2, "0")
-    const ampm = hours >= 12 ? "PM" : "AM"
-
-    hours = hours % 12
-    hours = hours ? hours : 12 // the hour '0' should be '12'
-
-    return `${year}-${month}-${day} @ ${hours}:${minutes} ${ampm}`
+    // Format as: "Mon, Dec 25, 2023 at 2:30 PM"
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
   } catch (error) {
     console.error("Error formatting date:", error)
-    return dateString || "No date available"
+    return "Invalid date"
   }
+}
+
+/**
+ * Validates a mechanic ID to ensure it's a valid UUID and not '0'
+ * @param id The mechanic ID to validate
+ * @returns An object containing validation result and error message if invalid
+ */
+export function validateMechanicId(id: string | undefined | null): { isValid: boolean; error?: string } {
+  console.log("🔍 Validating mechanicId:", { 
+    id, 
+    type: typeof id,
+    isString: typeof id === 'string',
+    length: typeof id === 'string' ? id.length : 0,
+    isZero: id === '0'
+  })
+
+  if (!id) {
+    return { isValid: false, error: "No mechanic ID provided" }
+  }
+
+  if (typeof id !== 'string') {
+    return { isValid: false, error: "Invalid mechanic ID type" }
+  }
+
+  if (id === '0') {
+    return { isValid: false, error: "Invalid mechanic ID value" }
+  }
+
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return { isValid: false, error: "Invalid mechanic ID format" }
+  }
+
+  return { isValid: true }
 }

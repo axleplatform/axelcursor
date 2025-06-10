@@ -1,4 +1,27 @@
 import { supabase } from "@/lib/supabase"
+import { validateMechanicId } from "@/lib/utils"
+
+interface Appointment {
+  id: string
+  status: string
+  appointment_date: string
+  location: string
+  issue_description?: string
+  car_runs?: boolean
+  selected_services?: string[]
+  vehicles?: {
+    year: string
+    make: string
+    model: string
+    vin?: string
+    mileage?: number
+  }
+  quote?: {
+    id: string
+    price: number
+    created_at: string
+  }
+}
 
 export interface MechanicQuote {
   id: string
@@ -9,7 +32,7 @@ export interface MechanicQuote {
   notes?: string
   created_at: string
   updated_at: string
-  status?: "pending" | "accepted" | "rejected"
+  status: "pending" | "accepted" | "rejected"
   mechanic?: {
     id: string
     first_name: string
@@ -48,37 +71,55 @@ export async function createOrUpdateQuote(
       return { success: false, error: "Appointment is no longer available for quoting" }
     }
 
-    // Create or update the quote
-    const { error: quoteError } = await supabase
+    // Check if mechanic already has a quote for this appointment
+    const { data: existingQuote, error: quoteError } = await supabase
       .from("mechanic_quotes")
-      .upsert({
-        mechanic_id: mechanicId,
-        appointment_id: appointmentId,
-        price,
-        eta,
-        notes,
-        status: "pending",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      .select("id")
+      .eq("mechanic_id", mechanicId)
+      .eq("appointment_id", appointmentId)
+      .single()
 
-    if (quoteError) {
-      console.error("Error creating/updating quote:", quoteError)
-      return { success: false, error: "Failed to create/update quote" }
+    if (quoteError && quoteError.code !== "PGRST116") {
+      console.error("Error checking existing quote:", quoteError)
+      return { success: false, error: "Failed to check existing quote" }
     }
 
-    // Update appointment status to quoted
-    const { error: updateError } = await supabase
-      .from("appointments")
-      .update({
-        status: "quoted",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", appointmentId)
+    const now = new Date().toISOString()
 
-    if (updateError) {
-      console.error("Error updating appointment status:", updateError)
-      return { success: false, error: "Failed to update appointment status" }
+    if (existingQuote) {
+      // Update existing quote
+      const { error: updateError } = await supabase
+        .from("mechanic_quotes")
+        .update({
+          price,
+          eta,
+          notes,
+          status: "pending",
+          updated_at: now
+        })
+        .eq("id", existingQuote.id)
+
+      if (updateError) {
+        console.error("Error updating quote:", updateError)
+        return { success: false, error: "Failed to update quote" }
+      }
+    } else {
+      // Create new quote
+      const { error: insertError } = await supabase
+        .from("mechanic_quotes")
+        .insert({
+          mechanic_id: mechanicId,
+          appointment_id: appointmentId,
+          price,
+          eta,
+          notes,
+          status: "pending"
+        })
+
+      if (insertError) {
+        console.error("Error creating quote:", insertError)
+        return { success: false, error: "Failed to create quote" }
+      }
     }
 
     return { success: true }
@@ -129,109 +170,115 @@ export async function getQuotesForAppointment(appointmentId: string): Promise<{
 /**
  * Gets all available appointments for a mechanic to quote
  */
-export async function getAvailableAppointmentsForMechanic(mechanicId: string): Promise<{
-  success: boolean
-  appointments?: any[]
-  error?: string
-}> {
+export async function getAvailableAppointmentsForMechanic(mechanicId: string): Promise<{ success: boolean; appointments?: Appointment[]; error?: string }> {
   try {
-    console.log("Fetching available appointments for mechanic:", mechanicId)
-
-    // Get IDs of appointments this mechanic has already quoted
-    const { data: existingQuotes, error: quotesError } = await supabase
-      .from("mechanic_quotes")
-      .select("appointment_id")
-      .eq("mechanic_id", mechanicId)
-
-    if (quotesError) {
-      console.error("Error getting existing quotes:", quotesError)
-      return { success: false, error: "Failed to get existing quotes" }
-    }
-
-    // Get IDs of appointments this mechanic has already quoted
-    const quotedAppointmentIds = existingQuotes?.map((q: { appointment_id: string }) => q.appointment_id) || []
-    console.log("Appointments already quoted by mechanic:", quotedAppointmentIds)
-
-    // Fetch available appointments (pending, not quoted by this mechanic yet)
-    const { data: availableData, error: availableError } = await supabase
-      .from("appointments")
-      .select(`
-        *,
-        vehicles(*)
-      `)
-      .eq("status", "pending")
-      .not("id", "in", quotedAppointmentIds.length > 0 ? `(${quotedAppointmentIds.join(",")})` : "(0)")
-      .order("created_at", { ascending: false }) // Show newest appointments first
-
-    if (availableError) {
-      console.error("Error getting available appointments:", availableError)
-      return { success: false, error: "Failed to get available appointments" }
-    }
-
-    // Log the results for debugging
-    console.log("Available appointments for mechanic:", {
-      mechanicId,
-      totalAppointments: availableData?.length || 0,
-      quotedAppointmentIds,
-      firstAppointment: availableData?.[0],
-      query: {
-        status: "pending",
-        excludedIds: quotedAppointmentIds,
-        orderBy: "created_at DESC"
-      }
+    console.log("🔍 getAvailableAppointmentsForMechanic called with:", { 
+      mechanicId, 
+      type: typeof mechanicId,
+      isString: typeof mechanicId === 'string',
+      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
+      isZero: mechanicId === '0'
     })
 
-    return { success: true, appointments: availableData }
-  } catch (err) {
-    console.error("Exception in getAvailableAppointmentsForMechanic:", err)
-    return { success: false, error: "An unexpected error occurred" }
+    // Validate mechanic ID
+    const validation = validateMechanicId(mechanicId)
+    if (!validation.isValid) {
+      console.error("❌ Mechanic ID validation failed:", validation.error)
+      return { success: false, error: validation.error }
+    }
+
+    console.log("✅ mechanicId validation passed:", { 
+      mechanicId, 
+      type: typeof mechanicId,
+      isString: typeof mechanicId === 'string',
+      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
+      isZero: mechanicId === '0'
+    })
+    
+    const { data: appointments, error } = await supabase
+      .from("appointments")
+      .select("*, vehicles(*)")
+      .eq("status", "pending")
+      .order("appointment_date", { ascending: true })
+
+    if (error) {
+      console.error("❌ Error fetching appointments:", error)
+      return { success: false, error: error.message }
+    }
+
+    console.log("✅ Found available appointments:", { count: appointments?.length || 0 })
+    return { success: true, appointments: appointments || [] }
+  } catch (error: any) {
+    console.error("❌ Error getting available appointments:", { 
+      error, 
+      mechanicId, 
+      type: typeof mechanicId,
+      isString: typeof mechanicId === 'string',
+      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
+      isZero: mechanicId === '0'
+    })
+    return { success: false, error: error.message }
   }
 }
 
 /**
  * Gets all appointments a mechanic has quoted
  */
-export async function getQuotedAppointmentsForMechanic(mechanicId: string): Promise<{
-  success: boolean
-  appointments?: any[]
-  error?: string
-}> {
+export async function getQuotedAppointmentsForMechanic(mechanicId: string): Promise<{ success: boolean; appointments?: Appointment[]; error?: string }> {
   try {
-    // Get IDs of appointments this mechanic has quoted
-    const { data: quotes, error: quotesError } = await supabase
-      .from("mechanic_quotes")
-      .select(`
-        *,
-        appointment:appointment_id(
-          *,
-          vehicles(*)
-        )
-      `)
-      .eq("mechanic_id", mechanicId)
+    console.log("🔍 getQuotedAppointmentsForMechanic called with:", { 
+      mechanicId, 
+      type: typeof mechanicId,
+      isString: typeof mechanicId === 'string',
+      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
+      isZero: mechanicId === '0'
+    })
 
-    if (quotesError) {
-      console.error("Error getting quotes:", quotesError)
-      return { success: false, error: "Failed to get quotes" }
+    // Validate mechanic ID
+    const validation = validateMechanicId(mechanicId)
+    if (!validation.isValid) {
+      console.error("❌ Mechanic ID validation failed:", validation.error)
+      return { success: false, error: validation.error }
     }
 
-    // Format the data to match the expected structure
-    const appointments =
-      quotes?.map((quote: MechanicQuote & { appointment: any }) => ({
-        ...quote.appointment,
-        quote: {
-          id: quote.id,
-          price: quote.price,
-          eta: quote.eta,
-          notes: quote.notes,
-          created_at: quote.created_at,
-          updated_at: quote.updated_at,
-        },
-      })) || []
+    console.log("✅ mechanicId validation passed:", { 
+      mechanicId, 
+      type: typeof mechanicId,
+      isString: typeof mechanicId === 'string',
+      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
+      isZero: mechanicId === '0'
+    })
+    
+    const { data: appointments, error } = await supabase
+      .from("appointments")
+      .select("*, vehicles(*), mechanic_quotes!inner(*)")
+      .eq("mechanic_quotes.mechanic_id", mechanicId)
+      .order("appointment_date", { ascending: true })
 
-    return { success: true, appointments }
-  } catch (err) {
-    console.error("Exception in getQuotedAppointmentsForMechanic:", err)
-    return { success: false, error: "An unexpected error occurred" }
+    if (error) {
+      console.error("❌ Error fetching quoted appointments:", error)
+      return { success: false, error: error.message }
+    }
+
+    // Transform the data to match the Appointment interface
+    const transformedAppointments = appointments?.map((appointment: any) => ({
+      ...appointment,
+      quote: appointment.mechanic_quotes?.[0] ? {
+        id: appointment.mechanic_quotes[0].id,
+        price: appointment.mechanic_quotes[0].price,
+        created_at: appointment.mechanic_quotes[0].created_at
+      } : undefined
+    })) || []
+
+    console.log("✅ Found quoted appointments:", { 
+      count: transformedAppointments.length,
+      mechanicId,
+      type: typeof mechanicId
+    })
+    return { success: true, appointments: transformedAppointments }
+  } catch (error: any) {
+    console.error("❌ Error getting quoted appointments:", error)
+    return { success: false, error: error.message }
   }
 }
 
@@ -245,7 +292,6 @@ export async function selectQuoteForAppointment(
   try {
     // Start a transaction
     const { error: transactionError } = await supabase.rpc("begin_transaction")
-
     if (transactionError) throw transactionError
 
     // Get the quote details
@@ -257,6 +303,8 @@ export async function selectQuoteForAppointment(
 
     if (quoteError) throw quoteError
 
+    const now = new Date().toISOString()
+
     // Update the appointment with the selected quote
     const { error: appointmentError } = await supabase
       .from("appointments")
@@ -265,7 +313,7 @@ export async function selectQuoteForAppointment(
         mechanic_id: quote.mechanic_id,
         status: "confirmed",
         price: quote.price,
-        updated_at: new Date().toISOString(),
+        updated_at: now,
       })
       .eq("id", appointmentId)
 
@@ -276,7 +324,7 @@ export async function selectQuoteForAppointment(
       .from("mechanic_quotes")
       .update({
         status: "accepted",
-        updated_at: new Date().toISOString(),
+        updated_at: now,
       })
       .eq("id", quoteId)
 
@@ -287,7 +335,7 @@ export async function selectQuoteForAppointment(
       .from("mechanic_quotes")
       .update({
         status: "rejected",
-        updated_at: new Date().toISOString(),
+        updated_at: now,
       })
       .eq("appointment_id", appointmentId)
       .neq("id", quoteId)
@@ -316,6 +364,10 @@ export async function acceptQuote(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Start a transaction
+    const { error: transactionError } = await supabase.rpc("begin_transaction")
+    if (transactionError) throw transactionError
+
+    // Get the quote details
     const { data: quote, error: quoteError } = await supabase
       .from("mechanic_quotes")
       .select("mechanic_id, price")
@@ -324,7 +376,7 @@ export async function acceptQuote(
       .single()
 
     if (quoteError) {
-      return { success: false, error: "Quote not found" }
+      throw new Error("Quote not found")
     }
 
     const now = new Date().toISOString()
@@ -339,7 +391,7 @@ export async function acceptQuote(
       .eq("id", quoteId)
 
     if (updateQuoteError) {
-      return { success: false, error: "Failed to update quote status" }
+      throw new Error("Failed to update quote status")
     }
 
     // Update the appointment status and assign the mechanic
@@ -363,7 +415,7 @@ export async function acceptQuote(
           updated_at: now,
         })
         .eq("id", quoteId)
-      return { success: false, error: "Failed to update appointment status" }
+      throw new Error("Failed to update appointment status")
     }
 
     // Reject all other quotes for this appointment
@@ -381,9 +433,15 @@ export async function acceptQuote(
       // Don't fail the whole operation if this fails
     }
 
+    // Commit the transaction
+    const { error: commitError } = await supabase.rpc("commit_transaction")
+    if (commitError) throw commitError
+
     return { success: true }
   } catch (error) {
+    // Rollback on error
+    await supabase.rpc("rollback_transaction")
     console.error("Error in acceptQuote:", error)
-    return { success: false, error: "An unexpected error occurred" }
+    return { success: false, error: error instanceof Error ? error.message : "An unexpected error occurred" }
   }
 }

@@ -27,6 +27,41 @@ BEGIN
     END IF;
 END $$;
 
+-- Ensure mechanic_profiles table has UUID generation
+DO $$
+BEGIN
+    -- Check if the uuid-ossp extension is available
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_extension
+        WHERE extname = 'uuid-ossp'
+    ) THEN
+        CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    END IF;
+
+    -- Add trigger to ensure UUID generation for mechanic_profiles
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'ensure_mechanic_profile_uuid'
+    ) THEN
+        CREATE OR REPLACE FUNCTION ensure_mechanic_profile_uuid()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            IF NEW.id IS NULL OR NEW.id = '0' OR NEW.id = 0 THEN
+                NEW.id := uuid_generate_v4();
+            END IF;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+
+        CREATE TRIGGER ensure_mechanic_profile_uuid
+        BEFORE INSERT OR UPDATE ON mechanic_profiles
+        FOR EACH ROW
+        EXECUTE FUNCTION ensure_mechanic_profile_uuid();
+    END IF;
+END $$;
+
 -- Then ensure mechanic_id column exists in appointments table
 DO $$
 BEGIN

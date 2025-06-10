@@ -138,53 +138,127 @@ export default function MechanicOnboardingStep1Page() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-
-    // Validate form
-    if (!validateForm()) {
-      return
-    }
-
-    if (!user) {
-      setError("You must be logged in to continue")
-      router.push("/onboarding/mechanic/signup")
-      return
-    }
-
     setIsSaving(true)
 
     try {
-      // Save data to mechanic_profiles table
-      const savedProfileId = await saveMechanicProfile(user.id, {
-        standardFields: {
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          date_of_birth: formData.dateOfBirth,
-          phone_number: formData.phoneNumber,
-          email: user.email,
-        },
-        onboardingStep: "professional_info",
-      })
-
-      setProfileId(savedProfileId)
-
-      // Log the change for auditing/debugging
-      if (savedProfileId) {
-        await logProfileChange(user.id, savedProfileId, "update_personal_info", {
-          step: 1,
-          fields: Object.keys(formData),
-        })
+      if (!user) {
+        throw new Error("You must be logged in to complete this step")
       }
 
+      console.log("🔍 Starting profile creation/update for user:", user.id)
+
+      // Get existing profile or create new one
+      const { data: existingProfile, error: profileError } = await supabase
+        .from("mechanic_profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .single()
+
+      if (profileError && profileError.code !== "PGRST116") {
+        console.error("❌ Error checking existing profile:", profileError)
+        throw profileError
+      }
+
+      let profileId = existingProfile?.id
+
+      if (!profileId) {
+        console.log("📝 Creating new mechanic profile")
+        const { data: newProfile, error: createError } = await supabase
+          .from("mechanic_profiles")
+          .insert([
+            {
+              user_id: user.id,
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              date_of_birth: formData.dateOfBirth,
+              phone_number: formData.phoneNumber,
+              onboarding_step: "professional_info",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ])
+          .select("id")
+          .single()
+
+        if (createError) {
+          console.error("❌ Error creating profile:", createError)
+          throw createError
+        }
+
+        if (!newProfile?.id) {
+          console.error("❌ No ID returned after profile creation")
+          throw new Error("Failed to create profile - no ID returned")
+        }
+
+        profileId = newProfile.id
+        console.log("✅ New profile created with ID:", profileId)
+      } else {
+        console.log("📝 Updating existing profile:", profileId)
+        const { error: updateError } = await supabase
+          .from("mechanic_profiles")
+          .update({
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            date_of_birth: formData.dateOfBirth,
+            phone_number: formData.phoneNumber,
+            onboarding_step: "professional_info",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", profileId)
+
+        if (updateError) {
+          console.error("❌ Error updating profile:", updateError)
+          throw updateError
+        }
+      }
+
+      // Verify the profile was created/updated correctly
+      const { data: verifyProfile, error: verifyError } = await supabase
+        .from("mechanic_profiles")
+        .select("id, user_id, first_name, last_name")
+        .eq("id", profileId)
+        .single()
+
+      if (verifyError) {
+        console.error("❌ Error verifying profile:", verifyError)
+        throw verifyError
+      }
+
+      if (!verifyProfile) {
+        console.error("❌ Profile verification failed - no profile found")
+        throw new Error("Profile verification failed")
+      }
+
+      console.log("✅ Profile verified:", verifyProfile)
+
+      // Update user metadata
+      const { error: userError } = await supabase.auth.updateUser({
+        data: {
+          onboarding_step: "professional_info",
+        },
+      })
+
+      if (userError) {
+        console.error("❌ Error updating user metadata:", userError)
+        throw userError
+      }
+
+      // Show success message
       toast({
-        title: "Information saved",
-        description: "Your personal information has been saved successfully.",
+        title: "Step completed!",
+        description: "Your personal information has been saved.",
       })
 
       // Redirect to next step
       router.push("/onboarding-mechanic-2")
     } catch (error: any) {
-      console.error("Error saving data:", error)
-      setError("Failed to save your information. Please try again. " + (error.message || ""))
+      console.error("❌ Form submission error:", error)
+      setError(error.message || "An error occurred while saving your information")
+      toast({
+        title: "Error",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      })
     } finally {
       setIsSaving(false)
     }

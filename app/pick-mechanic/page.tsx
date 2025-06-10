@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
@@ -427,10 +427,12 @@ export default function PickMechanicPage() {
                         <div className="flex items-start gap-4">
                           <div className="flex-shrink-0">
                             {mechanic.profile_image_url ? (
-                              <img
+                              <Image
                                 src={mechanic.profile_image_url}
                                 alt={`${mechanic.first_name} ${mechanic.last_name}`}
                                 className="w-16 h-16 rounded-full object-cover"
+                                width={64}
+                                height={64}
                               />
                             ) : (
                               <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">

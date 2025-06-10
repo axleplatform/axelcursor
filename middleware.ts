@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server"
 
 // Middleware for handling authentication and protected routes
 // This middleware ensures proper session handling and route protection
-// Last updated: 2024-06-04 - Fixed cookie handling and session verification
+// Last updated: 2024-06-04 - Simplified for temporary mechanic dashboard access
 export async function middleware(request: NextRequest) {
   try {
     console.log("🔒 Middleware executing for path:", request.nextUrl.pathname)
@@ -34,14 +34,72 @@ export async function middleware(request: NextRequest) {
     // Verify session with Supabase
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     
-    if (sessionError || !session) {
-      console.log("❌ Invalid session, redirecting to login")
+    if (sessionError) {
+      console.error("❌ Session verification error:", sessionError)
+      const redirectUrl = new URL("/login", request.url)
+      redirectUrl.searchParams.set("error", "Session verification failed")
+      return NextResponse.redirect(redirectUrl)
+    }
+
+    if (!session) {
+      console.log("❌ No valid session found")
       const redirectUrl = new URL("/login", request.url)
       redirectUrl.searchParams.set("error", "Session expired")
       return NextResponse.redirect(redirectUrl)
     }
 
-    // Session is valid, set cookies
+    // TEMPORARY FIX: Allow access to mechanic dashboard for all authenticated users
+    if (request.nextUrl.pathname.startsWith("/mechanic/")) {
+      console.log("✅ Allowing access to mechanic dashboard for authenticated user:", session.user.id)
+      
+      // Set session cookies
+      res.cookies.set("sb-auth-token", session.access_token, {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7 // 1 week
+      })
+
+      res.cookies.set("sb-auth-token-client", session.access_token, {
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7 // 1 week
+      })
+
+      return res
+    }
+
+    // For other protected routes, verify mechanic profile
+    if (request.nextUrl.pathname.startsWith("/onboarding-mechanic-")) {
+      const { data: profile, error: profileError } = await supabase
+        .from("mechanic_profiles")
+        .select("onboarding_completed")
+        .eq("user_id", session.user.id)
+        .single()
+
+      if (profileError) {
+        console.error("❌ Error checking mechanic profile:", profileError)
+        const redirectUrl = new URL("/login", request.url)
+        redirectUrl.searchParams.set("error", "Profile verification failed")
+        return NextResponse.redirect(redirectUrl)
+      }
+
+      if (!profile) {
+        console.log("❌ No mechanic profile found")
+        const redirectUrl = new URL("/login", request.url)
+        redirectUrl.searchParams.set("error", "No mechanic profile found")
+        return NextResponse.redirect(redirectUrl)
+      }
+
+      if (!profile.onboarding_completed) {
+        console.log("🔄 Redirecting to onboarding")
+        return NextResponse.redirect(new URL("/onboarding-mechanic-1", request.url))
+      }
+    }
+
+    // Set session cookies for other routes
     res.cookies.set("sb-auth-token", session.access_token, {
       path: "/",
       httpOnly: true,
@@ -57,6 +115,7 @@ export async function middleware(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 7 // 1 week
     })
 
+    console.log("✅ Session validated for user:", session.user.id)
     return res
   } catch (error) {
     console.error("❌ Middleware error:", error)
