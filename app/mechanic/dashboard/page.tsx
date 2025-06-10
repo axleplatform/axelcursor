@@ -54,10 +54,10 @@ interface UpcomingAppointmentsProps {
 export default function MechanicDashboard() {
   const { toast } = useToast()
   const router = useRouter()
-  const [mechanicId, setMechanicId] = useState<string | undefined>(undefined)
+  const [mechanicId, setMechanicId] = useState<string | null>(null)
   const [mechanicProfile, setMechanicProfile] = useState<any>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
-  const [authError, setAuthError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const supabase = createClientComponentClient()
 
   // Appointment states
@@ -69,38 +69,71 @@ export default function MechanicDashboard() {
   const [priceInput, setPriceInput] = useState<string>("")
   const [isProcessing, setIsProcessing] = useState(false)
 
-  // Validate mechanicId before any operations
-  const validateMechanicId = (id: string | undefined): boolean => {
-    console.log("🔍 Validating mechanicId:", { 
-      id, 
-      type: typeof id,
-      isString: typeof id === 'string',
-      length: typeof id === 'string' ? id.length : 0,
-      isZero: id === '0'
-    })
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        setIsAuthLoading(true)
+        setError(null)
 
-    if (!id) {
-      console.error("❌ No mechanicId provided")
-      return false
+        // Get current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error("❌ Session error:", sessionError)
+          throw new Error("Failed to get session")
+        }
+
+        if (!session) {
+          console.log("❌ No session found, redirecting to login")
+          router.replace("/login")
+          return
+        }
+
+        // Get mechanic profile
+        const { data: profile, error: profileError } = await supabase
+          .from("mechanic_profiles")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .single()
+
+        if (profileError) {
+          console.error("❌ Profile error:", profileError)
+          if (profileError.code === "PGRST116") {
+            // No profile found
+            console.log("❌ No mechanic profile found, redirecting to onboarding")
+            router.replace("/onboarding-mechanic-1")
+            return
+          }
+          throw new Error("Failed to get mechanic profile")
+        }
+
+        if (!profile) {
+          console.log("❌ No mechanic profile found, redirecting to onboarding")
+          router.replace("/onboarding-mechanic-1")
+          return
+        }
+
+        // Validate profile ID
+        if (!profile.id || typeof profile.id !== "string") {
+          console.error("❌ Invalid profile ID:", profile.id)
+          throw new Error("Invalid profile ID")
+        }
+
+        console.log("✅ Mechanic profile found:", profile.id)
+        setMechanicId(profile.id)
+        setMechanicProfile(profile)
+
+      } catch (error: any) {
+        console.error("❌ Auth check error:", error)
+        setError(error.message || "Authentication failed")
+        router.replace("/login?error=auth_failed")
+      } finally {
+        setIsAuthLoading(false)
+      }
     }
 
-    if (typeof id !== 'string') {
-      console.error("❌ Invalid mechanicId type:", { id, type: typeof id })
-      return false
-    }
-
-    if (id === '0') {
-      console.error("❌ Invalid mechanicId value: 0")
-      return false
-    }
-
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-      console.error("❌ Invalid mechanicId format:", { id, type: typeof id })
-      return false
-    }
-
-    return true
-  }
+    checkAuth()
+  }, [router])
 
   // Add debug logging for state changes
   useEffect(() => {
@@ -130,7 +163,7 @@ export default function MechanicDashboard() {
 
     if (!validateMechanicId(mechanicId)) {
       console.error("❌ Invalid mechanicId, redirecting to login")
-      setAuthError("Invalid mechanic ID")
+      setError("Invalid mechanic ID")
       toast({
         title: "Error",
         description: "Invalid mechanic ID. Please try logging in again.",
@@ -274,131 +307,6 @@ export default function MechanicDashboard() {
       quotesSubscription.unsubscribe()
     }
   }, [mechanicId])
-
-  // Check if user is authenticated
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        console.log("🔍 Starting authentication check...")
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession()
-
-        if (sessionError) {
-          console.error("❌ Session error:", sessionError)
-          throw sessionError
-        }
-
-        if (!session) {
-          console.log("❌ No active session found")
-          setAuthError("No active session")
-          toast({
-            title: "Not authenticated",
-            description: "Please log in to access the dashboard",
-            variant: "destructive",
-          })
-          window.location.href = "/login"
-          return
-        }
-
-        console.log("✅ Session found:", {
-          userId: session.user.id,
-          userEmail: session.user.email,
-          userMetadata: session.user.user_metadata
-        })
-
-        // Get mechanic profile
-        console.log("🔍 Fetching mechanic profile for user:", session.user.id)
-        const { data: profile, error: profileError } = await supabase
-          .from("mechanic_profiles")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .single()
-
-        if (profileError) {
-          console.error("❌ Error fetching mechanic profile:", profileError)
-          throw profileError
-        }
-
-        if (!profile) {
-          console.log("❌ No mechanic profile found")
-          setAuthError("No mechanic profile found")
-          toast({
-            title: "Profile not found",
-            description: "Please complete your profile setup",
-            variant: "destructive",
-          })
-          window.location.href = "/onboarding-mechanic-1"
-          return
-        }
-
-        console.log("📋 Mechanic profile data:", {
-          id: profile.id,
-          type: typeof profile.id,
-          user_id: profile.user_id,
-          onboarding_completed: profile.onboarding_completed,
-          isZero: profile.id === '0' || profile.id === 0,
-          rawProfile: profile
-        })
-
-        // Validate profile ID format
-        const validation = validateMechanicId(profile.id)
-        if (!validation.isValid) {
-          console.error("❌ Invalid profile ID format:", validation.error)
-          setAuthError(validation.error || "Invalid profile ID format")
-          toast({
-            title: "Error",
-            description: validation.error || "Please contact support.",
-            variant: "destructive",
-          })
-          window.location.href = "/login"
-          return
-        }
-
-        if (!profile.onboarding_completed) {
-          console.log("🔄 Redirecting to onboarding")
-          window.location.href = `/onboarding-mechanic-${getStepNumber(profile.onboarding_step || "personal_info")}`
-          return
-        }
-
-        console.log("✅ Mechanic profile loaded:", { 
-          id: profile.id, 
-          type: typeof profile.id,
-          isString: typeof profile.id === 'string',
-          length: typeof profile.id === 'string' ? profile.id.length : 0,
-          isZero: profile.id === '0' || profile.id === 0
-        })
-        
-        setMechanicId(profile.id)
-        setMechanicProfile(profile)
-        setIsAuthLoading(false)
-
-      } catch (error: any) {
-        console.error("❌ Authentication error:", error)
-        setAuthError(error.message || "Authentication failed")
-        toast({
-          title: "Authentication error",
-          description: error.message || "Please try logging in again",
-          variant: "destructive",
-        })
-        window.location.href = "/login"
-      }
-    }
-
-    checkAuth()
-  }, [])
-
-  const getStepNumber = (step: string) => {
-    switch (step) {
-      case "personal_info": return "1"
-      case "professional_info": return "2"
-      case "certifications": return "3"
-      case "rates": return "4"
-      case "profile": return "5"
-      default: return "1"
-    }
-  }
 
   // Handle submitting a quote
   const handleSubmitQuote = async (appointmentId: string): Promise<boolean> => {
@@ -609,7 +517,7 @@ export default function MechanicDashboard() {
   }
 
   // Error state
-  if (authError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <SiteHeader />
@@ -619,7 +527,7 @@ export default function MechanicDashboard() {
               <X className="h-12 w-12 mx-auto" />
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Authentication Error</h2>
-            <p className="text-gray-600 mb-4">{authError}</p>
+            <p className="text-gray-600 mb-4">{error}</p>
             <button
               onClick={() => router.push("/login")}
               className="bg-[#294a46] text-white px-4 py-2 rounded-md hover:bg-[#1e3632] transition-colors"
