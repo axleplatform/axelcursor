@@ -266,40 +266,74 @@ export default function MechanicDashboard() {
     // Initial fetch of appointments
     const fetchInitialAppointments = async () => {
       try {
-        setIsAppointmentsLoading(true)
-        console.log("🔍 Fetching initial appointments for mechanic:", mechanicId)
+        setIsAppointmentsLoading(true);
+        console.log("🔍 Fetching initial appointments for mechanic:", mechanicId);
         
-        const [available, quoted, upcoming] = await Promise.all([
-          getAvailableAppointmentsForMechanic(mechanicId),
-          getQuotedAppointmentsForMechanic(mechanicId),
-          supabase
-            .from("appointments")
-            .select("*, vehicles(*)")
-            .eq("mechanic_id", mechanicId)
-            .in("status", ["confirmed", "in_progress", "pending_payment"])
-            .order("appointment_date", { ascending: true }),
-        ])
+        // Get available appointments (excluding skipped ones)
+        const { data: availableData, error: availableError } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            vehicles(*),
+            mechanic_skipped_appointments!left(appointment_id)
+          `)
+          .eq('status', 'pending')
+          .is('mechanic_skipped_appointments.appointment_id', null)
+          .order('appointment_date', { ascending: true });
+
+        if (availableError) {
+          console.error("❌ Error fetching available appointments:", availableError);
+          throw new Error("Failed to fetch available appointments");
+        }
+
+        // Get quoted appointments
+        const { data: quotedData, error: quotedError } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            vehicles(*),
+            mechanic_quotes!inner(*)
+          `)
+          .eq('mechanic_quotes.mechanic_id', mechanicId)
+          .eq('status', 'pending')
+          .order('appointment_date', { ascending: true });
+
+        if (quotedError) {
+          console.error("❌ Error fetching quoted appointments:", quotedError);
+          throw new Error("Failed to fetch quoted appointments");
+        }
+
+        // Get upcoming appointments
+        const { data: upcomingData, error: upcomingError } = await supabase
+          .from('appointments')
+          .select('*, vehicles(*)')
+          .eq('mechanic_id', mechanicId)
+          .in('status', ['confirmed', 'in_progress', 'pending_payment'])
+          .order('appointment_date', { ascending: true });
+
+        if (upcomingError) {
+          console.error("❌ Error fetching upcoming appointments:", upcomingError);
+          throw new Error("Failed to fetch upcoming appointments");
+        }
 
         console.log('Initial appointments loaded:', {
-          available: available.appointments?.length || 0,
-          quoted: quoted.appointments?.length || 0,
-          upcoming: upcoming.data?.length || 0
-        })
+          available: availableData?.length || 0,
+          quoted: quotedData?.length || 0,
+          upcoming: upcomingData?.length || 0
+        });
 
-        if (available.success) setAvailableAppointments(available.appointments || [])
-        if (quoted.success) setQuotedAppointments(quoted.appointments || [])
-        setUpcomingAppointments(upcoming.data || [])
+        setAvailableAppointments(availableData || []);
+        setQuotedAppointments(quotedData || []);
+        setUpcomingAppointments(upcomingData || []);
       } catch (error) {
-        console.error("Error fetching initial appointments:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load appointments. Please try refreshing the page.",
-          variant: "destructive",
-        })
+        console.error("Error fetching initial appointments:", error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to load appointments";
+        console.error(errorMessage);
+        alert(`Error: ${errorMessage}`);
       } finally {
-        setIsAppointmentsLoading(false)
+        setIsAppointmentsLoading(false);
       }
-    }
+    };
 
     fetchInitialAppointments()
 
@@ -384,13 +418,13 @@ export default function MechanicDashboard() {
   const handleSkipAppointment = async (appointment: Appointment) => {
     if (!appointment.id) {
       console.error('❌ Skip failed: No appointment ID');
-      toast.error('Invalid appointment');
+      alert('Invalid appointment');
       return;
     }
 
     if (!mechanicId) {
       console.error('❌ Skip failed: No mechanic ID');
-      toast.error('Please log in as a mechanic');
+      alert('Please log in as a mechanic');
       return;
     }
 
@@ -539,13 +573,13 @@ export default function MechanicDashboard() {
         console.log('✅ Appointment cancelled successfully');
       }
 
-      // Update local state
+      // Update local state - immediately remove the skipped appointment
       setAvailableAppointments(prev => 
         prev.filter(a => a.id !== appointment.id)
       );
 
       // Show success message
-      toast.success('Appointment skipped successfully');
+      alert('Appointment skipped successfully');
 
       // Move to next appointment if available
       const nextAppointment = availableAppointments.find(a => a.id !== appointment.id);
@@ -556,7 +590,8 @@ export default function MechanicDashboard() {
     } catch (error) {
       console.error('❌ Skip process failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      toast.error(`Failed to skip appointment: ${errorMessage}`);
+      console.error(errorMessage);
+      alert(`Error: ${errorMessage}`);
     } finally {
       setIsProcessing(false);
     }
