@@ -21,30 +21,32 @@ ALTER TABLE public.mechanic_skipped_appointments ENABLE ROW LEVEL SECURITY;
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Mechanics can skip appointments" ON public.mechanic_skipped_appointments;
 DROP POLICY IF EXISTS "Mechanics can view their own skipped appointments" ON public.mechanic_skipped_appointments;
+DROP POLICY IF EXISTS "Mechanics can insert skips" ON public.mechanic_skipped_appointments;
+DROP POLICY IF EXISTS "Mechanics can view their skips" ON public.mechanic_skipped_appointments;
 
--- RLS Policy: Mechanics can only insert their own skips
-CREATE POLICY "Mechanics can skip appointments" 
+-- Policy for INSERT: Check that the user owns the mechanic profile
+CREATE POLICY "Mechanics can insert skips" 
 ON public.mechanic_skipped_appointments 
 FOR INSERT 
 TO authenticated 
 WITH CHECK (
     EXISTS (
         SELECT 1 FROM public.mechanic_profiles 
-        WHERE id = mechanic_id 
-        AND user_id = auth.uid()
+        WHERE mechanic_profiles.id = mechanic_skipped_appointments.mechanic_id 
+        AND mechanic_profiles.user_id = auth.uid()
     )
 );
 
--- RLS Policy: Mechanics can view their own skips
-CREATE POLICY "Mechanics can view their own skipped appointments"
-ON public.mechanic_skipped_appointments
-FOR SELECT
-TO authenticated
+-- Policy for SELECT: Allow mechanics to see their own skips
+CREATE POLICY "Mechanics can view their skips" 
+ON public.mechanic_skipped_appointments 
+FOR SELECT 
+TO authenticated 
 USING (
     EXISTS (
-        SELECT 1 FROM public.mechanic_profiles
-        WHERE id = mechanic_id
-        AND user_id = auth.uid()
+        SELECT 1 FROM public.mechanic_profiles 
+        WHERE mechanic_profiles.id = mechanic_skipped_appointments.mechanic_id 
+        AND mechanic_profiles.user_id = auth.uid()
     )
 );
 

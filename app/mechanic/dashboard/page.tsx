@@ -402,6 +402,46 @@ export default function MechanicDashboard() {
 
     try {
       setIsProcessing(true);
+
+      // Debug auth flow
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error('❌ Auth error:', userError);
+        throw new Error('Authentication error');
+      }
+
+      console.log('👤 Current user:', {
+        userId: user?.id,
+        mechanicId,
+        timestamp: new Date().toISOString()
+      });
+
+      // Verify the mechanic profile belongs to current user
+      const { data: profile, error: profileError } = await supabase
+        .from('mechanic_profiles')
+        .select('*')
+        .eq('id', mechanicId)
+        .eq('user_id', user?.id)
+        .single();
+
+      if (profileError) {
+        console.error('❌ Profile verification failed:', profileError);
+        throw new Error('Failed to verify mechanic profile');
+      }
+
+      if (!profile) {
+        console.error('❌ Mechanic profile not found or unauthorized:', {
+          mechanicId,
+          userId: user?.id
+        });
+        throw new Error('Mechanic profile not found or unauthorized');
+      }
+
+      console.log('✅ Mechanic profile verified:', {
+        profileId: profile.id,
+        userId: profile.user_id,
+        timestamp: new Date().toISOString()
+      });
       
       // First verify the appointment exists and is pending
       const { data: appointmentData, error: appointmentError } = await supabase
@@ -446,16 +486,14 @@ export default function MechanicDashboard() {
         throw new Error('You have already skipped this appointment');
       }
 
-      // Record the skip
-      const { data: skipData, error: skipError } = await supabase
+      // Record the skip with minimal return
+      const { error: skipError } = await supabase
         .from('mechanic_skipped_appointments')
         .insert({
           mechanic_id: mechanicId,
           appointment_id: appointment.id,
           skipped_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+        }, { returning: 'minimal' });
 
       if (skipError) {
         console.error('❌ Skip recording failed:', {
@@ -466,7 +504,7 @@ export default function MechanicDashboard() {
         throw new Error(`Failed to record skip: ${skipError.message}`);
       }
 
-      console.log('✅ Skip recorded successfully:', skipData);
+      console.log('✅ Skip recorded successfully');
 
       // Check if all mechanics have skipped
       const { data: allSkipped, error: checkError } = await supabase
