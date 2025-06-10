@@ -341,8 +341,8 @@ export default function MechanicDashboard() {
         const skippedIds = skippedAppointments?.map(skip => skip.appointment_id) || [];
         console.log('📋 Skipped appointment IDs:', skippedIds);
 
-        // Now fetch appointments, excluding the skipped ones
-        const { data: availableData, error: availableError } = await supabase
+        // Build the query
+        let query = supabase
           .from('appointments')
           .select(`
             *,
@@ -355,8 +355,14 @@ export default function MechanicDashboard() {
               color
             )
           `)
-          .eq('status', 'pending')
-          .not('id', 'in', `(${skippedIds.length > 0 ? skippedIds.map(id => `'${id}'`).join(',') : "'00000000-0000-0000-0000-000000000000'"})`);
+          .eq('status', 'pending');
+
+        // Only add the filter if there are skipped IDs
+        if (skippedIds.length > 0) {
+          query = query.not('id', 'in', skippedIds);
+        }
+
+        const { data: availableData, error: availableError } = await query;
 
         if (availableError) {
           console.error("❌ Error fetching available appointments:", availableError);
