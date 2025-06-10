@@ -21,6 +21,8 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import type { ChangeEvent } from 'react'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { ProfileDropdown } from "@/components/profile-dropdown"
+import { toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 interface Appointment {
   id: string
@@ -399,6 +401,8 @@ export default function MechanicDashboard() {
     });
 
     try {
+      setIsProcessing(true);
+      
       // First verify the appointment exists and is pending
       const { data: appointmentData, error: appointmentError } = await supabase
         .from('appointments')
@@ -515,6 +519,8 @@ export default function MechanicDashboard() {
       console.error('❌ Skip process failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       toast.error(`Failed to skip appointment: ${errorMessage}`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
