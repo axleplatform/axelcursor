@@ -20,6 +20,7 @@ import { Card } from "@/components/ui/card"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import type { ChangeEvent } from 'react'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import { ProfileDropdown } from "@/components/profile-dropdown"
 
 interface Appointment {
   id: string
@@ -564,9 +565,7 @@ export default function MechanicDashboard() {
             <button className="bg-[#294a46] text-white px-4 py-2 rounded-full hover:bg-[#1e3632] transition-colors flex items-center gap-2">
               Refer a friend
             </button>
-            <div className="w-10 h-10 rounded-full bg-[#294a46] flex items-center justify-center text-white">
-              <User className="h-5 w-5" />
-            </div>
+            <ProfileDropdown />
           </div>
         </div>
       </div>
