@@ -378,106 +378,57 @@ export default function MechanicDashboard() {
     }
   }
 
-  // Handle starting an appointment
-  const handleStartAppointment = async (id: string): Promise<boolean> => {
+  // Handle skipping an appointment
+  const handleSkipAppointment = async (id: string): Promise<boolean> => {
     try {
       setIsProcessing(true)
-      const { error } = await supabase
-        .from("appointments")
-        .update({ status: "in_progress" })
-        .eq("id", id)
-        .eq("mechanic_id", mechanicId)
+      
+      // Record that this mechanic skipped the appointment
+      const { error: skipError } = await supabase
+        .from("mechanic_skipped_appointments")
+        .insert({
+          mechanic_id: mechanicId,
+          appointment_id: id
+        })
 
-      if (error) throw error
+      if (skipError) throw skipError
 
-      // Update local state
-      setUpcomingAppointments((prev: Appointment[]) =>
-        prev.map((appointment: Appointment) => (appointment.id === id ? { ...appointment, status: "in_progress" } : appointment)),
-      )
+      // Check if all mechanics have skipped
+      const { data: allSkipped, error: checkError } = await supabase
+        .rpc('check_all_mechanics_skipped', { appointment_id: id })
 
+      if (checkError) throw checkError
+
+      // If all mechanics have skipped, cancel the appointment
+      if (allSkipped) {
+        const { error: cancelError } = await supabase
+          .from("appointments")
+          .update({ status: "cancelled" })
+          .eq("id", id)
+
+        if (cancelError) throw cancelError
+      }
+
+      // Update local state - remove from available appointments
+      setAvailableAppointments((prev: Appointment[]) => prev.filter((a: Appointment) => a.id !== id))
+
+      // Show success message
       toast({
         title: "Success",
-        description: "Appointment started successfully.",
+        description: "Appointment skipped successfully.",
       })
+
+      // Move to next available appointment if there are more
+      if (availableAppointments.length > 1) {
+        setCurrentAvailableIndex((prev: number) => (prev >= availableAppointments.length - 1 ? 0 : prev + 1))
+      }
 
       return true
     } catch (error) {
-      console.error("Error starting appointment:", error)
+      console.error("Error skipping appointment:", error)
       toast({
         title: "Error",
-        description: "Failed to start appointment.",
-        variant: "destructive",
-      })
-      return false
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
-  // Handle cancelling an appointment
-  const handleCancelAppointment = async (id: string): Promise<boolean> => {
-    try {
-      setIsProcessing(true)
-      const { error } = await supabase
-        .from("appointments")
-        .update({ status: "cancelled" })
-        .eq("id", id)
-        .eq("mechanic_id", mechanicId)
-
-      if (error) throw error
-
-      // Update local state
-      setUpcomingAppointments((prev: Appointment[]) =>
-        prev.map((appointment: Appointment) => (appointment.id === id ? { ...appointment, status: "cancelled" } : appointment)),
-      )
-
-      toast({
-        title: "Success",
-        description: "Appointment cancelled successfully.",
-      })
-
-      return true
-    } catch (error) {
-      console.error("Error cancelling appointment:", error)
-      toast({
-        title: "Error",
-        description: "Failed to cancel appointment.",
-        variant: "destructive",
-      })
-      return false
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
-  // Handle updating price
-  const handleUpdatePrice = async (id: string, price: number): Promise<boolean> => {
-    try {
-      setIsProcessing(true)
-      const { error } = await supabase
-        .from("appointments")
-        .update({ price })
-        .eq("id", id)
-        .eq("mechanic_id", mechanicId)
-
-      if (error) throw error
-
-      // Update local state
-      setUpcomingAppointments((prev: Appointment[]) =>
-        prev.map((appointment: Appointment) => (appointment.id === id ? { ...appointment, price } : appointment)),
-      )
-
-      toast({
-        title: "Success",
-        description: "Price updated successfully.",
-      })
-
-      return true
-    } catch (error) {
-      console.error("Error updating price:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update price.",
+        description: "Failed to skip appointment.",
         variant: "destructive",
       })
       return false
@@ -765,7 +716,7 @@ export default function MechanicDashboard() {
                         )}
                       </button>
                       <button
-                        onClick={() => handleCancelAppointment(availableAppointments[currentAvailableIndex].id)}
+                        onClick={() => handleSkipAppointment(availableAppointments[currentAvailableIndex].id)}
                         disabled={isProcessing}
                         className="border border-white text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99] flex-1 disabled:opacity-70 disabled:cursor-not-allowed"
                       >

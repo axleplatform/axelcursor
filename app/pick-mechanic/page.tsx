@@ -111,6 +111,26 @@ export default function PickMechanicPage() {
 
         if (error) throw error
 
+        // Check if all mechanics have skipped
+        const { data: allSkipped, error: checkError } = await supabase
+          .rpc('check_all_mechanics_skipped', { appointment_id: appointmentId })
+
+        if (checkError) throw checkError
+
+        if (allSkipped) {
+          // Update appointment status to cancelled
+          const { error: updateError } = await supabase
+            .from("appointments")
+            .update({ status: "cancelled" })
+            .eq("id", appointmentId)
+
+          if (updateError) throw updateError
+
+          setError("Sorry, no mechanics are available for this appointment. Your appointment has been cancelled.")
+          setAppointment(null)
+          return
+        }
+
         setAppointment(data)
       } catch (error) {
         console.error("Error fetching appointment data:", error)
