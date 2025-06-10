@@ -16,10 +16,14 @@ jobs:
         with:
           node-version: '18'
           
+      - name: Install type definitions
+        run: |
+          npm install --save-dev @types/node @types/react @types/react-dom
+          echo "Type definitions installed"
+          
       - name: Install dependencies
         run: |
           npm install
-          npm install --save-dev @types/node @types/react @types/react-dom
           npm list --depth=0
         
       - name: Type check

@@ -23,6 +23,8 @@ declare module 'lucide-react' {
 declare module '@supabase/auth-helpers-nextjs' {
   import { SupabaseClient } from '@supabase/supabase-js'
   export function createClientComponentClient(): SupabaseClient
+  export function createServerComponentClient(): SupabaseClient
+  export function createRouteHandlerClient(): SupabaseClient
 }
 
 declare module '@supabase/supabase-js' {
@@ -34,5 +36,13 @@ declare module '@supabase/supabase-js' {
     new: T
     old: T
     errors: null | any[]
+  }
+  
+  export interface SupabaseClient {
+    auth: {
+      getSession(): Promise<{ data: { session: any } | null }>
+      signOut(): Promise<{ error: any }>
+    }
+    from(table: string): any
   }
 } 
