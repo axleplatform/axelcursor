@@ -81,6 +81,103 @@ export default function MechanicDashboard() {
     setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
   };
 
+  // Extract fetchInitialAppointments to be accessible throughout the component
+  const fetchInitialAppointments = async () => {
+    try {
+      setIsAppointmentsLoading(true);
+      console.log("🔍 Fetching initial appointments for mechanic:", mechanicId);
+      
+      // First, get all appointments this mechanic has skipped
+      const { data: skippedAppointments, error: skipError } = await supabase
+        .from('mechanic_skipped_appointments')
+        .select('appointment_id')
+        .eq('mechanic_id', mechanicId);
+
+      if (skipError) {
+        console.error('❌ Error fetching skipped appointments:', skipError);
+        throw new Error('Failed to fetch skipped appointments');
+      }
+
+      // Extract just the appointment IDs
+      const skippedIds = skippedAppointments?.map(skip => skip.appointment_id) || [];
+      console.log('📋 Skipped appointment IDs:', skippedIds);
+
+      // Fetch ALL pending appointments
+      const { data: appointments, error: appointmentError } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          vehicles(
+            make,
+            model,
+            year,
+            vin,
+            mileage,
+            color
+          )
+        `)
+        .eq('status', 'pending');
+
+      if (appointmentError) {
+        console.error("❌ Error fetching available appointments:", appointmentError);
+        throw new Error("Failed to fetch available appointments");
+      }
+
+      // Filter out skipped appointments on the client side
+      const filteredAppointments = appointments?.filter(
+        apt => !skippedIds.includes(apt.id)
+      ) || [];
+
+      console.log('📋 Available appointments after filtering:', filteredAppointments.length);
+
+      // Get quoted appointments
+      const { data: quotedData, error: quotedError } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          vehicles(*),
+          mechanic_quotes!inner(*)
+        `)
+        .eq('mechanic_quotes.mechanic_id', mechanicId)
+        .eq('status', 'pending')
+        .order('appointment_date', { ascending: true });
+
+      if (quotedError) {
+        console.error("❌ Error fetching quoted appointments:", quotedError);
+        throw new Error("Failed to fetch quoted appointments");
+      }
+
+      // Get upcoming appointments
+      const { data: upcomingData, error: upcomingError } = await supabase
+        .from('appointments')
+        .select('*, vehicles(*)')
+        .eq('mechanic_id', mechanicId)
+        .in('status', ['confirmed', 'in_progress', 'pending_payment'])
+        .order('appointment_date', { ascending: true });
+
+      if (upcomingError) {
+        console.error("❌ Error fetching upcoming appointments:", upcomingError);
+        throw new Error("Failed to fetch upcoming appointments");
+      }
+
+      console.log('Initial appointments loaded:', {
+        available: filteredAppointments.length,
+        quoted: quotedData?.length || 0,
+        upcoming: upcomingData?.length || 0
+      });
+
+      setAvailableAppointments(filteredAppointments)
+      setQuotedAppointments(quotedData || [])
+      setUpcomingAppointments(upcomingData || [])
+    } catch (error) {
+      console.error("Error fetching initial appointments:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to load appointments";
+      showNotification(errorMessage, 'error');
+    } finally {
+      setIsAppointmentsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -198,60 +295,7 @@ export default function MechanicDashboard() {
         },
         async (payload: RealtimePostgresChangesPayload<any>) => {
           console.log('Appointment change received:', payload)
-          
-          try {
-            // Refresh all appointments when any change occurs
-            const { data: appointments, error: appointmentsError } = await supabase
-              .from('appointments')
-              .select(`
-                *,
-                vehicles!inner (
-                  id,
-                  year,
-                  make,
-                  model,
-                  vin,
-                  mileage,
-                  color
-                )
-              `)
-              .eq('status', 'pending')
-              .order('appointment_date', { ascending: true });
-
-            if (appointmentsError) {
-              console.error('Error fetching appointments:', appointmentsError);
-              return;
-            }
-
-            // Filter out appointments that have been skipped by this mechanic
-            const { data: skippedAppointments, error: skippedError } = await supabase
-              .from('mechanic_skipped_appointments')
-              .select('appointment_id')
-              .eq('mechanic_id', mechanicId);
-
-            if (skippedError) {
-              console.error('Error fetching skipped appointments:', skippedError);
-              return;
-            }
-
-            const skippedIds = new Set(skippedAppointments?.map(skip => skip.appointment_id) || []);
-            const filteredAppointments = appointments?.filter(app => !skippedIds.has(app.id)) || [];
-
-            console.log('Refreshed appointments:', {
-              available: filteredAppointments.length,
-              quoted: 0,
-              upcoming: 0
-            })
-
-            setAvailableAppointments(filteredAppointments)
-          } catch (error) {
-            console.error("Error refreshing appointments:", error)
-            toast({
-              title: "Error",
-              description: "Failed to refresh appointments. Please try refreshing the page.",
-              variant: "destructive",
-            })
-          }
+          await fetchInitialAppointments();
         }
       )
       .subscribe()
@@ -268,155 +312,12 @@ export default function MechanicDashboard() {
         },
         async (payload: RealtimePostgresChangesPayload<any>) => {
           console.log('Quote change received:', payload)
-          
-          try {
-            // Refresh available and quoted appointments when quotes change
-            const { data: quotedData, error: quotedError } = await supabase
-              .from('appointments')
-              .select(`
-                *,
-                vehicles(*),
-                mechanic_quotes!inner(*)
-              `)
-              .eq('mechanic_quotes.mechanic_id', mechanicId)
-              .eq('status', 'pending')
-              .order('appointment_date', { ascending: true });
-
-            if (quotedError) {
-              console.error("❌ Error fetching quoted appointments:", quotedError);
-              throw new Error("Failed to fetch quoted appointments");
-            }
-
-            // Get upcoming appointments
-            const { data: upcomingData, error: upcomingError } = await supabase
-              .from('appointments')
-              .select('*, vehicles(*)')
-              .eq('mechanic_id', mechanicId)
-              .in('status', ['confirmed', 'in_progress', 'pending_payment'])
-              .order('appointment_date', { ascending: true });
-
-            if (upcomingError) {
-              console.error("❌ Error fetching upcoming appointments:", upcomingError);
-              throw new Error("Failed to fetch upcoming appointments");
-            }
-
-            console.log('Refreshed appointments after quote change:', {
-              available: 0,
-              quoted: quotedData?.length || 0,
-              upcoming: upcomingData?.length || 0
-            })
-
-            setQuotedAppointments(quotedData || [])
-            setUpcomingAppointments(upcomingData || [])
-          } catch (error) {
-            console.error("Error refreshing appointments after quote change:", error)
-            toast({
-              title: "Error",
-              description: "Failed to refresh appointments. Please try refreshing the page.",
-              variant: "destructive",
-            })
-          }
+          await fetchInitialAppointments();
         }
       )
       .subscribe()
 
     // Initial fetch of appointments
-    const fetchInitialAppointments = async () => {
-      try {
-        setIsAppointmentsLoading(true);
-        console.log("🔍 Fetching initial appointments for mechanic:", mechanicId);
-        
-        // First, get all appointments this mechanic has skipped
-        const { data: skippedAppointments, error: skipError } = await supabase
-          .from('mechanic_skipped_appointments')
-          .select('appointment_id')
-          .eq('mechanic_id', mechanicId);
-
-        if (skipError) {
-          console.error('❌ Error fetching skipped appointments:', skipError);
-          throw new Error('Failed to fetch skipped appointments');
-        }
-
-        // Extract just the appointment IDs
-        const skippedIds = skippedAppointments?.map(skip => skip.appointment_id) || [];
-        console.log('📋 Skipped appointment IDs:', skippedIds);
-
-        // Fetch ALL pending appointments
-        const { data: appointments, error: appointmentError } = await supabase
-          .from('appointments')
-          .select(`
-            *,
-            vehicles(
-              make,
-              model,
-              year,
-              vin,
-              mileage,
-              color
-            )
-          `)
-          .eq('status', 'pending');
-
-        if (appointmentError) {
-          console.error("❌ Error fetching available appointments:", appointmentError);
-          throw new Error("Failed to fetch available appointments");
-        }
-
-        // Filter out skipped appointments on the client side
-        const filteredAppointments = appointments?.filter(
-          apt => !skippedIds.includes(apt.id)
-        ) || [];
-
-        console.log('📋 Available appointments after filtering:', filteredAppointments.length);
-
-        // Get quoted appointments
-        const { data: quotedData, error: quotedError } = await supabase
-          .from('appointments')
-          .select(`
-            *,
-            vehicles(*),
-            mechanic_quotes!inner(*)
-          `)
-          .eq('mechanic_quotes.mechanic_id', mechanicId)
-          .eq('status', 'pending')
-          .order('appointment_date', { ascending: true });
-
-        if (quotedError) {
-          console.error("❌ Error fetching quoted appointments:", quotedError);
-          throw new Error("Failed to fetch quoted appointments");
-        }
-
-        // Get upcoming appointments
-        const { data: upcomingData, error: upcomingError } = await supabase
-          .from('appointments')
-          .select('*, vehicles(*)')
-          .eq('mechanic_id', mechanicId)
-          .in('status', ['confirmed', 'in_progress', 'pending_payment'])
-          .order('appointment_date', { ascending: true });
-
-        if (upcomingError) {
-          console.error("❌ Error fetching upcoming appointments:", upcomingError);
-          throw new Error("Failed to fetch upcoming appointments");
-        }
-
-        console.log('Initial appointments loaded:', {
-          available: filteredAppointments.length,
-          quoted: quotedData?.length || 0,
-          upcoming: upcomingData?.length || 0
-        });
-
-        setAvailableAppointments(filteredAppointments)
-        setQuotedAppointments(quotedData || [])
-        setUpcomingAppointments(upcomingData || [])
-      } catch (error) {
-        console.error("Error fetching initial appointments:", error);
-        const errorMessage = error instanceof Error ? error.message : "Failed to load appointments";
-        showNotification(errorMessage, 'error');
-      } finally {
-        setIsAppointmentsLoading(false);
-      }
-    };
-
     fetchInitialAppointments()
 
     // Cleanup subscription on unmount
