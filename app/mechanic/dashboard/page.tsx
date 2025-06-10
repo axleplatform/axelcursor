@@ -351,12 +351,8 @@ export default function MechanicDashboard() {
               model,
               year,
               vin,
-              mileage
-            ),
-            quotes(
-              id,
-              amount,
-              status
+              mileage,
+              color
             )
           `)
           .eq('status', 'pending')
