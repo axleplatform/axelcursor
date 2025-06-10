@@ -380,24 +380,72 @@ export default function MechanicDashboard() {
 
   // Handle skipping an appointment
   const handleSkipAppointment = async (id: string): Promise<boolean> => {
+    if (!id) {
+      console.error('❌ Skip appointment error: No appointment ID provided')
+      toast({
+        title: "Error",
+        description: "Invalid appointment ID",
+        variant: "destructive",
+      })
+      return false
+    }
+
+    if (!mechanicId) {
+      console.error('❌ Skip appointment error: No mechanic ID available')
+      toast({
+        title: "Error",
+        description: "Mechanic ID not found. Please try logging in again.",
+        variant: "destructive",
+      })
+      return false
+    }
+
     try {
       setIsProcessing(true)
+      console.log('🔄 Starting skip appointment process:', { 
+        appointmentId: id, 
+        mechanicId,
+        timestamp: new Date().toISOString()
+      })
       
       // Record that this mechanic skipped the appointment
-      const { error: skipError } = await supabase
+      const { data: skipData, error: skipError } = await supabase
         .from("mechanic_skipped_appointments")
         .insert({
           mechanic_id: mechanicId,
           appointment_id: id
         })
+        .select()
 
-      if (skipError) throw skipError
+      if (skipError) {
+        console.error('❌ Skip appointment database error:', {
+          error: skipError,
+          code: skipError.code,
+          message: skipError.message,
+          details: skipError.details,
+          hint: skipError.hint
+        })
+        throw new Error(`Failed to record skipped appointment: ${skipError.message}`)
+      }
+
+      console.log('✅ Successfully recorded skipped appointment:', skipData)
 
       // Check if all mechanics have skipped
       const { data: allSkipped, error: checkError } = await supabase
         .rpc('check_all_mechanics_skipped', { appointment_id: id })
 
-      if (checkError) throw checkError
+      if (checkError) {
+        console.error('❌ Check all mechanics skipped error:', {
+          error: checkError,
+          code: checkError.code,
+          message: checkError.message,
+          details: checkError.details,
+          hint: checkError.hint
+        })
+        throw new Error(`Failed to check if all mechanics skipped: ${checkError.message}`)
+      }
+
+      console.log('✅ Checked if all mechanics skipped:', { allSkipped })
 
       // If all mechanics have skipped, cancel the appointment
       if (allSkipped) {
@@ -406,7 +454,18 @@ export default function MechanicDashboard() {
           .update({ status: "cancelled" })
           .eq("id", id)
 
-        if (cancelError) throw cancelError
+        if (cancelError) {
+          console.error('❌ Cancel appointment error:', {
+            error: cancelError,
+            code: cancelError.code,
+            message: cancelError.message,
+            details: cancelError.details,
+            hint: cancelError.hint
+          })
+          throw new Error(`Failed to cancel appointment: ${cancelError.message}`)
+        }
+
+        console.log('✅ Successfully cancelled appointment as all mechanics skipped')
       }
 
       // Update local state - remove from available appointments
@@ -424,11 +483,19 @@ export default function MechanicDashboard() {
       }
 
       return true
-    } catch (error) {
-      console.error("Error skipping appointment:", error)
+    } catch (error: any) {
+      console.error('❌ Skip appointment error:', {
+        error,
+        message: error?.message || 'Unknown error',
+        stack: error?.stack,
+        appointmentId: id,
+        mechanicId,
+        timestamp: new Date().toISOString()
+      })
+
       toast({
         title: "Error",
-        description: "Failed to skip appointment.",
+        description: error?.message || "Failed to skip appointment. Please try again.",
         variant: "destructive",
       })
       return false
