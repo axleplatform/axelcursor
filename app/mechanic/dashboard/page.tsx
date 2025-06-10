@@ -341,8 +341,8 @@ export default function MechanicDashboard() {
         const skippedIds = skippedAppointments?.map(skip => skip.appointment_id) || [];
         console.log('📋 Skipped appointment IDs:', skippedIds);
 
-        // Build the query
-        let query = supabase
+        // Fetch ALL pending appointments
+        const { data: appointments, error: appointmentError } = await supabase
           .from('appointments')
           .select(`
             *,
@@ -357,19 +357,17 @@ export default function MechanicDashboard() {
           `)
           .eq('status', 'pending');
 
-        // Only add the filter if there are skipped IDs
-        if (skippedIds.length > 0) {
-          query = query.not('id', 'in', skippedIds);
-        }
-
-        const { data: availableData, error: availableError } = await query;
-
-        if (availableError) {
-          console.error("❌ Error fetching available appointments:", availableError);
+        if (appointmentError) {
+          console.error("❌ Error fetching available appointments:", appointmentError);
           throw new Error("Failed to fetch available appointments");
         }
 
-        console.log('📋 Available appointments after filtering:', availableData?.length || 0);
+        // Filter out skipped appointments on the client side
+        const filteredAppointments = appointments?.filter(
+          apt => !skippedIds.includes(apt.id)
+        ) || [];
+
+        console.log('📋 Available appointments after filtering:', filteredAppointments.length);
 
         // Get quoted appointments
         const { data: quotedData, error: quotedError } = await supabase
@@ -402,14 +400,14 @@ export default function MechanicDashboard() {
         }
 
         console.log('Initial appointments loaded:', {
-          available: availableData?.length || 0,
+          available: filteredAppointments.length,
           quoted: quotedData?.length || 0,
           upcoming: upcomingData?.length || 0
         });
 
-        setAvailableAppointments(availableData || []);
-        setQuotedAppointments(quotedData || []);
-        setUpcomingAppointments(upcomingData || []);
+        setAvailableAppointments(filteredAppointments)
+        setQuotedAppointments(quotedData || [])
+        setUpcomingAppointments(upcomingData || [])
       } catch (error) {
         console.error("Error fetching initial appointments:", error);
         const errorMessage = error instanceof Error ? error.message : "Failed to load appointments";
