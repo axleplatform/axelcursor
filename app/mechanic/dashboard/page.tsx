@@ -72,6 +72,15 @@ export default function MechanicDashboard() {
   const [priceInput, setPriceInput] = useState<string>("")
   const [isProcessing, setIsProcessing] = useState(false)
 
+  // Add notification state at the top of the component
+  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+
+  // Add showNotification function
+  const showNotification = (message: string, type: 'success' | 'error' = 'error') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -269,22 +278,47 @@ export default function MechanicDashboard() {
         setIsAppointmentsLoading(true);
         console.log("🔍 Fetching initial appointments for mechanic:", mechanicId);
         
-        // Get available appointments (excluding skipped ones)
+        // First, get all appointments this mechanic has skipped
+        const { data: skippedAppointments, error: skipError } = await supabase
+          .from('mechanic_skipped_appointments')
+          .select('appointment_id')
+          .eq('mechanic_id', mechanicId);
+
+        if (skipError) {
+          console.error('❌ Error fetching skipped appointments:', skipError);
+          throw new Error('Failed to fetch skipped appointments');
+        }
+
+        // Extract just the appointment IDs
+        const skippedIds = skippedAppointments?.map(skip => skip.appointment_id) || [];
+        console.log('📋 Skipped appointment IDs:', skippedIds);
+
+        // Now fetch appointments, excluding the skipped ones
         const { data: availableData, error: availableError } = await supabase
           .from('appointments')
           .select(`
             *,
-            vehicles(*),
-            mechanic_skipped_appointments!left(appointment_id)
+            vehicles(
+              make,
+              model,
+              year,
+              license_plate
+            ),
+            quotes(
+              id,
+              amount,
+              status
+            )
           `)
           .eq('status', 'pending')
-          .is('mechanic_skipped_appointments.appointment_id', null)
-          .order('appointment_date', { ascending: true });
+          .not('id', 'in', `(${skippedIds.length > 0 ? skippedIds.map(id => `'${id}'`).join(',') : "'00000000-0000-0000-0000-000000000000'"})`);
 
         if (availableError) {
           console.error("❌ Error fetching available appointments:", availableError);
           throw new Error("Failed to fetch available appointments");
         }
+
+        console.log('📋 Available appointments after filtering:', availableData?.length || 0);
 
         // Get quoted appointments
         const { data: quotedData, error: quotedError } = await supabase
@@ -328,8 +362,7 @@ export default function MechanicDashboard() {
       } catch (error) {
         console.error("Error fetching initial appointments:", error);
         const errorMessage = error instanceof Error ? error.message : "Failed to load appointments";
-        console.error(errorMessage);
-        alert(`Error: ${errorMessage}`);
+        showNotification(errorMessage, 'error');
       } finally {
         setIsAppointmentsLoading(false);
       }
@@ -418,13 +451,13 @@ export default function MechanicDashboard() {
   const handleSkipAppointment = async (appointment: Appointment) => {
     if (!appointment.id) {
       console.error('❌ Skip failed: No appointment ID');
-      alert('Invalid appointment');
+      showNotification('Invalid appointment', 'error');
       return;
     }
 
     if (!mechanicId) {
       console.error('❌ Skip failed: No mechanic ID');
-      alert('Please log in as a mechanic');
+      showNotification('Please log in as a mechanic', 'error');
       return;
     }
 
@@ -579,7 +612,10 @@ export default function MechanicDashboard() {
       );
 
       // Show success message
-      alert('Appointment skipped successfully');
+      showNotification('Appointment skipped successfully', 'success');
+
+      // Refetch appointments to ensure UI is in sync
+      await fetchInitialAppointments();
 
       // Move to next appointment if available
       const nextAppointment = availableAppointments.find(a => a.id !== appointment.id);
@@ -590,8 +626,7 @@ export default function MechanicDashboard() {
     } catch (error) {
       console.error('❌ Skip process failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      console.error(errorMessage);
-      alert(`Error: ${errorMessage}`);
+      showNotification(errorMessage, 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -657,6 +692,15 @@ export default function MechanicDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <SiteHeader />
+
+      {/* Notification Component */}
+      {notification && (
+        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-50 ${
+          notification.type === 'error' ? 'bg-red-500' : 'bg-green-500'
+        } text-white`}>
+          {notification.message}
+        </div>
+      )}
 
       {/* Dashboard Title and Actions */}
       <div className="container mx-auto px-4 py-6">
