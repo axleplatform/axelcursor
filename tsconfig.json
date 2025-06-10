@@ -23,7 +23,12 @@
       }
     ],
     "types": ["node", "react", "react-dom"],
-    "jsxImportSource": "react"
+    "jsxImportSource": "react",
+    "forceConsistentCasingInFileNames": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true
   },
   "include": [
     "next-env.d.ts",
