@@ -408,14 +408,65 @@ export default function MechanicDashboard() {
         timestamp: new Date().toISOString()
       })
       
+      // First, verify the appointment exists and is in a valid state
+      const { data: appointment, error: appointmentError } = await supabase
+        .from("appointments")
+        .select("status")
+        .eq("id", id)
+        .single()
+
+      if (appointmentError) {
+        console.error('❌ Appointment verification error:', {
+          error: appointmentError,
+          code: appointmentError.code,
+          message: appointmentError.message,
+          details: appointmentError.details,
+          hint: appointmentError.hint
+        })
+        throw new Error(`Failed to verify appointment: ${appointmentError.message}`)
+      }
+
+      if (!appointment) {
+        throw new Error("Appointment not found")
+      }
+
+      if (appointment.status !== "pending") {
+        throw new Error(`Cannot skip appointment in ${appointment.status} status`)
+      }
+
+      // Check if mechanic has already skipped this appointment
+      const { data: existingSkip, error: checkSkipError } = await supabase
+        .from("mechanic_skipped_appointments")
+        .select("id")
+        .eq("mechanic_id", mechanicId)
+        .eq("appointment_id", id)
+        .single()
+
+      if (checkSkipError && checkSkipError.code !== "PGRST116") { // PGRST116 is "no rows returned"
+        console.error('❌ Check existing skip error:', {
+          error: checkSkipError,
+          code: checkSkipError.code,
+          message: checkSkipError.message,
+          details: checkSkipError.details,
+          hint: checkSkipError.hint
+        })
+        throw new Error(`Failed to check existing skip: ${checkSkipError.message}`)
+      }
+
+      if (existingSkip) {
+        throw new Error("You have already skipped this appointment")
+      }
+      
       // Record that this mechanic skipped the appointment
       const { data: skipData, error: skipError } = await supabase
         .from("mechanic_skipped_appointments")
         .insert({
           mechanic_id: mechanicId,
-          appointment_id: id
+          appointment_id: id,
+          skipped_at: new Date().toISOString()
         })
         .select()
+        .single()
 
       if (skipError) {
         console.error('❌ Skip appointment database error:', {
@@ -423,9 +474,12 @@ export default function MechanicDashboard() {
           code: skipError.code,
           message: skipError.message,
           details: skipError.details,
-          hint: skipError.hint
+          hint: skipError.hint,
+          appointmentId: id,
+          mechanicId,
+          timestamp: new Date().toISOString()
         })
-        throw new Error(`Failed to record skipped appointment: ${skipError.message}`)
+        throw new Error(`Failed to record skipped appointment: ${skipError.message || 'Unknown database error'}`)
       }
 
       console.log('✅ Successfully recorded skipped appointment:', skipData)
@@ -451,7 +505,10 @@ export default function MechanicDashboard() {
       if (allSkipped) {
         const { error: cancelError } = await supabase
           .from("appointments")
-          .update({ status: "cancelled" })
+          .update({ 
+            status: "cancelled",
+            cancelled_at: new Date().toISOString()
+          })
           .eq("id", id)
 
         if (cancelError) {
