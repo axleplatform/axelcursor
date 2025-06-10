@@ -18,6 +18,8 @@ import {
 import { formatDate, validateMechanicId } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import type { ChangeEvent } from 'react'
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 interface Appointment {
   id: string
@@ -149,7 +151,7 @@ export default function MechanicDashboard() {
           table: 'appointments',
           filter: `status=eq.pending`
         },
-        async (payload) => {
+        async (payload: RealtimePostgresChangesPayload<any>) => {
           console.log('Appointment change received:', payload)
           
           try {
@@ -196,7 +198,7 @@ export default function MechanicDashboard() {
           schema: 'public',
           table: 'mechanic_quotes',
         },
-        async (payload) => {
+        async (payload: RealtimePostgresChangesPayload<any>) => {
           console.log('Quote change received:', payload)
           
           try {
@@ -828,7 +830,7 @@ export default function MechanicDashboard() {
                           type="number"
                           id="price"
                           value={priceInput}
-                          onChange={(e) => setPriceInput(e.target.value)}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setPriceInput(e.target.value)}
                           placeholder="Enter your price"
                           className="w-full bg-white/10 border border-white/20 rounded-md pl-8 pr-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
                           disabled={isProcessing}
@@ -887,7 +889,7 @@ export default function MechanicDashboard() {
           <div className="mt-8">
             <h2 className="text-xl font-semibold mb-4">Your Quoted Appointments</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {quotedAppointments.map((appointment) => (
+              {quotedAppointments.map((appointment: Appointment) => (
                 <Card key={appointment.id} className="p-4 border border-gray-200">
                   <div className="flex justify-between items-start mb-3">
                     <div>
