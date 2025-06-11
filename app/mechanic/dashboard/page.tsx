@@ -70,6 +70,7 @@ export default function MechanicDashboard() {
   const [isAppointmentsLoading, setIsAppointmentsLoading] = useState(true)
   const [currentAvailableIndex, setCurrentAvailableIndex] = useState(0)
   const [priceInput, setPriceInput] = useState<string>("")
+  const [etaInput, setEtaInput] = useState<string>("2") // Default to 2 hours
   const [isProcessing, setIsProcessing] = useState(false)
 
   // Add notification state at the top of the component
@@ -354,11 +355,16 @@ export default function MechanicDashboard() {
     setIsProcessing(true)
 
     try {
+      // Calculate ETA timestamp
+      const etaDate = new Date()
+      etaDate.setHours(etaDate.getHours() + parseInt(etaInput))
+      const etaTimestamp = etaDate.toISOString()
+
       const { success, error } = await createOrUpdateQuote(
         mechanicId,
         appointmentId,
         price,
-        "1-2 hours", // Default ETA
+        etaTimestamp,
         "" // Default notes
       )
 
@@ -369,8 +375,9 @@ export default function MechanicDashboard() {
       // Update local state - remove from available appointments
       setAvailableAppointments((prev: Appointment[]) => prev.filter((a: Appointment) => a.id !== appointmentId))
 
-      // Reset price input
+      // Reset inputs
       setPriceInput("")
+      setEtaInput("2") // Reset to default
 
       // Show success message
       toast({
@@ -851,6 +858,27 @@ export default function MechanicDashboard() {
                           step="0.01"
                         />
                       </div>
+                    </div>
+
+                    {/* ETA Input */}
+                    <div className="mb-6">
+                      <label htmlFor="eta" className="block text-sm font-medium mb-2">
+                        Estimated Time
+                      </label>
+                      <select
+                        id="eta"
+                        value={etaInput}
+                        onChange={(e: ChangeEvent<HTMLSelectElement>) => setEtaInput(e.target.value)}
+                        className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-white/50"
+                        disabled={isProcessing}
+                      >
+                        <option value="1">1 hour</option>
+                        <option value="2">2 hours</option>
+                        <option value="3">3 hours</option>
+                        <option value="4">4 hours</option>
+                        <option value="8">8 hours</option>
+                        <option value="24">1 day</option>
+                      </select>
                     </div>
 
                     {/* Action Buttons */}
