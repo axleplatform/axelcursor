@@ -100,6 +100,7 @@ export default function PickMechanicPage() {
         setIsLoading(true)
         setError(null)
 
+        // Fetch appointment data
         const { data, error } = await supabase
           .from("appointments")
           .select(`
@@ -111,17 +112,37 @@ export default function PickMechanicPage() {
 
         if (error) throw error
 
+        // Get total number of active mechanics
+        const { data: totalMechanics, error: mechanicsError } = await supabase
+          .from('mechanic_profiles')
+          .select('id')
+          .filter('active', 'eq', true)
+
+        if (mechanicsError) throw mechanicsError
+
+        // Get mechanics who have skipped this appointment
+        const { data: skippedMechanics, error: skippedError } = await supabase
+          .from('mechanic_skipped_appointments')
+          .select('mechanic_id')
+          .eq('appointment_id', appointmentId)
+
+        if (skippedError) throw skippedError
+
         // Check if all mechanics have skipped
-        const { data: allSkipped, error: checkError } = await supabase
-          .rpc('check_all_mechanics_skipped', { appointment_id: appointmentId })
+        const allMechanicsSkipped = totalMechanics && skippedMechanics && 
+          totalMechanics.length > 0 && 
+          totalMechanics.length === skippedMechanics.length
 
-        if (checkError) throw checkError
-
-        if (allSkipped) {
+        if (allMechanicsSkipped) {
           // Update appointment status to cancelled
           const { error: updateError } = await supabase
             .from("appointments")
-            .update({ status: "cancelled" })
+            .update({ 
+              status: "cancelled",
+              cancelled_at: new Date().toISOString(),
+              cancelled_by: 'system',
+              cancellation_reason: 'All mechanics skipped'
+            })
             .eq("id", appointmentId)
 
           if (updateError) throw updateError
@@ -149,11 +170,33 @@ export default function PickMechanicPage() {
       try {
         setIsLoadingQuotes(true)
 
-        const { success, quotes, error: quotesError } = await getQuotesForAppointment(appointmentId)
+        // Get mechanics who have skipped this appointment
+        const { data: skippedMechanics, error: skippedError } = await supabase
+          .from('mechanic_skipped_appointments')
+          .select('mechanic_id')
+          .eq('appointment_id', appointmentId)
 
-        if (!success) {
-          throw new Error(quotesError)
-        }
+        if (skippedError) throw skippedError
+
+        // Get quotes from mechanics who haven't skipped
+        const { data: quotes, error: quotesError } = await supabase
+          .from('mechanic_quotes')
+          .select(`
+            *,
+            mechanic_profiles(
+              id,
+              user_id,
+              full_name,
+              bio,
+              expertise,
+              rating,
+              years_of_experience
+            )
+          `)
+          .eq('appointment_id', appointmentId)
+          .not('mechanic_id', 'in', skippedMechanics ? `(${skippedMechanics.map(s => s.mechanic_id).join(',')})` : '(null)')
+
+        if (quotesError) throw quotesError
 
         if (!quotes || quotes.length === 0) {
           setAppointment((prev: Appointment | null) =>
