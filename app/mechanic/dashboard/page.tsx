@@ -343,7 +343,7 @@ export default function MechanicDashboard() {
         
         const { data: profile, error: profileError } = await supabase
           .from('mechanic_profiles')
-          .select('*')
+          .select('id, user_id, first_name, last_name')
           .eq('user_id', user.id)
           .single();
 
@@ -357,8 +357,15 @@ export default function MechanicDashboard() {
           return;
         }
 
+        console.log('Debug - IDs being used:', {
+          userId: user.id,
+          mechanicProfileId: profile.id,
+          whatWeNeedForQuote: profile.id
+        });
+
         console.log('Mechanic profile loaded:', profile);
         setMechanicId(profile.id);
+        setMechanicProfile(profile);
       } catch (error) {
         console.error('Error in loadMechanicProfile:', error);
       }
@@ -393,16 +400,25 @@ export default function MechanicDashboard() {
         return;
       }
 
-      // Verify mechanic profile exists
+      // Verify mechanic profile exists and matches current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('No authenticated user found');
+        return;
+      }
+
       const { data: mechanicProfile, error: profileError } = await supabase
         .from('mechanic_profiles')
-        .select('*')
+        .select('id, user_id')
         .eq('id', mechanicId)
+        .eq('user_id', user.id)
         .single();
 
       console.log('Mechanic profile verification:', {
         profile: mechanicProfile,
-        error: profileError
+        error: profileError,
+        mechanicId,
+        userId: user.id
       });
 
       if (profileError || !mechanicProfile) {
@@ -417,7 +433,7 @@ export default function MechanicDashboard() {
 
       // Submit quote with verified mechanic ID
       const { success, error } = await createOrUpdateQuote(
-        mechanicId,
+        mechanicId, // This is the correct ID from mechanic_profiles.id
         appointmentId,
         price,
         eta,

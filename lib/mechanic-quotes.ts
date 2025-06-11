@@ -55,44 +55,41 @@ export async function createOrUpdateQuote(
   notes?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Debug: Log quote creation attempt
-    const { data: { user } } = await supabase.auth.getUser();
-    console.log('Attempting to create quote with:', {
-      mechanic_id: mechanicId,
-      appointment_id: appointmentId,
-      price: price,
-      eta: eta,
-      notes: notes,
-      currentUser: user?.id
+    console.log('Creating/updating quote with:', {
+      mechanicId,
+      appointmentId,
+      price,
+      eta,
+      notes
     });
 
-    // Verify mechanic profile ownership
-    const { data: profile, error: profileError } = await supabase
+    // Verify mechanic profile exists
+    const { data: mechanicProfile, error: profileError } = await supabase
       .from('mechanic_profiles')
       .select('id')
       .eq('id', mechanicId)
-      .eq('user_id', user?.id)
       .single();
 
-    if (profileError || !profile) {
+    if (profileError || !mechanicProfile) {
       console.error('Mechanic profile verification failed:', profileError);
-      throw new Error('Unauthorized: Mechanic profile not found or not owned by user');
+      return { success: false, error: 'Mechanic profile not found' };
     }
 
-    // Check if appointment exists and is in a valid state
+    // Verify appointment exists and is pending
     const { data: appointment, error: appointmentError } = await supabase
       .from('appointments')
       .select('status')
       .eq('id', appointmentId)
       .single();
 
-    if (appointmentError) {
-      console.error('Appointment check failed:', appointmentError);
-      throw new Error('Appointment not found');
+    if (appointmentError || !appointment) {
+      console.error('Appointment verification failed:', appointmentError);
+      return { success: false, error: 'Appointment not found' };
     }
 
     if (appointment.status !== 'pending') {
-      throw new Error('Cannot submit quote for appointment that is not pending');
+      console.error('Appointment is not pending:', appointment.status);
+      return { success: false, error: 'Appointment is not pending' };
     }
 
     // Check if quote already exists
@@ -104,46 +101,48 @@ export async function createOrUpdateQuote(
       .single();
 
     if (quoteError && quoteError.code !== 'PGRST116') {
-      console.error('Quote check failed:', quoteError);
-      throw quoteError;
+      console.error('Error checking existing quote:', quoteError);
+      return { success: false, error: 'Failed to check existing quote' };
     }
 
-    let result;
+    const quoteData = {
+      mechanic_id: mechanicId, // This is the correct ID from mechanic_profiles.id
+      appointment_id: appointmentId,
+      price: price,
+      eta: eta,
+      notes: notes || '',
+      status: 'pending'
+    };
+
+    console.log('Quote data to be inserted/updated:', quoteData);
+
     if (existingQuote) {
       // Update existing quote
-      result = await supabase
+      const { error: updateError } = await supabase
         .from('mechanic_quotes')
-        .update({
-          price,
-          eta,
-          notes,
-          updated_at: new Date().toISOString(),
-        })
+        .update(quoteData)
         .eq('id', existingQuote.id);
+
+      if (updateError) {
+        console.error('Error updating quote:', updateError);
+        return { success: false, error: 'Failed to update quote' };
+      }
     } else {
       // Create new quote
-      result = await supabase.from('mechanic_quotes').insert({
-        mechanic_id: mechanicId,
-        appointment_id: appointmentId,
-        price,
-        eta,
-        notes,
-        status: 'pending',
-      });
-    }
+      const { error: insertError } = await supabase
+        .from('mechanic_quotes')
+        .insert(quoteData);
 
-    if (result.error) {
-      console.error('Quote creation/update failed:', result.error);
-      throw result.error;
+      if (insertError) {
+        console.error('Error creating quote:', insertError);
+        return { success: false, error: 'Failed to create quote' };
+      }
     }
 
     return { success: true };
   } catch (error) {
     console.error('Error in createOrUpdateQuote:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create or update quote',
-    };
+    return { success: false, error: 'An unexpected error occurred' };
   }
 }
 
