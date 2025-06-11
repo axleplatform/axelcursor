@@ -141,7 +141,7 @@ export default function MechanicDashboard() {
       const skippedIds = skippedAppointments?.map(skip => skip.appointment_id) || [];
       console.log('📋 Skipped appointment IDs:', skippedIds);
 
-      // Fetch ALL pending appointments
+      // Fetch ALL pending appointments with their quotes
       const { data: appointments, error: appointmentError } = await supabase
         .from('appointments')
         .select(`
@@ -153,6 +153,13 @@ export default function MechanicDashboard() {
             vin,
             mileage,
             color
+          ),
+          mechanic_quotes(
+            id,
+            price,
+            eta,
+            status,
+            mechanic_id
           )
         `)
         .eq('status', 'pending');
@@ -169,29 +176,22 @@ export default function MechanicDashboard() {
 
       console.log('📋 Available appointments after filtering:', filteredAppointments.length);
 
-      // Get quoted appointments
-      const { data: quotedData, error: quotedError } = await supabase
+      // Get upcoming appointments (including quoted ones)
+      const { data: upcomingData, error: upcomingError } = await supabase
         .from('appointments')
         .select(`
           *,
           vehicles(*),
-          mechanic_quotes!inner(*)
+          mechanic_quotes(
+            id,
+            price,
+            eta,
+            status,
+            mechanic_id
+          )
         `)
-        .eq('mechanic_quotes.mechanic_id', mechanicId)
-        .eq('status', 'pending')
-        .order('appointment_date', { ascending: true });
-
-      if (quotedError) {
-        console.error("❌ Error fetching quoted appointments:", quotedError);
-        throw new Error("Failed to fetch quoted appointments");
-      }
-
-      // Get upcoming appointments
-      const { data: upcomingData, error: upcomingError } = await supabase
-        .from('appointments')
-        .select('*, vehicles(*)')
         .eq('mechanic_id', mechanicId)
-        .in('status', ['confirmed', 'in_progress', 'pending_payment'])
+        .in('status', ['confirmed', 'in_progress', 'pending_payment', 'pending'])
         .order('appointment_date', { ascending: true });
 
       if (upcomingError) {
@@ -201,12 +201,10 @@ export default function MechanicDashboard() {
 
       console.log('Initial appointments loaded:', {
         available: filteredAppointments.length,
-        quoted: quotedData?.length || 0,
         upcoming: upcomingData?.length || 0
       });
 
       setAvailableAppointments(filteredAppointments)
-      setQuotedAppointments(quotedData || [])
       setUpcomingAppointments(upcomingData || [])
     } catch (error) {
       console.error("Error fetching initial appointments:", error);
@@ -854,13 +852,57 @@ export default function MechanicDashboard() {
                 </p>
               </div>
             ) : (
-              <UpcomingAppointments
-                appointments={upcomingAppointments}
-                isLoading={isAppointmentsLoading}
-                onStart={handleStartAppointment}
-                onCancel={handleCancelAppointment}
-                onUpdatePrice={handleUpdatePrice}
-              />
+              <div className="space-y-4">
+                {upcomingAppointments.map((appointment) => (
+                  <Card key={appointment.id} className="p-4 border border-gray-200">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-semibold">{formatDate(appointment.appointment_date)}</h3>
+                        <div className="flex items-center text-sm text-gray-600 mt-1">
+                          <MapPin className="h-4 w-4 mr-1" />
+                          <span>{appointment.location}</span>
+                        </div>
+                      </div>
+                      {appointment.mechanic_quotes?.[0] ? (
+                        <div className="bg-[#294a46] text-white px-3 py-1 rounded-md">
+                          <p className="text-lg font-bold">${appointment.mechanic_quotes[0].price}</p>
+                        </div>
+                      ) : (
+                        <div className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-md">
+                          <p className="text-sm">Pending Quote</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {appointment.vehicles && (
+                      <div className="mb-3 text-sm">
+                        <div className="font-medium">
+                          {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
+                        </div>
+                        {appointment.vehicles.mileage && (
+                          <div className="text-gray-600">Mileage: {appointment.vehicles.mileage}</div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="text-sm text-gray-600">
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span>
+                          {appointment.mechanic_quotes?.[0] 
+                            ? `Quote submitted: ${new Date(appointment.mechanic_quotes[0].created_at).toLocaleDateString()}`
+                            : 'Waiting for your quote'}
+                        </span>
+                      </div>
+                      {appointment.mechanic_quotes?.[0] && (
+                        <div className="mt-1 text-xs bg-green-50 p-2 rounded border border-green-100">
+                          Quote Status: {appointment.mechanic_quotes[0].status}
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
             )}
           </div>
 
