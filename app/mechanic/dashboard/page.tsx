@@ -974,58 +974,60 @@ export default function MechanicDashboard() {
                     {/* ETA Selection */}
                     <div className="mb-6">
                       <label className="block text-sm font-medium mb-2">
-                        When can you complete this job? <span className="text-red-500">*</span>
+                        When can you show up? <span className="text-red-500">*</span>
                       </label>
                       
-                      {/* Date Selection */}
-                      <div className="mb-3">
-                        <label className="block text-xs text-white/70 mb-1">Select Date</label>
-                        <select
-                          value={selectedDate}
-                          onChange={(e) => {
-                            setSelectedDate(e.target.value);
-                            setShowETAError(false);
-                          }}
-                          className={`w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-white/50 ${
-                            showETAError && !selectedDate ? 'border-red-500 animate-pulse' : ''
-                          }`}
-                          disabled={isProcessing}
-                        >
-                          <option value="">Choose a date</option>
-                          {getAvailableDates().map((date) => (
-                            <option key={date.value} value={date.value}>
-                              {date.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      {/* Time Selection */}
-                      <div>
-                        <label className="block text-xs text-white/70 mb-1">Select Time</label>
-                        <select
-                          value={selectedTime}
-                          onChange={(e) => {
-                            setSelectedTime(e.target.value);
-                            setShowETAError(false);
-                          }}
-                          className={`w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-white/50 ${
-                            showETAError && !selectedTime ? 'border-red-500 animate-pulse' : ''
-                          }`}
-                          disabled={isProcessing || !selectedDate}
-                        >
-                          <option value="">Choose a time</option>
-                          {getTimeSlots().map((slot) => (
-                            <option key={slot.value} value={slot.value}>
-                              {slot.label}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Date Selection */}
+                        <div>
+                          <label className="block text-xs text-white/70 mb-1">Select Date</label>
+                          <select
+                            value={selectedDate}
+                            onChange={(e) => {
+                              setSelectedDate(e.target.value);
+                              setShowETAError(false);
+                            }}
+                            className={`w-full bg-white/20 border border-white/30 rounded-md px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-white/50 ${
+                              showETAError && !selectedDate ? 'border-red-500 animate-pulse' : ''
+                            }`}
+                            disabled={isProcessing}
+                          >
+                            <option value="" className="bg-[#294a46]">Choose a date</option>
+                            {getAvailableDates().map((date) => (
+                              <option key={date.value} value={date.value} className="bg-[#294a46]">
+                                {date.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        {/* Time Selection */}
+                        <div>
+                          <label className="block text-xs text-white/70 mb-1">Select Time</label>
+                          <select
+                            value={selectedTime}
+                            onChange={(e) => {
+                              setSelectedTime(e.target.value);
+                              setShowETAError(false);
+                            }}
+                            className={`w-full bg-white/20 border border-white/30 rounded-md px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-white/50 ${
+                              showETAError && !selectedTime ? 'border-red-500 animate-pulse' : ''
+                            }`}
+                            disabled={isProcessing || !selectedDate}
+                          >
+                            <option value="" className="bg-[#294a46]">Choose a time</option>
+                            {getTimeSlots().map((slot) => (
+                              <option key={slot.value} value={slot.value} className="bg-[#294a46]">
+                                {slot.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                       
                       {/* Error message */}
                       {showETAError && (!selectedDate || !selectedTime) && (
-                        <p className="text-red-500 text-sm mt-1 animate-pulse">
+                        <p className="text-red-500 text-sm mt-2 animate-pulse">
                           Please select both date and time
                         </p>
                       )}
