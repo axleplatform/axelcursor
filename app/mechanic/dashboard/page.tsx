@@ -412,53 +412,95 @@ export default function MechanicDashboard() {
     loadMechanicProfile();
   }, []);
 
-  // Handle submitting a quote
+  // Add debug function for mechanic profile
+  const debugMechanicProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log('=== MECHANIC PROFILE DEBUG ===');
+    console.log('1. Current auth user ID:', user?.id);
+    
+    // Check if profile exists
+    const { data: profile, error } = await supabase
+      .from('mechanic_profiles')
+      .select('*')
+      .eq('user_id', user?.id);
+    
+    console.log('2. Profile query result:', { profile, error });
+    
+    if (!profile || profile.length === 0) {
+      console.error('❌ NO MECHANIC PROFILE FOUND FOR USER');
+      showNotification('No mechanic profile found. Please complete your profile setup.', 'error');
+      // Redirect to profile setup
+      router.push('/onboarding-mechanic-1');
+      return null;
+    }
+    
+    console.log('3. Mechanic profile ID:', profile[0].id);
+    console.log('4. Full profile:', profile[0]);
+    
+    return profile[0];
+  };
+
+  // Add function to create mechanic profile if needed
+  const createMechanicProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const { data: newProfile, error } = await supabase
+      .from('mechanic_profiles')
+      .insert({
+        user_id: user?.id,
+        first_name: user?.user_metadata?.first_name || 'Unknown',
+        last_name: user?.user_metadata?.last_name || 'Mechanic',
+        status: 'active'
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Failed to create mechanic profile:', error);
+      return null;
+    }
+    
+    console.log('Created new mechanic profile:', newProfile);
+    return newProfile;
+  };
+
+  // Update handleSubmitQuote with debugging
   const handleSubmitQuote = async (appointmentId: string, price: number, eta: string, notes?: string) => {
     try {
       setIsProcessing(true);
-
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current user ID:', user?.id);
-      
-      if (!user) {
-        console.error('No authenticated user found');
-        toast({
-          title: "Error",
-          description: "Please log in to submit a quote.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Fetch mechanic profile
-      const { data: mechanicProfile, error: profileError } = await supabase
-        .from('mechanic_profiles')
-        .select('id, user_id')
-        .eq('user_id', user.id)
-        .single();
-      
-      console.log('Mechanic profile lookup:', {
-        profile: mechanicProfile,
-        error: profileError
+      console.log('=== QUOTE SUBMISSION DEBUG ===');
+      console.log('Starting quote submission with:', {
+        appointmentId,
+        price,
+        eta,
+        notes
       });
-      
-      if (profileError || !mechanicProfile) {
-        console.error('Mechanic profile verification failed:', profileError);
-        toast({
-          title: "Error",
-          description: "Mechanic profile not found. Please complete your profile.",
-          variant: "destructive",
-        });
-        return;
+
+      // Debug and get mechanic profile
+      const mechanicProfile = await debugMechanicProfile();
+      if (!mechanicProfile) {
+        console.log('Attempting to create new mechanic profile...');
+        const newProfile = await createMechanicProfile();
+        if (!newProfile) {
+          throw new Error('Failed to create mechanic profile');
+        }
+        mechanicProfile = newProfile;
       }
+      
+      // Log what we're about to submit
+      console.log('Quote submission details:', {
+        mechanicId: mechanicProfile.id,
+        appointmentId,
+        price,
+        eta
+      });
 
       // Validate ETA selection
       if (!selectedDate || !selectedTime) {
         setShowETAError(true);
         toast({
           title: "Error",
-          description: "Please select both date and time for when you can complete the job.",
+          description: "Please select both date and time for when you can show up.",
           variant: "destructive",
         });
         return;
@@ -479,7 +521,7 @@ export default function MechanicDashboard() {
 
       // Submit quote with verified mechanic ID and ISO timestamp
       const { success, error } = await createOrUpdateQuote(
-        mechanicProfile.id, // Use profile.id directly
+        mechanicProfile.id,
         appointmentId,
         price,
         etaDateTime.toISOString(),

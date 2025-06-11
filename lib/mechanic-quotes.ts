@@ -51,27 +51,33 @@ export async function createOrUpdateQuote(
   mechanicId: string,
   appointmentId: string,
   price: number,
-  eta: string, // This is now an ISO timestamp
+  eta: string,
   notes?: string
 ): Promise<{ success: boolean; error?: string }> {
-  try {
-    console.log('Creating/updating quote with:', {
-      mechanicId,
-      appointmentId,
-      price,
-      eta,
-      notes
-    });
+  console.log('=== CREATE/UPDATE QUOTE DEBUG ===');
+  console.log('Received quote data:', {
+    mechanicId,
+    appointmentId,
+    price,
+    eta,
+    notes
+  });
 
+  try {
     // Verify mechanic profile exists
     const { data: mechanicProfile, error: mechanicError } = await supabase
       .from('mechanic_profiles')
-      .select('id')
+      .select('id, user_id')
       .eq('id', mechanicId)
       .single();
 
+    console.log('Mechanic profile verification:', {
+      profile: mechanicProfile,
+      error: mechanicError
+    });
+
     if (mechanicError || !mechanicProfile) {
-      console.error('Mechanic profile verification failed:', mechanicError);
+      console.error('❌ Mechanic profile verification failed:', mechanicError);
       return { success: false, error: 'Mechanic profile not found' };
     }
 
@@ -82,14 +88,19 @@ export async function createOrUpdateQuote(
       .eq('id', appointmentId)
       .single();
 
+    console.log('Appointment verification:', {
+      appointment,
+      error: appointmentError
+    });
+
     if (appointmentError || !appointment) {
-      console.error('Appointment verification failed:', appointmentError);
+      console.error('❌ Appointment verification failed:', appointmentError);
       return { success: false, error: 'Appointment not found' };
     }
 
     if (appointment.status !== 'pending') {
-      console.error('Invalid appointment status:', appointment.status);
-      return { success: false, error: 'Appointment is not in a valid state for quotes' };
+      console.error('❌ Invalid appointment status:', appointment.status);
+      return { success: false, error: `Appointment is ${appointment.status}` };
     }
 
     // Check if quote already exists
@@ -100,47 +111,71 @@ export async function createOrUpdateQuote(
       .eq('appointment_id', appointmentId)
       .single();
 
-    if (quoteError && quoteError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-      console.error('Error checking for existing quote:', quoteError);
-      return { success: false, error: 'Failed to check for existing quote' };
-    }
+    console.log('Existing quote check:', {
+      quote: existingQuote,
+      error: quoteError
+    });
 
-    // Create or update quote
-    const quoteData = {
-      mechanic_id: mechanicId,
-      appointment_id: appointmentId,
-      price,
-      eta: new Date(eta).toISOString(), // Ensure proper ISO format
-      notes,
-      status: 'pending'
-    };
-
+    let result;
     if (existingQuote) {
       // Update existing quote
-      const { error: updateError } = await supabase
+      console.log('Updating existing quote:', existingQuote.id);
+      const { data: updatedQuote, error: updateError } = await supabase
         .from('mechanic_quotes')
-        .update(quoteData)
-        .eq('id', existingQuote.id);
+        .update({
+          price,
+          eta: new Date(eta).toISOString(),
+          notes: notes || '',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingQuote.id)
+        .select()
+        .single();
+
+      console.log('Quote update result:', {
+        quote: updatedQuote,
+        error: updateError
+      });
 
       if (updateError) {
-        console.error('Error updating quote:', updateError);
+        console.error('❌ Quote update failed:', updateError);
         return { success: false, error: 'Failed to update quote' };
       }
+
+      result = updatedQuote;
     } else {
       // Create new quote
-      const { error: insertError } = await supabase
+      console.log('Creating new quote');
+      const { data: newQuote, error: insertError } = await supabase
         .from('mechanic_quotes')
-        .insert(quoteData);
+        .insert({
+          mechanic_id: mechanicId,
+          appointment_id: appointmentId,
+          price,
+          eta: new Date(eta).toISOString(),
+          notes: notes || '',
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      console.log('Quote creation result:', {
+        quote: newQuote,
+        error: insertError
+      });
 
       if (insertError) {
-        console.error('Error creating quote:', insertError);
+        console.error('❌ Quote creation failed:', insertError);
         return { success: false, error: 'Failed to create quote' };
       }
+
+      result = newQuote;
     }
 
+    console.log('✅ Quote operation successful:', result);
     return { success: true };
   } catch (error) {
-    console.error('Error in createOrUpdateQuote:', error);
+    console.error('❌ Unexpected error in createOrUpdateQuote:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
