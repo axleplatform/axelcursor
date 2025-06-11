@@ -329,80 +329,123 @@ export default function MechanicDashboard() {
     }
   }, [mechanicId])
 
+  // Add useEffect to load mechanic profile on component mount
+  useEffect(() => {
+    const loadMechanicProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error('No authenticated user found');
+          return;
+        }
+
+        console.log('Loading mechanic profile for user:', user.id);
+        
+        const { data: profile, error: profileError } = await supabase
+          .from('mechanic_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error loading mechanic profile:', profileError);
+          return;
+        }
+
+        if (!profile) {
+          console.error('No mechanic profile found for user:', user.id);
+          return;
+        }
+
+        console.log('Mechanic profile loaded:', profile);
+        setMechanicId(profile.id);
+      } catch (error) {
+        console.error('Error in loadMechanicProfile:', error);
+      }
+    };
+
+    loadMechanicProfile();
+  }, []);
+
   // Handle submitting a quote
-  const handleSubmitQuote = async (appointmentId: string): Promise<boolean> => {
-    if (!mechanicId || !priceInput || Number.parseFloat(priceInput) <= 0) {
-      toast({
-        title: "Invalid price",
-        description: "Please enter a valid price",
-        variant: "destructive",
-      })
-      return false
-    }
-
-    const price = Number.parseFloat(priceInput)
-    
-    // Validate price range
-    if (price < 10 || price > 10000) {
-      toast({
-        title: "Invalid price range",
-        description: "Price must be between $10 and $10,000",
-        variant: "destructive",
-      })
-      return false
-    }
-
-    setIsProcessing(true)
-
+  const handleSubmitQuote = async (appointmentId: string, price: number, eta: string, notes?: string) => {
     try {
-      // Calculate ETA timestamp
-      const etaDate = new Date()
-      etaDate.setHours(etaDate.getHours() + parseInt(etaInput))
-      const etaTimestamp = etaDate.toISOString()
+      setIsProcessing(true);
 
+      // Debug logging
+      console.log('Debug info:', {
+        mechanicId,
+        appointmentId,
+        price,
+        eta,
+        notes,
+        currentUser: (await supabase.auth.getUser()).data.user?.id
+      });
+
+      // Verify mechanicId is set
+      if (!mechanicId) {
+        console.error('ERROR: mechanicId is undefined or null');
+        toast({
+          title: "Error",
+          description: "Mechanic profile not found. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verify mechanic profile exists
+      const { data: mechanicProfile, error: profileError } = await supabase
+        .from('mechanic_profiles')
+        .select('*')
+        .eq('id', mechanicId)
+        .single();
+
+      console.log('Mechanic profile verification:', {
+        profile: mechanicProfile,
+        error: profileError
+      });
+
+      if (profileError || !mechanicProfile) {
+        console.error('Mechanic profile verification failed:', profileError);
+        toast({
+          title: "Error",
+          description: "Could not verify mechanic profile. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Submit quote with verified mechanic ID
       const { success, error } = await createOrUpdateQuote(
         mechanicId,
         appointmentId,
         price,
-        etaTimestamp,
-        "" // Default notes
-      )
+        eta,
+        notes
+      );
 
       if (!success) {
-        throw new Error(error)
+        throw new Error(error);
       }
 
-      // Update local state - remove from available appointments
-      setAvailableAppointments((prev: Appointment[]) => prev.filter((a: Appointment) => a.id !== appointmentId))
-
-      // Reset inputs
-      setPriceInput("")
-      setEtaInput("2") // Reset to default
-
-      // Show success message
       toast({
-        title: "Quote submitted",
-        description: `Your quote of $${price} has been submitted`,
-      })
+        title: "Success",
+        description: "Quote submitted successfully!",
+      });
 
-      // Move to next available appointment if there are more
-      if (availableAppointments.length > 1) {
-        setCurrentAvailableIndex((prev: number) => (prev >= availableAppointments.length - 1 ? 0 : prev + 1))
-      }
-
-      return true
-    } catch (error: any) {
-      console.error("Error submitting quote:", error)
+      // Refresh appointments after successful quote
+      await fetchInitialAppointments();
+    } catch (error) {
+      console.error("Error submitting quote:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to submit quote. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to submit quote. Please try again.",
         variant: "destructive",
-      })
-      return false
+      });
     } finally {
-      setIsProcessing(false)
+      setIsProcessing(false);
     }
-  }
+  };
 
   // Handle skipping an appointment
   const handleSkipAppointment = async (appointment: Appointment) => {
@@ -884,7 +927,7 @@ export default function MechanicDashboard() {
                     {/* Action Buttons */}
                     <div className="flex gap-3">
                       <button
-                        onClick={() => handleSubmitQuote(availableAppointments[currentAvailableIndex].id)}
+                        onClick={() => handleSubmitQuote(availableAppointments[currentAvailableIndex].id, Number.parseFloat(priceInput), etaInput)}
                         disabled={isProcessing || !priceInput || Number.parseFloat(priceInput) <= 0}
                         className="flex-1 bg-white text-[#294a46] font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-gray-100 hover:shadow-md active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed"
                       >
