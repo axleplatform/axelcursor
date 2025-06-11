@@ -70,7 +70,7 @@ export default function MechanicDashboard() {
   const [isAppointmentsLoading, setIsAppointmentsLoading] = useState(true)
   const [currentAvailableIndex, setCurrentAvailableIndex] = useState(0)
   const [priceInput, setPriceInput] = useState<string>("")
-  const [etaInput, setEtaInput] = useState<string>("2") // Default to 2 hours
+  const [selectedDateTime, setSelectedDateTime] = useState<string>("")
   const [isProcessing, setIsProcessing] = useState(false)
 
   // Add notification state at the top of the component
@@ -80,6 +80,46 @@ export default function MechanicDashboard() {
   const showNotification = (message: string, type: 'success' | 'error' = 'error') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
+  };
+
+  // Generate available time slots for the next 7 days
+  const generateTimeSlots = () => {
+    const slots = [];
+    const now = new Date();
+    
+    // For the next 7 days
+    for (let day = 0; day < 7; day++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() + day);
+      
+      // Set to start of day
+      date.setHours(8, 0, 0, 0); // Start at 8 AM
+      
+      // Generate 15-minute slots from 8 AM to 6 PM
+      for (let hour = 8; hour < 18; hour++) {
+        for (let minute = 0; minute < 60; minute += 15) {
+          const slot = new Date(date);
+          slot.setHours(hour, minute, 0, 0);
+          
+          // Only add future slots
+          if (slot > now) {
+            slots.push({
+              value: slot.toISOString(),
+              label: slot.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+              }) + ' at ' + slot.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit' 
+              })
+            });
+          }
+        }
+      }
+    }
+    
+    return slots;
   };
 
   // Extract fetchInitialAppointments to be accessible throughout the component
@@ -400,6 +440,17 @@ export default function MechanicDashboard() {
         return;
       }
 
+      // Verify date/time is selected
+      if (!eta) {
+        console.error('ERROR: No date/time selected');
+        toast({
+          title: "Error",
+          description: "Please select when you can complete the job.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Verify mechanic profile exists and matches current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -431,12 +482,12 @@ export default function MechanicDashboard() {
         return;
       }
 
-      // Submit quote with verified mechanic ID
+      // Submit quote with verified mechanic ID and ISO timestamp
       const { success, error } = await createOrUpdateQuote(
-        mechanicId, // This is the correct ID from mechanic_profiles.id
+        mechanicId,
         appointmentId,
         price,
-        eta,
+        eta, // This is now an ISO timestamp
         notes
       );
 
@@ -448,6 +499,10 @@ export default function MechanicDashboard() {
         title: "Success",
         description: "Quote submitted successfully!",
       });
+
+      // Reset form
+      setPriceInput("");
+      setSelectedDateTime("");
 
       // Refresh appointments after successful quote
       await fetchInitialAppointments();
@@ -926,24 +981,23 @@ export default function MechanicDashboard() {
                       </label>
                       <select
                         id="eta"
-                        value={etaInput}
-                        onChange={(e: ChangeEvent<HTMLSelectElement>) => setEtaInput(e.target.value)}
+                        value={selectedDateTime}
+                        onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedDateTime(e.target.value)}
                         className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-white/50"
                         disabled={isProcessing}
                       >
-                        <option value="1">1 hour</option>
-                        <option value="2">2 hours</option>
-                        <option value="3">3 hours</option>
-                        <option value="4">4 hours</option>
-                        <option value="8">8 hours</option>
-                        <option value="24">1 day</option>
+                        {generateTimeSlots().map((slot) => (
+                          <option key={slot.value} value={slot.value}>
+                            {slot.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
                     {/* Action Buttons */}
                     <div className="flex gap-3">
                       <button
-                        onClick={() => handleSubmitQuote(availableAppointments[currentAvailableIndex].id, Number.parseFloat(priceInput), etaInput)}
+                        onClick={() => handleSubmitQuote(availableAppointments[currentAvailableIndex].id, Number.parseFloat(priceInput), selectedDateTime)}
                         disabled={isProcessing || !priceInput || Number.parseFloat(priceInput) <= 0}
                         className="flex-1 bg-white text-[#294a46] font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-gray-100 hover:shadow-md active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed"
                       >

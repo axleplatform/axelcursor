@@ -51,7 +51,7 @@ export async function createOrUpdateQuote(
   mechanicId: string,
   appointmentId: string,
   price: number,
-  eta: string,
+  eta: string, // This is now an ISO timestamp
   notes?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -64,21 +64,21 @@ export async function createOrUpdateQuote(
     });
 
     // Verify mechanic profile exists
-    const { data: mechanicProfile, error: profileError } = await supabase
+    const { data: mechanicProfile, error: mechanicError } = await supabase
       .from('mechanic_profiles')
       .select('id')
       .eq('id', mechanicId)
       .single();
 
-    if (profileError || !mechanicProfile) {
-      console.error('Mechanic profile verification failed:', profileError);
+    if (mechanicError || !mechanicProfile) {
+      console.error('Mechanic profile verification failed:', mechanicError);
       return { success: false, error: 'Mechanic profile not found' };
     }
 
-    // Verify appointment exists and is pending
+    // Verify appointment exists and is in a valid state
     const { data: appointment, error: appointmentError } = await supabase
       .from('appointments')
-      .select('status')
+      .select('id, status')
       .eq('id', appointmentId)
       .single();
 
@@ -88,8 +88,8 @@ export async function createOrUpdateQuote(
     }
 
     if (appointment.status !== 'pending') {
-      console.error('Appointment is not pending:', appointment.status);
-      return { success: false, error: 'Appointment is not pending' };
+      console.error('Invalid appointment status:', appointment.status);
+      return { success: false, error: 'Appointment is not in a valid state for quotes' };
     }
 
     // Check if quote already exists
@@ -100,21 +100,20 @@ export async function createOrUpdateQuote(
       .eq('appointment_id', appointmentId)
       .single();
 
-    if (quoteError && quoteError.code !== 'PGRST116') {
-      console.error('Error checking existing quote:', quoteError);
-      return { success: false, error: 'Failed to check existing quote' };
+    if (quoteError && quoteError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+      console.error('Error checking for existing quote:', quoteError);
+      return { success: false, error: 'Failed to check for existing quote' };
     }
 
+    // Create or update quote
     const quoteData = {
-      mechanic_id: mechanicId, // This is the correct ID from mechanic_profiles.id
+      mechanic_id: mechanicId,
       appointment_id: appointmentId,
-      price: price,
-      eta: eta,
-      notes: notes || '',
+      price,
+      eta: new Date(eta).toISOString(), // Ensure proper ISO format
+      notes,
       status: 'pending'
     };
-
-    console.log('Quote data to be inserted/updated:', quoteData);
 
     if (existingQuote) {
       // Update existing quote
