@@ -52,80 +52,98 @@ export async function createOrUpdateQuote(
   appointmentId: string,
   price: number,
   eta: string,
-  notes: string
+  notes?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // First, check if the appointment is still available for quoting
+    // Debug: Log quote creation attempt
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log('Attempting to create quote with:', {
+      mechanic_id: mechanicId,
+      appointment_id: appointmentId,
+      price: price,
+      eta: eta,
+      notes: notes,
+      currentUser: user?.id
+    });
+
+    // Verify mechanic profile ownership
+    const { data: profile, error: profileError } = await supabase
+      .from('mechanic_profiles')
+      .select('id')
+      .eq('id', mechanicId)
+      .eq('user_id', user?.id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('Mechanic profile verification failed:', profileError);
+      throw new Error('Unauthorized: Mechanic profile not found or not owned by user');
+    }
+
+    // Check if appointment exists and is in a valid state
     const { data: appointment, error: appointmentError } = await supabase
-      .from("appointments")
-      .select("status")
-      .eq("id", appointmentId)
-      .single()
+      .from('appointments')
+      .select('status')
+      .eq('id', appointmentId)
+      .single();
 
     if (appointmentError) {
-      console.error("Error checking appointment status:", appointmentError)
-      return { success: false, error: "Failed to check appointment status" }
+      console.error('Appointment check failed:', appointmentError);
+      throw new Error('Appointment not found');
     }
 
-    if (!appointment || appointment.status !== "pending") {
-      return { success: false, error: "Appointment is no longer available for quoting" }
+    if (appointment.status !== 'pending') {
+      throw new Error('Cannot submit quote for appointment that is not pending');
     }
 
-    // Check if mechanic already has a quote for this appointment
+    // Check if quote already exists
     const { data: existingQuote, error: quoteError } = await supabase
-      .from("mechanic_quotes")
-      .select("id")
-      .eq("mechanic_id", mechanicId)
-      .eq("appointment_id", appointmentId)
-      .single()
+      .from('mechanic_quotes')
+      .select('id')
+      .eq('mechanic_id', mechanicId)
+      .eq('appointment_id', appointmentId)
+      .single();
 
-    if (quoteError && quoteError.code !== "PGRST116") {
-      console.error("Error checking existing quote:", quoteError)
-      return { success: false, error: "Failed to check existing quote" }
+    if (quoteError && quoteError.code !== 'PGRST116') {
+      console.error('Quote check failed:', quoteError);
+      throw quoteError;
     }
 
-    const now = new Date().toISOString()
-
+    let result;
     if (existingQuote) {
       // Update existing quote
-      const { error: updateError } = await supabase
-        .from("mechanic_quotes")
+      result = await supabase
+        .from('mechanic_quotes')
         .update({
           price,
           eta,
           notes,
-          status: "pending",
-          updated_at: now
+          updated_at: new Date().toISOString(),
         })
-        .eq("id", existingQuote.id)
-
-      if (updateError) {
-        console.error("Error updating quote:", updateError)
-        return { success: false, error: "Failed to update quote" }
-      }
+        .eq('id', existingQuote.id);
     } else {
       // Create new quote
-      const { error: insertError } = await supabase
-        .from("mechanic_quotes")
-        .insert({
-          mechanic_id: mechanicId,
-          appointment_id: appointmentId,
-          price,
-          eta,
-          notes,
-          status: "pending"
-        })
-
-      if (insertError) {
-        console.error("Error creating quote:", insertError)
-        return { success: false, error: "Failed to create quote" }
-      }
+      result = await supabase.from('mechanic_quotes').insert({
+        mechanic_id: mechanicId,
+        appointment_id: appointmentId,
+        price,
+        eta,
+        notes,
+        status: 'pending',
+      });
     }
 
-    return { success: true }
-  } catch (err) {
-    console.error("Exception in createOrUpdateQuote:", err)
-    return { success: false, error: "An unexpected error occurred" }
+    if (result.error) {
+      console.error('Quote creation/update failed:', result.error);
+      throw result.error;
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in createOrUpdateQuote:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create or update quote',
+    };
   }
 }
 
