@@ -112,11 +112,10 @@ export default function PickMechanicPage() {
 
         if (error) throw error
 
-        // Get total number of active mechanics
+        // Get all mechanics (without active filter)
         const { data: totalMechanics, error: mechanicsError } = await supabase
           .from('mechanic_profiles')
           .select('id')
-          .filter('active', 'eq', true)
 
         if (mechanicsError) throw mechanicsError
 
