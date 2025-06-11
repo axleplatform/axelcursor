@@ -37,172 +37,179 @@ export default function PickMechanicPage() {
   const [notes, setNotes] = useState('')
   const [selectedAppointment, setSelectedAppointment] = useState(null)
 
+  // Add fallback for appointmentId from URL
   useEffect(() => {
-    if (!appointmentId) {
-      console.error('No appointment ID provided')
-      setError("No appointment ID provided")
+    const params = new URLSearchParams(window.location.search)
+    const id = params.get('appointmentId')
+    
+    if (id && !appointmentId) {
+      console.log('Setting appointmentId from URL:', id)
+      setAppointmentId(id)
+    }
+  }, [])
+
+  const fetchAppointmentData = async () => {
+    console.log('=== DEBUGGING APPOINTMENT FETCH ===')
+    
+    // Check URL params
+    const urlParams = new URLSearchParams(window.location.search)
+    const appointmentIdFromUrl = urlParams.get('appointmentId')
+    
+    console.log('Full URL:', window.location.href)
+    console.log('URL search params:', window.location.search)
+    console.log('Appointment ID from URL:', appointmentIdFromUrl)
+    console.log('Appointment ID in state:', appointmentId)
+    
+    if (!appointmentId && !appointmentIdFromUrl) {
+      setError('No appointment ID provided')
       setIsLoading(false)
       return
     }
+    
+    const idToUse = appointmentId || appointmentIdFromUrl
+    console.log('Using appointment ID:', idToUse)
 
-    const fetchAppointmentData = async () => {
-      try {
-        console.log('=== APPOINTMENT FETCH DEBUG ===')
-        console.log('Appointment ID:', appointmentId)
-        
-        // First, check if appointment exists with simple query
-        const { data: checkAppointment, error: checkError } = await supabase
-          .from('appointments')
-          .select('id, user_id, status')
-          .eq('id', appointmentId)
-        
-        console.log('Found appointments:', checkAppointment?.length)
-        
-        if (!checkAppointment || checkAppointment.length === 0) {
-          console.error('Appointment not found')
-          setError('Appointment not found')
-          return
-        }
-
-        // Verify the appointment belongs to the current user
-        const { data: { user } } = await supabase.auth.getUser()
-        if (checkAppointment[0].user_id !== user?.id) {
-          console.error('Appointment does not belong to current user')
-          setError('You do not have access to this appointment')
-          return
-        }
-
-        // Fetch appointment with vehicle info
-        const { data: appointmentData, error: appointmentError } = await supabase
-          .from('appointments')
-          .select(`
-            *,
-            vehicles(*)
-          `)
-          .eq('id', appointmentId)
-          .single()
-
-        if (appointmentError) {
-          console.error('Appointment fetch error:', appointmentError)
-          throw appointmentError
-        }
-
-        // Fetch quotes separately to avoid join multiplication
-        const { data: quotes, error: quotesError } = await supabase
-          .from('mechanic_quotes')
-          .select(`
-            *,
-            mechanic_profiles(
-              id,
-              first_name,
-              last_name,
-              profile_image_url,
-              bio,
-              expertise,
-              rating,
-              review_count,
-              years_of_experience
-            )
-          `)
-          .eq('appointment_id', appointmentId)
-
-        if (quotesError) {
-          console.error('Quotes fetch error:', quotesError)
-          throw quotesError
-        }
-
-        console.log('Fetched appointment:', appointmentData)
-        console.log('Fetched quotes:', quotes)
-
-        // Format the mechanics data from quotes
-        const formattedMechanics = quotes?.map(quote => {
-          const mechanic = quote.mechanic_profiles
-          console.log('Processing quote:', { quote, mechanic })
-          
-          if (!mechanic) {
-            console.warn('No mechanic profile found for quote:', quote)
-            return null
-          }
-          
-          return {
-            id: mechanic.id,
-            first_name: mechanic.first_name || "Unknown",
-            last_name: mechanic.last_name || "Mechanic",
-            profile_image_url: mechanic.profile_image_url,
-            metadata: {
-              ...mechanic.metadata,
-              expertise: mechanic.expertise,
-              years_of_experience: mechanic.years_of_experience
-            },
-            quote_id: quote.id,
-            price: quote.price,
-            eta: quote.eta,
-            rating: mechanic.rating || 0,
-            review_count: mechanic.review_count || 0,
-            status: quote.status,
-          }
-        }).filter(m => m !== null)
-
-        console.log('Formatted mechanics:', formattedMechanics)
-
-        setAppointment({
-          ...appointmentData,
-          mechanics: formattedMechanics
-        })
-        setMechanics(formattedMechanics)
-      } catch (error) {
-        console.error("Error fetching appointment data:", error)
-        setError("Failed to load appointment data")
-        toast({
-          title: "Error",
-          description: "Failed to load appointment data. Please try again.",
-          variant: "destructive",
-        })
-      } finally {
+    try {
+      // SIMPLEST QUERY - no joins at all
+      const { data: basicCheck, error: basicError, count } = await supabase
+        .from('appointments')
+        .select('*', { count: 'exact' })
+        .eq('id', idToUse)
+      
+      console.log('Basic query results:', {
+        data: basicCheck,
+        error: basicError,
+        count: count,
+        rowsReturned: basicCheck?.length
+      })
+      
+      if (!basicCheck || basicCheck.length === 0) {
+        setError('Appointment not found')
         setIsLoading(false)
+        return
       }
+      
+      if (basicCheck.length > 1) {
+        console.error('Multiple appointments found with same ID!')
+        setError('Data error - multiple appointments found')
+        setIsLoading(false)
+        return
+      }
+      
+      // Now we know we have exactly 1 appointment
+      const appointment = basicCheck[0]
+      
+      // Verify the appointment belongs to the current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (appointment.user_id !== user?.id) {
+        console.error('Appointment does not belong to current user')
+        setError('You do not have access to this appointment')
+        setIsLoading(false)
+        return
+      }
+      
+      // Get vehicle separately
+      const { data: vehicle, error: vehicleError } = await supabase
+        .from('vehicles')
+        .select('*')
+        .eq('id', appointment.vehicle_id)
+        .single()
+      
+      if (vehicleError) {
+        console.error('Vehicle fetch error:', vehicleError)
+        throw vehicleError
+      }
+      
+      // Get quotes separately
+      const { data: quotes, error: quotesError } = await supabase
+        .from('mechanic_quotes')
+        .select(`
+          *,
+          mechanic_profiles(
+            id,
+            first_name,
+            last_name,
+            profile_image_url,
+            bio,
+            expertise,
+            rating,
+            review_count,
+            years_of_experience
+          )
+        `)
+        .eq('appointment_id', appointment.id)
+      
+      if (quotesError) {
+        console.error('Quotes fetch error:', quotesError)
+        throw quotesError
+      }
+      
+      // Combine data
+      const fullAppointment = {
+        ...appointment,
+        vehicles: vehicle
+      }
+      
+      console.log('Final data:', {
+        appointment: fullAppointment,
+        quotes: quotes
+      })
+      
+      // Format the mechanics data from quotes
+      const formattedMechanics = quotes?.map(quote => {
+        const mechanic = quote.mechanic_profiles
+        console.log('Processing quote:', { quote, mechanic })
+        
+        if (!mechanic) {
+          console.warn('No mechanic profile found for quote:', quote)
+          return null
+        }
+        
+        return {
+          id: mechanic.id,
+          first_name: mechanic.first_name || "Unknown",
+          last_name: mechanic.last_name || "Mechanic",
+          profile_image_url: mechanic.profile_image_url,
+          metadata: {
+            ...mechanic.metadata,
+            expertise: mechanic.expertise,
+            years_of_experience: mechanic.years_of_experience
+          },
+          quote_id: quote.id,
+          price: quote.price,
+          eta: quote.eta,
+          rating: mechanic.rating || 0,
+          review_count: mechanic.review_count || 0,
+          status: quote.status,
+        }
+      }).filter(m => m !== null)
+      
+      console.log('Formatted mechanics:', formattedMechanics)
+      
+      setAppointment({
+        ...fullAppointment,
+        mechanics: formattedMechanics
+      })
+      setMechanics(formattedMechanics)
+    } catch (error) {
+      console.error("Error fetching appointment data:", error)
+      setError("Failed to load appointment data")
+      toast({
+        title: "Error",
+        description: "Failed to load appointment data. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
     }
+  }
 
-    fetchAppointmentData()
-
-    // Subscribe to changes
-    const quotesSubscription = supabase
-      .channel("mechanic-quotes-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "mechanic_quotes",
-          filter: `appointment_id=eq.${appointmentId}`,
-        },
-        () => {
-          fetchAppointmentData()
-        },
-      )
-      .subscribe()
-
-    const appointmentSubscription = supabase
-      .channel("appointment-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "appointments",
-          filter: `id=eq.${appointmentId}`,
-        },
-        () => {
-          fetchAppointmentData()
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(quotesSubscription)
-      supabase.removeChannel(appointmentSubscription)
+  // Call fetchAppointmentData when appointmentId changes
+  useEffect(() => {
+    if (appointmentId) {
+      fetchAppointmentData()
     }
-  }, [appointmentId, toast])
+  }, [appointmentId])
 
   const handleSelectMechanic = async (quoteId) => {
     try {
