@@ -76,10 +76,16 @@ export default function MechanicDashboard() {
   const [isProcessing, setIsProcessing] = useState(false)
 
   // Add notification state at the top of the component
-  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  const [notification, setNotification] = useState<{type: 'success' | 'error' | 'info' | 'skip', message: string} | null>(null);
+
+  // Add new state for quote editing
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+  const [updatePrice, setUpdatePrice] = useState<string>("");
+  const [updateDate, setUpdateDate] = useState<string>("");
+  const [updateTime, setUpdateTime] = useState<string>("");
 
   // Add showNotification function
-  const showNotification = (message: string, type: 'success' | 'error' = 'error') => {
+  const showNotification = (message: string, type: 'success' | 'error' | 'info' | 'skip' = 'error') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
   };
@@ -120,7 +126,7 @@ export default function MechanicDashboard() {
     return slots;
   };
 
-  // Extract fetchInitialAppointments to be accessible throughout the component
+  // Update fetchInitialAppointments function
   const fetchInitialAppointments = async () => {
     try {
       setIsAppointmentsLoading(true);
@@ -143,7 +149,9 @@ export default function MechanicDashboard() {
             id,
             mechanic_id,
             price,
-            created_at
+            eta,
+            created_at,
+            updated_at
           ),
           mechanic_skipped_appointments(
             mechanic_id
@@ -156,39 +164,33 @@ export default function MechanicDashboard() {
         throw new Error("Failed to fetch available appointments");
       }
 
-      // Filter available appointments: not skipped AND (no quote from me OR I quoted but wasn't selected)
+      // Filter available appointments: not skipped AND not quoted by me
       const availableAppointments = appointments?.filter(apt => {
         const skippedByMe = apt.mechanic_skipped_appointments?.some(
           skip => skip.mechanic_id === mechanicId
         );
-        const selectedMechanic = apt.selected_mechanic_id;
+        const quotedByMe = apt.mechanic_quotes?.some(
+          quote => quote.mechanic_id === mechanicId
+        );
         
-        // Show if: not skipped AND (no selected mechanic OR I wasn't selected)
-        return !skippedByMe && (!selectedMechanic || selectedMechanic !== mechanicId);
+        return !skippedByMe && !quotedByMe;
       }) || [];
 
-      console.log('📋 Available appointments after filtering:', availableAppointments.length);
-
-      // Get upcoming appointments: where THIS mechanic was selected by customer
-      const { data: upcomingData, error: upcomingError } = await supabase
-        .from('appointments')
-        .select('*, vehicles(*)')
-        .eq('selected_mechanic_id', mechanicId)
-        .in('status', ['confirmed', 'in_progress', 'pending_payment'])
-        .order('appointment_date', { ascending: true });
-
-      if (upcomingError) {
-        console.error("❌ Error fetching upcoming appointments:", upcomingError);
-        throw new Error("Failed to fetch upcoming appointments");
-      }
+      // Get upcoming appointments: where THIS mechanic has quoted
+      const upcomingAppointments = appointments?.filter(apt => {
+        const quotedByMe = apt.mechanic_quotes?.some(
+          quote => quote.mechanic_id === mechanicId
+        );
+        return quotedByMe;
+      }) || [];
 
       console.log('Initial appointments loaded:', {
         available: availableAppointments.length,
-        upcoming: upcomingData?.length || 0
+        upcoming: upcomingAppointments.length
       });
 
       setAvailableAppointments(availableAppointments);
-      setUpcomingAppointments(upcomingData || []);
+      setUpcomingAppointments(upcomingAppointments);
     } catch (error) {
       console.error("Error fetching initial appointments:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to load appointments";
@@ -703,7 +705,7 @@ export default function MechanicDashboard() {
       );
 
       // Show success message
-      showNotification('Appointment skipped successfully', 'success');
+      showNotification('Appointment skipped successfully', 'skip');
 
       // Refetch appointments to ensure UI is in sync
       await fetchInitialAppointments();
@@ -737,6 +739,45 @@ export default function MechanicDashboard() {
       setPriceInput("")
     }
   }
+
+  // Add handleUpdateQuote function
+  const handleUpdateQuote = async (appointmentId: string) => {
+    try {
+      const myQuote = upcomingAppointments
+        .find(apt => apt.id === appointmentId)
+        ?.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
+      
+      if (!myQuote) {
+        showNotification('Quote not found', 'error');
+        return;
+      }
+      
+      // Combine date and time
+      const [year, month, day] = updateDate.split('-');
+      const [hour, minute] = updateTime.split(':');
+      const newEta = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)).toISOString();
+      
+      const { error } = await supabase
+        .from('mechanic_quotes')
+        .update({
+          price: parseFloat(updatePrice),
+          eta: newEta,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', myQuote.id);
+      
+      if (error) {
+        throw error;
+      }
+
+      showNotification('Quote updated successfully', 'info');
+      await fetchInitialAppointments(); // Refresh data
+      setEditingQuoteId(null);
+    } catch (error) {
+      console.error('Error updating quote:', error);
+      showNotification('Failed to update quote', 'error');
+    }
+  };
 
   // Loading state
   if (isAuthLoading) {
@@ -787,8 +828,11 @@ export default function MechanicDashboard() {
       {/* Notification Component */}
       {notification && (
         <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-50 ${
-          notification.type === 'error' ? 'bg-red-500' : 'bg-green-500'
-        } text-white`}>
+          notification.type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
+          notification.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
+          notification.type === 'skip' ? 'bg-gray-50 text-gray-700 border border-gray-200' :
+          'bg-gray-50 text-gray-800 border border-gray-200'
+        }`}>
           {notification.message}
         </div>
       )}
@@ -821,7 +865,12 @@ export default function MechanicDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Column 1: Upcoming Appointments */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-6">Upcoming Appointments</h2>
+            <h2 className="text-2xl font-bold mb-4">
+              Upcoming Appointments
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                (Your quoted & confirmed jobs)
+              </span>
+            </h2>
             {isAppointmentsLoading ? (
               <div className="flex items-center justify-center h-[400px]">
                 <Loader2 className="h-8 w-8 animate-spin text-[#294a46]" />
@@ -831,17 +880,131 @@ export default function MechanicDashboard() {
                 <Clock className="h-16 w-16 mb-4 text-gray-400" />
                 <h3 className="text-xl font-medium mb-2">No Upcoming Appointments</h3>
                 <p className="text-gray-600">
-                  You don't have any upcoming appointments. New appointments will appear here when they're scheduled.
+                  You haven't quoted any appointments yet. New appointments will appear here when you submit a quote.
                 </p>
               </div>
             ) : (
-          <UpcomingAppointments
-            appointments={upcomingAppointments}
-            isLoading={isAppointmentsLoading}
-                onStart={handleStartAppointment}
-                onCancel={handleCancelAppointment}
-                onUpdatePrice={handleUpdatePrice}
-              />
+              <div className="space-y-4">
+                {upcomingAppointments.map((appointment) => {
+                  const myQuote = appointment.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
+                  const isSelected = appointment.selected_mechanic_id === mechanicId;
+                  
+                  return (
+                    <div key={appointment.id} className="border rounded-lg p-4 bg-white">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold">
+                            {appointment.vehicles?.year} {appointment.vehicles?.make} {appointment.vehicles?.model}
+                          </h3>
+                          <div className="flex items-center text-sm text-gray-600 mt-1">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            <span>{appointment.location}</span>
+                          </div>
+                        </div>
+                        <div className="bg-[#294a46] text-white px-3 py-1 rounded-md">
+                          <p className="text-lg font-bold">${myQuote?.price}</p>
+                        </div>
+                      </div>
+
+                      {/* Status indicator */}
+                      <div className="mt-2">
+                        {isSelected ? (
+                          <span className="text-green-600 bg-green-50 px-2 py-1 rounded text-sm">
+                            ✓ Customer selected you
+                          </span>
+                        ) : (
+                          <span className="text-yellow-600 bg-yellow-50 px-2 py-1 rounded text-sm">
+                            ⏳ Awaiting customer selection
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Show current quote */}
+                      {myQuote && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded">
+                          <p className="text-sm">Your quote: ${myQuote.price}</p>
+                          <p className="text-sm">ETA: {formatDate(myQuote.eta)}</p>
+                          
+                          {/* Update form - only show if not selected yet */}
+                          {!isSelected && (
+                            <div className="mt-3">
+                              {editingQuoteId === appointment.id ? (
+                                // Edit form
+                                <div className="space-y-2">
+                                  <input
+                                    type="number"
+                                    value={updatePrice}
+                                    onChange={(e) => setUpdatePrice(e.target.value)}
+                                    placeholder="New price"
+                                    className="w-full p-2 border rounded"
+                                  />
+                                  
+                                  {/* Date/time selectors */}
+                                  <select 
+                                    value={updateDate} 
+                                    onChange={(e) => setUpdateDate(e.target.value)}
+                                    className="w-full p-2 border rounded"
+                                  >
+                                    <option value="">Select date</option>
+                                    {getAvailableDates().map((date) => (
+                                      <option key={date.value} value={date.value}>
+                                        {date.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  
+                                  <select 
+                                    value={updateTime} 
+                                    onChange={(e) => setUpdateTime(e.target.value)}
+                                    className="w-full p-2 border rounded"
+                                  >
+                                    <option value="">Select time</option>
+                                    {getTimeSlots().map((slot) => (
+                                      <option key={slot.value} value={slot.value}>
+                                        {slot.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleUpdateQuote(appointment.id)}
+                                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                    >
+                                      Update Quote
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingQuoteId(null)}
+                                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                // Show edit button
+                                <button
+                                  onClick={() => {
+                                    setEditingQuoteId(appointment.id);
+                                    setUpdatePrice(myQuote.price.toString());
+                                    // Set current date/time values
+                                    const eta = new Date(myQuote.eta);
+                                    setUpdateDate(eta.toISOString().split('T')[0]);
+                                    setUpdateTime(eta.toTimeString().slice(0, 5));
+                                  }}
+                                  className="text-sm text-blue-600 hover:underline"
+                                >
+                                  Edit quote
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
 
@@ -850,8 +1013,12 @@ export default function MechanicDashboard() {
 
           {/* Column 3: Available Appointments */}
           <div className="bg-[#294a46] rounded-lg shadow-sm p-6 text-white">
-            <h2 className="text-xl font-semibold mb-6">Available Appointments</h2>
-
+            <h2 className="text-2xl font-bold mb-4">
+              Available Appointments
+              <span className="text-sm font-normal text-white/70 ml-2">
+                (New appointments to quote)
+              </span>
+            </h2>
             {isAppointmentsLoading ? (
               <div className="flex items-center justify-center h-[400px]">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
