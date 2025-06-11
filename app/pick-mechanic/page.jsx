@@ -89,17 +89,7 @@ export default function PickMechanicPage() {
         .from('mechanic_quotes')
         .select(`
           *,
-          mechanic_profiles(
-            id,
-            first_name,
-            last_name,
-            profile_image_url,
-            bio,
-            expertise,
-            rating,
-            review_count,
-            years_of_experience
-          )
+          mechanic_profiles(*)
         `)
         .eq('appointment_id', appointmentId)
         .order('created_at', { ascending: false })
@@ -128,14 +118,12 @@ export default function PickMechanicPage() {
           profile_image_url: mechanic.profile_image_url,
           metadata: {
             ...mechanic.metadata,
-            expertise: mechanic.expertise,
-            years_of_experience: mechanic.years_of_experience
+            rating: mechanic.rating || 0,
+            review_count: mechanic.review_count || 0
           },
           quote_id: quote.id,
           price: quote.price,
           eta: quote.eta,
-          rating: mechanic.rating || 0,
-          review_count: mechanic.review_count || 0,
           status: quote.status,
         }
       }).filter(m => m !== null)
