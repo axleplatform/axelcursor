@@ -70,7 +70,9 @@ export default function MechanicDashboard() {
   const [isAppointmentsLoading, setIsAppointmentsLoading] = useState(true)
   const [currentAvailableIndex, setCurrentAvailableIndex] = useState(0)
   const [priceInput, setPriceInput] = useState<string>("")
-  const [selectedDateTime, setSelectedDateTime] = useState<string>("")
+  const [selectedDate, setSelectedDate] = useState('')
+  const [selectedTime, setSelectedTime] = useState('')
+  const [showETAError, setShowETAError] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
 
   // Add notification state at the top of the component
@@ -82,43 +84,39 @@ export default function MechanicDashboard() {
     setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
   };
 
-  // Generate available time slots for the next 7 days
-  const generateTimeSlots = () => {
-    const slots = [];
-    const now = new Date();
+  // Generate available dates (next 7 days)
+  const getAvailableDates = () => {
+    const dates = [];
+    const today = new Date();
     
-    // For the next 7 days
-    for (let day = 0; day < 7; day++) {
-      const date = new Date(now);
-      date.setDate(date.getDate() + day);
-      
-      // Set to start of day
-      date.setHours(8, 0, 0, 0); // Start at 8 AM
-      
-      // Generate 15-minute slots from 8 AM to 6 PM
-      for (let hour = 8; hour < 18; hour++) {
-        for (let minute = 0; minute < 60; minute += 15) {
-          const slot = new Date(date);
-          slot.setHours(hour, minute, 0, 0);
-          
-          // Only add future slots
-          if (slot > now) {
-            slots.push({
-              value: slot.toISOString(),
-              label: slot.toLocaleDateString('en-US', { 
-                weekday: 'short', 
-                month: 'short', 
-                day: 'numeric' 
-              }) + ' at ' + slot.toLocaleTimeString('en-US', { 
-                hour: 'numeric', 
-                minute: '2-digit' 
-              })
-            });
-          }
-        }
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+      dates.push({
+        value: date.toISOString().split('T')[0],
+        label: date.toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          month: 'short', 
+          day: 'numeric' 
+        })
+      });
+    }
+    return dates;
+  };
+
+  // Generate time slots (8 AM to 6 PM, 15-minute increments)
+  const getTimeSlots = () => {
+    const slots = [];
+    for (let hour = 8; hour < 18; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const displayTime = new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+        slots.push({ value: time, label: displayTime });
       }
     }
-    
     return slots;
   };
 
@@ -419,75 +417,72 @@ export default function MechanicDashboard() {
     try {
       setIsProcessing(true);
 
-      // Debug logging
-      console.log('Debug info:', {
-        mechanicId,
-        appointmentId,
-        price,
-        eta,
-        notes,
-        currentUser: (await supabase.auth.getUser()).data.user?.id
-      });
-
-      // Verify mechanicId is set
-      if (!mechanicId) {
-        console.error('ERROR: mechanicId is undefined or null');
-        toast({
-          title: "Error",
-          description: "Mechanic profile not found. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Verify date/time is selected
-      if (!eta) {
-        console.error('ERROR: No date/time selected');
-        toast({
-          title: "Error",
-          description: "Please select when you can complete the job.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Verify mechanic profile exists and matches current user
+      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user ID:', user?.id);
+      
       if (!user) {
         console.error('No authenticated user found');
+        toast({
+          title: "Error",
+          description: "Please log in to submit a quote.",
+          variant: "destructive",
+        });
         return;
       }
 
+      // Fetch mechanic profile
       const { data: mechanicProfile, error: profileError } = await supabase
         .from('mechanic_profiles')
         .select('id, user_id')
-        .eq('id', mechanicId)
         .eq('user_id', user.id)
         .single();
-
-      console.log('Mechanic profile verification:', {
+      
+      console.log('Mechanic profile lookup:', {
         profile: mechanicProfile,
-        error: profileError,
-        mechanicId,
-        userId: user.id
+        error: profileError
       });
-
+      
       if (profileError || !mechanicProfile) {
         console.error('Mechanic profile verification failed:', profileError);
         toast({
           title: "Error",
-          description: "Could not verify mechanic profile. Please try again.",
+          description: "Mechanic profile not found. Please complete your profile.",
           variant: "destructive",
         });
         return;
       }
 
+      // Validate ETA selection
+      if (!selectedDate || !selectedTime) {
+        setShowETAError(true);
+        toast({
+          title: "Error",
+          description: "Please select both date and time for when you can complete the job.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Combine date and time
+      const [year, month, day] = selectedDate.split('-');
+      const [hour, minute] = selectedTime.split(':');
+      const etaDateTime = new Date(year, month - 1, day, hour, minute);
+      
+      console.log('Creating quote with:', {
+        mechanic_id: mechanicProfile.id,
+        appointment_id: appointmentId,
+        price,
+        eta: etaDateTime.toISOString(),
+        notes
+      });
+
       // Submit quote with verified mechanic ID and ISO timestamp
       const { success, error } = await createOrUpdateQuote(
-        mechanicId,
+        mechanicProfile.id, // Use profile.id directly
         appointmentId,
         price,
-        eta, // This is now an ISO timestamp
+        etaDateTime.toISOString(),
         notes
       );
 
@@ -502,7 +497,9 @@ export default function MechanicDashboard() {
 
       // Reset form
       setPriceInput("");
-      setSelectedDateTime("");
+      setSelectedDate("");
+      setSelectedTime("");
+      setShowETAError(false);
 
       // Refresh appointments after successful quote
       await fetchInitialAppointments();
@@ -974,30 +971,70 @@ export default function MechanicDashboard() {
                       </div>
                     </div>
 
-                    {/* ETA Input */}
+                    {/* ETA Selection */}
                     <div className="mb-6">
-                      <label htmlFor="eta" className="block text-sm font-medium mb-2">
-                        Estimated Time
+                      <label className="block text-sm font-medium mb-2">
+                        When can you complete this job? <span className="text-red-500">*</span>
                       </label>
-                      <select
-                        id="eta"
-                        value={selectedDateTime}
-                        onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedDateTime(e.target.value)}
-                        className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-white/50"
-                        disabled={isProcessing}
-                      >
-                        {generateTimeSlots().map((slot) => (
-                          <option key={slot.value} value={slot.value}>
-                            {slot.label}
-                          </option>
-                        ))}
-                      </select>
+                      
+                      {/* Date Selection */}
+                      <div className="mb-3">
+                        <label className="block text-xs text-white/70 mb-1">Select Date</label>
+                        <select
+                          value={selectedDate}
+                          onChange={(e) => {
+                            setSelectedDate(e.target.value);
+                            setShowETAError(false);
+                          }}
+                          className={`w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-white/50 ${
+                            showETAError && !selectedDate ? 'border-red-500 animate-pulse' : ''
+                          }`}
+                          disabled={isProcessing}
+                        >
+                          <option value="">Choose a date</option>
+                          {getAvailableDates().map((date) => (
+                            <option key={date.value} value={date.value}>
+                              {date.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      {/* Time Selection */}
+                      <div>
+                        <label className="block text-xs text-white/70 mb-1">Select Time</label>
+                        <select
+                          value={selectedTime}
+                          onChange={(e) => {
+                            setSelectedTime(e.target.value);
+                            setShowETAError(false);
+                          }}
+                          className={`w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-white/50 ${
+                            showETAError && !selectedTime ? 'border-red-500 animate-pulse' : ''
+                          }`}
+                          disabled={isProcessing || !selectedDate}
+                        >
+                          <option value="">Choose a time</option>
+                          {getTimeSlots().map((slot) => (
+                            <option key={slot.value} value={slot.value}>
+                              {slot.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      {/* Error message */}
+                      {showETAError && (!selectedDate || !selectedTime) && (
+                        <p className="text-red-500 text-sm mt-1 animate-pulse">
+                          Please select both date and time
+                        </p>
+                      )}
                     </div>
 
                     {/* Action Buttons */}
                     <div className="flex gap-3">
                       <button
-                        onClick={() => handleSubmitQuote(availableAppointments[currentAvailableIndex].id, Number.parseFloat(priceInput), selectedDateTime)}
+                        onClick={() => handleSubmitQuote(availableAppointments[currentAvailableIndex].id, Number.parseFloat(priceInput), selectedDate + 'T' + selectedTime)}
                         disabled={isProcessing || !priceInput || Number.parseFloat(priceInput) <= 0}
                         className="flex-1 bg-white text-[#294a46] font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-gray-100 hover:shadow-md active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed"
                       >
