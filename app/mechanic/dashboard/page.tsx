@@ -84,6 +84,11 @@ export default function MechanicDashboard() {
   const [updateDate, setUpdateDate] = useState<string>("");
   const [updateTime, setUpdateTime] = useState<string>("");
 
+  // Add new state variables after the existing ones
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [price, setPrice] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
+
   // Add showNotification function
   const showNotification = (message: string, type: 'success' | 'error' | 'info' | 'skip' = 'error') => {
     setNotification({ message, type });
@@ -740,7 +745,7 @@ export default function MechanicDashboard() {
     }
   }
 
-  // Add handleUpdateQuote function
+  // Update handleUpdateQuote function
   const handleUpdateQuote = async (appointmentId: string) => {
     try {
       const myQuote = upcomingAppointments
@@ -753,15 +758,16 @@ export default function MechanicDashboard() {
       }
       
       // Combine date and time
-      const [year, month, day] = updateDate.split('-');
-      const [hour, minute] = updateTime.split(':');
-      const newEta = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)).toISOString();
+      const [year, month, day] = selectedDate.split('-');
+      const [hour, minute] = selectedTime.split(':');
+      const etaDateTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)).toISOString();
       
       const { error } = await supabase
         .from('mechanic_quotes')
         .update({
-          price: parseFloat(updatePrice),
-          eta: newEta,
+          price: parseFloat(price),
+          eta: etaDateTime,
+          notes: notes || '',
           updated_at: new Date().toISOString()
         })
         .eq('id', myQuote.id);
@@ -771,8 +777,13 @@ export default function MechanicDashboard() {
       }
 
       showNotification('Quote updated successfully', 'info');
-      await fetchInitialAppointments(); // Refresh data
-      setEditingQuoteId(null);
+      await fetchInitialAppointments();
+      setSelectedAppointment(null);
+      // Reset form
+      setPrice('');
+      setSelectedDate('');
+      setSelectedTime('');
+      setNotes('');
     } catch (error) {
       console.error('Error updating quote:', error);
       showNotification('Failed to update quote', 'error');
@@ -890,113 +901,155 @@ export default function MechanicDashboard() {
                 {upcomingAppointments.map((appointment) => {
                   const myQuote = appointment.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
                   const isSelected = appointment.selected_mechanic_id === mechanicId;
+                  const isEditing = selectedAppointment?.id === appointment.id;
                   
                   return (
                     <div key={appointment.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                      {/* Price at the top (if quoted) */}
-                      {myQuote && (
-                        <div className="text-2xl font-bold text-green-600 mb-4">
-                          ${myQuote.price}
-                        </div>
-                      )}
+                      {/* Service type and vehicle info */}
+                      <h3 className="text-lg font-semibold mb-2">{appointment.service_type}</h3>
+                      <p className="text-gray-600 mb-1">
+                        {appointment.vehicles?.year} {appointment.vehicles?.make} {appointment.vehicles?.model}
+                      </p>
+                      <p className="text-gray-600 mb-4">{appointment.location}</p>
                       
-                      {/* All appointment information below */}
-                      <div className="space-y-2">
-                        <p className="font-semibold">{appointment.service_type}</p>
-                        <p className="text-gray-600">{appointment.vehicles?.make} {appointment.vehicles?.model}</p>
-                        <p className="text-gray-600">Year: {appointment.vehicles?.year}</p>
-                        <p className="text-gray-600">Location: {appointment.location}</p>
-                        <p className="text-gray-600">Time: {formatDate(appointment.scheduled_time)}</p>
-                        
-                        {/* Status indicator */}
-                        <div className="mt-3">
-                          {isSelected ? (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                              ✓ Customer selected you
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
-                              ⏳ Awaiting customer selection
-                            </span>
-                          )}
-                        </div>
-                        
-                        {/* Edit quote option (only if not selected) */}
-                        {!isSelected && myQuote && (
-                          <div className="mt-4 pt-4 border-t border-gray-200">
-                            <button
-                              onClick={() => {
-                                setEditingQuoteId(appointment.id);
-                                setUpdatePrice(myQuote.price.toString());
-                                // Set date/time from existing quote
-                                const eta = new Date(myQuote.eta);
-                                setUpdateDate(eta.toISOString().split('T')[0]);
-                                setUpdateTime(eta.toTimeString().slice(0, 5));
-                              }}
-                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                            >
-                              Edit quote
-                            </button>
-                          </div>
+                      {/* Status indicator */}
+                      <div className="mb-4">
+                        {isSelected ? (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                            ✓ Customer selected you
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+                            ⏳ Awaiting customer selection
+                          </span>
                         )}
                       </div>
                       
-                      {/* Edit form (if editing) */}
-                      {editingQuoteId === appointment.id && (
-                        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                          <div className="space-y-2">
-                            <input
-                              type="number"
-                              value={updatePrice}
-                              onChange={(e) => setUpdatePrice(e.target.value)}
-                              placeholder="New price"
-                              className="w-full p-2 border rounded"
-                            />
-                            
-                            {/* Date/time selectors */}
-                            <select 
-                              value={updateDate} 
-                              onChange={(e) => setUpdateDate(e.target.value)}
-                              className="w-full p-2 border rounded"
-                            >
-                              <option value="">Select date</option>
-                              {getAvailableDates().map((date) => (
-                                <option key={date.value} value={date.value}>
-                                  {date.label}
-                                </option>
-                              ))}
-                            </select>
-                            
-                            <select 
-                              value={updateTime} 
-                              onChange={(e) => setUpdateTime(e.target.value)}
-                              className="w-full p-2 border rounded"
-                            >
-                              <option value="">Select time</option>
-                              {getTimeSlots().map((slot) => (
-                                <option key={slot.value} value={slot.value}>
-                                  {slot.label}
-                                </option>
-                              ))}
-                            </select>
-                            
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleUpdateQuote(appointment.id)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                              >
-                                Update Quote
-                              </button>
-                              <button
-                                onClick={() => setEditingQuoteId(null)}
-                                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
+                      {/* Price and Date/Time fields */}
+                      <div className="space-y-3 mb-4">
+                        {/* Price */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Your Quote Price
+                          </label>
+                          <input
+                            type="number"
+                            value={isEditing ? price : myQuote?.price || ''}
+                            onChange={(e) => setPrice(e.target.value)}
+                            disabled={!isEditing || isSelected}
+                            className={`w-full p-2 border rounded-md ${
+                              isEditing && !isSelected 
+                                ? 'border-blue-500 bg-white' 
+                                : 'border-gray-300 bg-gray-50 cursor-not-allowed'
+                            }`}
+                          />
+                        </div>
+                        
+                        {/* Date */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Available Date
+                          </label>
+                          <select
+                            value={isEditing ? selectedDate : myQuote?.eta?.split('T')[0] || ''}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            disabled={!isEditing || isSelected}
+                            className={`w-full p-2 border rounded-md ${
+                              isEditing && !isSelected 
+                                ? 'border-blue-500 bg-white' 
+                                : 'border-gray-300 bg-gray-50 cursor-not-allowed'
+                            }`}
+                          >
+                            {getAvailableDates().map((date) => (
+                              <option key={date.value} value={date.value}>
+                                {date.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        {/* Time */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Available Time
+                          </label>
+                          <select
+                            value={isEditing ? selectedTime : new Date(myQuote?.eta).toTimeString().slice(0,5) || ''}
+                            onChange={(e) => setSelectedTime(e.target.value)}
+                            disabled={!isEditing || isSelected}
+                            className={`w-full p-2 border rounded-md ${
+                              isEditing && !isSelected 
+                                ? 'border-blue-500 bg-white' 
+                                : 'border-gray-300 bg-gray-50 cursor-not-allowed'
+                            }`}
+                          >
+                            {getTimeSlots().map((slot) => (
+                              <option key={slot.value} value={slot.value}>
+                                {slot.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      
+                      {/* Notes field */}
+                      {isEditing && (
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Additional Notes
+                          </label>
+                          <textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-md"
+                            rows="2"
+                          />
                         </div>
                       )}
+                      
+                      {/* Action buttons */}
+                      <div className="flex gap-3">
+                        {!isSelected && (
+                          <>
+                            {isEditing ? (
+                              <>
+                                <button
+                                  onClick={() => handleUpdateQuote(appointment.id)}
+                                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                                >
+                                  Update Quote
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedAppointment(null);
+                                    setPrice('');
+                                    setSelectedDate('');
+                                    setSelectedTime('');
+                                    setNotes('');
+                                  }}
+                                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setSelectedAppointment(appointment);
+                                  setPrice(myQuote?.price.toString() || '');
+                                  const quoteDate = new Date(myQuote?.eta);
+                                  setSelectedDate(quoteDate.toISOString().split('T')[0]);
+                                  setSelectedTime(quoteDate.toTimeString().slice(0,5));
+                                  setNotes(myQuote?.notes || '');
+                                }}
+                                className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors"
+                              >
+                                Edit Quote
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

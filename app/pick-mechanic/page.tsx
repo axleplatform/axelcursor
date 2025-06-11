@@ -100,17 +100,38 @@ export default function PickMechanicPage() {
         setIsLoading(true)
         setError(null)
 
-        // Fetch appointment data
+        // Debug query to check quotes directly
+        const { data: debugQuotes, error: debugError } = await supabase
+          .from('mechanic_quotes')
+          .select(`
+            *,
+            mechanic_profiles(*)
+          `)
+          .eq('appointment_id', appointmentId)
+
+        console.log('Direct quotes query:', { debugQuotes, debugError })
+
+        // Fetch appointment data with quotes
         const { data, error } = await supabase
           .from("appointments")
           .select(`
             *,
-            vehicles(*)
+            vehicles(*),
+            mechanic_quotes!inner(
+              *,
+              mechanic_profiles!inner(*)
+            )
           `)
           .eq("id", appointmentId)
           .single()
 
-        if (error) throw error
+        if (error) {
+          console.error('Error fetching appointment:', error)
+          throw error
+        }
+
+        console.log('Fetched appointment:', data)
+        console.log('Mechanic quotes:', data?.mechanic_quotes)
 
         // Get all mechanics (without active filter)
         const { data: totalMechanics, error: mechanicsError } = await supabase
@@ -151,7 +172,41 @@ export default function PickMechanicPage() {
           return
         }
 
-        setAppointment(data)
+        // Format the mechanics data from quotes
+        const formattedMechanics = data.mechanic_quotes.map((quote: any) => {
+          const mechanic = quote.mechanic_profiles
+          console.log('Processing quote:', { quote, mechanic })
+          
+          if (!mechanic) {
+            console.warn('No mechanic profile found for quote:', quote)
+            return null
+          }
+          
+          return {
+            id: mechanic.id,
+            first_name: mechanic.first_name || "Unknown",
+            last_name: mechanic.last_name || "Mechanic",
+            profile_image_url: mechanic.profile_image_url,
+            metadata: {
+              ...mechanic.metadata,
+              expertise: mechanic.expertise,
+              years_of_experience: mechanic.years_of_experience
+            },
+            quote_id: quote.id,
+            price: quote.price,
+            eta: quote.eta,
+            rating: mechanic.rating || 0,
+            review_count: mechanic.review_count || 0,
+            status: quote.status,
+          }
+        }).filter((m): m is Mechanic => m !== null)
+
+        console.log('Formatted mechanics:', formattedMechanics)
+
+        setAppointment({
+          ...data,
+          mechanics: formattedMechanics
+        })
       } catch (error) {
         console.error("Error fetching appointment data:", error)
         setError("Failed to load appointment data")
@@ -168,6 +223,7 @@ export default function PickMechanicPage() {
     const fetchMechanicQuotes = async (appointmentId: string) => {
       try {
         setIsLoadingQuotes(true)
+        console.log('Fetching quotes for appointment:', appointmentId);
 
         // Get mechanics who have skipped this appointment
         const { data: skippedMechanics, error: skippedError } = await supabase
@@ -175,29 +231,43 @@ export default function PickMechanicPage() {
           .select('mechanic_id')
           .eq('appointment_id', appointmentId)
 
-        if (skippedError) throw skippedError
+        if (skippedError) {
+          console.error('Error fetching skipped mechanics:', skippedError);
+          throw skippedError;
+        }
+
+        console.log('Skipped mechanics:', skippedMechanics);
 
         // Get quotes from mechanics who haven't skipped
         const { data: quotes, error: quotesError } = await supabase
           .from('mechanic_quotes')
           .select(`
             *,
-            mechanic_profiles(
+            mechanic:mechanic_profiles(
               id,
               user_id,
-              full_name,
+              first_name,
+              last_name,
+              profile_image_url,
               bio,
               expertise,
               rating,
+              review_count,
               years_of_experience
             )
           `)
           .eq('appointment_id', appointmentId)
           .not('mechanic_id', 'in', skippedMechanics ? `(${skippedMechanics.map(s => s.mechanic_id).join(',')})` : '(null)')
 
-        if (quotesError) throw quotesError
+        if (quotesError) {
+          console.error('Error fetching quotes:', quotesError);
+          throw quotesError;
+        }
+
+        console.log('Fetched quotes:', quotes);
 
         if (!quotes || quotes.length === 0) {
+          console.log('No quotes found for appointment');
           setAppointment((prev: Appointment | null) =>
             prev
               ? {
@@ -211,14 +281,24 @@ export default function PickMechanicPage() {
         }
 
         const formattedMechanics = quotes.map((quote: MechanicQuote) => {
-          const mechanic = quote.mechanic
-          if (!mechanic) return null
+          const mechanic = quote.mechanic;
+          console.log('Processing quote:', { quote, mechanic });
+          
+          if (!mechanic) {
+            console.warn('No mechanic profile found for quote:', quote);
+            return null;
+          }
+          
           return {
             id: mechanic.id,
             first_name: mechanic.first_name || "Unknown",
             last_name: mechanic.last_name || "Mechanic",
             profile_image_url: mechanic.profile_image_url,
-            metadata: mechanic.metadata || {},
+            metadata: {
+              ...mechanic.metadata,
+              expertise: mechanic.expertise,
+              years_of_experience: mechanic.years_of_experience
+            },
             quote_id: quote.id,
             price: quote.price,
             eta: quote.eta,
@@ -227,6 +307,8 @@ export default function PickMechanicPage() {
             status: quote.status,
           }
         }).filter((m): m is Mechanic => m !== null)
+
+        console.log('Formatted mechanics:', formattedMechanics);
 
         setAppointment((prev: Appointment | null) =>
           prev
