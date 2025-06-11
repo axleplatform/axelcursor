@@ -126,22 +126,7 @@ export default function MechanicDashboard() {
       setIsAppointmentsLoading(true);
       console.log("🔍 Fetching initial appointments for mechanic:", mechanicId);
       
-      // First, get all appointments this mechanic has skipped
-      const { data: skippedAppointments, error: skipError } = await supabase
-        .from('mechanic_skipped_appointments')
-        .select('appointment_id')
-        .eq('mechanic_id', mechanicId);
-
-      if (skipError) {
-        console.error('❌ Error fetching skipped appointments:', skipError);
-        throw new Error('Failed to fetch skipped appointments');
-      }
-
-      // Extract just the appointment IDs
-      const skippedIds = skippedAppointments?.map(skip => skip.appointment_id) || [];
-      console.log('📋 Skipped appointment IDs:', skippedIds);
-
-      // Fetch ALL pending appointments with their quotes
+      // Fetch ALL pending appointments with related data
       const { data: appointments, error: appointmentError } = await supabase
         .from('appointments')
         .select(`
@@ -156,9 +141,11 @@ export default function MechanicDashboard() {
           ),
           mechanic_quotes(
             id,
+            mechanic_id,
             price,
-            eta,
-            status,
+            created_at
+          ),
+          mechanic_skipped_appointments(
             mechanic_id
           )
         `)
@@ -169,29 +156,25 @@ export default function MechanicDashboard() {
         throw new Error("Failed to fetch available appointments");
       }
 
-      // Filter out skipped appointments on the client side
-      const filteredAppointments = appointments?.filter(
-        apt => !skippedIds.includes(apt.id)
-      ) || [];
+      // Filter available appointments: not skipped AND (no quote from me OR I quoted but wasn't selected)
+      const availableAppointments = appointments?.filter(apt => {
+        const skippedByMe = apt.mechanic_skipped_appointments?.some(
+          skip => skip.mechanic_id === mechanicId
+        );
+        const selectedMechanic = apt.selected_mechanic_id;
+        
+        // Show if: not skipped AND (no selected mechanic OR I wasn't selected)
+        return !skippedByMe && (!selectedMechanic || selectedMechanic !== mechanicId);
+      }) || [];
 
-      console.log('📋 Available appointments after filtering:', filteredAppointments.length);
+      console.log('📋 Available appointments after filtering:', availableAppointments.length);
 
-      // Get upcoming appointments (including quoted ones)
+      // Get upcoming appointments: where THIS mechanic was selected by customer
       const { data: upcomingData, error: upcomingError } = await supabase
         .from('appointments')
-        .select(`
-          *,
-          vehicles(*),
-          mechanic_quotes(
-            id,
-            price,
-            eta,
-            status,
-            mechanic_id
-          )
-        `)
-        .eq('mechanic_id', mechanicId)
-        .in('status', ['confirmed', 'in_progress', 'pending_payment', 'pending'])
+        .select('*, vehicles(*)')
+        .eq('selected_mechanic_id', mechanicId)
+        .in('status', ['confirmed', 'in_progress', 'pending_payment'])
         .order('appointment_date', { ascending: true });
 
       if (upcomingError) {
@@ -200,12 +183,12 @@ export default function MechanicDashboard() {
       }
 
       console.log('Initial appointments loaded:', {
-        available: filteredAppointments.length,
+        available: availableAppointments.length,
         upcoming: upcomingData?.length || 0
       });
 
-      setAvailableAppointments(filteredAppointments)
-      setUpcomingAppointments(upcomingData || [])
+      setAvailableAppointments(availableAppointments);
+      setUpcomingAppointments(upcomingData || []);
     } catch (error) {
       console.error("Error fetching initial appointments:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to load appointments";
@@ -852,57 +835,13 @@ export default function MechanicDashboard() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {upcomingAppointments.map((appointment) => (
-                  <Card key={appointment.id} className="p-4 border border-gray-200">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-semibold">{formatDate(appointment.appointment_date)}</h3>
-                        <div className="flex items-center text-sm text-gray-600 mt-1">
-                          <MapPin className="h-4 w-4 mr-1" />
-                          <span>{appointment.location}</span>
-                        </div>
-                      </div>
-                      {appointment.mechanic_quotes?.[0] ? (
-                        <div className="bg-[#294a46] text-white px-3 py-1 rounded-md">
-                          <p className="text-lg font-bold">${appointment.mechanic_quotes[0].price}</p>
-                        </div>
-                      ) : (
-                        <div className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-md">
-                          <p className="text-sm">Pending Quote</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {appointment.vehicles && (
-                      <div className="mb-3 text-sm">
-                        <div className="font-medium">
-                          {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
-                        </div>
-                        {appointment.vehicles.mileage && (
-                          <div className="text-gray-600">Mileage: {appointment.vehicles.mileage}</div>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="text-sm text-gray-600">
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        <span>
-                          {appointment.mechanic_quotes?.[0] 
-                            ? `Quote submitted: ${new Date(appointment.mechanic_quotes[0].created_at).toLocaleDateString()}`
-                            : 'Waiting for your quote'}
-                        </span>
-                      </div>
-                      {appointment.mechanic_quotes?.[0] && (
-                        <div className="mt-1 text-xs bg-green-50 p-2 rounded border border-green-100">
-                          Quote Status: {appointment.mechanic_quotes[0].status}
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                ))}
-              </div>
+          <UpcomingAppointments
+            appointments={upcomingAppointments}
+            isLoading={isAppointmentsLoading}
+                onStart={handleStartAppointment}
+                onCancel={handleCancelAppointment}
+                onUpdatePrice={handleUpdatePrice}
+              />
             )}
           </div>
 
@@ -937,24 +876,24 @@ export default function MechanicDashboard() {
                 {availableAppointments.length > 1 && (
                   <>
                     <div className="absolute top-1/2 -left-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
-                      <button
-                        onClick={goToPrevAvailable}
+                    <button
+                      onClick={goToPrevAvailable}
                         className="bg-white/20 hover:bg-white/30 rounded-full p-1"
-                        aria-label="Previous appointment"
-                        disabled={isProcessing}
-                      >
+                      aria-label="Previous appointment"
+                      disabled={isProcessing}
+                    >
                         <ChevronLeft className="h-5 w-5" />
-                      </button>
+                    </button>
                     </div>
                     <div className="absolute top-1/2 -right-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
-                      <button
-                        onClick={goToNextAvailable}
+                    <button
+                      onClick={goToNextAvailable}
                         className="bg-white/20 hover:bg-white/30 rounded-full p-1"
-                        aria-label="Next appointment"
-                        disabled={isProcessing}
-                      >
+                      aria-label="Next appointment"
+                      disabled={isProcessing}
+                    >
                         <ChevronRight className="h-5 w-5" />
-                      </button>
+                    </button>
                     </div>
                   </>
                 )}
@@ -981,17 +920,32 @@ export default function MechanicDashboard() {
                       )}
                     </div>
 
+                    {/* Quote Status */}
+                    {availableAppointments[currentAvailableIndex].mechanic_quotes?.some(
+                      q => q.mechanic_id === mechanicId
+                    ) && (
+                      <div className="mb-4">
+                        <span className="text-sm text-yellow-300 bg-yellow-900/30 px-3 py-1.5 rounded-full inline-flex items-center">
+                          <Clock className="h-4 w-4 mr-1.5" />
+                          Awaiting customer selection (You quoted: $
+                          {availableAppointments[currentAvailableIndex].mechanic_quotes.find(
+                            q => q.mechanic_id === mechanicId
+                          )?.price})
+                        </span>
+                      </div>
+                    )}
+
                     {/* Location and Date */}
                     <div className="flex items-center gap-4 mb-6">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
                         <span className="text-sm">{availableAppointments[currentAvailableIndex].location}</span>
-                      </div>
+                        </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4" />
                         <span className="text-sm">{formatDate(availableAppointments[currentAvailableIndex].appointment_date)}</span>
+                        </div>
                       </div>
-                    </div>
 
                     {/* Issue Description */}
                     <div className="mb-6">
@@ -1014,7 +968,7 @@ export default function MechanicDashboard() {
                               {service}
                             </span>
                           ))}
-                        </div>
+                    </div>
                       </div>
                     )}
 
@@ -1083,8 +1037,8 @@ export default function MechanicDashboard() {
                               </option>
                             ))}
                           </select>
-                        </div>
-                        
+                      </div>
+
                         {/* Time Selection */}
                         <div>
                           <label className="block text-xs text-white/70 mb-1">Select Time</label>
@@ -1106,8 +1060,8 @@ export default function MechanicDashboard() {
                               </option>
                             ))}
                           </select>
-                        </div>
-                      </div>
+                          </div>
+                          </div>
                       
                       {/* Error message */}
                       {showETAError && (!selectedDate || !selectedTime) && (
