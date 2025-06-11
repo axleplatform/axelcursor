@@ -103,73 +103,35 @@ export async function createOrUpdateQuote(
       return { success: false, error: `Appointment is ${appointment.status}` };
     }
 
-    // Check if quote already exists
-    const { data: existingQuote, error: quoteError } = await supabase
+    // Create or update quote using upsert
+    const quoteData = {
+      mechanic_id: mechanicId,
+      appointment_id: appointmentId,
+      price,
+      eta: new Date(eta).toISOString(),
+      notes: notes || '',
+      status: 'pending',
+      updated_at: new Date().toISOString()
+    };
+
+    console.log('Upserting quote with data:', quoteData);
+
+    const { data: result, error: upsertError } = await supabase
       .from('mechanic_quotes')
-      .select('id')
-      .eq('mechanic_id', mechanicId)
-      .eq('appointment_id', appointmentId)
+      .upsert(quoteData, {
+        onConflict: 'mechanic_id,appointment_id'
+      })
+      .select()
       .single();
 
-    console.log('Existing quote check:', {
-      quote: existingQuote,
-      error: quoteError
+    console.log('Quote upsert result:', {
+      result,
+      error: upsertError
     });
 
-    let result;
-    if (existingQuote) {
-      // Update existing quote
-      console.log('Updating existing quote:', existingQuote.id);
-      const { data: updatedQuote, error: updateError } = await supabase
-        .from('mechanic_quotes')
-        .update({
-          price,
-          eta: new Date(eta).toISOString(),
-          notes: notes || '',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingQuote.id)
-        .select()
-        .single();
-
-      console.log('Quote update result:', {
-        quote: updatedQuote,
-        error: updateError
-      });
-
-      if (updateError) {
-        console.error('❌ Quote update failed:', updateError);
-        return { success: false, error: 'Failed to update quote' };
-      }
-
-      result = updatedQuote;
-    } else {
-      // Create new quote
-      console.log('Creating new quote');
-      const { data: newQuote, error: insertError } = await supabase
-        .from('mechanic_quotes')
-        .insert({
-          mechanic_id: mechanicId,
-          appointment_id: appointmentId,
-          price,
-          eta: new Date(eta).toISOString(),
-          notes: notes || '',
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      console.log('Quote creation result:', {
-        quote: newQuote,
-        error: insertError
-      });
-
-      if (insertError) {
-        console.error('❌ Quote creation failed:', insertError);
-        return { success: false, error: 'Failed to create quote' };
-      }
-
-      result = newQuote;
+    if (upsertError) {
+      console.error('❌ Quote upsert failed:', upsertError);
+      return { success: false, error: 'Failed to create/update quote' };
     }
 
     console.log('✅ Quote operation successful:', result);
