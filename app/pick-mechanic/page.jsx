@@ -37,68 +37,36 @@ export default function PickMechanicPage() {
   const [notes, setNotes] = useState('')
   const [selectedAppointment, setSelectedAppointment] = useState(null)
 
-  // Add fallback for appointmentId from URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const id = params.get('appointmentId')
-    
-    if (id && !appointmentId) {
-      console.log('Setting appointmentId from URL:', id)
-      setAppointmentId(id)
-    }
-  }, [])
-
   const fetchAppointmentData = async () => {
-    console.log('=== DEBUGGING APPOINTMENT FETCH ===')
-    
-    // Check URL params
-    const urlParams = new URLSearchParams(window.location.search)
-    const appointmentIdFromUrl = urlParams.get('appointmentId')
-    
-    console.log('Full URL:', window.location.href)
-    console.log('URL search params:', window.location.search)
-    console.log('Appointment ID from URL:', appointmentIdFromUrl)
-    console.log('Appointment ID in state:', appointmentId)
-    
-    if (!appointmentId && !appointmentIdFromUrl) {
-      setError('No appointment ID provided')
-      setIsLoading(false)
-      return
-    }
-    
-    const idToUse = appointmentId || appointmentIdFromUrl
-    console.log('Using appointment ID:', idToUse)
-
     try {
-      // SIMPLEST QUERY - no joins at all
-      const { data: basicCheck, error: basicError, count } = await supabase
+      // Get appointmentId from URL
+      const params = new URLSearchParams(window.location.search)
+      const appointmentId = params.get('appointmentId')
+      
+      console.log('Appointment ID from URL:', appointmentId)
+      
+      if (!appointmentId) {
+        setError('No appointment ID provided')
+        setIsLoading(false)
+        return
+      }
+
+      // First, get the appointment
+      const { data: appointment, error: aptError } = await supabase
         .from('appointments')
-        .select('*', { count: 'exact' })
-        .eq('id', idToUse)
-      
-      console.log('Basic query results:', {
-        data: basicCheck,
-        error: basicError,
-        count: count,
-        rowsReturned: basicCheck?.length
-      })
-      
-      if (!basicCheck || basicCheck.length === 0) {
+        .select('*, vehicles(*)')
+        .eq('id', appointmentId)
+        .single()
+
+      if (aptError || !appointment) {
+        console.error('Appointment not found:', aptError)
         setError('Appointment not found')
         setIsLoading(false)
         return
       }
-      
-      if (basicCheck.length > 1) {
-        console.error('Multiple appointments found with same ID!')
-        setError('Data error - multiple appointments found')
-        setIsLoading(false)
-        return
-      }
-      
-      // Now we know we have exactly 1 appointment
-      const appointment = basicCheck[0]
-      
+
+      console.log('Fetched appointment:', appointment)
+
       // Verify the appointment belongs to the current user
       const { data: { user } } = await supabase.auth.getUser()
       if (appointment.user_id !== user?.id) {
@@ -107,20 +75,8 @@ export default function PickMechanicPage() {
         setIsLoading(false)
         return
       }
-      
-      // Get vehicle separately
-      const { data: vehicle, error: vehicleError } = await supabase
-        .from('vehicles')
-        .select('*')
-        .eq('id', appointment.vehicle_id)
-        .single()
-      
-      if (vehicleError) {
-        console.error('Vehicle fetch error:', vehicleError)
-        throw vehicleError
-      }
-      
-      // Get quotes separately
+
+      // Then get quotes separately (don't use !inner)
       const { data: quotes, error: quotesError } = await supabase
         .from('mechanic_quotes')
         .select(`
@@ -137,24 +93,15 @@ export default function PickMechanicPage() {
             years_of_experience
           )
         `)
-        .eq('appointment_id', appointment.id)
-      
+        .eq('appointment_id', appointmentId)
+
       if (quotesError) {
         console.error('Quotes fetch error:', quotesError)
         throw quotesError
       }
-      
-      // Combine data
-      const fullAppointment = {
-        ...appointment,
-        vehicles: vehicle
-      }
-      
-      console.log('Final data:', {
-        appointment: fullAppointment,
-        quotes: quotes
-      })
-      
+
+      console.log('Fetched quotes:', quotes)
+
       // Format the mechanics data from quotes
       const formattedMechanics = quotes?.map(quote => {
         const mechanic = quote.mechanic_profiles
@@ -183,14 +130,20 @@ export default function PickMechanicPage() {
           status: quote.status,
         }
       }).filter(m => m !== null)
-      
+
       console.log('Formatted mechanics:', formattedMechanics)
-      
+
       setAppointment({
-        ...fullAppointment,
+        ...appointment,
         mechanics: formattedMechanics
       })
       setMechanics(formattedMechanics)
+
+      // If no quotes, show appropriate message
+      if (!quotes || quotes.length === 0) {
+        console.log('No mechanics have quoted yet')
+      }
+
     } catch (error) {
       console.error("Error fetching appointment data:", error)
       setError("Failed to load appointment data")
@@ -201,6 +154,7 @@ export default function PickMechanicPage() {
       })
     } finally {
       setIsLoading(false)
+      setIsLoadingQuotes(false)
     }
   }
 
@@ -413,11 +367,11 @@ export default function PickMechanicPage() {
                       />
                     ))
                   ) : (
-                    <div className="text-center py-8">
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
                       <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">No Quotes Yet</h3>
-                      <p className="text-gray-600">
-                        Mechanics are reviewing your appointment. Check back soon for quotes.
+                      <p className="text-gray-500">
+                        Mechanics will start sending quotes soon. Check back later!
                       </p>
                     </div>
                   )}
