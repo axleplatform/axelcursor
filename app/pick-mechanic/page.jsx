@@ -10,9 +10,7 @@ import { Star, Clock, Calendar, MapPin, Car, Wrench, AlertCircle, FileText, Cred
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
-import { getQuotesForAppointment, selectQuoteForAppointment, acceptQuote } from "@/lib/mechanic-quotes"
 import { useToast } from "@/components/ui/use-toast"
-import AppointmentCard from "@/components/appointment-card"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 export default function PickMechanicPage() {
@@ -23,19 +21,11 @@ export default function PickMechanicPage() {
   const supabase = createClientComponentClient()
 
   const [appointment, setAppointment] = useState(null)
-  const [selectedMechanic, setSelectedMechanic] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingQuotes, setIsLoadingQuotes] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState(null)
-  const [mechanics, setMechanics] = useState([])
-
-  // Form state
-  const [price, setPrice] = useState('')
-  const [selectedDate, setSelectedDate] = useState('')
-  const [selectedTime, setSelectedTime] = useState('')
-  const [notes, setNotes] = useState('')
-  const [selectedAppointment, setSelectedAppointment] = useState(null)
+  const [mechanicQuotes, setMechanicQuotes] = useState([])
 
   const fetchAppointmentData = async () => {
     try {
@@ -101,40 +91,8 @@ export default function PickMechanicPage() {
       
       console.log('Quotes:', quotes)
       
-      // Format the mechanics data from quotes
-      const formattedMechanics = quotes?.map(quote => {
-        const mechanic = quote.mechanic_profiles
-        console.log('Processing quote:', { quote, mechanic })
-        
-        if (!mechanic) {
-          console.warn('No mechanic profile found for quote:', quote)
-          return null
-        }
-        
-        return {
-          id: mechanic.id,
-          first_name: mechanic.first_name || "Unknown",
-          last_name: mechanic.last_name || "Mechanic",
-          profile_image_url: mechanic.profile_image_url,
-          metadata: {
-            ...mechanic.metadata,
-            rating: mechanic.rating || 0,
-            review_count: mechanic.review_count || 0
-          },
-          quote_id: quote.id,
-          price: quote.price,
-          eta: quote.eta,
-          status: quote.status,
-        }
-      }).filter(m => m !== null)
-      
-      console.log('Formatted mechanics:', formattedMechanics)
-      
-      setAppointment({
-        ...appointment,
-        mechanics: formattedMechanics
-      })
-      setMechanics(formattedMechanics)
+      setAppointment(appointment)
+      setMechanicQuotes(quotes || [])
       
     } catch (error) {
       console.error("Error fetching appointment data:", error)
@@ -194,24 +152,32 @@ export default function PickMechanicPage() {
     }
   }, [appointmentId])
 
-  const handleSelectMechanic = async (quoteId) => {
+  const handleSelectMechanic = async (mechanicId, quoteId) => {
     try {
       setIsProcessing(true)
-      const { success, error } = await selectQuoteForAppointment(appointmentId, quoteId)
-
-      if (!success) {
-        throw new Error(error)
-      }
-
-      setSelectedMechanic(quoteId)
+      
+      // Update appointment with selected mechanic
+      const { error } = await supabase
+        .from('appointments')
+        .update({ 
+          selected_mechanic_id: mechanicId,
+          selected_quote_id: quoteId,
+          status: 'confirmed'
+        })
+        .eq('id', appointment.id)
+      
+      if (error) throw error
+      
       toast({
         title: "Success",
         description: "Mechanic selected successfully.",
       })
 
-      router.push(`/appointment-confirmation?appointmentId=${appointmentId}`)
+      // Navigate to confirmation page
+      router.push(`/appointment-confirmation?appointmentId=${appointment.id}`)
+      
     } catch (error) {
-      console.error("Error selecting mechanic:", error)
+      console.error('Error selecting mechanic:', error)
       toast({
         title: "Error",
         description: "Failed to select mechanic. Please try again.",
@@ -220,49 +186,6 @@ export default function PickMechanicPage() {
     } finally {
       setIsProcessing(false)
     }
-  }
-
-  const handleAcceptQuote = async (quoteId) => {
-    if (!appointmentId) {
-      toast({
-        title: "Error",
-        description: "No appointment ID found",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsProcessing(true)
-
-    try {
-      const { success, error } = await acceptQuote(quoteId, appointmentId)
-
-      if (!success) {
-        throw new Error(error)
-      }
-
-      toast({
-        title: "Success",
-        description: "Quote accepted successfully!",
-      })
-
-      // Navigate to appointment confirmation page
-      router.push(`/appointment-confirmation?appointmentId=${appointmentId}`)
-    } catch (error) {
-      console.error("Error accepting quote:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to accept quote. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
-  const getSelectedMechanic = () => {
-    if (!appointment?.mechanics || !selectedMechanic) return null
-    return appointment.mechanics.find(mechanic => mechanic.quote_id === selectedMechanic)
   }
 
   const formatDate = (dateString) => {
@@ -372,35 +295,94 @@ export default function PickMechanicPage() {
                     <div className="flex items-center justify-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#294a46]"></div>
                     </div>
-                  ) : appointment?.mechanics && appointment.mechanics.length > 0 ? (
-                    appointment.mechanics.map(mechanic => (
-                      <AppointmentCard
-                        key={mechanic.quote_id}
-                        appointment={appointment}
-                        mechanicId={mechanic.quote_id}
-                        isUpcoming={false}
-                        selectedAppointment={selectedAppointment}
-                        onEdit={setSelectedAppointment}
-                        onUpdate={() => {}}
-                        onCancel={() => setSelectedAppointment(null)}
-                        onSkip={() => {}}
-                        onSubmit={() => handleSelectMechanic(mechanic.quote_id)}
-                        price={price}
-                        setPrice={setPrice}
-                        selectedDate={selectedDate}
-                        setSelectedDate={setSelectedDate}
-                        selectedTime={selectedTime}
-                        setSelectedTime={setSelectedTime}
-                        notes={notes}
-                        setNotes={setNotes}
-                      />
-                    ))
+                  ) : mechanicQuotes && mechanicQuotes.length > 0 ? (
+                    <div className="space-y-4">
+                      {mechanicQuotes.map((quote) => (
+                        <div key={quote.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                          {/* Mechanic profile header */}
+                          <div className="flex items-start gap-4 mb-4">
+                            {/* Profile image */}
+                            {quote.mechanic_profiles?.profile_image_url ? (
+                              <img 
+                                src={quote.mechanic_profiles.profile_image_url} 
+                                alt={quote.mechanic_profiles.full_name}
+                                className="w-16 h-16 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+                                <span className="text-2xl text-gray-500">
+                                  {quote.mechanic_profiles?.first_name?.charAt(0) || 'M'}
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* Mechanic info */}
+                            <div className="flex-1">
+                              <h3 className="text-xl font-semibold">
+                                {quote.mechanic_profiles?.business_name || `${quote.mechanic_profiles?.first_name} ${quote.mechanic_profiles?.last_name}`}
+                              </h3>
+                              <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                                <span>⭐ {quote.mechanic_profiles?.rating || 'N/A'}</span>
+                                <span>• {quote.mechanic_profiles?.review_count || 0} reviews</span>
+                              </div>
+                            </div>
+                            
+                            {/* Quote price */}
+                            <div className="text-right">
+                              <p className="text-sm text-gray-500">Quote</p>
+                              <p className="text-3xl font-bold text-green-600">${quote.price}</p>
+                            </div>
+                          </div>
+                          
+                          {/* Date and time */}
+                          <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                            <p className="text-sm text-gray-600">
+                              <span className="font-medium">Available:</span> {new Date(quote.eta).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                          
+                          {/* Mechanic details */}
+                          <div className="space-y-3 mb-4">
+                            {/* Bio */}
+                            {quote.mechanic_profiles?.bio && (
+                              <div>
+                                <p className="text-sm font-medium text-gray-700">About:</p>
+                                <p className="text-sm text-gray-600">{quote.mechanic_profiles.bio}</p>
+                              </div>
+                            )}
+                            
+                            {/* Quote notes */}
+                            {quote.notes && (
+                              <div>
+                                <p className="text-sm font-medium text-gray-700">Additional notes:</p>
+                                <p className="text-sm text-gray-600">{quote.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Select button */}
+                          <button
+                            onClick={() => handleSelectMechanic(quote.mechanic_id, quote.id)}
+                            disabled={isProcessing}
+                            className="w-full bg-[#294a46] text-white py-3 px-4 rounded-md hover:bg-[#1e3632] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isProcessing ? 'Selecting...' : 'Select This Mechanic'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <div className="text-center py-12 bg-gray-50 rounded-lg">
                       <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">No Quotes Yet</h3>
                       <p className="text-gray-500">
-                        Mechanics will start sending quotes soon. Check back later!
+                        Mechanics are reviewing your request. This page refreshes automatically.
                       </p>
                     </div>
                   )}
@@ -507,52 +489,6 @@ export default function PickMechanicPage() {
                       </div>
                     </div>
                   </div>
-
-                  {selectedMechanic && (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-md border border-gray-200">
-                      <h3 className="font-medium text-[#294a46] text-sm mb-2">Selected Mechanic</h3>
-                      <div className="flex items-center">
-                        <div className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-white">
-                          <Image
-                            src={
-                              getSelectedMechanic()?.profile_image_url ||
-                              "/placeholder.svg?height=40&width=40&query=mechanic" ||
-                              "/placeholder.svg"
-                            }
-                            alt={
-                              getSelectedMechanic()
-                                ? `${getSelectedMechanic()?.first_name} ${getSelectedMechanic()?.last_name}`
-                                : ""
-                            }
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="ml-3">
-                          <p className="font-medium text-sm">
-                            {getSelectedMechanic()?.first_name} {getSelectedMechanic()?.last_name}
-                          </p>
-                          <div className="flex items-center">
-                            {getSelectedMechanic()?.metadata?.rating && (
-                              <React.Fragment>
-                                <Star className="h-3 w-3 text-yellow-500 mr-1" />
-                                <span className="text-xs text-gray-600">{getSelectedMechanic()?.metadata.rating}</span>
-                                <span className="mx-1 text-gray-300">•</span>
-                              </React.Fragment>
-                            )}
-                            <span className="text-xs text-gray-600">
-                              {getSelectedMechanic()?.metadata?.experience || "Experienced Mechanic"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="ml-auto">
-                          <div className="bg-[#294a46] text-white px-3 py-1 rounded-md">
-                            <p className="text-2xl font-bold">${getSelectedMechanic()?.price}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
                   <div className="mt-4 p-3 border border-dashed border-gray-300 rounded-md bg-gray-50">
                     <div className="flex items-center justify-center mb-2">
