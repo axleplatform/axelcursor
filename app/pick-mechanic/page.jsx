@@ -43,7 +43,8 @@ export default function PickMechanicPage() {
       const params = new URLSearchParams(window.location.search)
       const appointmentId = params.get('appointmentId')
       
-      console.log('Appointment ID from URL:', appointmentId)
+      console.log('=== FETCH DEBUG ===')
+      console.log('Appointment ID:', appointmentId)
       
       if (!appointmentId) {
         setError('No appointment ID provided')
@@ -51,22 +52,32 @@ export default function PickMechanicPage() {
         return
       }
 
-      // First, get the appointment
-      const { data: appointment, error: aptError } = await supabase
+      // IMPORTANT: NO .single() and NO !inner
+      // Query 1: Get appointment WITHOUT .single()
+      const { data: appointmentArray, error: aptError } = await supabase
         .from('appointments')
-        .select('*, vehicles(*)')
+        .select('*')  // Just the appointment, no joins yet
         .eq('id', appointmentId)
-        .single()
-
-      if (aptError || !appointment) {
-        console.error('Appointment not found:', aptError)
+      
+      console.log('Appointment query:', { data: appointmentArray, error: aptError })
+      
+      if (aptError) {
+        console.error('Query error:', aptError)
+        setError('Failed to fetch appointment')
+        setIsLoading(false)
+        return
+      }
+      
+      // Check if appointment exists
+      if (!appointmentArray || appointmentArray.length === 0) {
+        console.error('No appointment found with ID:', appointmentId)
         setError('Appointment not found')
         setIsLoading(false)
         return
       }
-
-      console.log('Fetched appointment:', appointment)
-
+      
+      const appointment = appointmentArray[0]
+      
       // Verify the appointment belongs to the current user
       const { data: { user } } = await supabase.auth.getUser()
       if (appointment.user_id !== user?.id) {
@@ -75,13 +86,26 @@ export default function PickMechanicPage() {
         setIsLoading(false)
         return
       }
-
-      // Then get quotes separately (don't use !inner)
+      
+      // Query 2: Get vehicle separately
+      let vehicle = null
+      if (appointment.vehicle_id) {
+        const { data: vehicleArray } = await supabase
+          .from('vehicles')
+          .select('*')
+          .eq('id', appointment.vehicle_id)
+        
+        if (vehicleArray && vehicleArray.length > 0) {
+          vehicle = vehicleArray[0]
+        }
+      }
+      
+      // Query 3: Get quotes WITHOUT !inner syntax
       const { data: quotes, error: quotesError } = await supabase
         .from('mechanic_quotes')
         .select(`
           *,
-          mechanic_profiles(
+          mechanic_profiles (
             id,
             first_name,
             last_name,
@@ -92,16 +116,16 @@ export default function PickMechanicPage() {
             review_count,
             years_of_experience
           )
-        `)
+        `)  // NO !inner here
         .eq('appointment_id', appointmentId)
-
+      
       if (quotesError) {
         console.error('Quotes fetch error:', quotesError)
         throw quotesError
       }
-
-      console.log('Fetched quotes:', quotes)
-
+      
+      console.log('Quotes:', quotes)
+      
       // Format the mechanics data from quotes
       const formattedMechanics = quotes?.map(quote => {
         const mechanic = quote.mechanic_profiles
@@ -130,20 +154,26 @@ export default function PickMechanicPage() {
           status: quote.status,
         }
       }).filter(m => m !== null)
-
+      
       console.log('Formatted mechanics:', formattedMechanics)
-
-      setAppointment({
+      
+      // Combine data
+      const fullAppointment = {
         ...appointment,
+        vehicles: vehicle
+      }
+      
+      setAppointment({
+        ...fullAppointment,
         mechanics: formattedMechanics
       })
       setMechanics(formattedMechanics)
-
+      
       // If no quotes, show appropriate message
       if (!quotes || quotes.length === 0) {
         console.log('No mechanics have quoted yet')
       }
-
+      
     } catch (error) {
       console.error("Error fetching appointment data:", error)
       setError("Failed to load appointment data")
