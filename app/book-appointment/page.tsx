@@ -29,6 +29,14 @@ import { useToast } from "@/components/ui/use-toast"
 // Define types for form data
 interface BookingFormData {
   issueDescription: string
+  address: string
+  vin: string
+  year: string
+  make: string
+  model: string
+  mileage: string
+  appointmentDate: string
+  appointmentTime: string
   phoneNumber: string
   carRuns: boolean | null
   selectedServices: string[]
