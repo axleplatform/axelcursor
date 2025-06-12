@@ -17,29 +17,17 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const supabase = createClient()
 
+  // Debug function to check session state
+  const debugSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    console.log('Login page session:', session)
+    console.log('Cookies:', document.cookie)
+  }
+
   useEffect(() => {
-    // Check if already logged in
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        // Get mechanic profile
-        const { data: profile } = await supabase
-          .from('mechanic_profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .single()
-        
-        if (profile) {
-          console.log('✅ Mechanic profile found, redirecting to dashboard')
-          window.location.href = '/mechanic/dashboard'
-        } else {
-          console.log('✅ Regular user, redirecting to dashboard')
-          window.location.href = '/dashboard'
-        }
-      }
-    }
-    
-    checkUser()
+    // Don't check session on mount - let middleware handle it
+    // This prevents the redirect loop
+    debugSession()
   }, [])
 
   const handleLogin = async (e) => {
@@ -54,7 +42,8 @@ export default function LoginPage() {
       
       if (error) throw error
       
-      window.location.href = "/mechanic/dashboard"
+      // After successful login, hard refresh to ensure middleware runs
+      window.location.href = '/mechanic/dashboard'
       
     } catch (error) {
       console.error("Error logging in:", error)
@@ -78,7 +67,7 @@ export default function LoginPage() {
       document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
     })
     
-    window.location.href = '/'
+    window.location.reload()
   }
 
   return (

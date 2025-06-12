@@ -1,84 +1,66 @@
-import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse } from 'next/server'
 
 export async function middleware(request) {
+  // Create a response object first
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
-  });
+  })
 
+  // Create supabase client with proper cookie handling
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         get(name) {
-          return request.cookies.get(name)?.value;
+          return request.cookies.get(name)?.value
         },
         set(name, value, options) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
+          // Set cookie on the response
           response.cookies.set({
             name,
             value,
             ...options,
-          });
+          })
         },
         remove(name, options) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
+          // Remove cookie from the response
           response.cookies.set({
             name,
             value: '',
             ...options,
-          });
+          })
         },
       },
     }
-  );
+  )
 
-  const { data: { session } } = await supabase.auth.getSession();
+  // Get the session
+  const { data: { session } } = await supabase.auth.getSession()
 
-  // Don't redirect on login page if already going there
+  // Handle login page - redirect if already logged in
   if (request.nextUrl.pathname === '/login') {
     if (session) {
-      // User is logged in, redirect away from login
-      return NextResponse.redirect(new URL('/mechanic/dashboard', request.url));
+      return NextResponse.redirect(new URL('/mechanic/dashboard', request.url))
     }
-    return response;
+    return response
   }
 
   // Protect mechanic routes
   if (request.nextUrl.pathname.startsWith('/mechanic')) {
     if (!session) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/login', request.url))
     }
   }
 
-  return response;
+  return response
 }
 
 export const config = {
   matcher: [
-    '/login',
-    '/mechanic/:path*',
-    '/mechanic-dashboard/:path*'
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-}; 
+} 
