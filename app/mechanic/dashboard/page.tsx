@@ -74,7 +74,7 @@ export default function MechanicDashboard() {
         console.log('Skipped IDs length:', skippedIds.length)
 
         // Fetch available appointments (not quoted or skipped)
-        const availableQuery = supabase
+        let availableQuery = supabase
           .from("appointments")
           .select(`
             *,
@@ -85,13 +85,17 @@ export default function MechanicDashboard() {
 
         // Only add filters if there are IDs to exclude
         if (quotedIds.length > 0) {
-          availableQuery.not("id", "in", quotedIds)
+          availableQuery = availableQuery.not("id", "in", quotedIds)
         }
         if (skippedIds.length > 0) {
-          availableQuery.not("id", "in", skippedIds)
+          availableQuery = availableQuery.not("id", "in", skippedIds)
         }
 
-        console.log('Available appointments query:', availableQuery.toJSON())
+        console.log('Available appointments query filters:', {
+          status: "pending",
+          excludedQuotedIds: quotedIds,
+          excludedSkippedIds: skippedIds
+        })
         const { data: available, error: availableError } = await availableQuery
 
         if (availableError) {
@@ -100,7 +104,7 @@ export default function MechanicDashboard() {
         }
 
         // Fetch upcoming appointments (quoted)
-        const upcomingQuery = supabase
+        let upcomingQuery = supabase
           .from("appointments")
           .select(`
             *,
@@ -110,10 +114,13 @@ export default function MechanicDashboard() {
           .in("status", ["pending", "confirmed"])
 
         if (quotedIds.length > 0) {
-          upcomingQuery.in("id", quotedIds)
+          upcomingQuery = upcomingQuery.in("id", quotedIds)
         }
 
-        console.log('Upcoming appointments query:', upcomingQuery.toJSON())
+        console.log('Upcoming appointments query filters:', {
+          status: ["pending", "confirmed"],
+          includedIds: quotedIds
+        })
         const { data: upcoming, error: upcomingError } = await upcomingQuery
 
         if (upcomingError) {
