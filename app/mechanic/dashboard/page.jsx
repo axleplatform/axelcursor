@@ -23,6 +23,7 @@ export default function MechanicDashboard() {
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedTime, setSelectedTime] = useState('')
   const [notes, setNotes] = useState('')
+  const [myJobs, setMyJobs] = useState([])
 
   useEffect(() => {
     const fetchMechanicId = async () => {
@@ -59,24 +60,30 @@ export default function MechanicDashboard() {
     if (!mechanicId) return
 
     try {
-      // Get all appointments
-      const { data: allAppointments, error } = await supabase
+      // Get pending appointments (not yet selected)
+      const { data: pending, error: pendingError } = await supabase
         .from('appointments')
-        .select(`
-          *,
-          vehicles(*),
-          mechanic_quotes(*)
-        `)
+        .select('*, vehicles(*), mechanic_quotes(*)')
         .eq('status', 'pending')
-        .order('created_at', { ascending: false })
+        .is('selected_mechanic_id', null)
       
-      if (error) throw error
+      if (pendingError) throw pendingError
+      
+      // Get won appointments (selected and paid)
+      const { data: won, error: wonError } = await supabase
+        .from('appointments')
+        .select('*, vehicles(*), mechanic_quotes(*)')
+        .eq('selected_mechanic_id', mechanicId)
+        .in('status', ['mechanic_selected', 'paid', 'in_progress', 'completed'])
+      
+      if (wonError) throw wonError
       
       // Categorize appointments
       const available = []
       const upcoming = []
+      const myJobs = []
       
-      allAppointments?.forEach(appointment => {
+      pending?.forEach(appointment => {
         // Check if this mechanic has quoted
         const myQuote = appointment.mechanic_quotes?.find(
           q => q.mechanic_id === mechanicId
@@ -93,6 +100,7 @@ export default function MechanicDashboard() {
       
       setAvailableAppointments(available)
       setUpcomingAppointments(upcoming)
+      setMyJobs(won || [])
       
     } catch (error) {
       console.error('Error fetching appointments:', error)

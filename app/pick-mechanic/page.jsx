@@ -156,25 +156,45 @@ export default function PickMechanicPage() {
     try {
       setIsProcessing(true)
       
-      // Update appointment with selected mechanic
+      // Get all quotes for comparison analytics
+      const selectedQuote = mechanicQuotes.find(q => q.id === quoteId)
+      const avgPrice = mechanicQuotes.reduce((sum, q) => sum + q.price, 0) / mechanicQuotes.length
+      const lowestPrice = Math.min(...mechanicQuotes.map(q => q.price))
+      
+      // Update appointment with selection
       const { error } = await supabase
         .from('appointments')
         .update({ 
           selected_mechanic_id: mechanicId,
           selected_quote_id: quoteId,
-          status: 'confirmed'
+          status: 'mechanic_selected',
+          selected_at: new Date().toISOString()
         })
         .eq('id', appointment.id)
       
       if (error) throw error
       
+      // Track selection analytics
+      await supabase
+        .from('quote_analytics')
+        .insert({
+          appointment_id: appointment.id,
+          selected_quote_id: quoteId,
+          total_quotes_received: mechanicQuotes.length,
+          selected_price: selectedQuote.price,
+          average_price: avgPrice,
+          lowest_price: lowestPrice,
+          price_rank: mechanicQuotes.sort((a,b) => a.price - b.price).findIndex(q => q.id === quoteId) + 1,
+          time_to_selection: new Date() - new Date(appointment.created_at)
+        })
+      
       toast({
         title: "Success",
-        description: "Mechanic selected successfully.",
+        description: "Mechanic selected successfully. Proceeding to payment.",
       })
 
-      // Navigate to confirmation page
-      router.push(`/appointment-confirmation?appointmentId=${appointment.id}`)
+      // Navigate to payment page
+      router.push(`/payment?appointmentId=${appointment.id}`)
       
     } catch (error) {
       console.error('Error selecting mechanic:', error)
@@ -289,103 +309,163 @@ export default function PickMechanicPage() {
                 <div className="p-4 border-b">
                   <h2 className="text-xl font-semibold text-[#294a46]">Available Mechanics</h2>
                 </div>
+                <div className="p-6">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-6 flex items-center justify-between">
+                      <span>Mechanic Quotes</span>
+                      {mechanicQuotes.length > 0 && (
+                        <span className="text-lg font-normal text-gray-600">
+                          {mechanicQuotes.length} quotes received
+                        </span>
+                      )}
+                    </h2>
+                    
+                    {/* Sort by price option */}
+                    {mechanicQuotes.length > 1 && (
+                      <div className="mb-4 flex justify-end">
+                        <button
+                          onClick={() => {
+                            const sorted = [...mechanicQuotes].sort((a, b) => a.price - b.price);
+                            setMechanicQuotes(sorted);
+                          }}
+                          className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+                        >
+                          Sort by price ↓
+                        </button>
+                      </div>
+                    )}
 
-                <div className="space-y-4">
-                  {isLoadingQuotes ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#294a46]"></div>
-                    </div>
-                  ) : mechanicQuotes && mechanicQuotes.length > 0 ? (
-                    <div className="space-y-4">
-                      {mechanicQuotes.map((quote) => (
-                        <div key={quote.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                          {/* Mechanic profile header */}
-                          <div className="flex items-start gap-4 mb-4">
-                            {/* Profile image */}
-                            {quote.mechanic_profiles?.profile_image_url ? (
-                              <img 
-                                src={quote.mechanic_profiles.profile_image_url} 
-                                alt={quote.mechanic_profiles.full_name}
-                                className="w-16 h-16 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
-                                <span className="text-2xl text-gray-500">
-                                  {quote.mechanic_profiles?.first_name?.charAt(0) || 'M'}
-                                </span>
-                              </div>
-                            )}
-                            
-                            {/* Mechanic info */}
-                            <div className="flex-1">
-                              <h3 className="text-xl font-semibold">
-                                {quote.mechanic_profiles?.business_name || `${quote.mechanic_profiles?.first_name} ${quote.mechanic_profiles?.last_name}`}
-                              </h3>
-                              <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                                <span>⭐ {quote.mechanic_profiles?.rating || 'N/A'}</span>
-                                <span>• {quote.mechanic_profiles?.review_count || 0} reviews</span>
-                              </div>
+                    {mechanicQuotes && mechanicQuotes.length > 0 ? (
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {mechanicQuotes.map((quote) => (
+                          <div key={quote.id} className="bg-teal-800 text-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                            {/* Price header - Most prominent */}
+                            <div className="bg-teal-900 px-6 py-4 text-center">
+                              <p className="text-sm opacity-80">Quote Price</p>
+                              <p className="text-4xl font-bold">${quote.price}</p>
                             </div>
                             
-                            {/* Quote price */}
-                            <div className="text-right">
-                              <p className="text-sm text-gray-500">Quote</p>
-                              <p className="text-3xl font-bold text-green-600">${quote.price}</p>
+                            {/* Mechanic info section */}
+                            <div className="p-6">
+                              {/* Mechanic header */}
+                              <div className="flex items-center gap-3 mb-4">
+                                {/* Profile image */}
+                                {quote.mechanic_profiles?.profile_image ? (
+                                  <img 
+                                    src={quote.mechanic_profiles.profile_image} 
+                                    alt={quote.mechanic_profiles.full_name}
+                                    className="w-12 h-12 rounded-full object-cover border-2 border-teal-600"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-full bg-teal-700 flex items-center justify-center border-2 border-teal-600">
+                                    <span className="text-xl font-semibold">
+                                      {quote.mechanic_profiles?.full_name?.charAt(0) || 'M'}
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                {/* Name and rating */}
+                                <div className="flex-1">
+                                  <h3 className="font-semibold text-lg">
+                                    {quote.mechanic_profiles?.business_name || quote.mechanic_profiles?.full_name}
+                                  </h3>
+                                  <div className="flex items-center gap-2 text-sm opacity-90">
+                                    <span className="text-yellow-400">★</span>
+                                    <span>{quote.mechanic_profiles?.rating || 'N/A'}</span>
+                                    <span className="opacity-70">•</span>
+                                    <span>{quote.mechanic_profiles?.years_of_experience || 0}yrs exp</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Available date/time - Compact */}
+                              <div className="bg-teal-700/50 rounded-lg px-4 py-3 mb-4">
+                                <p className="text-sm opacity-80">Available</p>
+                                <p className="font-medium">
+                                  {new Date(quote.eta).toLocaleDateString('en-US', {
+                                    weekday: 'short',
+                                    month: 'short',
+                                    day: 'numeric'
+                                  })} at {new Date(quote.eta).toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: '2-digit'
+                                  })}
+                                </p>
+                              </div>
+                              
+                              {/* Key info - Compact list */}
+                              <div className="space-y-2 mb-4 text-sm">
+                                {/* Specialties */}
+                                {quote.mechanic_profiles?.specialties && (
+                                  <div className="flex gap-2">
+                                    <span className="opacity-70">Specialties:</span>
+                                    <span className="font-medium">{quote.mechanic_profiles.specialties}</span>
+                                  </div>
+                                )}
+                                
+                                {/* Specialized cars - Only show if exists */}
+                                {quote.mechanic_profiles?.specialized_cars && (
+                                  <div className="flex gap-2">
+                                    <span className="opacity-70">Expert in:</span>
+                                    <span className="font-medium">{quote.mechanic_profiles.specialized_cars}</span>
+                                  </div>
+                                )}
+                                
+                                {/* Certifications - Abbreviated */}
+                                {quote.mechanic_profiles?.certifications && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-green-400">✓</span>
+                                    <span className="text-xs opacity-90">Certified Professional</span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Bio - Truncated */}
+                              {quote.mechanic_profiles?.bio && (
+                                <p className="text-sm opacity-90 line-clamp-2 mb-4">
+                                  {quote.mechanic_profiles.bio}
+                                </p>
+                              )}
+                              
+                              {/* Quote notes if any */}
+                              {quote.notes && (
+                                <div className="bg-teal-700/30 rounded px-3 py-2 mb-4">
+                                  <p className="text-xs opacity-80">Mechanic's note:</p>
+                                  <p className="text-sm">{quote.notes}</p>
+                                </div>
+                              )}
+                              
+                              {/* Select button */}
+                              <button
+                                onClick={() => handleSelectMechanic(quote.mechanic_id, quote.id)}
+                                className="w-full bg-white text-teal-800 py-3 px-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-md"
+                              >
+                                Select This Mechanic
+                              </button>
                             </div>
                           </div>
-                          
-                          {/* Date and time */}
-                          <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Available:</span> {new Date(quote.eta).toLocaleDateString('en-US', {
-                                weekday: 'long',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: 'numeric',
-                                minute: '2-digit'
-                              })}
-                            </p>
+                        ))}
+                      </div>
+                    ) : (
+                      // No quotes message - also styled
+                      <div className="bg-gray-50 rounded-lg p-12 text-center">
+                        <div className="animate-pulse">
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            Waiting for mechanics to send quotes...
+                          </h3>
+                          <p className="text-gray-500">
+                            Mechanics are reviewing your request. This page refreshes automatically.
+                          </p>
+                          <div className="mt-4">
+                            <div className="inline-flex items-center">
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-teal-600 mr-2"></div>
+                              <span className="text-sm text-gray-600">Checking for new quotes...</span>
+                            </div>
                           </div>
-                          
-                          {/* Mechanic details */}
-                          <div className="space-y-3 mb-4">
-                            {/* Bio */}
-                            {quote.mechanic_profiles?.bio && (
-                              <div>
-                                <p className="text-sm font-medium text-gray-700">About:</p>
-                                <p className="text-sm text-gray-600">{quote.mechanic_profiles.bio}</p>
-                              </div>
-                            )}
-                            
-                            {/* Quote notes */}
-                            {quote.notes && (
-                              <div>
-                                <p className="text-sm font-medium text-gray-700">Additional notes:</p>
-                                <p className="text-sm text-gray-600">{quote.notes}</p>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Select button */}
-                          <button
-                            onClick={() => handleSelectMechanic(quote.mechanic_id, quote.id)}
-                            disabled={isProcessing}
-                            className="w-full bg-[#294a46] text-white py-3 px-4 rounded-md hover:bg-[#1e3632] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isProcessing ? 'Selecting...' : 'Select This Mechanic'}
-                          </button>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 bg-gray-50 rounded-lg">
-                      <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Quotes Yet</h3>
-                      <p className="text-gray-500">
-                        Mechanics are reviewing your request. This page refreshes automatically.
-                      </p>
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </Card>
             </div>
@@ -395,112 +475,99 @@ export default function PickMechanicPage() {
                 <div className="p-4 border-b">
                   <h2 className="text-xl font-semibold text-[#294a46]">Order Summary</h2>
                 </div>
+                <div className="p-6">
+                  {appointment && (
+                    <div className="space-y-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="relative h-16 w-16 rounded-lg overflow-hidden border-2 border-white">
+                          <Image
+                            src={appointment.vehicles?.image_url || "/placeholder.svg"}
+                            alt={`${appointment.vehicles?.year} ${appointment.vehicles?.make} ${appointment.vehicles?.model}`}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900">
+                            {appointment.vehicles?.year} {appointment.vehicles?.make} {appointment.vehicles?.model}
+                          </h3>
+                          <p className="text-sm text-gray-500">{appointment.vehicles?.color}</p>
+                        </div>
+                      </div>
 
-                <div className="p-4">
-                  <div className="space-y-4">
-                    <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                      <Calendar className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h3 className="font-medium text-gray-700 text-sm">Appointment Details</h3>
-                        <p className="text-xs text-gray-600">{formatDate(appointment.appointment_date)}</p>
-                        <div className="flex items-start mt-1">
-                          <MapPin className="h-3 w-3 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
-                          <p className="text-xs text-gray-500">{appointment.location}</p>
+                      <div className="space-y-4">
+                        <div className="flex items-start space-x-3">
+                          <Calendar className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
+                          <div>
+                            <h3 className="font-medium text-gray-700 text-sm">Appointment Details</h3>
+                            <p className="text-xs text-gray-600">{formatDate(appointment.appointment_date)}</p>
+                            <div className="flex items-start mt-1">
+                              <MapPin className="h-3 w-3 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
+                              <p className="text-xs text-gray-500">{appointment.location}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {appointment.selected_services && appointment.selected_services.length > 0 && (
+                          <div className="flex items-start space-x-3">
+                            <Wrench className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h3 className="font-medium text-gray-700 text-sm">Requested Services</h3>
+                              <ul className="mt-1 space-y-1">
+                                {appointment.selected_services.map((service, index) => (
+                                  <li key={index} className="flex items-center">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
+                                    <span className="text-xs text-gray-600">{service}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+
+                        {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
+                          <div className="flex items-start space-x-3">
+                            <AlertCircle className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h3 className="font-medium text-gray-700 text-sm">Reported Issues</h3>
+                              <ul className="mt-1 space-y-1">
+                                {appointment.selected_car_issues.map((issue, index) => (
+                                  <li key={index} className="flex items-center">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
+                                    <span className="text-xs text-gray-600">{issue}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+
+                        {appointment.issue_description && (
+                          <div className="flex items-start space-x-3">
+                            <FileText className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
+                            <div>
+                              <h3 className="font-medium text-gray-700 text-sm">Description</h3>
+                              <p className="text-xs text-gray-600 mt-1">{appointment.issue_description}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-start space-x-3">
+                          <Car className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
+                          <div>
+                            <h3 className="font-medium text-gray-700 text-sm">Car Status</h3>
+                            <p className="text-xs text-gray-600 mt-1">
+                              {appointment.car_runs !== null
+                                ? appointment.car_runs
+                                  ? "Car is running"
+                                  : "Car is not running"
+                                : "Car status not specified"}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-
-                    {appointment.vehicles && (
-                      <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                        <Car className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h3 className="font-medium text-gray-700 text-sm">Vehicle</h3>
-                          <p className="text-xs text-gray-600">
-                            {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
-                          </p>
-                          {appointment.vehicles.color && (
-                            <p className="text-xs text-gray-500">Color: {appointment.vehicles.color}</p>
-                          )}
-                          {appointment.vehicles.vin && (
-                            <p className="text-xs text-gray-500">VIN: {appointment.vehicles.vin}</p>
-                          )}
-                          {appointment.vehicles.mileage && (
-                            <p className="text-xs text-gray-500">Mileage: {appointment.vehicles.mileage}</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {appointment.selected_services && appointment.selected_services.length > 0 && (
-                      <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                        <Wrench className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h3 className="font-medium text-gray-700 text-sm">Requested Services</h3>
-                          <ul className="mt-1 space-y-1">
-                            {appointment.selected_services.map((service, index) => (
-                              <li key={index} className="flex items-center">
-                                <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
-                                <span className="text-xs text-gray-600">{service}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-
-                    {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
-                      <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                        <AlertCircle className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h3 className="font-medium text-gray-700 text-sm">Reported Issues</h3>
-                          <ul className="mt-1 space-y-1">
-                            {appointment.selected_car_issues.map((issue, index) => (
-                              <li key={index} className="flex items-center">
-                                <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
-                                <span className="text-xs text-gray-600">{issue}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-
-                    {appointment.issue_description && (
-                      <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                        <FileText className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h3 className="font-medium text-gray-700 text-sm">Description</h3>
-                          <p className="text-xs text-gray-600 mt-1">{appointment.issue_description}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                      <Car className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h3 className="font-medium text-gray-700 text-sm">Car Status</h3>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {appointment.car_runs !== null
-                            ? appointment.car_runs
-                              ? "Car is running"
-                              : "Car is not running"
-                            : "Car status not specified"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 p-3 border border-dashed border-gray-300 rounded-md bg-gray-50">
-                    <div className="flex items-center justify-center mb-2">
-                      <CreditCard className="h-4 w-4 text-[#294a46] mr-2" />
-                      <h3 className="font-medium text-gray-700 text-sm">Stripe Card Payment Integration Coming Soon</h3>
-                    </div>
-                    <div className="h-9 bg-white rounded border border-gray-200 mb-2"></div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="h-9 bg-white rounded border border-gray-200"></div>
-                      <div className="h-9 bg-white rounded border border-gray-200"></div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </Card>
             </div>
