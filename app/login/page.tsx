@@ -28,7 +28,12 @@ export default function LoginPage() {
     const checkSession = async () => {
       try {
         console.log("🔍 Checking session...")
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error("❌ Session error:", sessionError)
+          return
+        }
         
         if (session) {
           console.log("✅ Session found, checking user type...")
@@ -42,6 +47,8 @@ export default function LoginPage() {
 
           if (profileError && profileError.code !== "PGRST116") {
             console.error("❌ Error checking mechanic profile:", profileError)
+            // Retry after a short delay
+            setTimeout(checkSession, 1000)
             return
           }
 
@@ -59,11 +66,18 @@ export default function LoginPage() {
           }
 
           // Check if this is a customer account
-          const { data: customerProfile } = await supabase
+          const { data: customerProfile, error: customerError } = await supabase
             .from("customer_profiles")
             .select("id")
             .eq("user_id", session.user.id)
             .single()
+
+          if (customerError && customerError.code !== "PGRST116") {
+            console.error("❌ Error checking customer profile:", customerError)
+            // Retry after a short delay
+            setTimeout(checkSession, 1000)
+            return
+          }
 
           if (customerProfile) {
             console.log("✅ Customer profile found:", customerProfile.id)
@@ -72,6 +86,8 @@ export default function LoginPage() {
         }
       } catch (error) {
         console.error("❌ Session check error:", error)
+        // Retry after a short delay
+        setTimeout(checkSession, 1000)
       }
     }
     checkSession()

@@ -24,6 +24,9 @@ export async function middleware(request) {
             name,
             value,
             ...options,
+            path: "/",
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production"
           })
         },
         remove(name, options) {
@@ -32,31 +35,45 @@ export async function middleware(request) {
             name,
             value: '',
             ...options,
+            path: "/",
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 0
           })
         },
       },
     }
   )
 
-  // Get the session
-  const { data: { session } } = await supabase.auth.getSession()
+  try {
+    // Get the session
+    const { data: { session }, error } = await supabase.auth.getSession()
 
-  // Handle login page - redirect if already logged in
-  if (request.nextUrl.pathname === '/login') {
-    if (session) {
-      return NextResponse.redirect(new URL('/mechanic/dashboard', request.url))
+    if (error) {
+      console.error("Session error:", error)
+      return response
     }
+
+    // Handle login page - redirect if already logged in
+    if (request.nextUrl.pathname === '/login') {
+      if (session) {
+        return NextResponse.redirect(new URL('/mechanic/dashboard', request.url))
+      }
+      return response
+    }
+
+    // Protect mechanic routes
+    if (request.nextUrl.pathname.startsWith('/mechanic')) {
+      if (!session) {
+        return NextResponse.redirect(new URL('/login', request.url))
+      }
+    }
+
+    return response
+  } catch (error) {
+    console.error("Middleware error:", error)
     return response
   }
-
-  // Protect mechanic routes
-  if (request.nextUrl.pathname.startsWith('/mechanic')) {
-    if (!session) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-  }
-
-  return response
 }
 
 export const config = {
