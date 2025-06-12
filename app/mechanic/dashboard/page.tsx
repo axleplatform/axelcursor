@@ -81,7 +81,14 @@ export default function MechanicDashboard() {
           .select(`
             *,
             vehicles(*),
-            mechanic_quotes(*)
+            mechanic_quotes!appointment_id(
+              id,
+              mechanic_id,
+              price,
+              eta,
+              notes,
+              status
+            )
           `)
           .eq("status", "pending")
 
@@ -120,7 +127,14 @@ export default function MechanicDashboard() {
           .select(`
             *,
             vehicles(*),
-            mechanic_quotes(*)
+            mechanic_quotes!appointment_id(
+              id,
+              mechanic_id,
+              price,
+              eta,
+              notes,
+              status
+            )
           `)
           .in("status", ["pending", "confirmed"])
 
