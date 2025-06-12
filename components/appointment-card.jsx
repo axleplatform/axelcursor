@@ -13,6 +13,7 @@ export default function AppointmentCard({
   appointment,
   mechanicId,
   isUpcoming = false,
+  isSelected = false,
   selectedAppointment,
   onEdit,
   onUpdate,

@@ -360,6 +360,7 @@ export default function MechanicDashboard() {
                     key={appointment.id}
                     appointment={appointment}
                     isUpcoming={false}
+                    isSelected={selectedAppointment?.id === appointment.id}
                     mechanicId={mechanicId || undefined}
                     selectedAppointment={selectedAppointment}
                     onEdit={setSelectedAppointment}
@@ -393,6 +394,7 @@ export default function MechanicDashboard() {
                     key={appointment.id}
                     appointment={appointment}
                     isUpcoming={true}
+                    isSelected={selectedAppointment?.id === appointment.id}
                     mechanicId={mechanicId || undefined}
                     selectedAppointment={selectedAppointment}
                     onEdit={setSelectedAppointment}
