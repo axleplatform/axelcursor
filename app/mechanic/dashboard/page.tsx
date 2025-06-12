@@ -80,11 +80,6 @@ export default function MechanicDashboard() {
           .from("appointments")
           .select(`
             *,
-            vehicles:vehicle_id (
-              *,
-              make:make_id (name),
-              model:model_id (name)
-            ),
             mechanic_quotes!appointment_id(
               id,
               mechanic_id,
@@ -111,16 +106,35 @@ export default function MechanicDashboard() {
           throw availableError
         }
 
+        // Fetch vehicles for available appointments
+        if (available && available.length > 0) {
+          const availableIds = available.map(apt => apt.id)
+          const { data: availableVehicles, error: vehiclesError } = await supabase
+            .from('vehicles')
+            .select('*')
+            .in('appointment_id', availableIds)
+
+          if (vehiclesError) {
+            console.error('Error fetching vehicles:', vehiclesError)
+            throw vehiclesError
+          }
+
+          // Map vehicles to appointments
+          const availableWithVehicles = available.map(apt => ({
+            ...apt,
+            vehicles: availableVehicles?.find(v => v.appointment_id === apt.id) || null
+          }))
+
+          setAvailableAppointments(availableWithVehicles)
+        } else {
+          setAvailableAppointments([])
+        }
+
         // Fetch upcoming appointments (quoted)
         const { data: upcomingData, error: upcomingError } = await supabase
           .from('appointments')
           .select(`
             *,
-            vehicles:vehicle_id (
-              *,
-              make:make_id (name),
-              model:model_id (name)
-            ),
             mechanic_quotes (
               *,
               mechanic:mechanic_id (
@@ -138,9 +152,30 @@ export default function MechanicDashboard() {
           throw upcomingError
         }
 
-        // Ensure we always have arrays
-        setAvailableAppointments(available || [])
-        setUpcomingAppointments(upcomingData || [])
+        // Fetch vehicles for upcoming appointments
+        if (upcomingData && upcomingData.length > 0) {
+          const upcomingIds = upcomingData.map(apt => apt.id)
+          const { data: upcomingVehicles, error: vehiclesError } = await supabase
+            .from('vehicles')
+            .select('*')
+            .in('appointment_id', upcomingIds)
+
+          if (vehiclesError) {
+            console.error('Error fetching vehicles:', vehiclesError)
+            throw vehiclesError
+          }
+
+          // Map vehicles to appointments
+          const upcomingWithVehicles = upcomingData.map(apt => ({
+            ...apt,
+            vehicles: upcomingVehicles?.find(v => v.appointment_id === apt.id) || null
+          }))
+
+          setUpcomingAppointments(upcomingWithVehicles)
+        } else {
+          setUpcomingAppointments([])
+        }
+
       } catch (error) {
         console.error("Error fetching appointments:", error)
         toast({
