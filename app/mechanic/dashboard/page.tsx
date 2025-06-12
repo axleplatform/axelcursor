@@ -78,17 +78,7 @@ export default function MechanicDashboard() {
         // Fetch available appointments (not quoted or skipped)
         let availableQuery = supabase
           .from("appointments")
-          .select(`
-            *,
-            mechanic_quotes!appointment_id(
-              id,
-              mechanic_id,
-              price,
-              eta,
-              notes,
-              status
-            )
-          `)
+          .select("*")
           .eq("status", "pending")
 
         // Only add filters if there are IDs to exclude
@@ -106,9 +96,22 @@ export default function MechanicDashboard() {
           throw availableError
         }
 
-        // Fetch vehicles for available appointments
+        // Fetch quotes for available appointments
         if (available && available.length > 0) {
           const availableIds = available.map(apt => apt.id)
+          
+          // Get quotes
+          const { data: availableQuotes, error: quotesError } = await supabase
+            .from('mechanic_quotes')
+            .select('*')
+            .in('appointment_id', availableIds)
+
+          if (quotesError) {
+            console.error('Error fetching quotes:', quotesError)
+            throw quotesError
+          }
+
+          // Get vehicles
           const { data: availableVehicles, error: vehiclesError } = await supabase
             .from('vehicles')
             .select('*')
@@ -119,13 +122,14 @@ export default function MechanicDashboard() {
             throw vehiclesError
           }
 
-          // Map vehicles to appointments
-          const availableWithVehicles = available.map(apt => ({
+          // Map quotes and vehicles to appointments
+          const availableWithData = available.map(apt => ({
             ...apt,
+            mechanic_quotes: availableQuotes?.filter(q => q.appointment_id === apt.id) || [],
             vehicles: availableVehicles?.find(v => v.appointment_id === apt.id) || null
           }))
 
-          setAvailableAppointments(availableWithVehicles)
+          setAvailableAppointments(availableWithData)
         } else {
           setAvailableAppointments([])
         }
@@ -133,16 +137,7 @@ export default function MechanicDashboard() {
         // Fetch upcoming appointments (quoted)
         const { data: upcomingData, error: upcomingError } = await supabase
           .from('appointments')
-          .select(`
-            *,
-            mechanic_quotes (
-              *,
-              mechanic:mechanic_id (
-                *,
-                profile:mechanic_profiles (*)
-              )
-            )
-          `)
+          .select("*")
           .eq('mechanic_id', mechanicId)
           .neq('status', 'cancelled')
           .order('appointment_date', { ascending: true })
@@ -152,9 +147,28 @@ export default function MechanicDashboard() {
           throw upcomingError
         }
 
-        // Fetch vehicles for upcoming appointments
+        // Fetch quotes and vehicles for upcoming appointments
         if (upcomingData && upcomingData.length > 0) {
           const upcomingIds = upcomingData.map(apt => apt.id)
+          
+          // Get quotes with mechanic profiles
+          const { data: upcomingQuotes, error: quotesError } = await supabase
+            .from('mechanic_quotes')
+            .select(`
+              *,
+              mechanic:mechanic_id (
+                *,
+                profile:mechanic_profiles (*)
+              )
+            `)
+            .in('appointment_id', upcomingIds)
+
+          if (quotesError) {
+            console.error('Error fetching quotes:', quotesError)
+            throw quotesError
+          }
+
+          // Get vehicles
           const { data: upcomingVehicles, error: vehiclesError } = await supabase
             .from('vehicles')
             .select('*')
@@ -165,13 +179,14 @@ export default function MechanicDashboard() {
             throw vehiclesError
           }
 
-          // Map vehicles to appointments
-          const upcomingWithVehicles = upcomingData.map(apt => ({
+          // Map quotes and vehicles to appointments
+          const upcomingWithData = upcomingData.map(apt => ({
             ...apt,
+            mechanic_quotes: upcomingQuotes?.filter(q => q.appointment_id === apt.id) || [],
             vehicles: upcomingVehicles?.find(v => v.appointment_id === apt.id) || null
           }))
 
-          setUpcomingAppointments(upcomingWithVehicles)
+          setUpcomingAppointments(upcomingWithData)
         } else {
           setUpcomingAppointments([])
         }
