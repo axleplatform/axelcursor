@@ -43,12 +43,10 @@ export default function LoginPage() {
             .from("mechanic_profiles")
             .select("id, onboarding_completed, onboarding_step")
             .eq("user_id", session.user.id)
-            .single()
+            .maybeSingle()
 
-          if (profileError && profileError.code !== "PGRST116") {
+          if (profileError) {
             console.error("❌ Error checking mechanic profile:", profileError)
-            // Retry after a short delay
-            setTimeout(checkSession, 1000)
             return
           }
 
@@ -70,24 +68,24 @@ export default function LoginPage() {
             .from("customer_profiles")
             .select("id")
             .eq("user_id", session.user.id)
-            .single()
+            .maybeSingle()
 
-          if (customerError && customerError.code !== "PGRST116") {
+          if (customerError) {
             console.error("❌ Error checking customer profile:", customerError)
-            // Retry after a short delay
-            setTimeout(checkSession, 1000)
             return
           }
 
           if (customerProfile) {
             console.log("✅ Customer profile found:", customerProfile.id)
             router.replace("/dashboard")
+          } else {
+            // No profile found - redirect to onboarding
+            console.log("🔄 No profile found, redirecting to onboarding")
+            router.replace("/onboarding-mechanic-1")
           }
         }
       } catch (error) {
         console.error("❌ Session check error:", error)
-        // Retry after a short delay
-        setTimeout(checkSession, 1000)
       }
     }
     checkSession()

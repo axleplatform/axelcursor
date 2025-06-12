@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function middleware(request) {
@@ -9,43 +9,10 @@ export async function middleware(request) {
     },
   })
 
-  // Create supabase client with proper cookie handling
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        get(name) {
-          return request.cookies.get(name)?.value
-        },
-        set(name, value, options) {
-          // Set cookie on the response
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-            path: "/",
-            sameSite: "lax",
-            secure: process.env.NODE_ENV === "production"
-          })
-        },
-        remove(name, options) {
-          // Remove cookie from the response
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-            path: "/",
-            sameSite: "lax",
-            secure: process.env.NODE_ENV === "production",
-            maxAge: 0
-          })
-        },
-      },
-    }
-  )
-
   try {
+    // Create supabase client with proper cookie handling
+    const supabase = createServerClient()
+
     // Get the session
     const { data: { session }, error } = await supabase.auth.getSession()
 
