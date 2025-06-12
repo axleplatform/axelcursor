@@ -53,47 +53,76 @@ export default function MechanicDashboard() {
       try {
         setIsLoading(true)
 
+        // Get quoted appointment IDs
+        const quotedAppointments = await supabase
+          .from("mechanic_quotes")
+          .select("appointment_id")
+          .eq("mechanic_id", mechanicId)
+        
+        const quotedIds = quotedAppointments.data?.map((q: { appointment_id: string }) => q.appointment_id) || []
+        console.log('Quoted appointment IDs:', quotedIds)
+        console.log('Quoted IDs length:', quotedIds.length)
+
+        // Get skipped appointment IDs
+        const skippedAppointments = await supabase
+          .from("mechanic_skipped_appointments")
+          .select("appointment_id")
+          .eq("mechanic_id", mechanicId)
+        
+        const skippedIds = skippedAppointments.data?.map((s: { appointment_id: string }) => s.appointment_id) || []
+        console.log('Skipped appointment IDs:', skippedIds)
+        console.log('Skipped IDs length:', skippedIds.length)
+
         // Fetch available appointments (not quoted or skipped)
-        const { data: available, error: availableError } = await supabase
+        const availableQuery = supabase
           .from("appointments")
           .select(`
             *,
             vehicles(*),
             mechanic_quotes(*)
           `)
-          .not("id", "in", (
-            await supabase
-              .from("mechanic_quotes")
-              .select("appointment_id")
-              .eq("mechanic_id", mechanicId)
-          ).data?.map((q: { appointment_id: string }) => q.appointment_id) || [])
-          .not("id", "in", (
-            await supabase
-              .from("mechanic_skipped_appointments")
-              .select("appointment_id")
-              .eq("mechanic_id", mechanicId)
-          ).data?.map((s: { appointment_id: string }) => s.appointment_id) || [])
           .eq("status", "pending")
 
-        if (availableError) throw availableError
+        // Only add filters if there are IDs to exclude
+        if (quotedIds.length > 0) {
+          availableQuery.not("id", "in", quotedIds)
+        }
+        if (skippedIds.length > 0) {
+          availableQuery.not("id", "in", skippedIds)
+        }
+
+        console.log('Available appointments query:', availableQuery.toJSON())
+        const { data: available, error: availableError } = await availableQuery
+
+        if (availableError) {
+          console.error('Available appointments error:', availableError)
+          throw availableError
+        }
 
         // Fetch upcoming appointments (quoted)
-        const { data: upcoming, error: upcomingError } = await supabase
+        const upcomingQuery = supabase
           .from("appointments")
           .select(`
             *,
             vehicles(*),
             mechanic_quotes(*)
           `)
-          .in("id", (
-            await supabase
-              .from("mechanic_quotes")
-              .select("appointment_id")
-              .eq("mechanic_id", mechanicId)
-          ).data?.map((q: { appointment_id: string }) => q.appointment_id) || [])
           .in("status", ["pending", "confirmed"])
 
-        if (upcomingError) throw upcomingError
+        if (quotedIds.length > 0) {
+          upcomingQuery.in("id", quotedIds)
+        }
+
+        console.log('Upcoming appointments query:', upcomingQuery.toJSON())
+        const { data: upcoming, error: upcomingError } = await upcomingQuery
+
+        if (upcomingError) {
+          console.error('Upcoming appointments error:', upcomingError)
+          throw upcomingError
+        }
+
+        console.log('Available appointments:', available)
+        console.log('Upcoming appointments:', upcoming)
 
         setAvailableAppointments(available || [])
         setUpcomingAppointments(upcoming || [])
