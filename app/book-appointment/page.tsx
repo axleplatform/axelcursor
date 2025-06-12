@@ -487,7 +487,15 @@ const getAllServices = (aiSuggestions: Array<{ service: string; description: str
     while (services.length < 8 && i < additionalServices.length) {
       if (!services.some((s) => s.service === additionalServices[i].service)) {
         services.push(additionalServices[i])
-  // Format phone number as user types
+      }
+      i++
+    }
+  }
+
+  return services
+}
+
+// Format phone number as user types
 // Get data from landing page
 useEffect(() => {
   // Read data passed from landing page
@@ -507,412 +515,415 @@ useEffect(() => {
     }))
   }
 }, [searchParams])
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Remove all non-numeric characters
-    const cleaned = e.target.value.replace(/\D/g, "")
 
-    // Format the phone number
-    let formatted = ""
-    if (cleaned.length <= 3) {
-      formatted = cleaned
-    } else if (cleaned.length <= 6) {
-      formatted = `(${cleaned.slice(0, 3)})-${cleaned.slice(3)}`
-    } else {
-      formatted = `(${cleaned.slice(0, 3)})-${cleaned.slice(3, 6)} ${cleaned.slice(6, 10)}`
+const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Remove all non-numeric characters
+  const cleaned = e.target.value.replace(/\D/g, "")
+
+  // Format the phone number
+  let formatted = ""
+  if (cleaned.length <= 3) {
+    formatted = cleaned
+  } else if (cleaned.length <= 6) {
+    formatted = `(${cleaned.slice(0, 3)})-${cleaned.slice(3)}`
+  } else {
+    formatted = `(${cleaned.slice(0, 3)})-${cleaned.slice(3, 6)} ${cleaned.slice(6, 10)}`
+  }
+
+  setFormData((prev) => ({ ...prev, phoneNumber: formatted }))
+}
+
+// Toggle service selection
+const toggleService = (service: string) => {
+  setFormData((prev) => {
+    const newSelectedServices = prev.selectedServices.includes(service)
+      ? prev.selectedServices.filter((s) => s !== service)
+      : [...prev.selectedServices, service]
+
+    return { ...prev, selectedServices: newSelectedServices }
+  })
+}
+
+// Toggle car issue selection
+const toggleCarIssue = (issueId: string) => {
+  setFormData((prev) => {
+    const newSelectedCarIssues = prev.selectedCarIssues.includes(issueId)
+      ? prev.selectedCarIssues.filter((id) => id !== issueId)
+      : [...prev.selectedCarIssues, issueId]
+
+    return { ...prev, selectedCarIssues: newSelectedCarIssues }
+  })
+}
+
+// Handle text area focus and input
+const handleTextAreaFocus = () => {
+  setHasInteractedWithTextArea(true)
+  // Show default recommendations when user focuses on the text area
+  if (!aiSuggestions && !formData.issueDescription.trim()) {
+    setAiSuggestions(defaultRecommendedServices)
+  }
+}
+
+// Handle car issue description changes
+const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const value = e.target.value
+  setFormData((prev) => ({ ...prev, issueDescription: value }))
+}
+
+// Handle car runs selection - now using boolean values
+const handleCarRunsChange = (value: boolean) => {
+  setFormData((prev) => ({ ...prev, carRuns: value }))
+}
+
+// Update AI suggestions based on issue description
+useEffect(() => {
+  // Skip this effect if we're still loading initial data
+  if (!hasInteractedWithTextArea && !formData.issueDescription) {
+    return
+  }
+
+  // Update AI suggestions if there's text in the description
+  if (formData.issueDescription.trim().length > 0) {
+    const result = getAIDiagnostics(formData.issueDescription)
+    if (result) {
+      // Only update if different from current suggestions
+      if (!aiSuggestions || JSON.stringify(result) !== JSON.stringify(aiSuggestions)) {
+        setAiSuggestions(result)
+      }
     }
-
-    setFormData((prev) => ({ ...prev, phoneNumber: formatted }))
-  }
-
-  // Toggle service selection
-  const toggleService = (service: string) => {
-    setFormData((prev) => {
-      const newSelectedServices = prev.selectedServices.includes(service)
-        ? prev.selectedServices.filter((s) => s !== service)
-        : [...prev.selectedServices, service]
-
-      return { ...prev, selectedServices: newSelectedServices }
-    })
-  }
-
-  // Toggle car issue selection
-  const toggleCarIssue = (issueId: string) => {
-    setFormData((prev) => {
-      const newSelectedCarIssues = prev.selectedCarIssues.includes(issueId)
-        ? prev.selectedCarIssues.filter((id) => id !== issueId)
-        : [...prev.selectedCarIssues, issueId]
-
-      return { ...prev, selectedCarIssues: newSelectedCarIssues }
-    })
-  }
-
-  // Handle text area focus and input
-  const handleTextAreaFocus = () => {
-    setHasInteractedWithTextArea(true)
-    // Show default recommendations when user focuses on the text area
-    if (!aiSuggestions && !formData.issueDescription.trim()) {
+  } else if (hasInteractedWithTextArea) {
+    // Show default recommendations if text area is empty and user has interacted
+    if (JSON.stringify(aiSuggestions) !== JSON.stringify(defaultRecommendedServices)) {
       setAiSuggestions(defaultRecommendedServices)
     }
   }
+}, [formData.issueDescription, hasInteractedWithTextArea, aiSuggestions])
 
-  // Handle car issue description changes
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value
-    setFormData((prev) => ({ ...prev, issueDescription: value }))
-  }
+// Handle form submission
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setIsSubmitting(true)
+  setValidationError(null)
 
-  // Handle car runs selection - now using boolean values
-  const handleCarRunsChange = (value: boolean) => {
-    setFormData((prev) => ({ ...prev, carRuns: value }))
-  }
+  try {
+    // Get the current user or sign in anonymously
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    let userId: string
 
-  // Update AI suggestions based on issue description
-  useEffect(() => {
-    // Skip this effect if we're still loading initial data
-    if (!hasInteractedWithTextArea && !formData.issueDescription) {
-      return
-    }
-
-    // Update AI suggestions if there's text in the description
-    if (formData.issueDescription.trim().length > 0) {
-      const result = getAIDiagnostics(formData.issueDescription)
-      if (result) {
-        // Only update if different from current suggestions
-        if (!aiSuggestions || JSON.stringify(result) !== JSON.stringify(aiSuggestions)) {
-          setAiSuggestions(result)
-        }
-      }
-    } else if (hasInteractedWithTextArea) {
-      // Show default recommendations if text area is empty and user has interacted
-      if (JSON.stringify(aiSuggestions) !== JSON.stringify(defaultRecommendedServices)) {
-        setAiSuggestions(defaultRecommendedServices)
-      }
-    }
-  }, [formData.issueDescription, hasInteractedWithTextArea, aiSuggestions])
-
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setValidationError(null)
-
-    try {
-      // Get the current user or sign in anonymously
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      let userId: string
-
-      if (user) {
-        // Use the authenticated user's ID
-        userId = user.id
-      } else {
-        // Sign in anonymously using Supabase's built-in function
-        const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously()
-        
-        if (anonError) {
-          console.error('Error signing in anonymously:', anonError)
-          throw new Error('Failed to create anonymous user. Please try again.')
-        }
-
-        if (!anonData.user) {
-          throw new Error('Failed to create anonymous user. Please try again.')
-        }
-
-        userId = anonData.user.id
-      }
-
-      // Prepare appointment data
-      const appointmentData = {
-        user_id: userId,
-        location: "Mobile Service",
-        appointment_date: new Date().toISOString(),
-        status: "pending",
-        source: "web",
-        car_runs: formData.carRuns,
-        issue_description: formData.issueDescription,
-        selected_services: formData.selectedServices,
-        selected_car_issues: formData.selectedCarIssues,
-        phone_number: formData.phoneNumber,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-
-      console.log("Creating appointment with data:", appointmentData)
-
-      // Create the appointment
-      const { data: appointment, error: appointmentError } = await supabase
-        .from("appointments")
-        .insert([appointmentData])
-        .select()
-        .single()
-
-      if (appointmentError) {
-        console.error("Supabase error creating appointment:", appointmentError)
-        throw appointmentError
-      }
-
-      if (!appointment) {
-        throw new Error("Failed to create appointment")
-      }
-
-      // Show success message
-      toast({
-        title: "Success!",
-        description: "Your appointment has been booked successfully.",
-      })
+    if (user) {
+      // Use the authenticated user's ID
+      userId = user.id
+    } else {
+      // Sign in anonymously using Supabase's built-in function
+      const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously()
       
-      // Redirect to pick mechanic page
-      router.push(`/pick-mechanic?appointmentId=${appointment.id}`)
+      if (anonError) {
+        console.error('Error signing in anonymously:', anonError)
+        throw new Error('Failed to create anonymous user. Please try again.')
+      }
 
-    } catch (err) {
-      console.error("Error creating appointment:", err)
-      setValidationError(err instanceof Error ? err.message : "Failed to create appointment")
-      toast({
-        title: "Error",
-        description: "Failed to create appointment. Please try again.",
-        variant: "destructive"
-      })
-    } finally {
-      setIsSubmitting(false)
+      if (!anonData.user) {
+        throw new Error('Failed to create anonymous user. Please try again.')
+      }
+
+      userId = anonData.user.id
     }
+
+    // Prepare appointment data
+    const appointmentData = {
+      user_id: userId,
+      location: "Mobile Service",
+      appointment_date: new Date().toISOString(),
+      status: "pending",
+      source: "web",
+      car_runs: formData.carRuns,
+      issue_description: formData.issueDescription,
+      selected_services: formData.selectedServices,
+      selected_car_issues: formData.selectedCarIssues,
+      phone_number: formData.phoneNumber,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+
+    console.log("Creating appointment with data:", appointmentData)
+
+    // Create the appointment
+    const { data: appointment, error: appointmentError } = await supabase
+      .from("appointments")
+      .insert([appointmentData])
+      .select()
+      .single()
+
+    if (appointmentError) {
+      console.error("Supabase error creating appointment:", appointmentError)
+      throw appointmentError
+    }
+
+    if (!appointment) {
+      throw new Error("Failed to create appointment")
+    }
+
+    // Show success message
+    toast({
+      title: "Success!",
+      description: "Your appointment has been booked successfully.",
+    })
+    
+    // Redirect to pick mechanic page
+    router.push(`/pick-mechanic?appointmentId=${appointment.id}`)
+
+  } catch (err) {
+    console.error("Error creating appointment:", err)
+    setValidationError(err instanceof Error ? err.message : "Failed to create appointment")
+    toast({
+      title: "Error",
+      description: "Failed to create appointment. Please try again.",
+      variant: "destructive"
+    })
+  } finally {
+    setIsSubmitting(false)
   }
+}
 
-  // Check if form is valid
-  const isFormValid =
-    formData.phoneNumber && // Phone number is required
-    (formData.issueDescription || formData.selectedServices.length > 0) // Either description OR service selection
+// Check if form is valid
+const isFormValid =
+  formData.phoneNumber && // Phone number is required
+  (formData.issueDescription || formData.selectedServices.length > 0) // Either description OR service selection
 
-  // Get all available services
-  const allServices = getAllServices(aiSuggestions)
+// Get all available services
+const allServices = getAllServices(aiSuggestions)
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <SiteHeader />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#294a46]"></div>
-        </main>
-        <Footer />
-      </div>
-    )
-  }
-
-  if (!appointmentId || !appointmentData) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <SiteHeader />
-        <main className="flex-1">
-          <div className="container mx-auto px-4 py-8 max-w-2xl">
-            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
-              <h2 className="text-lg font-semibold mb-2">Error</h2>
-              <p>We couldn't find your appointment information. Please return to the home page and try again.</p>
-              <div className="mt-4">
-                <a href="/" className="text-[#294a46] font-medium hover:underline">
-                  Return to Home
-                </a>
-              </div>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    )
-  }
-
+if (isLoading) {
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header */}
       <SiteHeader />
-
-      {/* Main Content */}
-      <main className="flex-1">
-        <div className="container mx-auto px-4 py-8 max-w-2xl">
-          <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Book An Appointment</h1>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
-              {/* Left half - Car issue description */}
-              <div className="space-y-2 md:w-1/2">
-                <p className="text-center md:text-left text-gray-600">Tell us what happened</p>
-                <textarea
-                  value={formData.issueDescription}
-                  onChange={handleDescriptionChange}
-                  onFocus={handleTextAreaFocus}
-                  placeholder="Example: My car won't start. When I turn the key, I hear a clicking sound.
-
-or type Oil Change"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
-                  style={{ lineHeight: 1.5 }}
-                />
-              </div>
-
-              {/* Right half - Phone Number and Car Runs */}
-              <div className="space-y-3 md:w-1/2 flex flex-col items-center justify-center">
-                {/* Phone Number Input */}
-                <div className="space-y-0.5 w-full flex flex-col items-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <Phone className="h-4 w-4 text-gray-500 mr-2" />
-                    <p className="text-gray-600 text-sm">
-                      Phone Number <span className="text-red-500">*</span>
-                    </p>
-                  </div>
-                  <div className="relative max-w-[200px] w-full">
-                    <input
-                      type="tel"
-                      value={formData.phoneNumber}
-                      onChange={handlePhoneChange}
-                      placeholder="(###)-### ####"
-                      className="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-center"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Does your car run? - Updated to use boolean values */}
-                <div className="space-y-1 w-full flex flex-col items-center">
-                  <p className="text-center text-gray-600 text-sm">Does your car run?</p>
-                  <div className="flex justify-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleCarRunsChange(true)}
-                      className={`px-8 py-2 rounded-full border transition-colors ${
-                        formData.carRuns === true
-                          ? "bg-[#294a46] text-white border-[#294a46]"
-                          : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
-                      }`}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCarRunsChange(false)}
-                      className={`px-8 py-2 rounded-full border transition-colors ${
-                        formData.carRuns === false
-                          ? "bg-[#294a46] text-white border-[#294a46]"
-                          : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
-                      }`}
-                    >
-                      No
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* AI Recommendations - Now full width */}
-            <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden mb-4">
-              <h4 className="text-sm font-medium text-gray-700 px-3 py-2 border-b border-gray-100 flex items-center justify-between">
-                Recommended Services
-                <div className="flex items-center text-[#294a46] text-[10px]">
-                  <Lightbulb className="h-2 w-2 mr-1" />
-                  <p className="font-medium">axle ai recommends</p>
-                </div>
-              </h4>
-
-              <div className="p-4">
-                {aiSuggestions && aiSuggestions.length > 0 ? (
-                  <div className="flex flex-row space-x-4">
-                    {aiSuggestions.map((suggestion, index) => (
-                      <div
-                        key={`ai-${index}`}
-                        onClick={() => toggleService(suggestion.service)}
-                        className={`flex-1 p-2 rounded-md border cursor-pointer transition-colors ${
-                          formData.selectedServices.includes(suggestion.service)
-                            ? "bg-[#e6eeec] border-[#294a46]/20"
-                            : "bg-gray-50 border-gray-100 hover:bg-gray-100"
-                        }`}
-                      >
-                        <div className="flex flex-col h-full">
-                          <div className="flex items-start justify-between mb-1">
-                            <h4 className="font-medium text-[#294a46] text-sm">{suggestion.service}</h4>
-                            <div
-                              className={`w-4 h-4 ml-1 rounded-full flex items-center justify-center ${
-                                formData.selectedServices.includes(suggestion.service)
-                                  ? "bg-[#294a46] text-white"
-                                  : "border border-gray-300"
-                              }`}
-                            >
-                              {formData.selectedServices.includes(suggestion.service) && <Check className="h-2 w-2" />}
-                            </div>
-                          </div>
-                          <p className="text-xs text-gray-600 line-clamp-2">{suggestion.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-gray-500 text-center py-6">No recommendations available</div>
-                )}
-              </div>
-            </div>
-
-            {/* Car Issues Section with Multiple Selection - Now Optional */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-center gap-2">
-                <p className="text-center text-gray-600">Select Car Issues</p>
-                {formData.selectedCarIssues.length > 0 && (
-                  <div className="bg-[#e6eeec] text-[#294a46] text-xs px-2 py-1 rounded-full">
-                    {formData.selectedCarIssues.length} selected
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 w-full">
-                {[...carIssueOptions]
-                  .sort((a, b) => {
-                    // Sort by label length to put shorter labels (one line) first
-                    return a.label.length - b.label.length
-                  })
-                  .map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => toggleCarIssue(option.id)}
-                      className={`px-2 py-3 rounded-lg border text-center transition-colors ${
-                        formData.selectedCarIssues.includes(option.id)
-                          ? "bg-[#294a46] text-white border-[#294a46]"
-                          : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
-                      }`}
-                    >
-                      <div className="flex flex-col items-center justify-center">
-                        <option.icon className="h-5 w-5 mb-1" />
-                        <span className="text-sm">{option.label}</span>
-                      </div>
-                    </button>
-                  ))}
-              </div>
-            </div>
-
-            {validationError && <div className="text-red-500 text-center font-medium mb-2">{validationError}</div>}
-
-            <div className="flex justify-center gap-4 pt-4">
-              <a
-                href="/"
-                className="px-8 py-3 border border-[#294a46] text-[#294a46] rounded-full hover:bg-gray-50 transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
-              >
-                Back
-              </a>
-              <button
-                type="submit"
-                className={`px-8 py-3 bg-[#294a46] text-white rounded-full transform transition-all duration-200 
-                  ${isSubmitting || !isFormValid ? "opacity-70 cursor-not-allowed" : "hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"}`}
-                disabled={isSubmitting || !isFormValid}
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center">
-                    <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></span>
-                    Processing...
-                  </span>
-                ) : (
-                  "Continue"
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
+      <main className="flex-1 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#294a46]"></div>
       </main>
-
-      {/* Footer */}
       <Footer />
     </div>
   )
 }
+
+if (!appointmentId || !appointmentData) {
+  return (
+    <div className="flex flex-col min-h-screen">
+      <SiteHeader />
+      <main className="flex-1">
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
+            <h2 className="text-lg font-semibold mb-2">Error</h2>
+            <p>We couldn't find your appointment information. Please return to the home page and try again.</p>
+            <div className="mt-4">
+              <a href="/" className="text-[#294a46] font-medium hover:underline">
+                Return to Home
+              </a>
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  )
+}
+
+return (
+  <div className="flex flex-col min-h-screen">
+    {/* Header */}
+    <SiteHeader />
+
+    {/* Main Content */}
+    <main className="flex-1">
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Book An Appointment</h1>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
+            {/* Left half - Car issue description */}
+            <div className="space-y-2 md:w-1/2">
+              <p className="text-center md:text-left text-gray-600">Tell us what happened</p>
+              <textarea
+                value={formData.issueDescription}
+                onChange={handleDescriptionChange}
+                onFocus={handleTextAreaFocus}
+                placeholder="Example: My car won't start. When I turn the key, I hear a clicking sound.
+
+or type Oil Change"
+                className="w-full px-4 py-3 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
+                style={{ lineHeight: 1.5 }}
+              />
+            </div>
+
+            {/* Right half - Phone Number and Car Runs */}
+            <div className="space-y-3 md:w-1/2 flex flex-col items-center justify-center">
+              {/* Phone Number Input */}
+              <div className="space-y-0.5 w-full flex flex-col items-center">
+                <div className="flex items-center justify-center mb-1">
+                  <Phone className="h-4 w-4 text-gray-500 mr-2" />
+                  <p className="text-gray-600 text-sm">
+                    Phone Number <span className="text-red-500">*</span>
+                  </p>
+                </div>
+                <div className="relative max-w-[200px] w-full">
+                  <input
+                    type="tel"
+                    value={formData.phoneNumber}
+                    onChange={handlePhoneChange}
+                    placeholder="(###)-### ####"
+                    className="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-center"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Does your car run? - Updated to use boolean values */}
+              <div className="space-y-1 w-full flex flex-col items-center">
+                <p className="text-center text-gray-600 text-sm">Does your car run?</p>
+                <div className="flex justify-center space-x-4">
+                  <button
+                    type="button"
+                    onClick={() => handleCarRunsChange(true)}
+                    className={`px-8 py-2 rounded-full border transition-colors ${
+                      formData.carRuns === true
+                        ? "bg-[#294a46] text-white border-[#294a46]"
+                        : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
+                    }`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCarRunsChange(false)}
+                    className={`px-8 py-2 rounded-full border transition-colors ${
+                      formData.carRuns === false
+                        ? "bg-[#294a46] text-white border-[#294a46]"
+                        : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
+                    }`}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* AI Recommendations - Now full width */}
+          <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden mb-4">
+            <h4 className="text-sm font-medium text-gray-700 px-3 py-2 border-b border-gray-100 flex items-center justify-between">
+              Recommended Services
+              <div className="flex items-center text-[#294a46] text-[10px]">
+                <Lightbulb className="h-2 w-2 mr-1" />
+                <p className="font-medium">axle ai recommends</p>
+              </div>
+            </h4>
+
+            <div className="p-4">
+              {aiSuggestions && aiSuggestions.length > 0 ? (
+                <div className="flex flex-row space-x-4">
+                  {aiSuggestions.map((suggestion, index) => (
+                    <div
+                      key={`ai-${index}`}
+                      onClick={() => toggleService(suggestion.service)}
+                      className={`flex-1 p-2 rounded-md border cursor-pointer transition-colors ${
+                        formData.selectedServices.includes(suggestion.service)
+                          ? "bg-[#e6eeec] border-[#294a46]/20"
+                          : "bg-gray-50 border-gray-100 hover:bg-gray-100"
+                      }`}
+                    >
+                      <div className="flex flex-col h-full">
+                        <div className="flex items-start justify-between mb-1">
+                          <h4 className="font-medium text-[#294a46] text-sm">{suggestion.service}</h4>
+                          <div
+                            className={`w-4 h-4 ml-1 rounded-full flex items-center justify-center ${
+                              formData.selectedServices.includes(suggestion.service)
+                                ? "bg-[#294a46] text-white"
+                                : "border border-gray-300"
+                            }`}
+                          >
+                            {formData.selectedServices.includes(suggestion.service) && <Check className="h-2 w-2" />}
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-600 line-clamp-2">{suggestion.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-500 text-center py-6">No recommendations available</div>
+              )}
+            </div>
+          </div>
+
+          {/* Car Issues Section with Multiple Selection - Now Optional */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-center gap-2">
+              <p className="text-center text-gray-600">Select Car Issues</p>
+              {formData.selectedCarIssues.length > 0 && (
+                <div className="bg-[#e6eeec] text-[#294a46] text-xs px-2 py-1 rounded-full">
+                  {formData.selectedCarIssues.length} selected
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 w-full">
+              {[...carIssueOptions]
+                .sort((a, b) => {
+                  // Sort by label length to put shorter labels (one line) first
+                  return a.label.length - b.label.length
+                })
+                .map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => toggleCarIssue(option.id)}
+                    className={`px-2 py-3 rounded-lg border text-center transition-colors ${
+                      formData.selectedCarIssues.includes(option.id)
+                        ? "bg-[#294a46] text-white border-[#294a46]"
+                        : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
+                    }`}
+                  >
+                    <div className="flex flex-col items-center justify-center">
+                      <option.icon className="h-5 w-5 mb-1" />
+                      <span className="text-sm">{option.label}</span>
+                    </div>
+                  </button>
+                ))}
+            </div>
+          </div>
+
+          {validationError && <div className="text-red-500 text-center font-medium mb-2">{validationError}</div>}
+
+          <div className="flex justify-center gap-4 pt-4">
+            <a
+              href="/"
+              className="px-8 py-3 border border-[#294a46] text-[#294a46] rounded-full hover:bg-gray-50 transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
+            >
+              Back
+            </a>
+            <button
+              type="submit"
+              className={`px-8 py-3 bg-[#294a46] text-white rounded-full transform transition-all duration-200 
+                ${isSubmitting || !isFormValid ? "opacity-70 cursor-not-allowed" : "hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"}`}
+              disabled={isSubmitting || !isFormValid}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center">
+                  <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></span>
+                  Processing...
+                </span>
+              ) : (
+                "Continue"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    {/* Footer */}
+    <Footer />
+  </div>
+)
+}
+
+export default BookAppointment
