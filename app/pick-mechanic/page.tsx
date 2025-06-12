@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
-import MechanicCard from "@/components/mechanic-card"
+import AppointmentCard from "@/components/appointment-card"
 
 export default function PickMechanic() {
   const router = useRouter()
@@ -150,10 +150,10 @@ export default function PickMechanic() {
 
           <div className="space-y-8">
             {appointmentData.mechanic_quotes.map((quote: any) => (
-              <MechanicCard
+              <AppointmentCard
                 key={quote.id}
-                quote={quote}
                 appointment={appointmentData}
+                quote={quote}
                 onSelect={() => {
                   // Handle quote selection
                   router.push(`/appointments/${appointmentId}/confirm?quote_id=${quote.id}`)
