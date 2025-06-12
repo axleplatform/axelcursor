@@ -4,6 +4,8 @@ import { useState } from "react"
 import { Check, MapPin, X } from "lucide-react"
 import type { Appointment } from "@/hooks/use-appointments"
 import { formatDate } from "@/lib/utils"
+import { toast } from "@/components/ui/use-toast"
+import { createClient } from "@/lib/supabase/client"
 
 interface UpcomingAppointmentCardProps {
   appointment: Appointment
@@ -27,6 +29,7 @@ export default function UpcomingAppointmentCard({
   const [isProcessing, setIsProcessing] = useState(false)
   const [isEditingPrice, setIsEditingPrice] = useState(false)
   const [price, setPrice] = useState(appointment.price || 0)
+  const supabase = createClient()
 
   const handleStart = async () => {
     setIsProcessing(true)
@@ -44,9 +47,44 @@ export default function UpcomingAppointmentCard({
 
   const handleCancel = async () => {
     setIsProcessing(true)
-    const success = await onCancel(appointment.id)
-    setIsProcessing(false)
-    return success
+    try {
+      // Check if appointment is paid
+      const { data: appointmentData, error: fetchError } = await supabase
+        .from('appointments')
+        .select('payment_status')
+        .eq('id', appointment.id)
+        .single()
+      
+      if (fetchError) throw fetchError
+      
+      if (appointmentData?.payment_status === 'paid') {
+        toast({
+          title: "Error",
+          description: "Cannot cancel paid appointments",
+          variant: "destructive",
+        })
+        return false
+      }
+      
+      const success = await onCancel(appointment.id)
+      if (success) {
+        toast({
+          title: "Success",
+          description: "Appointment cancelled successfully",
+        })
+      }
+      return success
+    } catch (error) {
+      console.error("Error cancelling appointment:", error)
+      toast({
+        title: "Error",
+        description: "Failed to cancel appointment. Please try again.",
+        variant: "destructive",
+      })
+      return false
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const handlePriceUpdate = async () => {

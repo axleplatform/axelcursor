@@ -124,22 +124,53 @@ export default function AppointmentCard({
   const handleCancelQuote = async (appointmentId, quoteId) => {
     if (!quoteId) return
     
-    const confirmCancel = window.confirm(
-      'Are you sure you want to cancel your quote? This will remove you from the customer\'s selection.'
-    )
-    
-    if (!confirmCancel) return
-    
-    setCancellingQuoteId(quoteId)
     try {
+      // Check if appointment is paid
+      const { data: appointment, error: fetchError } = await supabase
+        .from('appointments')
+        .select('payment_status')
+        .eq('id', appointmentId)
+        .single()
+      
+      if (fetchError) throw fetchError
+      
+      if (appointment?.payment_status === 'paid') {
+        toast({
+          title: "Error",
+          description: "Cannot cancel paid appointments",
+          variant: "destructive",
+        })
+        return
+      }
+      
+      const confirmCancel = window.confirm(
+        'Are you sure you want to cancel your quote? This will remove you from the customer\'s selection.'
+      )
+      
+      if (!confirmCancel) return
+      
+      setCancellingQuoteId(quoteId)
+      
+      // Update appointment status
+      const { error: updateError } = await supabase
+        .from('appointments')
+        .update({ 
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          cancelled_by: 'mechanic'
+        })
+        .eq('id', appointmentId)
+      
+      if (updateError) throw updateError
+      
       // Delete the quote
-      const { error } = await supabase
+      const { error: deleteError } = await supabase
         .from('mechanic_quotes')
         .delete()
         .eq('id', quoteId)
         .eq('mechanic_id', mechanicId) // Extra safety check
       
-      if (error) throw error
+      if (deleteError) throw deleteError
       
       toast({
         title: "Success",

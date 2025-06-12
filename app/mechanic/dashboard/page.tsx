@@ -122,24 +122,29 @@ export default function MechanicDashboard() {
         }
 
         // Fetch upcoming appointments (quoted)
-        let upcomingQuery = supabase
-          .from("appointments")
+        const { data: upcomingAppointments, error: upcomingError } = await supabase
+          .from('appointments')
           .select(`
             *,
-            vehicles(*),
-            mechanic_quotes!appointment_id(
-              id,
-              mechanic_id,
-              price,
-              eta,
-              notes,
-              status
+            vehicles:vehicle_id (
+              *,
+              make:make_id (name),
+              model:model_id (name)
+            ),
+            mechanic_quotes (
+              *,
+              mechanic:mechanic_id (
+                *,
+                profile:mechanic_profiles (*)
+              )
             )
           `)
-          .in("status", ["pending", "confirmed"])
+          .eq('mechanic_id', mechanicId)
+          .neq('status', 'cancelled')
+          .order('appointment_date', { ascending: true })
 
         if (quotedIds.length > 0) {
-          upcomingQuery = upcomingQuery.filter(
+          upcomingAppointments.filter(
             'id',
             'in',
             `("${quotedIds.join('","')}")`
@@ -150,18 +155,12 @@ export default function MechanicDashboard() {
           status: ["pending", "confirmed"],
           includedIds: quotedIds
         })
-        const { data: upcoming, error: upcomingError } = await upcomingQuery
-
-        if (upcomingError) {
-          console.error('Upcoming appointments error:', upcomingError)
-          throw upcomingError
-        }
 
         console.log('Available appointments:', available)
-        console.log('Upcoming appointments:', upcoming)
+        console.log('Upcoming appointments:', upcomingAppointments)
 
         setAvailableAppointments(available || [])
-        setUpcomingAppointments(upcoming || [])
+        setUpcomingAppointments(upcomingAppointments || [])
       } catch (error) {
         console.error("Error fetching appointments:", error)
         toast({

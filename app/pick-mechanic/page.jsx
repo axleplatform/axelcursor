@@ -40,58 +40,54 @@ export default function PickMechanicPage() {
         return
       }
 
-      // ABSOLUTELY NO .single() - Handle arrays
-      const { data: appointments, error: aptError } = await supabase
+      const { data: appointments, error: appointmentsError } = await supabase
         .from('appointments')
-        .select('*, vehicles(*)')
+        .select(`
+          *,
+          vehicles:vehicle_id (
+            *,
+            make:make_id (name),
+            model:model_id (name)
+          ),
+          mechanic_quotes (
+            *,
+            mechanic:mechanic_id (
+              *,
+              profile:mechanic_profiles (*)
+            )
+          )
+        `)
         .eq('id', appointmentId)
+        .neq('status', 'cancelled')
+        .single()
       
-      console.log('Appointment query:', { data: appointments, error: aptError })
+      console.log('Appointment query:', { data: appointments, error: appointmentsError })
       
-      if (aptError) {
-        console.error('Query error:', aptError)
+      if (appointmentsError) {
+        console.error('Query error:', appointmentsError)
         setError('Failed to fetch appointment')
         setIsLoading(false)
         return
       }
       
-      if (!appointments || appointments.length === 0) {
+      if (!appointments) {
         console.error('No appointment found with ID:', appointmentId)
         setError('Appointment not found')
         setIsLoading(false)
         return
       }
       
-      const appointment = appointments[0] // Get first item from array
-      
       // Verify the appointment belongs to the current user
       const { data: { user } } = await supabase.auth.getUser()
-      if (appointment.user_id !== user?.id) {
+      if (appointments.user_id !== user?.id) {
         console.error('Appointment does not belong to current user')
         setError('You do not have access to this appointment')
         setIsLoading(false)
         return
       }
       
-      // Fetch quotes separately - NO .single()
-      const { data: quotes, error: quotesError } = await supabase
-        .from('mechanic_quotes')
-        .select(`
-          *,
-          mechanic_profiles(*)
-        `)
-        .eq('appointment_id', appointmentId)
-        .order('created_at', { ascending: false })
-      
-      if (quotesError) {
-        console.error('Quotes fetch error:', quotesError)
-        throw quotesError
-      }
-      
-      console.log('Quotes:', quotes)
-      
-      setAppointment(appointment)
-      setMechanicQuotes(quotes || [])
+      setAppointment(appointments)
+      setMechanicQuotes(appointments.mechanic_quotes || [])
       
     } catch (error) {
       console.error("Error fetching appointment data:", error)
