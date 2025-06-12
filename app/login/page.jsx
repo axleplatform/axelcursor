@@ -30,15 +30,17 @@ export default function LoginPage() {
           .single()
         
         if (profile) {
-          router.push('/mechanic/dashboard')
+          console.log('✅ Mechanic profile found, redirecting to dashboard')
+          window.location.href = '/mechanic/dashboard'
         } else {
-          router.push('/dashboard')
+          console.log('✅ Regular user, redirecting to dashboard')
+          window.location.href = '/dashboard'
         }
       }
     }
     
     checkUser()
-  }, [router])
+  }, [])
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -52,7 +54,7 @@ export default function LoginPage() {
       
       if (error) throw error
       
-      router.push("/mechanic/dashboard")
+      window.location.href = "/mechanic/dashboard"
       
     } catch (error) {
       console.error("Error logging in:", error)

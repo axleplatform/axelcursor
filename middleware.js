@@ -1,12 +1,12 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(request) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
-  })
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -14,48 +14,71 @@ export async function middleware(request) {
     {
       cookies: {
         get(name) {
-          return request.cookies.get(name)?.value
+          return request.cookies.get(name)?.value;
         },
         set(name, value, options) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
           response.cookies.set({
             name,
             value,
             ...options,
-          })
+          });
         },
         remove(name, options) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
           response.cookies.set({
             name,
             value: '',
             ...options,
-          })
+          });
         },
       },
     }
-  )
+  );
 
-  // Refresh session if exists
-  await supabase.auth.getSession()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession();
 
-  // Protected mechanic routes
-  if (request.nextUrl.pathname.startsWith('/mechanic') && !user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // Don't redirect on login page if already going there
+  if (request.nextUrl.pathname === '/login') {
+    if (session) {
+      // User is logged in, redirect away from login
+      return NextResponse.redirect(new URL('/mechanic/dashboard', request.url));
+    }
+    return response;
   }
 
-  // Redirect logged-in users away from login
-  if (request.nextUrl.pathname === '/login' && user) {
-    return NextResponse.redirect(new URL('/mechanic/dashboard', request.url))
+  // Protect mechanic routes
+  if (request.nextUrl.pathname.startsWith('/mechanic')) {
+    if (!session) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
   }
 
-  return response
+  return response;
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/login',
+    '/mechanic/:path*',
+    '/mechanic-dashboard/:path*'
   ],
-} 
+}; 
