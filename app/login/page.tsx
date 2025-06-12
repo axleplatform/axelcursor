@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/client"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -19,6 +19,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isResendingEmail, setIsResendingEmail] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
+
+  // Create Supabase client
+  const supabase = createClient()
 
   // Check if user is already logged in
   useEffect(() => {
