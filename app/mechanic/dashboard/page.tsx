@@ -54,33 +54,37 @@ export default function MechanicDashboard() {
         setIsLoading(true)
 
         // Get quoted appointment IDs
-        const quotedAppointments = await supabase
+        const { data: quotedData, error: quotedError } = await supabase
           .from("mechanic_quotes")
           .select("appointment_id")
           .eq("mechanic_id", mechanicId)
         
-        const quotedIds = quotedAppointments.data?.map((q: { appointment_id: string }) => String(q.appointment_id)) || []
+        if (quotedError) throw quotedError
+        
+        const quotedIds = (quotedData || []).map((q: { appointment_id: string }) => String(q.appointment_id))
         console.log('Quoted appointment IDs:', quotedIds)
-        console.log('Quoted IDs length:', quotedIds.length)
-        console.log('Quoted IDs filter string:', `("${quotedIds.join('","')}")`)
 
         // Get skipped appointment IDs
-        const skippedAppointments = await supabase
+        const { data: skippedData, error: skippedError } = await supabase
           .from("mechanic_skipped_appointments")
           .select("appointment_id")
           .eq("mechanic_id", mechanicId)
         
-        const skippedIds = skippedAppointments.data?.map((s: { appointment_id: string }) => String(s.appointment_id)) || []
+        if (skippedError) throw skippedError
+        
+        const skippedIds = (skippedData || []).map((s: { appointment_id: string }) => String(s.appointment_id))
         console.log('Skipped appointment IDs:', skippedIds)
-        console.log('Skipped IDs length:', skippedIds.length)
-        console.log('Skipped IDs filter string:', `("${skippedIds.join('","')}")`)
 
         // Fetch available appointments (not quoted or skipped)
         let availableQuery = supabase
           .from("appointments")
           .select(`
             *,
-            vehicles(*),
+            vehicles:vehicle_id (
+              *,
+              make:make_id (name),
+              model:model_id (name)
+            ),
             mechanic_quotes!appointment_id(
               id,
               mechanic_id,
@@ -94,26 +98,12 @@ export default function MechanicDashboard() {
 
         // Only add filters if there are IDs to exclude
         if (quotedIds.length > 0) {
-          // Use filter with proper PostgREST syntax
-          availableQuery = availableQuery.filter(
-            'id',
-            'not.in',
-            `("${quotedIds.join('","')}")`
-          )
+          availableQuery = availableQuery.not('id', 'in', `(${quotedIds.join(',')})`)
         }
         if (skippedIds.length > 0) {
-          availableQuery = availableQuery.filter(
-            'id',
-            'not.in',
-            `("${skippedIds.join('","')}")`
-          )
+          availableQuery = availableQuery.not('id', 'in', `(${skippedIds.join(',')})`)
         }
 
-        console.log('Available appointments query filters:', {
-          status: "pending",
-          excludedQuotedIds: quotedIds,
-          excludedSkippedIds: skippedIds
-        })
         const { data: available, error: availableError } = await availableQuery
 
         if (availableError) {
@@ -122,7 +112,7 @@ export default function MechanicDashboard() {
         }
 
         // Fetch upcoming appointments (quoted)
-        const { data: upcomingAppointments, error: upcomingError } = await supabase
+        const { data: upcomingData, error: upcomingError } = await supabase
           .from('appointments')
           .select(`
             *,
@@ -143,24 +133,14 @@ export default function MechanicDashboard() {
           .neq('status', 'cancelled')
           .order('appointment_date', { ascending: true })
 
-        if (quotedIds.length > 0) {
-          upcomingAppointments.filter(
-            'id',
-            'in',
-            `("${quotedIds.join('","')}")`
-          )
+        if (upcomingError) {
+          console.error('Upcoming appointments error:', upcomingError)
+          throw upcomingError
         }
 
-        console.log('Upcoming appointments query filters:', {
-          status: ["pending", "confirmed"],
-          includedIds: quotedIds
-        })
-
-        console.log('Available appointments:', available)
-        console.log('Upcoming appointments:', upcomingAppointments)
-
+        // Ensure we always have arrays
         setAvailableAppointments(available || [])
-        setUpcomingAppointments(upcomingAppointments || [])
+        setUpcomingAppointments(upcomingData || [])
       } catch (error) {
         console.error("Error fetching appointments:", error)
         toast({
@@ -168,6 +148,9 @@ export default function MechanicDashboard() {
           description: "Failed to load appointments. Please try again.",
           variant: "destructive",
         })
+        // Set empty arrays on error
+        setAvailableAppointments([])
+        setUpcomingAppointments([])
       } finally {
         setIsLoading(false)
       }
