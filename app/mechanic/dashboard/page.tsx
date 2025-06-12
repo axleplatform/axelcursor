@@ -66,13 +66,13 @@ export default function MechanicDashboard() {
               .from("mechanic_quotes")
               .select("appointment_id")
               .eq("mechanic_id", mechanicId)
-          ).data?.map(q => q.appointment_id) || [])
+          ).data?.map((q: { appointment_id: string }) => q.appointment_id) || [])
           .not("id", "in", (
             await supabase
               .from("mechanic_skipped_appointments")
               .select("appointment_id")
               .eq("mechanic_id", mechanicId)
-          ).data?.map(s => s.appointment_id) || [])
+          ).data?.map((s: { appointment_id: string }) => s.appointment_id) || [])
           .eq("status", "pending")
 
         if (availableError) throw availableError
@@ -90,7 +90,7 @@ export default function MechanicDashboard() {
               .from("mechanic_quotes")
               .select("appointment_id")
               .eq("mechanic_id", mechanicId)
-          ).data?.map(q => q.appointment_id) || [])
+          ).data?.map((q: { appointment_id: string }) => q.appointment_id) || [])
           .in("status", ["pending", "confirmed"])
 
         if (upcomingError) throw upcomingError
