@@ -1,3 +1,4 @@
+export default function BookAppointment() {
 "use client"
 
 import type React from "react"
@@ -693,6 +694,8 @@ const isFormValid =
 // Get all available services
 const allServices = getAllServices(aiSuggestions)
 
+const appointmentId = searchParams.get("appointmentId")
+
 if (isLoading) {
   return (
     <div className="flex flex-col min-h-screen">
@@ -927,3 +930,4 @@ or type Oil Change"
 }
 
 export default BookAppointment
+}
