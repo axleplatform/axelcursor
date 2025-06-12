@@ -1,4 +1,7 @@
-export default function BookAppointment() {
+"use client"
+import type React from "react"
+
+
 "use client"
 
 import type React from "react"
@@ -930,4 +933,3 @@ or type Oil Change"
 }
 
 export default BookAppointment
-}
