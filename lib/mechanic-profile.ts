@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/client"
 
 /**
  * Utility function to save mechanic profile data
@@ -13,6 +13,7 @@ export async function saveMechanicProfile(
   },
 ) {
   // Get existing profile or create a new one
+  const supabase = createClient()
   const { data: existingProfile, error: fetchError } = await supabase
     .from("mechanic_profiles")
     .select("id, metadata")
@@ -72,6 +73,7 @@ export async function saveMechanicProfile(
  * Utility function to get mechanic profile data
  */
 export async function getMechanicProfile(userId: string) {
+  const supabase = createClient()
   const { data, error } = await supabase.from("mechanic_profiles").select("*, metadata").eq("user_id", userId).single()
 
   if (error) {
@@ -88,6 +90,7 @@ export async function getMechanicProfile(userId: string) {
  * Utility function to mark onboarding as complete
  */
 export async function completeMechanicOnboarding(profileId: string) {
+  const supabase = createClient()
   const { error } = await supabase
     .from("mechanic_profiles")
     .update({
@@ -115,6 +118,7 @@ export async function logProfileChange(
 ) {
   try {
     // Store logs in a separate table or in metadata
+    const supabase = createClient()
     const { error } = await supabase
       .from("mechanic_profiles")
       .update({

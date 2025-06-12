@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
@@ -56,12 +57,15 @@ function getMechanicColumn(appointment: Record<string, unknown>): string | null 
 
 type SubscriptionStatus = 'SUBSCRIBED' | 'CLOSED' | 'CHANNEL_ERROR'
 
-export function useMechanicAppointments(mechanicId: string) {
-  const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
-  const [availableAppointments, setAvailableAppointments] = useState<Appointment[]>([])
+export function useMechanicAppointments() {
+  const router = useRouter()
+  const [mechanicId, setMechanicId] = useState<string | null>(null)
+  const [availableAppointments, setAvailableAppointments] = useState<any[]>([])
+  const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const { toast } = useToast()
+  const supabase = createClient()
 
   useEffect(() => {
     if (!mechanicId) return

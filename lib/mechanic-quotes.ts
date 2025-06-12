@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/client"
 import { validateMechanicId } from "@/lib/utils"
 
 interface Appointment {
@@ -65,7 +65,7 @@ export async function createOrUpdateQuote(
 
   try {
     // Verify mechanic profile exists
-    const { data: mechanicProfile, error: mechanicError } = await supabase
+    const { data: mechanicProfile, error: mechanicError } = await createClient()
       .from('mechanic_profiles')
       .select('id, user_id')
       .eq('id', mechanicId)
@@ -82,7 +82,7 @@ export async function createOrUpdateQuote(
     }
 
     // Verify appointment exists and is in a valid state
-    const { data: appointment, error: appointmentError } = await supabase
+    const { data: appointment, error: appointmentError } = await createClient()
       .from('appointments')
       .select('id, status')
       .eq('id', appointmentId)
@@ -116,7 +116,7 @@ export async function createOrUpdateQuote(
 
     console.log('Upserting quote with data:', quoteData);
 
-    const { data: result, error: upsertError } = await supabase
+    const { data: result, error: upsertError } = await createClient()
       .from('mechanic_quotes')
       .upsert(quoteData, {
         onConflict: 'mechanic_id,appointment_id'
@@ -151,7 +151,7 @@ export async function getQuotesForAppointment(appointmentId: string): Promise<{
   error?: string
 }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await createClient()
       .from("mechanic_quotes")
       .select(`
         *,
@@ -208,7 +208,7 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
       isZero: mechanicId === '0'
     })
     
-    const { data: appointments, error } = await supabase
+    const { data: appointments, error } = await createClient()
       .from("appointments")
       .select("*, vehicles(*)")
       .eq("status", "pending")
@@ -262,7 +262,7 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
       isZero: mechanicId === '0'
     })
     
-    const { data: appointments, error } = await supabase
+    const { data: appointments, error } = await createClient()
       .from("appointments")
       .select("*, vehicles(*), mechanic_quotes!inner(*)")
       .eq("mechanic_quotes.mechanic_id", mechanicId)
@@ -304,11 +304,11 @@ export async function selectQuoteForAppointment(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Start a transaction
-    const { error: transactionError } = await supabase.rpc("begin_transaction")
+    const { error: transactionError } = await createClient().rpc("begin_transaction")
     if (transactionError) throw transactionError
 
     // Get the quote details
-    const { data: quote, error: quoteError } = await supabase
+    const { data: quote, error: quoteError } = await createClient()
       .from("mechanic_quotes")
       .select("*")
       .eq("id", quoteId)
@@ -319,7 +319,7 @@ export async function selectQuoteForAppointment(
     const now = new Date().toISOString()
 
     // Update the appointment with the selected quote
-    const { error: appointmentError } = await supabase
+    const { error: appointmentError } = await createClient()
       .from("appointments")
       .update({
         selected_quote_id: quoteId,
@@ -333,7 +333,7 @@ export async function selectQuoteForAppointment(
     if (appointmentError) throw appointmentError
 
     // Update the selected quote status
-    const { error: quoteUpdateError } = await supabase
+    const { error: quoteUpdateError } = await createClient()
       .from("mechanic_quotes")
       .update({
         status: "accepted",
@@ -344,7 +344,7 @@ export async function selectQuoteForAppointment(
     if (quoteUpdateError) throw quoteUpdateError
 
     // Reject all other quotes for this appointment
-    const { error: rejectError } = await supabase
+    const { error: rejectError } = await createClient()
       .from("mechanic_quotes")
       .update({
         status: "rejected",
@@ -356,13 +356,13 @@ export async function selectQuoteForAppointment(
     if (rejectError) throw rejectError
 
     // Commit the transaction
-    const { error: commitError } = await supabase.rpc("commit_transaction")
+    const { error: commitError } = await createClient().rpc("commit_transaction")
     if (commitError) throw commitError
 
     return { success: true }
   } catch (err) {
     // Rollback on error
-    await supabase.rpc("rollback_transaction")
+    await createClient().rpc("rollback_transaction")
     console.error("Exception in selectQuoteForAppointment:", err)
     return { success: false, error: "An unexpected error occurred" }
   }
@@ -377,11 +377,11 @@ export async function acceptQuote(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Start a transaction
-    const { error: transactionError } = await supabase.rpc("begin_transaction")
+    const { error: transactionError } = await createClient().rpc("begin_transaction")
     if (transactionError) throw transactionError
 
     // Get the quote details
-    const { data: quote, error: quoteError } = await supabase
+    const { data: quote, error: quoteError } = await createClient()
       .from("mechanic_quotes")
       .select("mechanic_id, price")
       .eq("id", quoteId)
@@ -395,7 +395,7 @@ export async function acceptQuote(
     const now = new Date().toISOString()
 
     // Update the quote status to accepted
-    const { error: updateQuoteError } = await supabase
+    const { error: updateQuoteError } = await createClient()
       .from("mechanic_quotes")
       .update({
         status: "accepted",
@@ -408,7 +408,7 @@ export async function acceptQuote(
     }
 
     // Update the appointment status and assign the mechanic
-    const { error: updateAppointmentError } = await supabase
+    const { error: updateAppointmentError } = await createClient()
       .from("appointments")
       .update({
         status: "confirmed",
@@ -421,7 +421,7 @@ export async function acceptQuote(
 
     if (updateAppointmentError) {
       // Try to revert the quote status if appointment update fails
-      await supabase
+      await createClient()
         .from("mechanic_quotes")
         .update({
           status: "pending",
@@ -432,7 +432,7 @@ export async function acceptQuote(
     }
 
     // Reject all other quotes for this appointment
-    const { error: rejectQuotesError } = await supabase
+    const { error: rejectQuotesError } = await createClient()
       .from("mechanic_quotes")
       .update({
         status: "rejected",
@@ -447,13 +447,13 @@ export async function acceptQuote(
     }
 
     // Commit the transaction
-    const { error: commitError } = await supabase.rpc("commit_transaction")
+    const { error: commitError } = await createClient().rpc("commit_transaction")
     if (commitError) throw commitError
 
     return { success: true }
   } catch (error) {
     // Rollback on error
-    await supabase.rpc("rollback_transaction")
+    await createClient().rpc("rollback_transaction")
     console.error("Error in acceptQuote:", error)
     return { success: false, error: error instanceof Error ? error.message : "An unexpected error occurred" }
   }

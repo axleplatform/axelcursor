@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Star, Clock, Calendar, MapPin, Car, Wrench, AlertCircle, FileText, CreditCard, User } from "lucide-react"
 import Image from "next/image"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function AppointmentCard({
@@ -33,6 +33,7 @@ export default function AppointmentCard({
   const [isEditing, setIsEditing] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [cancellingQuoteId, setCancellingQuoteId] = useState(null)
+  const supabase = createClient()
 
   // Find this mechanic's quote if it exists
   const myQuote = appointment.mechanic_quotes?.find(q => q.mechanic_id === mechanicId)
