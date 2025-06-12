@@ -62,10 +62,7 @@ export default function PickMechanic() {
           .from('mechanic_quotes')
           .select(`
             *,
-            mechanic:mechanic_id (
-              *,
-              profile:mechanic_profiles (*)
-            )
+            mechanic_profiles!mechanic_id (*)
           `)
           .eq('appointment_id', appointmentId)
 
