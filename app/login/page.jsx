@@ -17,6 +17,29 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const supabase = createClient()
 
+  useEffect(() => {
+    // Check if already logged in
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        // Get mechanic profile
+        const { data: profile } = await supabase
+          .from('mechanic_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
+        
+        if (profile) {
+          router.push('/mechanic/dashboard')
+        } else {
+          router.push('/dashboard')
+        }
+      }
+    }
+    
+    checkUser()
+  }, [router])
+
   const handleLogin = async (e) => {
     e.preventDefault()
     setIsLoading(true)
@@ -43,18 +66,17 @@ export default function LoginPage() {
     }
   }
 
-  const clearSession = () => {
-    // Clear all Supabase sessions
-    Object.keys(localStorage).forEach(key => {
-      if (key.includes('supabase')) localStorage.removeItem(key)
+  const clearAllSessions = () => {
+    // Clear everything
+    localStorage.clear()
+    sessionStorage.clear()
+    
+    // Clear all cookies
+    document.cookie.split(";").forEach(function(c) { 
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
     })
-    Object.keys(sessionStorage).forEach(key => {
-      if (key.includes('supabase')) sessionStorage.removeItem(key)
-    })
-    document.cookie.split(";").forEach(c => {
-      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
-    })
-    window.location.reload()
+    
+    window.location.href = '/'
   }
 
   return (
@@ -110,10 +132,10 @@ export default function LoginPage() {
 
             <div className="mt-4 text-center">
               <button 
-                onClick={clearSession}
+                onClick={clearAllSessions}
                 className="text-sm text-gray-500 hover:text-gray-700"
               >
-                Clear Session (Debug)
+                Clear All Sessions (Debug)
               </button>
             </div>
           </div>

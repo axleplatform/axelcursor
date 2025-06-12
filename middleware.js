@@ -17,11 +17,6 @@ export async function middleware(request) {
           return request.cookies.get(name)?.value
         },
         set(name, value, options) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
           response.cookies.set({
             name,
             value,
@@ -29,11 +24,6 @@ export async function middleware(request) {
           })
         },
         remove(name, options) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
           response.cookies.set({
             name,
             value: '',
@@ -44,40 +34,28 @@ export async function middleware(request) {
     }
   )
 
-  // Check session
-  const { data: { session } } = await supabase.auth.getSession()
+  // Refresh session if exists
+  await supabase.auth.getSession()
   
-  // Protected routes
-  if (request.nextUrl.pathname.startsWith('/mechanic')) {
-    if (!session) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  // Protected mechanic routes
+  if (request.nextUrl.pathname.startsWith('/mechanic') && !user) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
-  
+
   // Redirect logged-in users away from login
-  if (request.nextUrl.pathname === '/login' && session) {
-    // Check if mechanic
-    const { data: mechanicProfile } = await supabase
-      .from('mechanic_profiles')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .single()
-    
-    if (mechanicProfile) {
-      return NextResponse.redirect(new URL('/mechanic/dashboard', request.url))
-    }
-    
-    // Regular user
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  if (request.nextUrl.pathname === '/login' && user) {
+    return NextResponse.redirect(new URL('/mechanic/dashboard', request.url))
   }
-  
+
   return response
 }
 
 export const config = {
   matcher: [
-    '/mechanic/:path*',
-    '/login',
-    '/dashboard/:path*'
-  ]
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 } 
