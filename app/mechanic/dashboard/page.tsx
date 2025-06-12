@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { createClient } from "@/lib/supabase/client"
-import { AppointmentCard } from "@/components/appointment-card"
+import AppointmentCard from "@/components/appointment-card"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function MechanicDashboard() {
