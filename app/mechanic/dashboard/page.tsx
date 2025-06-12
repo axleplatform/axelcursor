@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/client"
 import { AppointmentCard } from "@/components/appointment-card"
 import { useToast } from "@/components/ui/use-toast"
 
@@ -20,6 +20,9 @@ export default function MechanicDashboard() {
   const [selectedTime, setSelectedTime] = useState("")
   const [notes, setNotes] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+
+  // Create Supabase client
+  const supabase = createClient()
 
   useEffect(() => {
     const fetchMechanicId = async () => {
