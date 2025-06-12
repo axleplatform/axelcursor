@@ -9,7 +9,7 @@ import { MapPin, Calendar, ChevronRight, User, Settings, Home } from "lucide-rea
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
 import Footer from "@/components/footer"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/client"
 // Import the DateTimeSelector component
 import { DateTimeSelector } from "@/components/date-time-selector"
 import { toast } from "@/components/ui/use-toast"
@@ -40,6 +40,9 @@ export default function HomePage() {
     appointmentDate: "",
     appointmentTime: "",
   })
+
+  // Create Supabase client
+  const supabase = createClient()
 
   // Add debug logging
   useEffect(() => {
