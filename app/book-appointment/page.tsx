@@ -487,78 +487,26 @@ const getAllServices = (aiSuggestions: Array<{ service: string; description: str
     while (services.length < 8 && i < additionalServices.length) {
       if (!services.some((s) => s.service === additionalServices[i].service)) {
         services.push(additionalServices[i])
-      }
-      i++
-    }
-  }
-
-  return services
-}
-
-export default function BookAppointment() {
-  const { toast } = useToast()
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const pathname = router.pathname
-  const appointmentId = searchParams.get("appointmentId")
-
-  const [formData, setFormData] = useState<BookingFormData>({
-    issueDescription: "",
-    phoneNumber: "",
-    carRuns: null,
-    selectedServices: [],
-    selectedCarIssues: [],
-  })
-
-  const [aiSuggestions, setAiSuggestions] = useState<Array<{
-    service: string
-    description: string
-    confidence: number
-  }> | null>(defaultRecommendedServices)
-
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [hasInteractedWithTextArea, setHasInteractedWithTextArea] = useState(false)
-  const [validationError, setValidationError] = useState<string | null>(null)
-  const [appointmentData, setAppointmentData] = useState<any>(null)
-
-  // Fetch appointment data on component mount
-  useEffect(() => {
-    const fetchAppointmentData = async () => {
-      if (!appointmentId) {
-        console.error("No appointment ID provided")
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        // Force refresh the schema cache
-        await supabase.rpc("reload_schema_cache")
-
-        const { data, error } = await supabase
-          .from("appointments")
-          .select(`
-            *,
-            vehicles(*)
-          `)
-          .eq("id", appointmentId)
-          .single()
-
-        if (error) throw error
-
-        setAppointmentData(data)
-        console.log("Fetched appointment data:", data)
-      } catch (error) {
-        console.error("Error fetching appointment data:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchAppointmentData()
-  }, [appointmentId])
-
   // Format phone number as user types
+// Get data from landing page
+useEffect(() => {
+  // Read data passed from landing page
+  const params = Object.fromEntries(searchParams.entries())
+  
+  if (params.address && params.year && params.make && params.model) {
+    setFormData(prev => ({
+      ...prev,
+      address: params.address || "",
+      vin: params.vin || "",
+      year: params.year || "",
+      make: params.make || "",
+      model: params.model || "",
+      mileage: params.mileage || "",
+      appointmentDate: params.appointmentDate || "",
+      appointmentTime: params.appointmentTime || ""
+    }))
+  }
+}, [searchParams])
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Remove all non-numeric characters
     const cleaned = e.target.value.replace(/\D/g, "")
