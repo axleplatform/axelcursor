@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase"
-import { clearOldSessions } from "@/lib/auth"
+import { createClient } from "@/lib/supabase/client"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
@@ -16,21 +15,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-
-  useEffect(() => {
-    // Clear any old sessions on page load
-    clearOldSessions()
-    
-    // Check for existing session
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        router.push("/mechanic/dashboard")
-      }
-    }
-    
-    checkSession()
-  }, [router])
+  const supabase = createClient()
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -56,6 +41,20 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const clearSession = () => {
+    // Clear all Supabase sessions
+    Object.keys(localStorage).forEach(key => {
+      if (key.includes('supabase')) localStorage.removeItem(key)
+    })
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.includes('supabase')) sessionStorage.removeItem(key)
+    })
+    document.cookie.split(";").forEach(c => {
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+    })
+    window.location.reload()
   }
 
   return (
@@ -108,6 +107,15 @@ export default function LoginPage() {
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
+
+            <div className="mt-4 text-center">
+              <button 
+                onClick={clearSession}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Clear Session (Debug)
+              </button>
+            </div>
           </div>
         </div>
       </main>
