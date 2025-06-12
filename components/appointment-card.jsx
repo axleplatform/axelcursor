@@ -26,8 +26,7 @@ export default function AppointmentCard({
   selectedTime,
   setSelectedTime,
   notes,
-  setNotes,
-  handleCancelQuote
+  setNotes
 }) {
   const { toast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
