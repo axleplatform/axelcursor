@@ -59,9 +59,10 @@ export default function MechanicDashboard() {
           .select("appointment_id")
           .eq("mechanic_id", mechanicId)
         
-        const quotedIds = quotedAppointments.data?.map((q: { appointment_id: string }) => q.appointment_id) || []
+        const quotedIds = quotedAppointments.data?.map((q: { appointment_id: string }) => String(q.appointment_id)) || []
         console.log('Quoted appointment IDs:', quotedIds)
         console.log('Quoted IDs length:', quotedIds.length)
+        console.log('Quoted IDs filter string:', `("${quotedIds.join('","')}")`)
 
         // Get skipped appointment IDs
         const skippedAppointments = await supabase
@@ -69,9 +70,10 @@ export default function MechanicDashboard() {
           .select("appointment_id")
           .eq("mechanic_id", mechanicId)
         
-        const skippedIds = skippedAppointments.data?.map((s: { appointment_id: string }) => s.appointment_id) || []
+        const skippedIds = skippedAppointments.data?.map((s: { appointment_id: string }) => String(s.appointment_id)) || []
         console.log('Skipped appointment IDs:', skippedIds)
         console.log('Skipped IDs length:', skippedIds.length)
+        console.log('Skipped IDs filter string:', `("${skippedIds.join('","')}")`)
 
         // Fetch available appointments (not quoted or skipped)
         let availableQuery = supabase
@@ -85,10 +87,19 @@ export default function MechanicDashboard() {
 
         // Only add filters if there are IDs to exclude
         if (quotedIds.length > 0) {
-          availableQuery = availableQuery.not("id", "in", quotedIds)
+          // Use filter with proper PostgREST syntax
+          availableQuery = availableQuery.filter(
+            'id',
+            'not.in',
+            `("${quotedIds.join('","')}")`
+          )
         }
         if (skippedIds.length > 0) {
-          availableQuery = availableQuery.not("id", "in", skippedIds)
+          availableQuery = availableQuery.filter(
+            'id',
+            'not.in',
+            `("${skippedIds.join('","')}")`
+          )
         }
 
         console.log('Available appointments query filters:', {
@@ -114,7 +125,11 @@ export default function MechanicDashboard() {
           .in("status", ["pending", "confirmed"])
 
         if (quotedIds.length > 0) {
-          upcomingQuery = upcomingQuery.in("id", quotedIds)
+          upcomingQuery = upcomingQuery.filter(
+            'id',
+            'in',
+            `("${quotedIds.join('","')}")`
+          )
         }
 
         console.log('Upcoming appointments query filters:', {
