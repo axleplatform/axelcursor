@@ -267,9 +267,9 @@ export default function HomePage() {
         description: "Appointment created successfully! Redirecting to next step...",
       })
 
-      // Navigate to the book appointment page
-      console.log("Redirecting to book appointment page")
-      router.push(`/book-appointment?appointmentId=${appointmentId}`)
+      // Navigate to the pick mechanic page
+      console.log("Redirecting to pick mechanic page")
+      router.push(`/pick-mechanic?id=${appointmentId}`)
     } catch (error) {
       console.error("Error in appointment creation:", error)
       toast({
