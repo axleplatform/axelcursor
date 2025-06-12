@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function middleware(request) {
@@ -11,7 +11,7 @@ export async function middleware(request) {
 
   try {
     // Create supabase client with proper cookie handling
-    const supabase = createServerClient()
+    const supabase = createServerSupabaseClient()
 
     // Get the session
     const { data: { session }, error } = await supabase.auth.getSession()
