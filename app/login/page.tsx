@@ -145,7 +145,7 @@ export default function LoginPage() {
         .from("mechanic_profiles")
         .select("id, onboarding_completed, onboarding_step")
         .eq("user_id", verifiedSession.user.id)
-        .single()
+        .maybeSingle()
 
       if (profileError && profileError.code !== "PGRST116") {
         console.error("❌ Error checking mechanic profile:", profileError)
@@ -168,7 +168,7 @@ export default function LoginPage() {
           .from("customer_profiles")
           .select("id")
           .eq("user_id", verifiedSession.user.id)
-          .single()
+          .maybeSingle()
 
         if (customerProfile) {
           console.log("✅ Customer profile found:", customerProfile.id)
