@@ -9,16 +9,15 @@ import { Badge } from "@/components/ui/badge"
 import { Star, Clock, Calendar, MapPin, Car, Wrench, AlertCircle, FileText, CreditCard, User } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 export default function PickMechanicPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const appointmentId = searchParams.get("appointmentId")
   const { toast } = useToast()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
   const [appointment, setAppointment] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
