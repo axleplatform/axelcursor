@@ -10,7 +10,7 @@ import Footer from "@/components/footer"
 import OnboardingHeader from "@/components/onboarding-header"
 import ProfileImageUpload from "@/components/profile-image-upload"
 import VehicleInfoForm from "@/components/vehicle-info-form"
-import { supabase } from "@/lib/supabase"
+import { createClient } from '@/lib/supabase/client'
 import { useToast } from "@/components/ui/use-toast"
 
 interface VehicleInfo {
@@ -19,6 +19,8 @@ interface VehicleInfo {
   model: string
   licensePlate: string
 }
+
+const supabase = createClient()
 
 export default function MechanicOnboardingStep5Page() {
   const router = useRouter()

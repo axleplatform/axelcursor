@@ -8,8 +8,10 @@ import { ChevronLeft, Loader2, MapPin, Car, Ruler } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import OnboardingHeader from "@/components/onboarding-header"
-import { supabase } from "@/lib/supabase"
+import { createClient } from '@/lib/supabase/client'
 import { useToast } from "@/components/ui/use-toast"
+
+const supabase = createClient()
 
 export default function MechanicOnboardingStep2Page() {
   const router = useRouter()

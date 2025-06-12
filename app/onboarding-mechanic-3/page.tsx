@@ -9,8 +9,10 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import OnboardingHeader from "@/components/onboarding-header"
 import TagInput from "@/components/tag-input"
-import { supabase } from "@/lib/supabase"
+import { createClient } from '@/lib/supabase/client'
 import { useToast } from "@/components/ui/use-toast"
+
+const supabase = createClient()
 
 // Common certificate suggestions
 const CERTIFICATE_SUGGESTIONS = [

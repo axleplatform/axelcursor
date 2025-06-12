@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle, Calendar, MapPin, Car, Wrench, AlertCircle, FileText, User, Star, Phone, Check } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
-import { supabase } from "@/lib/supabase"
+import { createClient } from '@/lib/supabase/client'
 import { toast } from "@/components/ui/use-toast"
 import { useToast } from "@/components/ui/use-toast"
 import { formatDate } from "@/lib/utils"
@@ -71,6 +71,8 @@ interface RealtimePayload {
   new: AppointmentData
   old: AppointmentData
 }
+
+const supabase = createClient()
 
 export default function AppointmentConfirmationPage() {
   const router = useRouter()
