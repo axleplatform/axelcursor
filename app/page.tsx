@@ -173,108 +173,29 @@ export default function HomePage() {
     console.log("Form is valid, proceeding with submission")
 
     try {
-      // Check Supabase connection first
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        console.error("Supabase environment variables missing")
-        throw new Error("Supabase environment variables are not configured")
-      }
-
-      // Force refresh the schema cache with error handling
-      console.log("Refreshing schema cache...")
-      const { error: cacheError } = await supabase.rpc("reload_schema_cache")
-      if (cacheError) {
-        console.warn("Schema cache refresh failed:", cacheError)
-        // Continue anyway as this is not critical
-      } else {
-        console.log("Schema cache refreshed successfully")
-      }
-
-      // Combine date and time for the appointment
-      const appointmentDateTime = `${formData.appointmentDate}T${formData.appointmentTime}`
-      const now = new Date().toISOString()
-
-      // Validate appointment date is in the future
-      const appointmentDate = new Date(appointmentDateTime)
-      if (appointmentDate < new Date()) {
-        console.error("Invalid appointment date:", appointmentDate)
-        throw new Error("Appointment date must be in the future")
-      }
-
-      const initialAppointmentData = {
-        location: formData.address,
-        appointment_date: appointmentDateTime,
-        status: "draft",
-        notes: "Initial appointment details submitted",
-        mechanic_id: null,
-        created_at: now,
-        updated_at: now,
-        source: "landing_page",
-        user_id: null,
-      }
-
-      console.log("Creating appointment with data:", initialAppointmentData)
-
-      // Create the appointment with initial status
-      const { data: createdAppointment, error: appointmentError } = await supabase
-        .from("appointments")
-        .insert([initialAppointmentData])
-        .select()
-
-      if (appointmentError) {
-        console.error("Error creating appointment:", appointmentError)
-        throw new Error(`Failed to create appointment: ${appointmentError.message}`)
-      }
-
-      if (!createdAppointment || createdAppointment.length === 0) {
-        console.error("No appointment data returned after creation")
-        throw new Error("No appointment data returned after creation")
-      }
-
-      console.log("Appointment created successfully:", createdAppointment)
-
-      // Create the vehicle with the appointment_id
-      const appointmentId = createdAppointment[0].id
-      const vehicleData = {
-        appointment_id: appointmentId,
-        vin: formData.vin || null,
-        year: Number.parseInt(formData.year),
-        make: formData.make,
-        model: formData.model,
-        mileage: formData.mileage ? Number.parseInt(formData.mileage) : null,
-        created_at: now,
-        updated_at: now,
-      }
-
-      console.log("Creating vehicle with data:", vehicleData)
-
-      const { error: vehicleError } = await supabase
-        .from("vehicles")
-        .insert([vehicleData])
-
-      if (vehicleError) {
-        console.error("Error creating vehicle:", vehicleError)
-        // Try to delete the appointment if vehicle creation fails
-        console.log("Attempting to delete appointment after vehicle creation failure")
-        await supabase.from("appointments").delete().eq("id", appointmentId)
-        throw new Error(`Failed to create vehicle: ${vehicleError.message}`)
-      }
-
-      console.log("Vehicle created successfully for appointment:", appointmentId)
-
       // Show success message
       toast({
         title: "Success",
-        description: "Appointment created successfully! Redirecting to next step...",
+        description: "Redirecting to book appointment...",
       })
 
-      // Navigate to the pick mechanic page
-      console.log("Redirecting to pick mechanic page")
-      router.push(`/pick-mechanic?id=${appointmentId}`)
+      // Navigate to the book appointment page with form data
+      const queryParams = new URLSearchParams({
+        address: formData.address,
+        vin: formData.vin,
+        year: formData.year,
+        make: formData.make,
+        model: formData.model,
+        mileage: formData.mileage,
+        appointmentDate: formData.appointmentDate,
+        appointmentTime: formData.appointmentTime
+      })
+      router.push(`/book-appointment?${queryParams.toString()}`)
     } catch (error) {
-      console.error("Error in appointment creation:", error)
+      console.error("Error in form submission:", error)
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create appointment. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to submit form. Please try again.",
         variant: "destructive",
       })
     } finally {
