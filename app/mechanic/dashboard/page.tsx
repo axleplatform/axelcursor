@@ -54,6 +54,7 @@ interface Appointment {
   mechanic_skips?: Array<{
     mechanic_id: string
   }>
+  selected_car_issues?: string[]
 }
 
 interface UpcomingAppointmentsProps {
@@ -1562,43 +1563,41 @@ export default function MechanicDashboard() {
                 {availableAppointments[currentAvailableIndex] && (
                   <div className="bg-white/10 rounded-lg p-6">
                     {/* Location and Date */}
-                    <div className="flex items-center gap-4 mb-6">
+                    <div className="flex items-center gap-4 mb-4">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
                         <span className="text-sm">{availableAppointments[currentAvailableIndex].location}</span>
-                        </div>
+                      </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4" />
                         <span className="text-sm">{formatDate(availableAppointments[currentAvailableIndex].appointment_date)}</span>
-                        </div>
+                      </div>
                     </div>
 
-                    {/* Vehicle Information */}
+                    {/* Vehicle Information - Two Row Layout */}
                     <div className="mb-6">
-                      <div className="flex flex-col gap-2">
-                        {/* Year, Make, Model Row */}
-                        <div className="flex items-center gap-2 text-white/90">
-                          {availableAppointments[currentAvailableIndex].vehicles?.year && (
-                            <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.year}</span>
-                          )}
-                          {availableAppointments[currentAvailableIndex].vehicles?.make && (
-                            <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.make}</span>
-                          )}
-                          {availableAppointments[currentAvailableIndex].vehicles?.model && (
-                            <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
-                          )}
+                      {/* Row 1: Year, Make, Model */}
+                      <div className="flex items-center gap-2 text-white/90 mb-2">
+                        {availableAppointments[currentAvailableIndex].vehicles?.year && (
+                          <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.year}</span>
+                        )}
+                        {availableAppointments[currentAvailableIndex].vehicles?.make && (
+                          <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.make}</span>
+                        )}
+                        {availableAppointments[currentAvailableIndex].vehicles?.model && (
+                          <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
+                        )}
                       </div>
-                        {/* VIN and Mileage Row */}
-                        <div className="flex items-center gap-4 text-white/70 text-sm">
-                          {availableAppointments[currentAvailableIndex].vehicles?.vin && (
-                            <span>VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}</span>
-                          )}
-                          {availableAppointments[currentAvailableIndex].vehicles?.mileage && (
-                            <span>{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
-                          )}
+                      {/* Row 2: VIN and Mileage */}
+                      <div className="flex items-center gap-4 text-white/70 text-sm">
+                        {availableAppointments[currentAvailableIndex].vehicles?.vin && (
+                          <span>VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}</span>
+                        )}
+                        {availableAppointments[currentAvailableIndex].vehicles?.mileage && (
+                          <span>{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
+                        )}
+                      </div>
                     </div>
-                    </div>
-                        </div>
 
                     {/* Services and Car Status Row */}
                     <div className="flex justify-between items-start mb-6">
@@ -1613,17 +1612,17 @@ export default function MechanicDashboard() {
                                 className="bg-white/20 text-xs px-3 py-1 rounded-full"
                               >
                                 {service}
-                        </span>
+                              </span>
                             ))}
-                      </div>
                           </div>
-                        )}
+                        </div>
+                      )}
 
-                      {/* Car Status */}
+                      {/* Car Status - Centered */}
                       {availableAppointments[currentAvailableIndex].car_runs !== null && (
-                        <div className="flex-1 text-right">
+                        <div className="flex-1 text-center">
                           <h4 className="text-sm font-medium mb-2">Car Status</h4>
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-center gap-2">
                             <div className={`w-3 h-3 rounded-full ${availableAppointments[currentAvailableIndex].car_runs ? 'bg-green-400' : 'bg-red-400'}`}></div>
                             <span className="text-sm">
                               {availableAppointments[currentAvailableIndex].car_runs
@@ -1631,21 +1630,38 @@ export default function MechanicDashboard() {
                                 : "Car is not running"}
                             </span>
                           </div>
-                          </div>
-                        )}
+                        </div>
+                      )}
                     </div>
+
+                    {/* Car Issues */}
+                    {availableAppointments[currentAvailableIndex].selected_car_issues && (
+                      <div className="mb-6">
+                        <h4 className="text-sm font-medium mb-2">Car Issues</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {availableAppointments[currentAvailableIndex].selected_car_issues.map((issue: string, index: number) => (
+                            <span
+                              key={index}
+                              className="bg-white/20 text-xs px-3 py-1 rounded-full flex items-center gap-1"
+                            >
+                              {issue}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Issue Description */}
                     <div className="mb-6">
                       <h4 className="text-sm font-medium mb-2">Issue Description</h4>
                       <p className="text-sm text-white/70 bg-white/5 p-3 rounded-md">
                         {availableAppointments[currentAvailableIndex].issue_description || "No description provided"}
-                          </p>
-                        </div>
+                      </p>
+                    </div>
 
-                    {/* Quote Input */}
+                    {/* Quote Input - Centered */}
                     <div className="mb-6">
-                      <label htmlFor="price" className="block text-sm font-medium mb-2">
+                      <label htmlFor="price" className="block text-sm font-medium mb-2 text-center">
                         Your Quote (USD)
                       </label>
                       <div className="relative max-w-[300px] mx-auto">
