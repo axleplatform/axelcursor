@@ -1148,7 +1148,7 @@ export default function MechanicDashboard() {
                       {/* Status indicator */}
                       <div className="mb-4">
                         {isConfirmed ? (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-800 text-white">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm" style={{ backgroundColor: '#294A46', color: 'white' }}>
                             ✓ Confirmed - Payment Received
                           </span>
                         ) : isSelected ? (
@@ -1229,7 +1229,8 @@ export default function MechanicDashboard() {
                           <>
                             <button
                               onClick={() => handleStartAppointment(appointment)}
-                              className="flex-1 bg-green-800 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-green-700 hover:shadow-md active:scale-[0.99]"
+                              className="flex-1 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
+                              style={{ backgroundColor: '#294A46' }}
                             >
                               Start
                             </button>
