@@ -1094,24 +1094,24 @@ export default function MechanicDashboard() {
                 {availableAppointments.length > 1 && (
                   <>
                     <div className="absolute top-1/2 -left-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
-                      <button
-                        onClick={goToPrevAvailable}
+                    <button
+                      onClick={goToPrevAvailable}
                         className="bg-white/20 hover:bg-white/30 rounded-full p-1"
-                        aria-label="Previous appointment"
-                        disabled={isProcessing}
-                      >
+                      aria-label="Previous appointment"
+                      disabled={isProcessing}
+                    >
                         <ChevronLeft className="h-5 w-5" />
-                      </button>
+                    </button>
                     </div>
                     <div className="absolute top-1/2 -right-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
-                      <button
-                        onClick={goToNextAvailable}
+                    <button
+                      onClick={goToNextAvailable}
                         className="bg-white/20 hover:bg-white/30 rounded-full p-1"
-                        aria-label="Next appointment"
-                        disabled={isProcessing}
-                      >
+                      aria-label="Next appointment"
+                      disabled={isProcessing}
+                    >
                         <ChevronRight className="h-5 w-5" />
-                      </button>
+                    </button>
                     </div>
                   </>
                 )}
@@ -1136,7 +1136,7 @@ export default function MechanicDashboard() {
                           Mileage: {availableAppointments[currentAvailableIndex].vehicles.mileage} miles
                         </p>
                       )}
-                    </div>
+                        </div>
 
                     {/* Quote Status */}
                     {availableAppointments[currentAvailableIndex].mechanic_quotes?.some(
@@ -1158,12 +1158,12 @@ export default function MechanicDashboard() {
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
                         <span className="text-sm">{availableAppointments[currentAvailableIndex].location}</span>
-                        </div>
+                      </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4" />
                         <span className="text-sm">{formatDate(availableAppointments[currentAvailableIndex].appointment_date)}</span>
-                        </div>
-                      </div>
+                    </div>
+                    </div>
 
                     {/* Issue Description */}
                     <div className="mb-6">
@@ -1171,7 +1171,7 @@ export default function MechanicDashboard() {
                       <p className="text-sm text-white/70 bg-white/5 p-3 rounded-md">
                         {availableAppointments[currentAvailableIndex].issue_description || "No description provided"}
                       </p>
-                    </div>
+                        </div>
 
                     {/* Selected Services */}
                     {availableAppointments[currentAvailableIndex].selected_services && (
@@ -1184,11 +1184,11 @@ export default function MechanicDashboard() {
                               className="bg-white/20 text-xs px-3 py-1 rounded-full"
                             >
                               {service}
-                            </span>
+                        </span>
                           ))}
-                    </div>
                       </div>
-                    )}
+                          </div>
+                        )}
 
                     {/* Car Status */}
                     {availableAppointments[currentAvailableIndex].car_runs !== null && (
@@ -1202,8 +1202,8 @@ export default function MechanicDashboard() {
                               : "Car is not running"}
                           </span>
                         </div>
-                      </div>
-                    )}
+                          </div>
+                        )}
 
                     {/* Quote Input */}
                     <div className="mb-6">
@@ -1224,7 +1224,7 @@ export default function MechanicDashboard() {
                           max="10000"
                           step="0.01"
                         />
-                      </div>
+                        </div>
                     </div>
 
                     {/* ETA Selection */}
@@ -1255,7 +1255,7 @@ export default function MechanicDashboard() {
                               </option>
                             ))}
                           </select>
-                      </div>
+                        </div>
 
                         {/* Time Selection */}
                         <div>
@@ -1286,8 +1286,8 @@ export default function MechanicDashboard() {
                         <p className="text-red-500 text-sm mt-2 animate-pulse">
                           Please select both date and time
                         </p>
-                      )}
-                    </div>
+                        )}
+                      </div>
 
                     {/* Action Buttons */}
                     <div className="flex gap-3">
