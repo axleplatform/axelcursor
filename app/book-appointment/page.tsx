@@ -10,6 +10,7 @@ export default function BookAppointment() {
   const year = searchParams.get('year')
   const make = searchParams.get('make')
   const model = searchParams.get('model')
+  const appointmentId = searchParams.get("appointmentId")
   
   const handleContinue = () => {
     router.push('/pick-mechanic?appointmentId=test123')

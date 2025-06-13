@@ -296,119 +296,94 @@ export default function PickMechanicPage() {
                       <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#294a46]"></div>
                     </div>
                   ) : mechanicQuotes && mechanicQuotes.length > 0 ? (
-                    <div>
-                      <h2 className="text-2xl font-bold mb-6 flex items-center justify-between">
-                        <span>Mechanic Quotes</span>
-                        <span className="text-lg font-normal text-gray-600">
-                          {mechanicQuotes.length} quotes received
-                        </span>
-                      </h2>
-                      
-                      {mechanicQuotes.length > 1 && (
-                        <div className="mb-4 flex justify-end">
-                          <button
-                            onClick={() => {
-                              const sorted = [...mechanicQuotes].sort((a, b) => a.price - b.price);
-                              setMechanicQuotes(sorted);
-                            }}
-                            className="text-sm text-teal-600 hover:text-teal-700 font-medium"
-                          >
-                            Sort by price ↓
-                          </button>
-                        )}
-
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {mechanicQuotes.map((quote) => (
-                          <div key={quote.id} className="bg-teal-800 text-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                            <div className="bg-teal-900 px-6 py-4 text-center">
-                              <p className="text-sm opacity-80">Quote Price</p>
-                              <p className="text-4xl font-bold">${quote.price}</p>
+                    <div className="space-y-4">
+                      {mechanicQuotes.map((quote) => (
+                        <div key={quote.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                          {/* Mechanic profile header */}
+                          <div className="flex items-start gap-4 mb-4">
+                            {/* Profile image */}
+                            {quote.mechanic_profiles?.profile_image_url ? (
+                              <img 
+                                src={quote.mechanic_profiles.profile_image_url} 
+                                alt={quote.mechanic_profiles.full_name}
+                                className="w-16 h-16 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+                                <span className="text-2xl text-gray-500">
+                                  {quote.mechanic_profiles?.first_name?.charAt(0) || 'M'}
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* Mechanic info */}
+                            <div className="flex-1">
+                              <h3 className="text-xl font-semibold">
+                                {quote.mechanic_profiles?.business_name || `${quote.mechanic_profiles?.first_name} ${quote.mechanic_profiles?.last_name}`}
+                              </h3>
+                              <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                                <span>⭐ {quote.mechanic_profiles?.rating || 'N/A'}</span>
+                                <span>• {quote.mechanic_profiles?.review_count || 0} reviews</span>
+                              </div>
                             </div>
                             
-                            <div className="p-6">
-                              <div className="flex items-center gap-3 mb-4">
-                                {quote.mechanic_profiles?.profile_image_url ? (
-                                  <img 
-                                    src={quote.mechanic_profiles.profile_image_url} 
-                                    alt={quote.mechanic_profiles?.business_name || `${quote.mechanic_profiles?.first_name} ${quote.mechanic_profiles?.last_name}`}
-                                    className="w-12 h-12 rounded-full object-cover border-2 border-teal-600"
-                                  />
-                                ) : (
-                                  <div className="w-12 h-12 rounded-full bg-teal-700 flex items-center justify-center border-2 border-teal-600">
-                                    <span className="text-xl font-semibold">
-                                      {quote.mechanic_profiles?.first_name?.charAt(0) || 'M'}
-                                    </span>
-                                  </div>
-                                )}
-                                
-                                <div className="flex-1">
-                                  <h3 className="font-semibold text-lg">
-                                    {quote.mechanic_profiles?.business_name || `${quote.mechanic_profiles?.first_name} ${quote.mechanic_profiles?.last_name}`}
-                                  </h3>
-                                  <div className="flex items-center gap-2 text-sm opacity-90">
-                                    <span className="text-yellow-400">★</span>
-                                    <span>{quote.mechanic_profiles?.rating || 'N/A'}</span>
-                                    <span className="opacity-70">•</span>
-                                    <span>{quote.mechanic_profiles?.review_count || 0} reviews</span>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className="bg-teal-700/50 rounded-lg px-4 py-3 mb-4">
-                                <p className="text-sm opacity-80">Available</p>
-                                <p className="font-medium">
-                                  {new Date(quote.eta).toLocaleDateString('en-US', {
-                                    weekday: 'short',
-                                    month: 'short',
-                                    day: 'numeric'
-                                  })} at {new Date(quote.eta).toLocaleTimeString('en-US', {
-                                    hour: 'numeric',
-                                    minute: '2-digit'
-                                  })}
-                                </p>
-                              </div>
-                              
-                              {quote.mechanic_profiles?.bio && (
-                                <p className="text-sm opacity-90 line-clamp-2 mb-4">
-                                  {quote.mechanic_profiles.bio}
-                                </p>
-                              )}
-                              
-                              {quote.notes && (
-                                <div className="bg-teal-700/30 rounded px-3 py-2 mb-4">
-                                  <p className="text-xs opacity-80">Mechanic's note:</p>
-                                  <p className="text-sm">{quote.notes}</p>
-                                </div>
-                              )}
-                              
-                              <button
-                                onClick={() => handleSelectMechanic(quote.mechanic_id, quote.id)}
-                                disabled={isProcessing}
-                                className="w-full bg-white text-teal-800 py-3 px-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {isProcessing ? 'Selecting...' : 'Select This Mechanic'}
-                              </button>
+                            {/* Quote price */}
+                            <div className="text-right">
+                              <p className="text-sm text-gray-500">Quote</p>
+                              <p className="text-3xl font-bold text-green-600">${quote.price}</p>
                             </div>
                           </div>
-                        ))}
-                      </div>
+                          
+                          {/* Date and time */}
+                          <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                            <p className="text-sm text-gray-600">
+                              <span className="font-medium">Available:</span> {new Date(quote.eta).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                          
+                          {/* Mechanic details */}
+                          <div className="space-y-3 mb-4">
+                            {/* Bio */}
+                            {quote.mechanic_profiles?.bio && (
+                              <div>
+                                <p className="text-sm font-medium text-gray-700">About:</p>
+                                <p className="text-sm text-gray-600">{quote.mechanic_profiles.bio}</p>
+                              </div>
+                            )}
+                            
+                            {/* Quote notes */}
+                            {quote.notes && (
+                              <div>
+                                <p className="text-sm font-medium text-gray-700">Additional notes:</p>
+                                <p className="text-sm text-gray-600">{quote.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Select button */}
+                          <button
+                            onClick={() => handleSelectMechanic(quote.mechanic_id, quote.id)}
+                            disabled={isProcessing}
+                            className="w-full bg-[#294a46] text-white py-3 px-4 rounded-md hover:bg-[#1e3632] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isProcessing ? 'Selecting...' : 'Select This Mechanic'}
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   ) : (
-                    <div className="bg-gray-50 rounded-lg p-12 text-center">
-                      <div className="animate-pulse">
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          Waiting for mechanics to send quotes...
-                        </h3>
-                        <p className="text-gray-500">
-                          Mechanics are reviewing your request. This page refreshes automatically.
-                        </p>
-                        <div className="mt-4">
-                          <div className="inline-flex items-center">
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-teal-600 mr-2"></div>
-                            <span className="text-sm text-gray-600">Checking for new quotes...</span>
-                          </div>
-                        </div>
-                      </div>
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                      <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Quotes Yet</h3>
+                      <p className="text-gray-500">
+                        Mechanics are reviewing your request. This page refreshes automatically.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -535,4 +510,4 @@ export default function PickMechanicPage() {
       <Footer />
     </div>
   )
-} 
+}
