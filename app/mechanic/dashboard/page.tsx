@@ -89,6 +89,11 @@ export default function MechanicDashboard() {
   const [price, setPrice] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
 
+  // Add new state variables after the existing ones
+  const [startingAppointment, setStartingAppointment] = useState<Appointment | null>(null);
+  const [etaMinutes, setEtaMinutes] = useState('30');
+  const [isStarting, setIsStarting] = useState(false);
+
   // Add showNotification function
   const showNotification = (message: string, type: 'success' | 'error' | 'info' | 'skip' = 'error') => {
     setNotification({ message, type });
@@ -185,7 +190,7 @@ export default function MechanicDashboard() {
       const upcomingAppointments = appointments?.filter(apt => {
         // Check if there's an active quote from this mechanic
         const hasActiveQuote = apt.mechanic_quotes?.some(
-          quote => quote.mechanic_id === mechanicId && quote.id !== null
+          quote => quote.mechanic_id === mechanicId
         );
         return hasActiveQuote;
       }) || [];
@@ -931,6 +936,90 @@ export default function MechanicDashboard() {
     }
   };
 
+  // Add new handler functions before the return statement
+  const handleStartAppointment = (appointment: Appointment) => {
+    setStartingAppointment(appointment);
+  };
+
+  const confirmStartAppointment = async () => {
+    if (!startingAppointment) return;
+    
+    setIsStarting(true);
+    try {
+      // Update appointment status to 'in_progress'
+      const { error } = await supabase
+        .from('appointments')
+        .update({ 
+          status: 'in_progress',
+          mechanic_eta: etaMinutes,
+          started_at: new Date().toISOString()
+        })
+        .eq('id', startingAppointment.id);
+        
+      if (error) throw error;
+      
+      // TODO: Send notification to customer about ETA
+      
+      showNotification(`Job started! Customer has been notified of your ${etaMinutes} minute ETA.`, 'success');
+      
+      // Refresh appointments
+      await fetchInitialAppointments();
+      
+      setStartingAppointment(null);
+      setEtaMinutes('30');
+    } catch (error) {
+      console.error('Error starting appointment:', error);
+      showNotification('Failed to start appointment', 'error');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  const handleCancelConfirmedAppointment = async (appointment: Appointment, quotePrice: number) => {
+    const cancellationFee = (quotePrice * 0.05).toFixed(2);
+    
+    const confirmed = window.confirm(
+      `Canceling a confirmed appointment will incur a 5% cancellation fee of $${cancellationFee}.\n\n` +
+      `Are you sure you want to cancel?`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      // Log the cancellation with fee
+      const { error: logError } = await supabase
+        .from('appointment_cancellations')
+        .insert({
+          appointment_id: appointment.id,
+          mechanic_id: mechanicId,
+          cancellation_fee: cancellationFee,
+          reason: 'mechanic_cancelled_confirmed',
+          created_at: new Date().toISOString()
+        });
+      
+      // Update appointment status
+      const { error: updateError } = await supabase
+        .from('appointments')
+        .update({ 
+          status: 'cancelled',
+          cancelled_by: 'mechanic',
+          cancellation_fee: cancellationFee
+        })
+        .eq('id', appointment.id);
+        
+      if (logError || updateError) throw logError || updateError;
+      
+      // Remove from UI
+      setUpcomingAppointments(prev => prev.filter(apt => apt.id !== appointment.id));
+      
+      showNotification(`Appointment cancelled. A $${cancellationFee} cancellation fee will be deducted from your account.`, 'info');
+      
+    } catch (error) {
+      console.error('Error cancelling confirmed appointment:', error);
+      showNotification('Failed to cancel appointment', 'error');
+    }
+  };
+
   // Loading state
   if (isAuthLoading) {
     return (
@@ -1043,6 +1132,7 @@ export default function MechanicDashboard() {
                   const myQuote = appointment.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
                   const isSelected = appointment.selected_mechanic_id === mechanicId;
                   const isEditing = selectedAppointment?.id === appointment.id;
+                  const isConfirmed = appointment.payment_status === 'paid' || appointment.status === 'confirmed';
                   
                   return (
                     <div key={`${appointment.id}-${Date.now()}`} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
@@ -1067,7 +1157,11 @@ export default function MechanicDashboard() {
 
                       {/* Status indicator */}
                       <div className="mb-4">
-                        {isSelected ? (
+                        {isConfirmed ? (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                            ✓ Confirmed - Payment Received
+                          </span>
+                        ) : isSelected ? (
                           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
                             ✓ Customer selected you
                           </span>
@@ -1115,94 +1209,32 @@ export default function MechanicDashboard() {
                         </div>
                       )}
 
-                      {/* Quote Input */}
-                      <div className="mb-6">
-                        <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-                          Your Quote (USD)
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                          <input
-                            type="number"
-                            id="price"
-                            value={isEditing ? price : myQuote?.price || ''}
-                            onChange={(e) => setPrice(e.target.value)}
-                            disabled={!isEditing || isSelected}
-                            className={`w-full bg-white border border-gray-300 rounded-md pl-8 pr-3 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-transparent ${
-                              !isEditing || isSelected ? 'cursor-not-allowed opacity-50' : ''
-                            }`}
-                            min="10"
-                            max="10000"
-                            step="0.01"
-                          />
-                        </div>
-                      </div>
-
-                      {/* ETA Selection */}
-                      <div className="mb-6">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          When can you show up? <span className="text-red-500">*</span>
-                        </label>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          {/* Date Selection */}
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-1">Select Date</label>
-                            <select
-                              value={isEditing ? selectedDate : myQuote?.eta?.split('T')[0] || ''}
-                              onChange={(e) => setSelectedDate(e.target.value)}
-                              disabled={!isEditing || isSelected}
-                              className={`w-full bg-white border border-gray-300 rounded-md px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-transparent ${
-                                !isEditing || isSelected ? 'cursor-not-allowed opacity-50' : ''
-                              }`}
-                            >
-                              {getAvailableDates().map((date) => (
-                                <option key={date.value} value={date.value}>
-                                  {date.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          {/* Time Selection */}
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-1">Select Time</label>
-                            <select
-                              value={isEditing ? selectedTime : new Date(myQuote?.eta).toTimeString().slice(0,5) || ''}
-                              onChange={(e) => setSelectedTime(e.target.value)}
-                              disabled={!isEditing || isSelected}
-                              className={`w-full bg-white border border-gray-300 rounded-md px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-transparent ${
-                                !isEditing || isSelected ? 'cursor-not-allowed opacity-50' : ''
-                              }`}
-                            >
-                              {getTimeSlots().map((slot) => (
-                                <option key={slot.value} value={slot.value}>
-                                  {slot.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Notes field */}
-                      {isEditing && (
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Additional Notes
-                          </label>
-                          <textarea
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            className="w-full p-2 bg-white border border-gray-300 rounded-md text-gray-900 placeholder-gray-400"
-                            rows="2"
-                          />
+                      {/* Quote Details */}
+                      {isConfirmed && myQuote && (
+                        <div className="mb-6 p-3 bg-gray-50 rounded">
+                          <p className="text-sm text-gray-600">Confirmed Price: ${myQuote.price}</p>
+                          <p className="text-sm text-gray-600">Scheduled: {new Date(myQuote.eta).toLocaleString()}</p>
                         </div>
                       )}
 
                       {/* Action buttons */}
                       <div className="flex gap-3">
-                        {!isSelected && (
+                        {isConfirmed ? (
+                          <>
+                            <button
+                              onClick={() => handleStartAppointment(appointment)}
+                              className="flex-1 bg-green-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-green-700 hover:shadow-md active:scale-[0.99]"
+                            >
+                              Start Job
+                            </button>
+                            <button
+                              onClick={() => handleCancelConfirmedAppointment(appointment, myQuote?.price || 0)}
+                              className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
+                            >
+                              Cancel (5% fee)
+                            </button>
+                          </>
+                        ) : (
                           <>
                             {isEditing ? (
                               <>
@@ -1610,6 +1642,55 @@ export default function MechanicDashboard() {
           </div>
         )}
       </div>
+
+      {/* ETA Modal */}
+      {startingAppointment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Start Appointment</h3>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estimated arrival time to customer location:
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="5"
+                  max="120"
+                  value={etaMinutes}
+                  onChange={(e) => setEtaMinutes(e.target.value)}
+                  className="w-24 px-3 py-2 border border-gray-300 rounded-md"
+                />
+                <span className="text-gray-600">minutes</span>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                Customer will be notified of your ETA
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={confirmStartAppointment}
+                disabled={isStarting}
+                className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                {isStarting ? 'Starting...' : 'Start Job'}
+              </button>
+              <button
+                onClick={() => {
+                  setStartingAppointment(null);
+                  setEtaMinutes('30');
+                }}
+                disabled={isStarting}
+                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
