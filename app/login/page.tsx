@@ -44,8 +44,12 @@ export default function LoginPage() {
 
       console.log("✅ Login successful, user:", user.id)
 
-      // Force a hard refresh to ensure middleware picks up the new session
-      window.location.href = "/mechanic/dashboard"
+      // Wait for session to be set
+      await supabase.auth.refreshSession()
+      
+      // Then redirect with router refresh
+      router.refresh()
+      router.push('/mechanic/dashboard')
 
     } catch (error: any) {
       console.error("❌ Error:", error)
