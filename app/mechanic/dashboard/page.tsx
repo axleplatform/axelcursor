@@ -104,6 +104,14 @@ export default function MechanicDashboard() {
   const [etaMinutes, setEtaMinutes] = useState('30');
   const [isStarting, setIsStarting] = useState(false);
 
+  // Add new state variables after the existing ones
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editAppointment, setEditAppointment] = useState<Appointment | null>(null);
+  const [editPrice, setEditPrice] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+
   // Add showNotification function
   const showNotification = (message: string, type: 'success' | 'error' | 'info' | 'skip' = 'error') => {
     setNotification({ message, type });
@@ -1122,6 +1130,84 @@ export default function MechanicDashboard() {
     }
   };
 
+  // Add handleEditAppointment function
+  const handleEditAppointment = (appointment: Appointment) => {
+    const myQuote = appointment.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
+    
+    if (!myQuote) {
+      showNotification('No quote found for this appointment', 'error');
+      return;
+    }
+
+    if (appointment.selected_mechanic_id === mechanicId) {
+      showNotification('Cannot edit quote after being selected by customer', 'error');
+      return;
+    }
+
+    if (appointment.payment_status === 'paid') {
+      showNotification('Cannot edit quote after payment has been made', 'error');
+      return;
+    }
+
+    // Set the edit state
+    setEditAppointment(appointment);
+    setEditPrice(myQuote.price.toString());
+    const quoteDate = new Date(myQuote.eta);
+    setEditDate(quoteDate.toISOString().split('T')[0]);
+    setEditTime(quoteDate.toTimeString().slice(0,5));
+    setEditNotes(myQuote.notes || '');
+    setShowEditModal(true);
+  };
+
+  // Add handleSubmitEdit function
+  const handleSubmitEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editAppointment || !mechanicId) {
+      showNotification('Invalid appointment or mechanic ID', 'error');
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      
+      const myQuote = editAppointment.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
+      if (!myQuote) {
+        showNotification('Quote not found', 'error');
+        return;
+      }
+
+      // Combine date and time
+      const [year, month, day] = editDate.split('-');
+      const [hour, minute] = editTime.split(':');
+      const etaDateTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)).toISOString();
+
+      // Update the quote
+      const { error } = await supabase
+        .from('mechanic_quotes')
+        .update({
+          price: parseFloat(editPrice),
+          eta: etaDateTime,
+          notes: editNotes,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', myQuote.id);
+
+      if (error) {
+        throw error;
+      }
+
+      showNotification('Quote updated successfully', 'success');
+      setShowEditModal(false);
+      await fetchInitialAppointments();
+    } catch (error) {
+      console.error('Error updating quote:', error);
+      showNotification('Failed to update quote', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Loading state
   if (isAuthLoading) {
     return (
@@ -1384,18 +1470,7 @@ export default function MechanicDashboard() {
                             ) : (
                               <div className="flex gap-3 w-full">
                                 <button
-                                  onClick={() => {
-                                    if (isSelected) {
-                                      showNotification('Cannot edit quote after being selected by customer', 'error');
-                                      return;
-                                    }
-                                    setSelectedAppointment(appointment);
-                                    setPrice(myQuote?.price.toString() || '');
-                                    const quoteDate = new Date(myQuote?.eta);
-                                    setSelectedDate(quoteDate.toISOString().split('T')[0]);
-                                    setSelectedTime(quoteDate.toTimeString().slice(0,5));
-                                    setNotes(myQuote?.notes || '');
-                                  }}
+                                  onClick={() => handleEditAppointment(appointment)}
                                   className="flex-1 bg-[#294a46] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
                                 >
                                   Edit
@@ -1816,6 +1891,114 @@ export default function MechanicDashboard() {
                 Go Back
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && editAppointment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Edit Quote</h3>
+            
+            <form onSubmit={handleSubmitEdit}>
+              {/* Price Input */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Price (USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                  <input
+                    type="number"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294a46]"
+                    min="10"
+                    max="10000"
+                    step="0.01"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* ETA Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  When can you show up?
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Date Selection */}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Select Date</label>
+                    <select
+                      value={editDate}
+                      onChange={(e) => setEditDate(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#294a46]"
+                      required
+                    >
+                      <option value="">Choose a date</option>
+                      {getAvailableDates().map((date) => (
+                        <option key={date.value} value={date.value}>
+                          {date.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Time Selection */}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Select Time</label>
+                    <select
+                      value={editTime}
+                      onChange={(e) => setEditTime(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#294a46]"
+                      required
+                    >
+                      <option value="">Choose a time</option>
+                      {getTimeSlots().map((slot) => (
+                        <option key={slot.value} value={slot.value}>
+                          {slot.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#294a46]"
+                  rows={3}
+                  placeholder="Add any additional notes for the customer..."
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="flex-1 bg-[#294a46] text-white font-medium py-2 px-4 rounded-md hover:bg-[#1e3632] transition-colors disabled:opacity-50"
+                >
+                  {isProcessing ? 'Updating...' : 'Update Quote'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  disabled={isProcessing}
+                  className="flex-1 bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
