@@ -166,15 +166,15 @@ export default function MechanicDashboard() {
         
       if (error) throw error;
       
-      // Available appointments: pending status, no quote from this mechanic yet
+      // Available appointments: pending status, no quote from this mechanic yet, not cancelled
       const availableAppointments = appointments?.filter(apt => {
         const alreadyQuoted = apt.mechanic_quotes?.some(
           (quote: any) => quote.mechanic_id === mechanicId
         );
-        return apt.status === 'pending' && !alreadyQuoted;
+        return apt.status === 'pending' && !alreadyQuoted && apt.status !== 'cancelled';
       }) || [];
       
-      // Upcoming appointments: has quote from this mechanic OR mechanic is selected
+      // Upcoming appointments: has quote from this mechanic OR mechanic is selected, not cancelled
       const upcomingAppointments = appointments?.filter(apt => {
         const quotedByMe = apt.mechanic_quotes?.some(
           (quote: any) => quote.mechanic_id === mechanicId
@@ -182,7 +182,7 @@ export default function MechanicDashboard() {
         // Add check for selected mechanic
         const selectedAsMe = apt.selected_mechanic_id === mechanicId;
         
-        return quotedByMe || selectedAsMe;
+        return (quotedByMe || selectedAsMe) && apt.status !== 'cancelled';
       }) || [];
       
       setAvailableAppointments(availableAppointments);
@@ -812,27 +812,34 @@ export default function MechanicDashboard() {
         return;
       }
 
+      // Check if appointment is already cancelled
+      if (appointment.status === 'cancelled') {
+        console.warn('4. Appointment is already cancelled:', appointment.id);
+        showNotification('This appointment has already been cancelled', 'error');
+        return;
+      }
+
       // Check if payment has been made
       if (appointment.payment_status === 'paid') {
-        console.log('4. Payment already made, cannot cancel');
+        console.log('5. Payment already made, cannot cancel');
         showNotification('Cannot cancel quote after payment has been made', 'error');
         return;
       }
 
       // Show confirmation dialog
       if (!window.confirm('Are you sure you want to cancel this quote? This action cannot be undone.')) {
-        console.log('5. User cancelled the operation');
+        console.log('6. User cancelled the operation');
         return;
       }
 
       // Verify quote exists before delete
-      console.log('6. Checking if quote exists before delete...');
+      console.log('7. Checking if quote exists before delete...');
       const { data: checkBefore, error: checkError } = await supabase
         .from('mechanic_quotes')
         .select('*')
         .eq('id', myQuote.id);
 
-      console.log('7. Pre-delete check:', {
+      console.log('8. Pre-delete check:', {
         quoteExists: checkBefore?.length > 0,
         checkBefore,
         checkError,
@@ -840,40 +847,45 @@ export default function MechanicDashboard() {
       });
 
       if (checkError) {
-        console.error('8. Error checking quote:', checkError);
+        console.error('9. Error checking quote:', checkError);
         throw checkError;
       }
 
       if (!checkBefore || checkBefore.length === 0) {
-        console.error('9. Quote not found in database:', myQuote.id);
+        console.error('10. Quote not found in database:', myQuote.id);
         showNotification('Quote not found in database', 'error');
         return;
       }
 
-      // First, update the appointment to remove the quote reference
-      console.log('10. Updating appointment to remove quote reference...');
+      // First, update the appointment to remove the quote reference and mark as cancelled
+      console.log('11. Updating appointment to remove quote reference and mark as cancelled...');
       const { error: updateError } = await supabase
         .from('appointments')
-        .update({ selected_quote_id: null })
+        .update({ 
+          selected_quote_id: null,
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          cancelled_by: 'mechanic'
+        })
         .eq('id', appointmentId)
         .eq('selected_quote_id', myQuote.id);
 
       if (updateError) {
-        console.error('11. Error updating appointment:', updateError);
+        console.error('12. Error updating appointment:', updateError);
         throw new Error(`Failed to update appointment: ${updateError.message}`);
       }
 
-      console.log('12. Appointment updated successfully');
+      console.log('13. Appointment updated successfully');
 
       // Now delete the quote
-      console.log('13. Attempting to delete quote...');
+      console.log('14. Attempting to delete quote...');
       const { data: deletedData, error: deleteError } = await supabase
         .from('mechanic_quotes')
         .delete()
         .eq('id', myQuote.id)
         .select();
 
-      console.log('14. Delete response:', {
+      console.log('15. Delete response:', {
         deletedData,
         deleteError,
         deletedCount: deletedData?.length,
@@ -883,36 +895,36 @@ export default function MechanicDashboard() {
       });
 
       if (deleteError) {
-        console.error('15. Delete error:', deleteError);
+        console.error('16. Delete error:', deleteError);
         throw deleteError;
       }
 
       if (!deletedData || deletedData.length === 0) {
-        console.error('16. No records deleted!');
+        console.error('17. No records deleted!');
         showNotification('Failed to delete quote - no matching record found', 'error');
         return;
       }
 
       // Verify quote is gone after delete
-      console.log('17. Verifying quote is deleted...');
+      console.log('18. Verifying quote is deleted...');
       const { data: checkAfter, error: afterError } = await supabase
         .from('mechanic_quotes')
         .select('*')
         .eq('id', myQuote.id);
 
-      console.log('18. Post-delete verification:', {
+      console.log('19. Post-delete verification:', {
         stillExists: checkAfter?.length > 0,
         checkAfter,
         afterError
       });
 
       if (checkAfter && checkAfter.length > 0) {
-        console.error('19. Quote still exists after delete!');
+        console.error('20. Quote still exists after delete!');
         showNotification('Failed to delete quote - please try again', 'error');
         return;
       }
 
-      console.log('20. Delete successful, updating UI...');
+      console.log('21. Delete successful, updating UI...');
       // Update UI state
       setUpcomingAppointments(prev => prev.filter(apt => apt.id !== appointmentId));
 
@@ -926,7 +938,7 @@ export default function MechanicDashboard() {
       showNotification('Quote cancelled successfully', 'success');
 
     } catch (error) {
-      console.error('21. Error in handleCancelQuote:', error);
+      console.error('22. Error in handleCancelQuote:', error);
       showNotification('Failed to cancel quote', 'error');
     }
   };
