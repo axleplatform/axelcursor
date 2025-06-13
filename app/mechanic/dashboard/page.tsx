@@ -181,17 +181,19 @@ export default function MechanicDashboard() {
         return !skippedByMe && !quotedByMe;
       }) || [];
 
-      // Get upcoming appointments: where THIS mechanic has quoted
+      // Get upcoming appointments: where THIS mechanic has quoted AND quote still exists
       const upcomingAppointments = appointments?.filter(apt => {
-        const quotedByMe = apt.mechanic_quotes?.some(
-          quote => quote.mechanic_id === mechanicId
+        // Check if there's an active quote from this mechanic
+        const hasActiveQuote = apt.mechanic_quotes?.some(
+          quote => quote.mechanic_id === mechanicId && quote.id !== null
         );
-        return quotedByMe;
+        return hasActiveQuote;
       }) || [];
 
       console.log('Initial appointments loaded:', {
         available: availableAppointments.length,
-        upcoming: upcomingAppointments.length
+        upcoming: upcomingAppointments.length,
+        total: appointments?.length || 0
       });
 
       setAvailableAppointments(availableAppointments);
@@ -823,18 +825,19 @@ export default function MechanicDashboard() {
       }
 
       console.log('8. Deleting from database...');
-      // Delete from database
-      const { error } = await supabase
+      // Delete from database with .select() to verify deletion
+      const { data: deletedData, error } = await supabase
         .from('mechanic_quotes')
         .delete()
-        .eq('id', myQuote.id);
+        .eq('id', myQuote.id)
+        .select();
 
       if (error) {
         console.error('9. Delete error:', error);
         throw error;
       }
 
-      console.log('10. Delete successful, updating UI...');
+      console.log('10. Delete successful, deleted data:', deletedData);
       console.log('11. Current appointments before filter:', upcomingAppointments.length);
 
       // IMMEDIATE UI UPDATE - Filter out this appointment
