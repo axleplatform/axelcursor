@@ -183,11 +183,14 @@ export default function MechanicDashboard() {
       if (error) throw error;
       
       // Debug log for appointments data
-      console.log('📦 Fetched appointments:', appointments?.map(apt => ({
+      console.log('📦 Raw appointments data:', appointments);
+      
+      // Debug log for vehicle data specifically
+      console.log('🚗 Vehicle data in appointments:', appointments?.map(apt => ({
         id: apt.id,
         vehicle: apt.vehicles,
-        services: apt.selected_services,
-        status: apt.status
+        hasVehicle: !!apt.vehicles,
+        vehicleFields: apt.vehicles ? Object.keys(apt.vehicles) : []
       })));
       
       // Available appointments: pending status, no quote from this mechanic yet, not cancelled or skipped
@@ -202,10 +205,11 @@ export default function MechanicDashboard() {
       }) || [];
       
       // Debug log for available appointments
-      console.log('🎯 Available appointments:', availableAppointments.map(apt => ({
+      console.log('🎯 Available appointments with vehicle data:', availableAppointments.map(apt => ({
         id: apt.id,
         vehicle: apt.vehicles,
-        services: apt.selected_services
+        hasVehicle: !!apt.vehicles,
+        vehicleFields: apt.vehicles ? Object.keys(apt.vehicles) : []
       })));
       
       // Upcoming appointments: has quote from this mechanic OR mechanic is selected, not cancelled or skipped
@@ -1595,12 +1599,24 @@ export default function MechanicDashboard() {
                       </div>
                     </div>
 
-                    {/* Vehicle Information - Two Row Layout */}
+                    {/* Vehicle Information */}
                     <div className="mb-6">
-                      {/* Row 1: Year, Make, Model */}
-                      <div className="flex items-center gap-2 text-white/90 mb-2">
-                        {availableAppointments[currentAvailableIndex].vehicles && (
-                          <>
+                      {/* Debug log for current appointment */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <div className="mb-2 p-2 bg-white/5 rounded text-xs text-white/50">
+                          <div>Current appointment ID: {availableAppointments[currentAvailableIndex].id}</div>
+                          <div>Has vehicle data: {!!availableAppointments[currentAvailableIndex].vehicles ? 'Yes' : 'No'}</div>
+                          <pre>
+                            {JSON.stringify(availableAppointments[currentAvailableIndex].vehicles, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+
+                      {/* Vehicle Details */}
+                      {availableAppointments[currentAvailableIndex].vehicles && (
+                        <div className="space-y-2">
+                          {/* Year, Make, Model */}
+                          <div className="flex items-center gap-2 text-white/90">
                             {availableAppointments[currentAvailableIndex].vehicles.year && (
                               <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.year}</span>
                             )}
@@ -1610,22 +1626,19 @@ export default function MechanicDashboard() {
                             {availableAppointments[currentAvailableIndex].vehicles.model && (
                               <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
                             )}
-                          </>
-                        )}
-                      </div>
-                      {/* Row 2: VIN and Mileage */}
-                      <div className="flex items-center gap-4 text-white/70 text-sm">
-                        {availableAppointments[currentAvailableIndex].vehicles && (
-                          <>
+                          </div>
+                          
+                          {/* VIN and Mileage */}
+                          <div className="flex items-center gap-4 text-white/70 text-sm">
                             {availableAppointments[currentAvailableIndex].vehicles.vin && (
                               <span>VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}</span>
                             )}
                             {availableAppointments[currentAvailableIndex].vehicles.mileage && (
                               <span>{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
                             )}
-                          </>
-                        )}
-                      </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Debug Information */}
