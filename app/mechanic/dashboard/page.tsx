@@ -967,17 +967,51 @@ export default function MechanicDashboard() {
   const handleCancelConfirmedAppointment = async (appointment: Appointment, quotePrice: number) => {
     const cancellationFee = (quotePrice * 0.05).toFixed(2);
     
+    console.log('=== CANCELLATION DEBUG ===');
+    console.log('1. Starting cancellation process:', {
+      appointmentId: appointment.id,
+      mechanicId,
+      quotePrice,
+      cancellationFee,
+      timestamp: new Date().toISOString()
+    });
+    
     const confirmed = window.confirm(
       `Canceling a confirmed appointment will incur a 5% cancellation fee of $${cancellationFee}.\n` +
       `You will be charged the full price if there is a no-show.\n\n` +
       `Are you sure you want to cancel?`
     );
     
-    if (!confirmed) return;
-    
+    if (!confirmed) {
+      console.log('2. User cancelled the operation');
+      return;
+    }
+
     try {
+      console.log('3. User confirmed cancellation, proceeding with database operations');
+
+      // Verify appointment exists and is in correct state
+      const { data: appointmentCheck, error: checkError } = await supabase
+        .from('appointments')
+        .select('status, payment_status')
+        .eq('id', appointment.id)
+        .single();
+
+      if (checkError) {
+        console.error('4. Error checking appointment:', checkError);
+        throw new Error(`Failed to verify appointment: ${checkError.message}`);
+      }
+
+      if (!appointmentCheck) {
+        console.error('5. Appointment not found:', appointment.id);
+        throw new Error('Appointment not found');
+      }
+
+      console.log('6. Appointment verification successful:', appointmentCheck);
+
       // Log the cancellation with fee
-      const { error: logError } = await supabase
+      console.log('7. Logging cancellation with fee...');
+      const { data: logData, error: logError } = await supabase
         .from('appointment_cancellations')
         .insert({
           appointment_id: appointment.id,
@@ -985,28 +1019,45 @@ export default function MechanicDashboard() {
           cancellation_fee: cancellationFee,
           reason: 'mechanic_cancelled_confirmed',
           created_at: new Date().toISOString()
-        });
-      
+        })
+        .select();
+
+      if (logError) {
+        console.error('8. Error logging cancellation:', logError);
+        throw new Error(`Failed to log cancellation: ${logError.message}`);
+      }
+
+      console.log('9. Cancellation logged successfully:', logData);
+
       // Update appointment status
-      const { error: updateError } = await supabase
+      console.log('10. Updating appointment status...');
+      const { data: updateData, error: updateError } = await supabase
         .from('appointments')
         .update({ 
           status: 'cancelled',
           cancelled_by: 'mechanic',
-          cancellation_fee: cancellationFee
+          cancellation_fee: cancellationFee,
+          cancelled_at: new Date().toISOString()
         })
-        .eq('id', appointment.id);
-        
-      if (logError || updateError) throw logError || updateError;
-      
+        .eq('id', appointment.id)
+        .select();
+
+      if (updateError) {
+        console.error('11. Error updating appointment status:', updateError);
+        throw new Error(`Failed to update appointment: ${updateError.message}`);
+      }
+
+      console.log('12. Appointment status updated successfully:', updateData);
+
       // Remove from UI
       setUpcomingAppointments(prev => prev.filter(apt => apt.id !== appointment.id));
       
       showNotification(`Appointment cancelled. A $${cancellationFee} cancellation fee will be deducted from your account.`, 'info');
       
     } catch (error) {
-      console.error('Error cancelling confirmed appointment:', error);
-      showNotification('Failed to cancel appointment', 'error');
+      console.error('13. Error in cancellation process:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      showNotification(`Failed to cancel appointment: ${errorMessage}`, 'error');
     }
   };
 
