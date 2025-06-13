@@ -968,7 +968,8 @@ export default function MechanicDashboard() {
     const cancellationFee = (quotePrice * 0.05).toFixed(2);
     
     const confirmed = window.confirm(
-      `Canceling a confirmed appointment will incur a 5% cancellation fee of $${cancellationFee}.\n\n` +
+      `Canceling a confirmed appointment will incur a 5% cancellation fee of $${cancellationFee}.\n` +
+      `You will be charged the full price if there is a no-show.\n\n` +
       `Are you sure you want to cancel?`
     );
     
@@ -1147,7 +1148,7 @@ export default function MechanicDashboard() {
                       {/* Status indicator */}
                       <div className="mb-4">
                         {isConfirmed ? (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-teal-600 text-white">
                             ✓ Confirmed - Payment Received
                           </span>
                         ) : isSelected ? (
@@ -1212,15 +1213,15 @@ export default function MechanicDashboard() {
                           <>
                             <button
                               onClick={() => handleStartAppointment(appointment)}
-                              className="flex-1 bg-green-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-green-700 hover:shadow-md active:scale-[0.99]"
+                              className="flex-1 bg-teal-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-teal-700 hover:shadow-md active:scale-[0.99]"
                             >
-                              Start Job
+                              Start
                             </button>
                             <button
                               onClick={() => handleCancelConfirmedAppointment(appointment, myQuote?.price || 0)}
                               className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
                             >
-                              Cancel (5% fee)
+                              Cancel
                             </button>
                           </>
                         ) : (
