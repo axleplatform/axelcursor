@@ -860,11 +860,6 @@ export default function MechanicDashboard() {
         console.log('15. New appointments length:', newAppointments.length);
       }, 100);
 
-      // Then refresh from database (don't await)
-      fetchInitialAppointments().catch(error => {
-        console.error('16. Error refreshing appointments:', error);
-      });
-
     } catch (error) {
       console.error('17. Error in handleCancelQuote:', error);
       showNotification('Failed to cancel quote', 'error');
