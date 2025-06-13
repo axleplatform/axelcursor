@@ -148,63 +148,57 @@ export default function MechanicDashboard() {
 
   // Update fetchInitialAppointments function
   const fetchInitialAppointments = async () => {
+    if (!mechanicId) return;
+    
     try {
-      console.log('🔍 Fetching initial appointments...');
+      setIsAppointmentsLoading(true);
+      console.log('🔍 Fetching appointments for mechanic:', mechanicId);
       
-      // Fetch all pending appointments with related data using explicit foreign key relationships
+      // Get all appointments with quotes
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select(`
           *,
           vehicles!appointment_id(*),
-          mechanic_quotes!appointment_id(*)
+          mechanic_quotes!appointment_id(*),
+          customer:customers(*)
         `)
-        .eq('status', 'pending')
         .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('❌ Error fetching appointments:', error);
-        throw error;
-      }
-
-      console.log('📦 Raw appointments data:', appointments);
-
-      // Filter available appointments (not skipped or quoted by this mechanic)
-      const availableAppointments = appointments?.filter((apt: Appointment) => {
-        const skippedByMe = apt.mechanic_skips?.some(
-          (skip: { mechanic_id: string }) => skip.mechanic_id === mechanicId
-        );
-        const quotedByMe = apt.mechanic_quotes?.some(
-          (quote: { mechanic_id: string }) => quote.mechanic_id === mechanicId
-        );
-        return !skippedByMe && !quotedByMe;
-      }) || [];
-
-      // Filter upcoming appointments (has a quote from this mechanic OR is selected as mechanic)
-      const upcomingAppointments = appointments?.filter((apt: Appointment) => {
-        // Check if this mechanic has quoted
-        const quotedByMe = apt.mechanic_quotes?.some(
-          (quote: { mechanic_id: string }) => quote.mechanic_id === mechanicId
-        );
         
-        // Check if this mechanic is selected
+      if (error) throw error;
+      
+      // Available appointments: pending status, no quote from this mechanic yet
+      const availableAppointments = appointments?.filter(apt => {
+        const alreadyQuoted = apt.mechanic_quotes?.some(
+          (quote: any) => quote.mechanic_id === mechanicId
+        );
+        return apt.status === 'pending' && !alreadyQuoted;
+      }) || [];
+      
+      // Upcoming appointments: has quote from this mechanic OR mechanic is selected
+      const upcomingAppointments = appointments?.filter(apt => {
+        const quotedByMe = apt.mechanic_quotes?.some(
+          (quote: any) => quote.mechanic_id === mechanicId
+        );
+        // Add check for selected mechanic
         const selectedAsMe = apt.selected_mechanic_id === mechanicId;
         
-        // Show if either condition is true
         return quotedByMe || selectedAsMe;
       }) || [];
-
-      console.log('🔍 Filtered appointments:', {
-        total: appointments?.length || 0,
+      
+      setAvailableAppointments(availableAppointments);
+      setUpcomingAppointments(upcomingAppointments);
+      
+      console.log('Appointments loaded:', {
         available: availableAppointments.length,
         upcoming: upcomingAppointments.length
       });
-
-      setAvailableAppointments(availableAppointments);
-      setUpcomingAppointments(upcomingAppointments);
+      
     } catch (error) {
       console.error('❌ Error fetching appointments:', error);
       showNotification('Failed to load appointments', 'error');
+    } finally {
+      setIsAppointmentsLoading(false);
     }
   };
 
