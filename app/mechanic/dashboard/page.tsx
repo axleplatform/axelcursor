@@ -1561,42 +1561,8 @@ export default function MechanicDashboard() {
                 {/* Current appointment details */}
                 {availableAppointments[currentAvailableIndex] && (
                   <div className="bg-white/10 rounded-lg p-6">
-                    {/* Vehicle Information */}
-                    <div className="mb-6">
-                      <h3 className="text-lg font-medium mb-2">
-                        {availableAppointments[currentAvailableIndex].vehicles?.year}{" "}
-                        {availableAppointments[currentAvailableIndex].vehicles?.make}{" "}
-                        {availableAppointments[currentAvailableIndex].vehicles?.model}
-                      </h3>
-                      {availableAppointments[currentAvailableIndex].vehicles?.vin && (
-                        <p className="text-sm text-white/70">
-                          VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}
-                        </p>
-                      )}
-                      {availableAppointments[currentAvailableIndex].vehicles?.mileage && (
-                        <p className="text-sm text-white/70">
-                          Mileage: {availableAppointments[currentAvailableIndex].vehicles.mileage} miles
-                        </p>
-                      )}
-                        </div>
-
-                    {/* Quote Status */}
-                    {availableAppointments[currentAvailableIndex].mechanic_quotes?.some(
-                      q => q.mechanic_id === mechanicId
-                    ) && (
-                      <div className="mb-4">
-                        <span className="text-sm text-yellow-300 bg-yellow-900/30 px-3 py-1.5 rounded-full inline-flex items-center">
-                          <Clock className="h-4 w-4 mr-1.5" />
-                          Awaiting customer selection (You quoted: $
-                          {availableAppointments[currentAvailableIndex].mechanic_quotes.find(
-                            q => q.mechanic_id === mechanicId
-                          )?.price})
-                        </span>
-                      </div>
-                    )}
-
                     {/* Location and Date */}
-                    <div className="flex items-center gap-4 mb-4">
+                    <div className="flex items-center gap-4 mb-6">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
                         <span className="text-sm">{availableAppointments[currentAvailableIndex].location}</span>
@@ -1604,28 +1570,69 @@ export default function MechanicDashboard() {
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4" />
                         <span className="text-sm">{formatDate(availableAppointments[currentAvailableIndex].appointment_date)}</span>
-                    </div>
+                      </div>
                     </div>
 
-                    {/* Vehicle Information - Concise Format */}
+                    {/* Vehicle Information */}
                     <div className="mb-6">
-                      <div className="flex flex-wrap gap-3 text-sm text-white/70">
-                        {availableAppointments[currentAvailableIndex].vehicles?.year && (
-                          <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.year}</span>
-                        )}
-                        {availableAppointments[currentAvailableIndex].vehicles?.make && (
-                          <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.make}</span>
-                        )}
-                        {availableAppointments[currentAvailableIndex].vehicles?.model && (
-                          <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
-                        )}
-                        {availableAppointments[currentAvailableIndex].vehicles?.vin && (
-                          <span className="ml-2">VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}</span>
-                        )}
-                        {availableAppointments[currentAvailableIndex].vehicles?.mileage && (
-                          <span className="ml-2">{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
-                        )}
+                      <div className="flex flex-col gap-2">
+                        {/* Year, Make, Model Row */}
+                        <div className="flex items-center gap-2 text-white/90">
+                          {availableAppointments[currentAvailableIndex].vehicles?.year && (
+                            <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.year}</span>
+                          )}
+                          {availableAppointments[currentAvailableIndex].vehicles?.make && (
+                            <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.make}</span>
+                          )}
+                          {availableAppointments[currentAvailableIndex].vehicles?.model && (
+                            <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
+                          )}
+                        </div>
+                        {/* VIN and Mileage Row */}
+                        <div className="flex items-center gap-4 text-white/70 text-sm">
+                          {availableAppointments[currentAvailableIndex].vehicles?.vin && (
+                            <span>VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}</span>
+                          )}
+                          {availableAppointments[currentAvailableIndex].vehicles?.mileage && (
+                            <span>{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
+                          )}
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Services and Car Status Row */}
+                    <div className="flex justify-between items-start mb-6">
+                      {/* Selected Services */}
+                      {availableAppointments[currentAvailableIndex].selected_services && (
+                        <div className="flex-1">
+                          <h4 className="text-sm font-medium mb-2">Selected Services</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {availableAppointments[currentAvailableIndex].selected_services.map((service: string, index: number) => (
+                              <span
+                                key={index}
+                                className="bg-white/20 text-xs px-3 py-1 rounded-full"
+                              >
+                                {service}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Car Status */}
+                      {availableAppointments[currentAvailableIndex].car_runs !== null && (
+                        <div className="flex-1 text-right">
+                          <h4 className="text-sm font-medium mb-2">Car Status</h4>
+                          <div className="flex items-center justify-end gap-2">
+                            <div className={`w-3 h-3 rounded-full ${availableAppointments[currentAvailableIndex].car_runs ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                            <span className="text-sm">
+                              {availableAppointments[currentAvailableIndex].car_runs
+                                ? "Car is running"
+                                : "Car is not running"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Issue Description */}
@@ -1634,46 +1641,14 @@ export default function MechanicDashboard() {
                       <p className="text-sm text-white/70 bg-white/5 p-3 rounded-md">
                         {availableAppointments[currentAvailableIndex].issue_description || "No description provided"}
                       </p>
-                        </div>
-
-                    {/* Selected Services */}
-                    {availableAppointments[currentAvailableIndex].selected_services && (
-                      <div className="mb-6">
-                        <h4 className="text-sm font-medium mb-2">Selected Services</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {availableAppointments[currentAvailableIndex].selected_services.map((service: string, index: number) => (
-                            <span
-                              key={index}
-                              className="bg-white/20 text-xs px-3 py-1 rounded-full"
-                            >
-                              {service}
-                        </span>
-                          ))}
-                      </div>
-                          </div>
-                        )}
-
-                    {/* Car Status */}
-                    {availableAppointments[currentAvailableIndex].car_runs !== null && (
-                      <div className="mb-6">
-                        <h4 className="text-sm font-medium mb-2">Car Status</h4>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${availableAppointments[currentAvailableIndex].car_runs ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                          <span className="text-sm">
-                            {availableAppointments[currentAvailableIndex].car_runs
-                              ? "Car is running"
-                              : "Car is not running"}
-                          </span>
-                        </div>
-                          </div>
-                        )}
+                    </div>
 
                     {/* Quote Input */}
                     <div className="mb-6">
                       <label htmlFor="price" className="block text-sm font-medium mb-2">
                         Your Quote (USD)
                       </label>
-                      <div className="relative">
+                      <div className="relative max-w-[300px] mx-auto">
                         <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/70">$</span>
                         <input
                           type="number"
@@ -1681,13 +1656,13 @@ export default function MechanicDashboard() {
                           value={priceInput}
                           onChange={(e: ChangeEvent<HTMLInputElement>) => setPriceInput(e.target.value)}
                           placeholder="Enter your price"
-                          className="w-full bg-white/10 border border-white/20 rounded-md pl-8 pr-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                          className="w-full bg-white/10 border border-white/20 rounded-md pl-8 pr-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 text-center text-2xl font-bold"
                           disabled={isProcessing}
                           min="10"
                           max="10000"
                           step="0.01"
                         />
-                        </div>
+                      </div>
                     </div>
 
                     {/* ETA Selection */}
@@ -1741,16 +1716,16 @@ export default function MechanicDashboard() {
                               </option>
                             ))}
                           </select>
-                          </div>
-                          </div>
+                        </div>
+                      </div>
                       
                       {/* Error message */}
                       {showETAError && (!selectedDate || !selectedTime) && (
                         <p className="text-red-500 text-sm mt-2 animate-pulse">
                           Please select both date and time
                         </p>
-                        )}
-                      </div>
+                      )}
+                    </div>
 
                     {/* Action Buttons */}
                     <div className="flex gap-3">
