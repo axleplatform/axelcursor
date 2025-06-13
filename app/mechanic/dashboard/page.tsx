@@ -1238,6 +1238,39 @@ export default function MechanicDashboard() {
                   
                   return (
                     <div key={`${appointment.id}-${Date.now()}`} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                      {/* Price Quote and ETA Section */}
+                      {myQuote && (
+                        <div className="mb-6 border-b border-gray-100 pb-4">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="text-2xl font-bold text-[#294a46] mb-1">
+                                ${myQuote.price.toFixed(2)}
+                              </div>
+                              <div className="text-sm text-gray-600 flex items-center gap-2">
+                                <Clock className="h-4 w-4" />
+                                <span>ETA: {new Date(myQuote.eta).toLocaleString()}</span>
+                              </div>
+                            </div>
+                            {/* Status Badge */}
+                            <div className="flex flex-col items-end">
+                              {isConfirmed ? (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm" style={{ backgroundColor: '#294A46', color: 'white' }}>
+                                  ✓ Confirmed - Payment Received
+                                </span>
+                              ) : isSelected ? (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                                  ✓ Customer selected you
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+                                  ⏳ Awaiting customer selection
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Vehicle Information */}
                       <div className="mb-6">
                         <h3 className="text-lg font-medium mb-2 text-gray-900">
@@ -1254,23 +1287,6 @@ export default function MechanicDashboard() {
                           <p className="text-sm text-gray-600">
                             Mileage: {appointment.vehicles.mileage} miles
                           </p>
-                        )}
-                      </div>
-
-                      {/* Status indicator */}
-                      <div className="mb-4">
-                        {isConfirmed ? (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm" style={{ backgroundColor: '#294A46', color: 'white' }}>
-                            ✓ Confirmed - Payment Received
-                          </span>
-                        ) : isSelected ? (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                            ✓ Customer selected you
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
-                            ⏳ Awaiting customer selection
-                          </span>
                         )}
                       </div>
 
@@ -1324,17 +1340,6 @@ export default function MechanicDashboard() {
                         </div>
                       )}
 
-                      {/* Quote Details */}
-                      {myQuote && (
-                        <div className="mb-6 p-3 bg-gray-50 rounded">
-                          <p className="text-sm text-gray-600">Your Quote: ${myQuote.price}</p>
-                          <p className="text-sm text-gray-600">ETA: {new Date(myQuote.eta).toLocaleString()}</p>
-                          {myQuote.notes && (
-                            <p className="text-sm text-gray-600 mt-1">Notes: {myQuote.notes}</p>
-                          )}
-                        </div>
-                      )}
-
                       {/* Action buttons */}
                       <div className="flex gap-3">
                         {isConfirmed ? (
@@ -1380,6 +1385,10 @@ export default function MechanicDashboard() {
                               <div className="flex gap-3 w-full">
                                 <button
                                   onClick={() => {
+                                    if (isSelected) {
+                                      showNotification('Cannot edit quote after being selected by customer', 'error');
+                                      return;
+                                    }
                                     setSelectedAppointment(appointment);
                                     setPrice(myQuote?.price.toString() || '');
                                     const quoteDate = new Date(myQuote?.eta);
