@@ -1400,8 +1400,29 @@ export default function MechanicDashboard() {
                           <span className="text-sm text-gray-600">{appointment.location}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <CalendarDays className="h-4 w-4 text-gray-500" />
+                          <Clock className="h-4 w-4 text-gray-500" />
                           <span className="text-sm text-gray-600">{formatDate(appointment.appointment_date)}</span>
+                        </div>
+                      </div>
+
+                      {/* Vehicle Information - Concise Format */}
+                      <div className="mb-6">
+                        <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                          {appointment.vehicles?.year && (
+                            <span className="font-medium">{appointment.vehicles.year}</span>
+                          )}
+                          {appointment.vehicles?.make && (
+                            <span className="font-medium">{appointment.vehicles.make}</span>
+                          )}
+                          {appointment.vehicles?.model && (
+                            <span className="font-medium">{appointment.vehicles.model}</span>
+                          )}
+                          {appointment.vehicles?.vin && (
+                            <span className="ml-2">VIN: {appointment.vehicles.vin}</span>
+                          )}
+                          {appointment.vehicles?.mileage && (
+                            <span className="ml-2">{appointment.vehicles.mileage.toLocaleString()} miles</span>
+                          )}
                         </div>
                       </div>
 
@@ -1609,15 +1630,36 @@ export default function MechanicDashboard() {
                     )}
 
                     {/* Location and Date */}
-                    <div className="flex items-center gap-4 mb-6">
+                    <div className="flex items-center gap-4 mb-4">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
                         <span className="text-sm">{availableAppointments[currentAvailableIndex].location}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <CalendarDays className="h-4 w-4" />
+                        <Clock className="h-4 w-4" />
                         <span className="text-sm">{formatDate(availableAppointments[currentAvailableIndex].appointment_date)}</span>
                     </div>
+                    </div>
+
+                    {/* Vehicle Information - Concise Format */}
+                    <div className="mb-6">
+                      <div className="flex flex-wrap gap-3 text-sm text-white/70">
+                        {availableAppointments[currentAvailableIndex].vehicles?.year && (
+                          <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.year}</span>
+                        )}
+                        {availableAppointments[currentAvailableIndex].vehicles?.make && (
+                          <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.make}</span>
+                        )}
+                        {availableAppointments[currentAvailableIndex].vehicles?.model && (
+                          <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
+                        )}
+                        {availableAppointments[currentAvailableIndex].vehicles?.vin && (
+                          <span className="ml-2">VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}</span>
+                        )}
+                        {availableAppointments[currentAvailableIndex].vehicles?.mileage && (
+                          <span className="ml-2">{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Issue Description */}
