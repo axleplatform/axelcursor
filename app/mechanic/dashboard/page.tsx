@@ -3,7 +3,7 @@
 import React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Search, User, Loader2, Clock, MapPin, Check, X, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react"
+import { Search, User, Loader2, Clock, MapPin, Check, X, ChevronLeft, ChevronRight, CalendarDays, Calendar } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { UpcomingAppointments } from "@/components/upcoming-appointments"
 import { useToast } from "@/components/ui/use-toast"
@@ -1316,69 +1316,185 @@ export default function MechanicDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-gray-800">Upcoming Appointments</h2>
-                {upcomingAppointments.map((appointment) => (
-                  <div key={appointment.id} className="bg-white rounded-lg shadow-md p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="text-3xl font-bold text-gray-900">
-                        ${appointment.price_quote}
-                      </div>
-                      <div className="text-center">
-                        <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 mb-2">
-                          Confirmed
-                        </div>
-                        <div className="flex flex-col items-center text-sm text-gray-600">
-                          <span>ETA: {appointment.eta}</span>
-                          <span>Date: {appointment.appointment_date}</span>
-                          <span>Time: {appointment.appointment_time}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 text-sm text-gray-600 mb-4">
-                      <div className="flex-1">
-                        {appointment.year} {appointment.make} {appointment.model}
-                      </div>
-                      <div className="flex-1">
-                        {appointment.vin && <span>VIN: {appointment.vin}</span>}
-                        {appointment.mileage && <span> | {appointment.mileage.toLocaleString()} miles</span>}
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="flex-1">
-                        <span className="text-sm text-gray-600">Selected Services: {appointment.selected_services.join(', ')}</span>
-                      </div>
-                      <div className="flex-1 text-center">
-                        <span className="text-sm text-gray-600">Status: {appointment.status}</span>
-                      </div>
-                    </div>
-
-                    <div className="mb-4">
-                      <span className="text-sm text-gray-600">Car Issues:</span>
-                      <div className="flex gap-2 flex-wrap mt-1">
-                        {appointment.selected_car_issues.map((issue, index) => (
-                          <div key={index} className="flex items-center bg-gray-100 px-2 py-1 rounded">
-                            <img 
-                              src={`/images/issues/${issue.toLowerCase().replace(' ', '_')}.png`} 
-                              alt={issue} 
-                              className="w-5 h-5 mr-1"
-                            />
-                            <span className="text-sm text-gray-700">{issue}</span>
+                {upcomingAppointments.map((appointment) => {
+                  const myQuote = appointment.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
+                  const isSelected = appointment.selected_mechanic_id === mechanicId;
+                  const isEditing = selectedAppointment?.id === appointment.id;
+                  const isConfirmed = appointment.payment_status === 'paid' || appointment.status === 'confirmed';
+                  
+                  return (
+                    <div key={`${appointment.id}-${Date.now()}`} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                      {/* Card Header with Price and Status */}
+                      <div className="flex justify-between items-start mb-6">
+                        {/* Price Quote */}
+                        {myQuote && (
+                          <div className="text-4xl font-bold text-[#294a46]">
+                            ${myQuote.price.toFixed(2)}
                           </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex justify-center">
-                      <div className="w-[300px] p-4 border border-gray-200 rounded-lg text-center">
-                        <div className="text-2xl font-bold text-green-600">
-                          ${appointment.price_quote}
+                        )}
+                        
+                        {/* Status and ETA */}
+                        <div className="text-right">
+                          {isConfirmed ? (
+                            <div className="flex flex-col items-end">
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2" style={{ backgroundColor: '#294A46', color: 'white' }}>
+                                ✓ Confirmed
+                              </span>
+                              <div className="text-sm text-gray-600">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-4 w-4" />
+                                  <span>ETA: {new Date(myQuote?.eta || '').toLocaleString()}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ) : isSelected ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                              ✓ Customer selected you
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+                              ⏳ Awaiting customer selection
+                            </span>
+                          )}
                         </div>
                       </div>
+
+                      {/* Vehicle Details */}
+                      <div className="mb-6">
+                        <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+                          {appointment.vehicles?.year && (
+                            <span className="font-medium">{appointment.vehicles.year}</span>
+                          )}
+                          {appointment.vehicles?.make && (
+                            <span className="font-medium">{appointment.vehicles.make}</span>
+                          )}
+                          {appointment.vehicles?.model && (
+                            <span className="font-medium">{appointment.vehicles.model}</span>
+                          )}
+                          {appointment.vehicles?.vin && (
+                            <span className="ml-2">VIN: {appointment.vehicles.vin}</span>
+                          )}
+                          {appointment.vehicles?.mileage && (
+                            <span className="ml-2">{appointment.vehicles.mileage.toLocaleString()} miles</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Location and Date */}
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">{appointment.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">{formatDate(appointment.appointment_date)}</span>
+                        </div>
+                      </div>
+
+                      {/* Issue Description */}
+                      <div className="mb-6">
+                        <h4 className="text-sm font-medium mb-2 text-gray-900">Issue Description</h4>
+                        <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+                          {appointment.issue_description || "No description provided"}
+                        </p>
+                      </div>
+
+                      {/* Selected Services */}
+                      {appointment.selected_services && (
+                        <div className="mb-6">
+                          <h4 className="text-sm font-medium mb-2 text-gray-900">Selected Services</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {appointment.selected_services.map((service: string, index: number) => (
+                              <span
+                                key={index}
+                                className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full"
+                              >
+                                {service}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Car Status */}
+                      {appointment.car_runs !== null && (
+                        <div className="mb-6">
+                          <h4 className="text-sm font-medium mb-2 text-gray-900">Car Status</h4>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${appointment.car_runs ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                            <span className="text-sm text-gray-600">
+                              {appointment.car_runs ? "Car is running" : "Car is not running"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action buttons */}
+                      <div className="flex gap-3">
+                        {isConfirmed ? (
+                          <>
+                            <button
+                              onClick={() => handleStartAppointment(appointment)}
+                              className="flex-1 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
+                              style={{ backgroundColor: '#294A46' }}
+                            >
+                              Start
+                            </button>
+                            <button
+                              onClick={() => handleCancelConfirmedAppointment(appointment, myQuote?.price || 0)}
+                              className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {isEditing ? (
+                              <>
+                                <button
+                                  onClick={() => handleUpdateQuote(appointment.id)}
+                                  className="flex-1 bg-[#294a46] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
+                                >
+                                  Update Quote
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedAppointment(null);
+                                    setPrice('');
+                                    setSelectedDate('');
+                                    setSelectedTime('');
+                                    setNotes('');
+                                  }}
+                                  className="flex-1 bg-gray-200 text-gray-700 font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-gray-300 hover:shadow-md active:scale-[0.99]"
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
+                              <div className="flex gap-3 w-full">
+                                <button
+                                  onClick={() => handleEditAppointment(appointment)}
+                                  className="flex-1 bg-[#294a46] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
+                                >
+                                  Edit
+                                </button>
+                                {appointment.payment_status !== 'paid' && (
+                                  <button
+                                    onClick={() => handleCancelQuote(appointment.id)}
+                                    className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
+                                  >
+                                    Cancel
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1450,11 +1566,11 @@ export default function MechanicDashboard() {
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
                         <span className="text-sm">{availableAppointments[currentAvailableIndex].location}</span>
-                      </div>
+                        </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4" />
                         <span className="text-sm">{formatDate(availableAppointments[currentAvailableIndex].appointment_date)}</span>
-                      </div>
+                        </div>
                     </div>
 
                     {/* Vehicle Information */}
@@ -1471,7 +1587,7 @@ export default function MechanicDashboard() {
                           {availableAppointments[currentAvailableIndex].vehicles?.model && (
                             <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
                           )}
-                        </div>
+                      </div>
                         {/* VIN and Mileage Row */}
                         <div className="flex items-center gap-4 text-white/70 text-sm">
                           {availableAppointments[currentAvailableIndex].vehicles?.vin && (
@@ -1480,9 +1596,9 @@ export default function MechanicDashboard() {
                           {availableAppointments[currentAvailableIndex].vehicles?.mileage && (
                             <span>{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
                           )}
-                        </div>
-                      </div>
                     </div>
+                    </div>
+                        </div>
 
                     {/* Services and Car Status Row */}
                     <div className="flex justify-between items-start mb-6">
@@ -1497,11 +1613,11 @@ export default function MechanicDashboard() {
                                 className="bg-white/20 text-xs px-3 py-1 rounded-full"
                               >
                                 {service}
-                              </span>
+                        </span>
                             ))}
+                      </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
                       {/* Car Status */}
                       {availableAppointments[currentAvailableIndex].car_runs !== null && (
@@ -1515,8 +1631,8 @@ export default function MechanicDashboard() {
                                 : "Car is not running"}
                             </span>
                           </div>
-                        </div>
-                      )}
+                          </div>
+                        )}
                     </div>
 
                     {/* Issue Description */}
@@ -1524,8 +1640,8 @@ export default function MechanicDashboard() {
                       <h4 className="text-sm font-medium mb-2">Issue Description</h4>
                       <p className="text-sm text-white/70 bg-white/5 p-3 rounded-md">
                         {availableAppointments[currentAvailableIndex].issue_description || "No description provided"}
-                      </p>
-                    </div>
+                          </p>
+                        </div>
 
                     {/* Quote Input */}
                     <div className="mb-6">
@@ -1600,16 +1716,16 @@ export default function MechanicDashboard() {
                               </option>
                             ))}
                           </select>
-                        </div>
-                      </div>
+                          </div>
+                          </div>
                       
                       {/* Error message */}
                       {showETAError && (!selectedDate || !selectedTime) && (
                         <p className="text-red-500 text-sm mt-2 animate-pulse">
                           Please select both date and time
                         </p>
-                      )}
-                    </div>
+                        )}
+                      </div>
 
                     {/* Action Buttons */}
                     <div className="flex gap-3">
