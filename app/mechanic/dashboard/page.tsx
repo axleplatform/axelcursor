@@ -163,18 +163,32 @@ export default function MechanicDashboard() {
       setIsAppointmentsLoading(true);
       console.log('🔍 Fetching appointments for mechanic:', mechanicId);
       
-      // Get all appointments with quotes and skips
+      // Get all appointments with quotes, skips, and vehicle information
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select(`
           *,
-          vehicles!appointment_id(*),
+          vehicles!appointment_id(
+            year,
+            make,
+            model,
+            vin,
+            mileage
+          ),
           mechanic_quotes!appointment_id(*),
           mechanic_skipped_appointments!appointment_id(*)
         `)
         .order('created_at', { ascending: false });
         
       if (error) throw error;
+      
+      // Debug log for appointments data
+      console.log('📦 Fetched appointments:', appointments?.map(apt => ({
+        id: apt.id,
+        vehicle: apt.vehicles,
+        services: apt.selected_services,
+        status: apt.status
+      })));
       
       // Available appointments: pending status, no quote from this mechanic yet, not cancelled or skipped
       const availableAppointments = appointments?.filter(apt => {
@@ -186,6 +200,13 @@ export default function MechanicDashboard() {
         );
         return apt.status === 'pending' && !alreadyQuoted && !alreadySkipped && apt.status !== 'cancelled';
       }) || [];
+      
+      // Debug log for available appointments
+      console.log('🎯 Available appointments:', availableAppointments.map(apt => ({
+        id: apt.id,
+        vehicle: apt.vehicles,
+        services: apt.selected_services
+      })));
       
       // Upcoming appointments: has quote from this mechanic OR mechanic is selected, not cancelled or skipped
       const upcomingAppointments = appointments?.filter(apt => {
@@ -1578,26 +1599,43 @@ export default function MechanicDashboard() {
                     <div className="mb-6">
                       {/* Row 1: Year, Make, Model */}
                       <div className="flex items-center gap-2 text-white/90 mb-2">
-                        {availableAppointments[currentAvailableIndex].vehicles?.year && (
-                          <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.year}</span>
-                        )}
-                        {availableAppointments[currentAvailableIndex].vehicles?.make && (
-                          <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.make}</span>
-                        )}
-                        {availableAppointments[currentAvailableIndex].vehicles?.model && (
-                          <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
+                        {availableAppointments[currentAvailableIndex].vehicles && (
+                          <>
+                            {availableAppointments[currentAvailableIndex].vehicles.year && (
+                              <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.year}</span>
+                            )}
+                            {availableAppointments[currentAvailableIndex].vehicles.make && (
+                              <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.make}</span>
+                            )}
+                            {availableAppointments[currentAvailableIndex].vehicles.model && (
+                              <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
+                            )}
+                          </>
                         )}
                       </div>
                       {/* Row 2: VIN and Mileage */}
                       <div className="flex items-center gap-4 text-white/70 text-sm">
-                        {availableAppointments[currentAvailableIndex].vehicles?.vin && (
-                          <span>VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}</span>
-                        )}
-                        {availableAppointments[currentAvailableIndex].vehicles?.mileage && (
-                          <span>{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
+                        {availableAppointments[currentAvailableIndex].vehicles && (
+                          <>
+                            {availableAppointments[currentAvailableIndex].vehicles.vin && (
+                              <span>VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}</span>
+                            )}
+                            {availableAppointments[currentAvailableIndex].vehicles.mileage && (
+                              <span>{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
+
+                    {/* Debug Information */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="mb-4 p-2 bg-white/5 rounded text-xs text-white/50">
+                        <pre>
+                          {JSON.stringify(availableAppointments[currentAvailableIndex].vehicles, null, 2)}
+                        </pre>
+                      </div>
+                    )}
 
                     {/* Services and Car Status Row */}
                     <div className="flex justify-between items-start mb-6">
