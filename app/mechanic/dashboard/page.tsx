@@ -875,24 +875,24 @@ export default function MechanicDashboard() {
       <div className="container mx-auto px-4 pb-12 flex-grow">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Column 1: Upcoming Appointments */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-[#294a46] rounded-lg shadow-sm p-6 text-white">
             <div className="mb-6">
               <h2 className="text-2xl font-bold">
                 Upcoming Appointments
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-white/70 mt-1">
                 Your quoted & confirmed jobs
               </p>
             </div>
             {isAppointmentsLoading ? (
               <div className="flex items-center justify-center h-[400px]">
-                <Loader2 className="h-8 w-8 animate-spin text-[#294a46]" />
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
               </div>
             ) : upcomingAppointments.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[400px] text-center">
-                <Clock className="h-16 w-16 mb-4 text-gray-400" />
+                <Clock className="h-16 w-16 mb-4 text-white/70" />
                 <h3 className="text-xl font-medium mb-2">No Upcoming Appointments</h3>
-                <p className="text-gray-600">
+                <p className="text-white/70">
                   You haven't quoted any appointments yet. New appointments will appear here when you submit a quote.
                 </p>
               </div>
@@ -904,109 +904,161 @@ export default function MechanicDashboard() {
                   const isEditing = selectedAppointment?.id === appointment.id;
                   
                   return (
-                    <div key={appointment.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                      {/* Service type and vehicle info */}
-                      <h3 className="text-lg font-semibold mb-2">{appointment.service_type}</h3>
-                      <p className="text-gray-600 mb-1">
-                        {appointment.vehicles?.year} {appointment.vehicles?.make} {appointment.vehicles?.model}
-                      </p>
-                      <p className="text-gray-600 mb-4">{appointment.location}</p>
-                      
+                    <div key={appointment.id} className="bg-white/10 rounded-lg p-6">
+                      {/* Vehicle Information */}
+                      <div className="mb-6">
+                        <h3 className="text-lg font-medium mb-2">
+                          {appointment.vehicles?.year}{" "}
+                          {appointment.vehicles?.make}{" "}
+                          {appointment.vehicles?.model}
+                        </h3>
+                        {appointment.vehicles?.vin && (
+                          <p className="text-sm text-white/70">
+                            VIN: {appointment.vehicles.vin}
+                          </p>
+                        )}
+                        {appointment.vehicles?.mileage && (
+                          <p className="text-sm text-white/70">
+                            Mileage: {appointment.vehicles.mileage} miles
+                          </p>
+                        )}
+                      </div>
+
                       {/* Status indicator */}
                       <div className="mb-4">
                         {isSelected ? (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-400/20 text-green-300">
                             ✓ Customer selected you
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-400/20 text-yellow-300">
                             ⏳ Awaiting customer selection
                           </span>
                         )}
                       </div>
-                      
-                      {/* Price and Date/Time fields */}
-                      <div className="space-y-3 mb-4">
-                        {/* Price */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Your Quote Price
-                          </label>
+
+                      {/* Location and Date */}
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          <span className="text-sm">{appointment.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          <span className="text-sm">{formatDate(appointment.appointment_date)}</span>
+                        </div>
+                      </div>
+
+                      {/* Issue Description */}
+                      <div className="mb-6">
+                        <h4 className="text-sm font-medium mb-2">Issue Description</h4>
+                        <p className="text-sm text-white/70 bg-white/5 p-3 rounded-md">
+                          {appointment.issue_description || "No description provided"}
+                        </p>
+                      </div>
+
+                      {/* Selected Services */}
+                      {appointment.selected_services && (
+                        <div className="mb-6">
+                          <h4 className="text-sm font-medium mb-2">Selected Services</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {appointment.selected_services.map((service: string, index: number) => (
+                              <span
+                                key={index}
+                                className="bg-white/20 text-xs px-3 py-1 rounded-full"
+                              >
+                                {service}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Quote Input */}
+                      <div className="mb-6">
+                        <label htmlFor="price" className="block text-sm font-medium mb-2">
+                          Your Quote (USD)
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/70">$</span>
                           <input
                             type="number"
+                            id="price"
                             value={isEditing ? price : myQuote?.price || ''}
                             onChange={(e) => setPrice(e.target.value)}
                             disabled={!isEditing || isSelected}
-                            className={`w-full p-2 border rounded-md ${
-                              isEditing && !isSelected 
-                                ? 'border-blue-500 bg-white' 
-                                : 'border-gray-300 bg-gray-50 cursor-not-allowed'
+                            className={`w-full bg-white/10 border border-white/20 rounded-md pl-8 pr-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 ${
+                              !isEditing || isSelected ? 'cursor-not-allowed opacity-50' : ''
                             }`}
+                            min="10"
+                            max="10000"
+                            step="0.01"
                           />
                         </div>
+                      </div>
+
+                      {/* ETA Selection */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium mb-2">
+                          When can you show up? <span className="text-red-400">*</span>
+                        </label>
                         
-                        {/* Date */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Available Date
-                          </label>
-                          <select
-                            value={isEditing ? selectedDate : myQuote?.eta?.split('T')[0] || ''}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            disabled={!isEditing || isSelected}
-                            className={`w-full p-2 border rounded-md ${
-                              isEditing && !isSelected 
-                                ? 'border-blue-500 bg-white' 
-                                : 'border-gray-300 bg-gray-50 cursor-not-allowed'
-                            }`}
-                          >
-                            {getAvailableDates().map((date) => (
-                              <option key={date.value} value={date.value}>
-                                {date.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        
-                        {/* Time */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Available Time
-                          </label>
-                          <select
-                            value={isEditing ? selectedTime : new Date(myQuote?.eta).toTimeString().slice(0,5) || ''}
-                            onChange={(e) => setSelectedTime(e.target.value)}
-                            disabled={!isEditing || isSelected}
-                            className={`w-full p-2 border rounded-md ${
-                              isEditing && !isSelected 
-                                ? 'border-blue-500 bg-white' 
-                                : 'border-gray-300 bg-gray-50 cursor-not-allowed'
-                            }`}
-                          >
-                            {getTimeSlots().map((slot) => (
-                              <option key={slot.value} value={slot.value}>
-                                {slot.label}
-                              </option>
-                            ))}
-                          </select>
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Date Selection */}
+                          <div>
+                            <label className="block text-xs text-white/70 mb-1">Select Date</label>
+                            <select
+                              value={isEditing ? selectedDate : myQuote?.eta?.split('T')[0] || ''}
+                              onChange={(e) => setSelectedDate(e.target.value)}
+                              disabled={!isEditing || isSelected}
+                              className={`w-full bg-white/20 border border-white/30 rounded-md px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-white/50 ${
+                                !isEditing || isSelected ? 'cursor-not-allowed opacity-50' : ''
+                              }`}
+                            >
+                              {getAvailableDates().map((date) => (
+                                <option key={date.value} value={date.value} className="bg-[#294a46]">
+                                  {date.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Time Selection */}
+                          <div>
+                            <label className="block text-xs text-white/70 mb-1">Select Time</label>
+                            <select
+                              value={isEditing ? selectedTime : new Date(myQuote?.eta).toTimeString().slice(0,5) || ''}
+                              onChange={(e) => setSelectedTime(e.target.value)}
+                              disabled={!isEditing || isSelected}
+                              className={`w-full bg-white/20 border border-white/30 rounded-md px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-white/50 ${
+                                !isEditing || isSelected ? 'cursor-not-allowed opacity-50' : ''
+                              }`}
+                            >
+                              {getTimeSlots().map((slot) => (
+                                <option key={slot.value} value={slot.value} className="bg-[#294a46]">
+                                  {slot.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
                       </div>
-                      
+
                       {/* Notes field */}
                       {isEditing && (
                         <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium mb-1">
                             Additional Notes
                           </label>
                           <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className="w-full p-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/50"
                             rows="2"
                           />
                         </div>
                       )}
-                      
+
                       {/* Action buttons */}
                       <div className="flex gap-3">
                         {!isSelected && (
@@ -1015,7 +1067,7 @@ export default function MechanicDashboard() {
                               <>
                                 <button
                                   onClick={() => handleUpdateQuote(appointment.id)}
-                                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                                  className="flex-1 bg-white text-[#294a46] font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-gray-100 hover:shadow-md active:scale-[0.99]"
                                 >
                                   Update Quote
                                 </button>
@@ -1027,7 +1079,7 @@ export default function MechanicDashboard() {
                                     setSelectedTime('');
                                     setNotes('');
                                   }}
-                                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                                  className="flex-1 border border-white text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
                                 >
                                   Cancel
                                 </button>
@@ -1042,7 +1094,7 @@ export default function MechanicDashboard() {
                                   setSelectedTime(quoteDate.toTimeString().slice(0,5));
                                   setNotes(myQuote?.notes || '');
                                 }}
-                                className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors"
+                                className="w-full border border-white text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
                               >
                                 Edit Quote
                               </button>
