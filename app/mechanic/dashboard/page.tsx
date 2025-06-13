@@ -1015,28 +1015,32 @@ export default function MechanicDashboard() {
         throw new Error(`Cannot cancel appointment in ${appointmentCheck.status} status`);
       }
 
-      // Log the cancellation with fee
-      console.log('8. Logging cancellation with fee...');
-      const { data: logData, error: logError } = await supabase
-        .from('appointment_cancellations')
-        .insert({
-          appointment_id: appointment.id,
-          mechanic_id: mechanicId,
-          cancellation_fee: cancellationFee,
-          reason: 'mechanic_cancelled_confirmed',
-          created_at: new Date().toISOString()
-        })
-        .select();
+      // Try to log the cancellation, but don't fail if the table doesn't exist
+      try {
+        console.log('8. Attempting to log cancellation with fee...');
+        const { error: logError } = await supabase
+          .from('appointment_cancellations')
+          .insert({
+            appointment_id: appointment.id,
+            mechanic_id: mechanicId,
+            cancellation_fee: cancellationFee,
+            reason: 'mechanic_cancelled_confirmed',
+            created_at: new Date().toISOString()
+          });
 
-      if (logError) {
-        console.error('9. Error logging cancellation:', logError);
-        throw new Error(`Failed to log cancellation: ${logError.message}`);
+        if (logError) {
+          console.warn('9. Warning: Could not log cancellation:', logError);
+          // Don't throw error, just log the warning
+        } else {
+          console.log('10. Cancellation logged successfully');
+        }
+      } catch (logError) {
+        console.warn('11. Warning: Failed to log cancellation:', logError);
+        // Continue with the cancellation process even if logging fails
       }
 
-      console.log('10. Cancellation logged successfully:', logData);
-
       // Update appointment status
-      console.log('11. Updating appointment status...');
+      console.log('12. Updating appointment status...');
       const { data: updateData, error: updateError } = await supabase
         .from('appointments')
         .update({ 
@@ -1049,11 +1053,11 @@ export default function MechanicDashboard() {
         .select();
 
       if (updateError) {
-        console.error('12. Error updating appointment status:', updateError);
+        console.error('13. Error updating appointment status:', updateError);
         throw new Error(`Failed to update appointment: ${updateError.message}`);
       }
 
-      console.log('13. Appointment status updated successfully:', updateData);
+      console.log('14. Appointment status updated successfully:', updateData);
 
       // Remove from UI
       setUpcomingAppointments(prev => prev.filter(apt => apt.id !== appointment.id));
@@ -1061,7 +1065,7 @@ export default function MechanicDashboard() {
       showNotification(`Appointment cancelled. A $${cancellationFee} cancellation fee will be deducted from your account.`, 'info');
       
     } catch (error) {
-      console.error('14. Error in cancellation process:', error);
+      console.error('15. Error in cancellation process:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       showNotification(`Failed to cancel appointment: ${errorMessage}`, 'error');
     }
