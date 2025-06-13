@@ -151,18 +151,21 @@ export default function MechanicDashboard() {
     try {
       console.log('🔍 Fetching initial appointments...');
       
-      // Fetch all pending appointments with related data
+      // Fetch all pending appointments with related data using explicit foreign key relationships
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select(`
           *,
-          vehicles(*),
-          mechanic_quotes(*)
+          vehicles!appointment_id(*),
+          mechanic_quotes!appointment_id(*)
         `)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching appointments:', error);
+        throw error;
+      }
 
       console.log('📦 Raw appointments data:', appointments);
 
