@@ -157,13 +157,7 @@ export default function MechanicDashboard() {
 
   // Update fetchInitialAppointments function
   const fetchInitialAppointments = async () => {
-    if (!mechanicId) return;
-    
     try {
-      setIsAppointmentsLoading(true);
-      console.log('🔍 Fetching appointments for mechanic:', mechanicId);
-      
-      // Get all appointments with quotes, skips, and vehicle information
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select(`
@@ -174,108 +168,68 @@ export default function MechanicDashboard() {
           issue_description,
           car_runs,
           selected_services,
-          selected_car_issues,
-          selected_mechanic_id,
-          vehicles!appointment_id(
+          created_at,
+          vehicles!appointments_vehicle_id_fkey (
             year,
             make,
             model,
             vin,
             mileage
           ),
-          mechanic_quotes!appointment_id(
+          mechanic_quotes!appointments_id_fkey (
             id,
             mechanic_id,
             price,
-            eta,
-            notes
+            eta
           ),
-          mechanic_skipped_appointments!appointment_id(
+          mechanic_skipped_appointments!appointments_id_fkey (
             mechanic_id
           )
         `)
         .order('created_at', { ascending: false });
-        
-      if (error) throw error;
-      
-      // Debug log for appointments data
-      console.log('📦 Raw appointments data:', appointments);
-      
-      // Debug log for vehicle data specifically
-      console.log('🚗 Vehicle data in appointments:', appointments?.map(apt => ({
-        id: apt.id,
-        vehicle: apt.vehicles,
-        hasVehicle: !!apt.vehicles,
-        vehicleFields: apt.vehicles ? Object.keys(apt.vehicles) : []
-      })));
-      
-      // Available appointments: pending status, no quote from this mechanic yet, not cancelled or skipped
-      const availableAppointments = appointments?.filter(apt => {
-        const alreadyQuoted = apt.mechanic_quotes?.some(
-          (quote: any) => quote.mechanic_id === mechanicId
-        );
-        const alreadySkipped = apt.mechanic_skipped_appointments?.some(
-          (skip: any) => skip.mechanic_id === mechanicId
-        );
-        return apt.status === 'pending' && !alreadyQuoted && !alreadySkipped && apt.status !== 'cancelled';
-      }) || [];
-      
-      // Debug log for available appointments
-      console.log('🎯 Available appointments with vehicle data:', availableAppointments.map(apt => ({
-        id: apt.id,
-        vehicle: apt.vehicles,
-        hasVehicle: !!apt.vehicles,
-        vehicleFields: apt.vehicles ? Object.keys(apt.vehicles) : []
-      })));
-      
-      // Upcoming appointments: quoted by this mechanic or selected as mechanic, not cancelled or skipped
-      const upcomingAppointments = appointments?.filter(apt => {
-        const quotedByMe = apt.mechanic_quotes?.some(
-          (quote: any) => quote.mechanic_id === mechanicId
-        );
-        const selectedAsMe = apt.selected_mechanic_id === mechanicId;
-        const alreadySkipped = apt.mechanic_skipped_appointments?.some(
-          (skip: any) => skip.mechanic_id === mechanicId
-        );
-        const isCancelled = apt.status === 'cancelled';
 
-        // Debug log for each appointment's filtering
-        console.log('🔍 Filtering appointment:', {
-          id: apt.id,
-          status: apt.status,
-          quotedByMe,
-          selectedAsMe,
-          alreadySkipped,
+      if (error) {
+        console.error('Error fetching appointments:', error);
+        showNotification('Error loading appointments', 'error');
+        return;
+      }
+
+      console.log('📦 Raw appointments data:', appointments);
+
+      // Add debug logging for vehicle data
+      const appointmentsWithVehicles = appointments?.map(appointment => {
+        console.log(`🚗 Vehicle data for appointment ${appointment.id}:`, appointment.vehicles);
+        return appointment;
+      });
+
+      // Filter appointments based on status and mechanic selection
+      const availableAppointments = appointments?.filter(appointment => {
+        const hasQuote = appointment.mechanic_quotes?.some(quote => quote.mechanic_id === mechanicId);
+        const isSelected = appointment.selected_mechanic_id === mechanicId;
+        const isSkipped = appointment.mechanic_skips?.some(skip => skip.mechanic_id === mechanicId);
+        const isCancelled = appointment.status === 'cancelled';
+
+        console.log(`🔍 Filtering appointment ${appointment.id}:`, {
+          hasQuote,
+          isSelected,
+          isSkipped,
           isCancelled,
-          willShow: (quotedByMe || selectedAsMe) && !alreadySkipped && !isCancelled
+          status: appointment.status
         });
 
-        return (quotedByMe || selectedAsMe) && !alreadySkipped && !isCancelled;
-      }) || [];
-
-      // Debug log for upcoming appointments
-      console.log('📅 Upcoming appointments:', upcomingAppointments.map(apt => ({
-        id: apt.id,
-        status: apt.status,
-        selected_mechanic_id: apt.selected_mechanic_id,
-        hasQuotes: apt.mechanic_quotes?.length > 0,
-        myQuote: apt.mechanic_quotes?.find((q: any) => q.mechanic_id === mechanicId)
-      })));
-      
-      setAvailableAppointments(availableAppointments);
-      setUpcomingAppointments(upcomingAppointments);
-      
-      console.log('Appointments loaded:', {
-        available: availableAppointments.length,
-        upcoming: upcomingAppointments.length,
-        total: appointments?.length
+        return !hasQuote && !isSelected && !isSkipped && !isCancelled;
       });
-      
+
+      console.log('🎯 Available appointments with vehicle data:', availableAppointments);
+
+      setAvailableAppointments(availableAppointments || []);
+      setUpcomingAppointments(appointments?.filter(app => 
+        app.status === 'confirmed' && 
+        app.selected_mechanic_id === mechanicId
+      ) || []);
     } catch (error) {
-      console.error('❌ Error fetching appointments:', error);
-      showNotification('Failed to load appointments', 'error');
-    } finally {
-      setIsAppointmentsLoading(false);
+      console.error('Error in fetchInitialAppointments:', error);
+      showNotification('Error loading appointments', 'error');
     }
   };
 
