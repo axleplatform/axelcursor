@@ -13,21 +13,10 @@ export async function middleware(request: NextRequest) {
     const res = NextResponse.next()
     const supabase = createMiddlewareClient({ req: request, res })
 
-    // Check for session cookie
-    const hasSessionCookie = request.cookies.has("sb-auth-token") || 
-                           request.cookies.has("sb-auth-token-client")
-
     const isProtectedRoute = request.nextUrl.pathname.startsWith("/mechanic/") ||
       request.nextUrl.pathname.startsWith("/onboarding-mechanic-")
 
-    if (!hasSessionCookie && isProtectedRoute) {
-      console.log("🚫 Protected route accessed without session, redirecting to login")
-      const redirectUrl = new URL("/login", request.url)
-      redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname)
-      return NextResponse.redirect(redirectUrl)
-    }
-
-    if (!hasSessionCookie) {
+    if (!isProtectedRoute) {
       return res
     }
 
