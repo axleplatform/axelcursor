@@ -1199,11 +1199,27 @@ export default function MechanicDashboard() {
                         </div>
                       )}
 
+                      {/* Car Status */}
+                      {appointment.car_runs !== null && (
+                        <div className="mb-6">
+                          <h4 className="text-sm font-medium mb-2 text-gray-900">Car Status</h4>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${appointment.car_runs ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                            <span className="text-sm text-gray-600">
+                              {appointment.car_runs ? "Car is running" : "Car is not running"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Quote Details */}
-                      {isConfirmed && myQuote && (
+                      {myQuote && (
                         <div className="mb-6 p-3 bg-gray-50 rounded">
-                          <p className="text-sm text-gray-600">Confirmed Price: ${myQuote.price}</p>
-                          <p className="text-sm text-gray-600">Scheduled: {new Date(myQuote.eta).toLocaleString()}</p>
+                          <p className="text-sm text-gray-600">Your Quote: ${myQuote.price}</p>
+                          <p className="text-sm text-gray-600">ETA: {new Date(myQuote.eta).toLocaleString()}</p>
+                          {myQuote.notes && (
+                            <p className="text-sm text-gray-600 mt-1">Notes: {myQuote.notes}</p>
+                          )}
                         </div>
                       )}
 
