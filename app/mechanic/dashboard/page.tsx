@@ -154,35 +154,41 @@ export default function MechanicDashboard() {
       setIsAppointmentsLoading(true);
       console.log('🔍 Fetching appointments for mechanic:', mechanicId);
       
-      // Get all appointments with quotes - removed invalid customer relationship
+      // Get all appointments with quotes and skips
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select(`
           *,
           vehicles!appointment_id(*),
-          mechanic_quotes!appointment_id(*)
+          mechanic_quotes!appointment_id(*),
+          mechanic_skipped_appointments!appointment_id(*)
         `)
         .order('created_at', { ascending: false });
         
       if (error) throw error;
       
-      // Available appointments: pending status, no quote from this mechanic yet, not cancelled
+      // Available appointments: pending status, no quote from this mechanic yet, not cancelled or skipped
       const availableAppointments = appointments?.filter(apt => {
         const alreadyQuoted = apt.mechanic_quotes?.some(
           (quote: any) => quote.mechanic_id === mechanicId
         );
-        return apt.status === 'pending' && !alreadyQuoted && apt.status !== 'cancelled';
+        const alreadySkipped = apt.mechanic_skipped_appointments?.some(
+          (skip: any) => skip.mechanic_id === mechanicId
+        );
+        return apt.status === 'pending' && !alreadyQuoted && !alreadySkipped && apt.status !== 'cancelled';
       }) || [];
       
-      // Upcoming appointments: has quote from this mechanic OR mechanic is selected, not cancelled
+      // Upcoming appointments: has quote from this mechanic OR mechanic is selected, not cancelled or skipped
       const upcomingAppointments = appointments?.filter(apt => {
         const quotedByMe = apt.mechanic_quotes?.some(
           (quote: any) => quote.mechanic_id === mechanicId
         );
-        // Add check for selected mechanic
         const selectedAsMe = apt.selected_mechanic_id === mechanicId;
+        const alreadySkipped = apt.mechanic_skipped_appointments?.some(
+          (skip: any) => skip.mechanic_id === mechanicId
+        );
         
-        return (quotedByMe || selectedAsMe) && apt.status !== 'cancelled';
+        return (quotedByMe || selectedAsMe) && !alreadySkipped && apt.status !== 'cancelled';
       }) || [];
       
       setAvailableAppointments(availableAppointments);
@@ -190,7 +196,8 @@ export default function MechanicDashboard() {
       
       console.log('Appointments loaded:', {
         available: availableAppointments.length,
-        upcoming: upcomingAppointments.length
+        upcoming: upcomingAppointments.length,
+        total: appointments?.length
       });
       
     } catch (error) {
