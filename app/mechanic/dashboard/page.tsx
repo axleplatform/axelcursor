@@ -792,29 +792,37 @@ export default function MechanicDashboard() {
 
   // Add handleCancelQuote function after handleUpdateQuote
   const handleCancelQuote = async (appointmentId: string) => {
+    console.log('1. Starting cancel for appointment:', appointmentId);
+    console.log('2. Current upcoming appointments:', upcomingAppointments);
+    
     try {
       // Get the appointment and quote details
       const appointment = upcomingAppointments.find(apt => apt.id === appointmentId);
       const myQuote = appointment?.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
       
+      console.log('3. Found appointment:', appointment);
+      console.log('4. Found quote:', myQuote);
+      
       if (!appointment || !myQuote) {
+        console.error('5. Quote not found:', { appointment, myQuote });
         showNotification('Quote not found', 'error');
         return;
       }
 
       // Check if payment has been made
       if (appointment.payment_status === 'paid') {
+        console.log('6. Payment already made, cannot cancel');
         showNotification('Cannot cancel quote after payment has been made', 'error');
         return;
       }
 
       // Show confirmation dialog
       if (!window.confirm('Are you sure you want to cancel this quote? This action cannot be undone.')) {
+        console.log('7. User cancelled the operation');
         return;
       }
 
-      console.log('Before delete - upcoming appointments:', upcomingAppointments.length);
-
+      console.log('8. Deleting from database...');
       // Delete from database
       const { error } = await supabase
         .from('mechanic_quotes')
@@ -822,20 +830,20 @@ export default function MechanicDashboard() {
         .eq('id', myQuote.id);
 
       if (error) {
+        console.error('9. Delete error:', error);
         throw error;
       }
 
-      console.log('Delete successful, updating UI...');
+      console.log('10. Delete successful, updating UI...');
+      console.log('11. Current appointments before filter:', upcomingAppointments.length);
 
       // IMMEDIATE UI UPDATE - Filter out this appointment
-      setUpcomingAppointments(prevAppointments => {
-        const filtered = prevAppointments.filter(apt => apt.id !== appointmentId);
-        console.log('Filtered appointments:', filtered.length);
-        return filtered;
-      });
+      const newAppointments = upcomingAppointments.filter(apt => apt.id !== appointmentId);
+      console.log('12. Filtered appointments:', newAppointments.length);
+      console.log('13. Removed appointment?', upcomingAppointments.length > newAppointments.length);
 
-      // Also update availableAppointments to force a re-render
-      setAvailableAppointments(prev => [...prev]);
+      // Force a re-render by creating a new array
+      setUpcomingAppointments([...newAppointments]);
 
       // Reset form state
       setSelectedAppointment(null);
@@ -846,13 +854,19 @@ export default function MechanicDashboard() {
 
       showNotification('Quote cancelled successfully', 'success');
 
+      // Add a timeout to check if state updated
+      setTimeout(() => {
+        console.log('14. State after update:', upcomingAppointments);
+        console.log('15. New appointments length:', newAppointments.length);
+      }, 100);
+
       // Then refresh from database (don't await)
       fetchInitialAppointments().catch(error => {
-        console.error('Error refreshing appointments:', error);
+        console.error('16. Error refreshing appointments:', error);
       });
 
     } catch (error) {
-      console.error('Error cancelling quote:', error);
+      console.error('17. Error in handleCancelQuote:', error);
       showNotification('Failed to cancel quote', 'error');
     }
   };
