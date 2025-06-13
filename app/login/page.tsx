@@ -44,12 +44,10 @@ export default function LoginPage() {
 
       console.log("✅ Login successful, user:", user.id)
 
-      // Wait for session to be set
-      await supabase.auth.refreshSession()
-      
-      // Then redirect with router refresh
-      router.refresh()
-      router.push('/mechanic/dashboard')
+      // Give the session cookie time to be set
+      setTimeout(() => {
+        window.location.href = '/mechanic/dashboard'
+      }, 500)
 
     } catch (error: any) {
       console.error("❌ Error:", error)
