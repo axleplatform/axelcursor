@@ -1327,9 +1327,9 @@ export default function MechanicDashboard() {
                       {/* Price Quote and ETA Section */}
                       {myQuote && (
                         <div className="mb-6 border-b border-gray-100 pb-4">
-                          <div className="flex justify-between items-center">
+                          <div className="flex justify-between items-start">
                             <div>
-                              <div className="text-2xl font-bold text-[#294a46] mb-1">
+                              <div className="text-3xl font-bold text-[#294a46] mb-2">
                                 ${myQuote.price.toFixed(2)}
                               </div>
                               <div className="text-sm text-gray-600 flex items-center gap-2">
@@ -1340,9 +1340,15 @@ export default function MechanicDashboard() {
                             {/* Status Badge */}
                             <div className="flex flex-col items-end">
                               {isConfirmed ? (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm" style={{ backgroundColor: '#294A46', color: 'white' }}>
-                                  ✓ Confirmed - Payment Received
-                                </span>
+                                <div className="flex flex-col items-end gap-2">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm" style={{ backgroundColor: '#294A46', color: 'white' }}>
+                                    ✓ Confirmed
+                                  </span>
+                                  <div className="text-sm text-gray-600 flex items-center gap-2">
+                                    <Clock className="h-4 w-4" />
+                                    <span>ETA: {new Date(myQuote.eta).toLocaleString()}</span>
+                                  </div>
+                                </div>
                               ) : isSelected ? (
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
                                   ✓ Customer selected you
@@ -1923,7 +1929,7 @@ export default function MechanicDashboard() {
               </div>
 
               {/* ETA Selection */}
-              <div className="mb-4">
+              <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   When can you show up?
                 </label>
@@ -1964,20 +1970,6 @@ export default function MechanicDashboard() {
                     </select>
                   </div>
                 </div>
-              </div>
-
-              {/* Notes */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notes (Optional)
-                </label>
-                <textarea
-                  value={editNotes}
-                  onChange={(e) => setEditNotes(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#294a46]"
-                  rows={3}
-                  placeholder="Add any additional notes for the customer..."
-                />
               </div>
 
               {/* Action Buttons */}
