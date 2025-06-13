@@ -167,16 +167,33 @@ export default function MechanicDashboard() {
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select(`
-          *,
-          vehicles!appointment_id(
+          id,
+          status,
+          appointment_date,
+          location,
+          issue_description,
+          car_runs,
+          selected_services,
+          selected_car_issues,
+          payment_status,
+          selected_mechanic_id,
+          vehicles (
             year,
             make,
             model,
             vin,
             mileage
           ),
-          mechanic_quotes!appointment_id(*),
-          mechanic_skipped_appointments!appointment_id(*)
+          mechanic_quotes (
+            id,
+            mechanic_id,
+            price,
+            eta,
+            notes
+          ),
+          mechanic_skipped_appointments (
+            mechanic_id
+          )
         `)
         .order('created_at', { ascending: false });
         
@@ -211,19 +228,6 @@ export default function MechanicDashboard() {
         hasVehicle: !!apt.vehicles,
         vehicleFields: apt.vehicles ? Object.keys(apt.vehicles) : []
       })));
-      
-      // Upcoming appointments: has quote from this mechanic OR mechanic is selected, not cancelled or skipped
-      const upcomingAppointments = appointments?.filter(apt => {
-        const quotedByMe = apt.mechanic_quotes?.some(
-          (quote: any) => quote.mechanic_id === mechanicId
-        );
-        const selectedAsMe = apt.selected_mechanic_id === mechanicId;
-        const alreadySkipped = apt.mechanic_skipped_appointments?.some(
-          (skip: any) => skip.mechanic_id === mechanicId
-        );
-        
-        return (quotedByMe || selectedAsMe) && !alreadySkipped && apt.status !== 'cancelled';
-      }) || [];
       
       setAvailableAppointments(availableAppointments);
       setUpcomingAppointments(upcomingAppointments);
@@ -1640,15 +1644,6 @@ export default function MechanicDashboard() {
                         </div>
                       )}
                     </div>
-
-                    {/* Debug Information */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <div className="mb-4 p-2 bg-white/5 rounded text-xs text-white/50">
-                        <pre>
-                          {JSON.stringify(availableAppointments[currentAvailableIndex].vehicles, null, 2)}
-                        </pre>
-                      </div>
-                    )}
 
                     {/* Services and Car Status Row */}
                     <div className="flex justify-between items-start mb-6">
