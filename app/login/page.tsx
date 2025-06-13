@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
@@ -11,7 +11,6 @@ import { supabase } from "@/lib/supabase"
 
 export default function LoginPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
@@ -19,71 +18,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isResendingEmail, setIsResendingEmail] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
-
-  // Check if user is already logged in
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        console.log("🔍 Checking session...")
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (session) {
-          console.log("✅ Session found, checking user type...")
-          
-          // Check if user is a mechanic
-          const { data: mechanicProfile, error: profileError } = await supabase
-            .from("mechanic_profiles")
-            .select("id, onboarding_completed, onboarding_step")
-            .eq("user_id", session.user.id)
-            .single()
-
-          if (profileError && profileError.code !== "PGRST116") {
-            console.error("❌ Error checking mechanic profile:", profileError)
-            return
-          }
-
-          if (mechanicProfile) {
-            console.log("✅ Mechanic profile found:", mechanicProfile.id)
-            if (mechanicProfile.onboarding_completed) {
-              console.log("✅ Mechanic profile complete, redirecting to dashboard")
-              router.replace("/mechanic/dashboard")
-            } else {
-              const step = mechanicProfile.onboarding_step || "personal_info"
-              console.log("🔄 Redirecting to onboarding step:", step)
-              router.replace(`/onboarding-mechanic-${getStepNumber(step)}`)
-            }
-            return
-          }
-
-          // Check if this is a customer account
-          const { data: customerProfile } = await supabase
-            .from("customer_profiles")
-            .select("id")
-            .eq("user_id", session.user.id)
-            .single()
-
-          if (customerProfile) {
-            console.log("✅ Customer profile found:", customerProfile.id)
-            router.replace("/dashboard")
-          }
-        }
-      } catch (error) {
-        console.error("❌ Session check error:", error)
-      }
-    }
-    checkSession()
-  }, [router])
-
-  const getStepNumber = (step: string) => {
-    switch (step) {
-      case "personal_info": return "1"
-      case "professional_info": return "2"
-      case "certifications": return "3"
-      case "rates": return "4"
-      case "profile": return "5"
-      default: return "1"
-    }
-  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -110,56 +44,8 @@ export default function LoginPage() {
 
       console.log("✅ Login successful, user:", user.id)
 
-      // Wait for session to be established
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      // Verify session is established
-      const { data: { session: verifiedSession }, error: verifyError } = await supabase.auth.getSession()
-      
-      if (verifyError || !verifiedSession) {
-        console.error("❌ Session verification failed:", verifyError)
-        throw new Error("Failed to establish session")
-      }
-
-      console.log("✅ Session verified:", verifiedSession.user.id)
-
-      // Check if user has a mechanic profile
-      const { data: mechanicProfile, error: profileError } = await supabase
-        .from("mechanic_profiles")
-        .select("id, onboarding_completed, onboarding_step")
-        .eq("user_id", verifiedSession.user.id)
-        .single()
-
-      if (profileError && profileError.code !== "PGRST116") {
-        console.error("❌ Error checking mechanic profile:", profileError)
-        throw new Error("Failed to verify mechanic profile")
-      }
-
-      if (mechanicProfile) {
-        console.log("✅ Mechanic profile found:", mechanicProfile.id)
-        if (mechanicProfile.onboarding_completed) {
-          console.log("✅ Mechanic profile complete, redirecting to dashboard")
-          router.replace("/mechanic/dashboard")
-        } else {
-          const step = mechanicProfile.onboarding_step || "personal_info"
-          console.log("🔄 Redirecting to onboarding step:", step)
-          router.replace(`/onboarding-mechanic-${getStepNumber(step)}`)
-        }
-      } else {
-        // Check if this is a customer account
-        const { data: customerProfile } = await supabase
-          .from("customer_profiles")
-          .select("id")
-          .eq("user_id", verifiedSession.user.id)
-          .single()
-
-        if (customerProfile) {
-          console.log("✅ Customer profile found:", customerProfile.id)
-          router.replace("/dashboard")
-        } else {
-          throw new Error("No profile found. Please complete registration.")
-        }
-      }
+      // Force a hard refresh to ensure middleware picks up the new session
+      window.location.href = "/mechanic/dashboard"
 
     } catch (error: any) {
       console.error("❌ Error:", error)
@@ -248,10 +134,10 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-900 tracking-tight"
-                placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="block w-full rounded-md border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#294a46] sm:text-sm sm:leading-6"
+                placeholder="Enter your email"
               />
             </div>
 
@@ -265,10 +151,10 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-900 tracking-tight"
-                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="block w-full rounded-md border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#294a46] sm:text-sm sm:leading-6"
+                placeholder="Enter your password"
               />
             </div>
 
@@ -282,7 +168,7 @@ export default function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 rounded border-gray-300 text-[#294a46] focus:ring-[#294a46]"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 tracking-tight">
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
                   Remember me
                 </label>
               </div>
@@ -290,7 +176,7 @@ export default function LoginPage() {
               <div className="text-sm">
                 <Link
                   href="/forgot-password"
-                  className="font-medium text-[#294a46] tracking-tight transition-transform hover:scale-105 active:scale-95"
+                  className="text-[#294a46] font-medium hover:text-[#1a2f2c] transition-colors"
                 >
                   Forgot your password?
                 </Link>
@@ -301,63 +187,19 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#294a46] tracking-tight transition-transform hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294a46] disabled:opacity-70 disabled:cursor-not-allowed"
+                className="group relative flex w-full justify-center rounded-md bg-[#294a46] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1a2f2c] focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
                     Signing in...
                   </>
                 ) : (
-                  "Log In"
+                  "Sign in"
                 )}
               </button>
             </div>
           </form>
-
-          <div>
-            <button
-              className="w-full flex items-center justify-center py-3 px-4 border border-gray-300 rounded-md shadow-sm bg-white tracking-tight transition-transform hover:scale-[1.02] active:scale-[0.98]"
-              onClick={async () => {
-                try {
-                  setIsLoading(true)
-                  setError(null)
-                  const { error } = await supabase.auth.signInWithOAuth({
-                    provider: "google",
-                    options: {
-                      redirectTo: `${window.location.origin}/onboarding/mechanic/auth-callback?user_type=mechanic`,
-                    },
-                  })
-                  if (error) throw error
-                } catch (error: any) {
-                  console.error("Google login error:", error)
-                  setError(error.message || "Failed to login with Google. Please try again.")
-                  setIsLoading(false)
-                }
-              }}
-              disabled={isLoading}
-            >
-              <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
-                <path
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  fill="#4285F4"
-                />
-                <path
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  fill="#34A853"
-                />
-                <path
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  fill="#FBBC05"
-                />
-                <path
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  fill="#EA4335"
-                />
-              </svg>
-              Continue with Google
-            </button>
-          </div>
         </div>
       </div>
       <Footer />
