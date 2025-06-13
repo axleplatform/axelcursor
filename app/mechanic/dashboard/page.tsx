@@ -1617,27 +1617,33 @@ export default function MechanicDashboard() {
 
                       {/* Vehicle Details */}
                       {availableAppointments[currentAvailableIndex].vehicles && (
-                        <div className="space-y-2">
-                          {/* Year, Make, Model */}
+                        <div className="space-y-3">
+                          {/* Year, Make, Model Row */}
                           <div className="flex items-center gap-2 text-white/90">
                             {availableAppointments[currentAvailableIndex].vehicles.year && (
-                              <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.year}</span>
+                              <span className="font-medium text-lg">{availableAppointments[currentAvailableIndex].vehicles.year}</span>
                             )}
                             {availableAppointments[currentAvailableIndex].vehicles.make && (
-                              <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.make}</span>
+                              <span className="font-medium text-lg">{availableAppointments[currentAvailableIndex].vehicles.make}</span>
                             )}
                             {availableAppointments[currentAvailableIndex].vehicles.model && (
-                              <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
+                              <span className="font-medium text-lg">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
                             )}
                           </div>
-                          
-                          {/* VIN and Mileage */}
+
+                          {/* VIN and Mileage Row */}
                           <div className="flex items-center gap-4 text-white/70 text-sm">
                             {availableAppointments[currentAvailableIndex].vehicles.vin && (
-                              <span>VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">VIN:</span>
+                                <span>{availableAppointments[currentAvailableIndex].vehicles.vin}</span>
+                              </div>
                             )}
                             {availableAppointments[currentAvailableIndex].vehicles.mileage && (
-                              <span>{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">Mileage:</span>
+                                <span>{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
+                              </div>
                             )}
                           </div>
                         </div>
