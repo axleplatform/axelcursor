@@ -993,7 +993,7 @@ export default function MechanicDashboard() {
       // Verify appointment exists and is in correct state
       const { data: appointmentCheck, error: checkError } = await supabase
         .from('appointments')
-        .select('status, payment_status')
+        .select('status')
         .eq('id', appointment.id)
         .single();
 
@@ -1009,8 +1009,14 @@ export default function MechanicDashboard() {
 
       console.log('6. Appointment verification successful:', appointmentCheck);
 
+      // Verify appointment is in a cancellable state
+      if (appointmentCheck.status !== 'confirmed' && appointmentCheck.status !== 'in_progress') {
+        console.error('7. Invalid appointment status for cancellation:', appointmentCheck.status);
+        throw new Error(`Cannot cancel appointment in ${appointmentCheck.status} status`);
+      }
+
       // Log the cancellation with fee
-      console.log('7. Logging cancellation with fee...');
+      console.log('8. Logging cancellation with fee...');
       const { data: logData, error: logError } = await supabase
         .from('appointment_cancellations')
         .insert({
@@ -1023,14 +1029,14 @@ export default function MechanicDashboard() {
         .select();
 
       if (logError) {
-        console.error('8. Error logging cancellation:', logError);
+        console.error('9. Error logging cancellation:', logError);
         throw new Error(`Failed to log cancellation: ${logError.message}`);
       }
 
-      console.log('9. Cancellation logged successfully:', logData);
+      console.log('10. Cancellation logged successfully:', logData);
 
       // Update appointment status
-      console.log('10. Updating appointment status...');
+      console.log('11. Updating appointment status...');
       const { data: updateData, error: updateError } = await supabase
         .from('appointments')
         .update({ 
@@ -1043,11 +1049,11 @@ export default function MechanicDashboard() {
         .select();
 
       if (updateError) {
-        console.error('11. Error updating appointment status:', updateError);
+        console.error('12. Error updating appointment status:', updateError);
         throw new Error(`Failed to update appointment: ${updateError.message}`);
       }
 
-      console.log('12. Appointment status updated successfully:', updateData);
+      console.log('13. Appointment status updated successfully:', updateData);
 
       // Remove from UI
       setUpcomingAppointments(prev => prev.filter(apt => apt.id !== appointment.id));
@@ -1055,7 +1061,7 @@ export default function MechanicDashboard() {
       showNotification(`Appointment cancelled. A $${cancellationFee} cancellation fee will be deducted from your account.`, 'info');
       
     } catch (error) {
-      console.error('13. Error in cancellation process:', error);
+      console.error('14. Error in cancellation process:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       showNotification(`Failed to cancel appointment: ${errorMessage}`, 'error');
     }
