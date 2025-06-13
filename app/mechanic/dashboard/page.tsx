@@ -813,6 +813,8 @@ export default function MechanicDashboard() {
         return;
       }
 
+      console.log('Before delete - upcoming appointments:', upcomingAppointments.length);
+
       // Delete the quote
       const { error } = await supabase
         .from('mechanic_quotes')
@@ -823,10 +825,19 @@ export default function MechanicDashboard() {
         throw error;
       }
 
-      showNotification('Quote cancelled successfully', 'success');
-      
-      // Refresh appointments
+      console.log('Delete successful, refreshing...');
+
+      // Immediately update the UI state
+      setUpcomingAppointments(prev => 
+        prev.filter(apt => apt.id !== appointmentId)
+      );
+
+      // Then refresh from the database
       await fetchInitialAppointments();
+      
+      console.log('After refresh - upcoming appointments:', upcomingAppointments.length);
+
+      showNotification('Quote cancelled successfully', 'success');
       
       // Reset form if it was being edited
       if (selectedAppointment?.id === appointmentId) {
