@@ -1329,35 +1329,9 @@ export default function MechanicDashboard() {
                         <div className="mb-6 border-b border-gray-100 pb-4">
                           <div className="flex justify-between items-start">
                             <div>
-                              <div className="text-3xl font-bold text-[#294a46] mb-2">
+                              <div className="text-4xl font-bold text-[#294a46]">
                                 ${myQuote.price.toFixed(2)}
                               </div>
-                              <div className="text-sm text-gray-600 flex items-center gap-2">
-                                <Clock className="h-4 w-4" />
-                                <span>ETA: {new Date(myQuote.eta).toLocaleString()}</span>
-                              </div>
-                            </div>
-                            {/* Status Badge */}
-                            <div className="flex flex-col items-end">
-                              {isConfirmed ? (
-                                <div className="flex flex-col items-end gap-2">
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm" style={{ backgroundColor: '#294A46', color: 'white' }}>
-                                    ✓ Confirmed
-                                  </span>
-                                  <div className="text-sm text-gray-600 flex items-center gap-2">
-                                    <Clock className="h-4 w-4" />
-                                    <span>ETA: {new Date(myQuote.eta).toLocaleString()}</span>
-                                  </div>
-                                </div>
-                              ) : isSelected ? (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                                  ✓ Customer selected you
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
-                                  ⏳ Awaiting customer selection
-                                </span>
-                              )}
                             </div>
                           </div>
                         </div>
@@ -1382,16 +1356,47 @@ export default function MechanicDashboard() {
                         )}
                       </div>
 
-                      {/* Location and Date */}
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm text-gray-600">{appointment.location}</span>
+                      {/* Status and Services Row */}
+                      <div className="flex items-start gap-4 mb-6">
+                        {/* Status Section */}
+                        <div className="flex-shrink-0">
+                          {isConfirmed ? (
+                            <div className="flex flex-col gap-1">
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm" style={{ backgroundColor: '#294A46', color: 'white' }}>
+                                ✓ Confirmed
+                              </span>
+                              <div className="text-sm text-gray-600 flex items-center gap-2">
+                                <Clock className="h-4 w-4" />
+                                <span>ETA: {new Date(myQuote?.eta || '').toLocaleString()}</span>
+                              </div>
+                            </div>
+                          ) : isSelected ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                              ✓ Customer selected you
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+                              ⏳ Awaiting customer selection
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm text-gray-600">{formatDate(appointment.appointment_date)}</span>
-                        </div>
+
+                        {/* Selected Services */}
+                        {appointment.selected_services && (
+                          <div className="flex-grow">
+                            <h4 className="text-sm font-medium mb-2 text-gray-900">Selected Services</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {appointment.selected_services.map((service: string, index: number) => (
+                                <span
+                                  key={index}
+                                  className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full"
+                                >
+                                  {service}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Issue Description */}
@@ -1401,23 +1406,6 @@ export default function MechanicDashboard() {
                           {appointment.issue_description || "No description provided"}
                         </p>
                       </div>
-
-                      {/* Selected Services */}
-                      {appointment.selected_services && (
-                        <div className="mb-6">
-                          <h4 className="text-sm font-medium mb-2 text-gray-900">Selected Services</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {appointment.selected_services.map((service: string, index: number) => (
-                              <span
-                                key={index}
-                                className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full"
-                              >
-                                {service}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
 
                       {/* Car Status */}
                       {appointment.car_runs !== null && (
@@ -1565,7 +1553,7 @@ export default function MechanicDashboard() {
                   <div className="bg-white/10 rounded-lg p-6">
                     {/* Vehicle Information */}
                     <div className="mb-6">
-                      <h3 className="text-lg font-medium mb-2">
+                      <h3 className="text-lg font-medium mb-2 text-gray-900">
                         {availableAppointments[currentAvailableIndex].vehicles?.year}{" "}
                         {availableAppointments[currentAvailableIndex].vehicles?.make}{" "}
                         {availableAppointments[currentAvailableIndex].vehicles?.model}
