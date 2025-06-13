@@ -177,21 +177,21 @@ export default function MechanicDashboard() {
           selected_car_issues,
           payment_status,
           selected_mechanic_id,
-          vehicles (
+          vehicles!appointment_id(
             year,
             make,
             model,
             vin,
             mileage
           ),
-          mechanic_quotes (
+          mechanic_quotes!appointment_id(
             id,
             mechanic_id,
             price,
             eta,
             notes
           ),
-          mechanic_skipped_appointments (
+          mechanic_skipped_appointments!appointment_id(
             mechanic_id
           )
         `)
