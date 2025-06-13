@@ -850,24 +850,30 @@ export default function MechanicDashboard() {
         return;
       }
 
-      // Log the exact conditions we're using for delete
-      console.log('10. Delete conditions:', {
-        table: 'mechanic_quotes',
-        quoteId: myQuote.id,
-        mechanicId: mechanicId,
-        appointmentId: appointmentId,
-        quoteFromDB: checkBefore[0]
-      });
+      // First, update the appointment to remove the quote reference
+      console.log('10. Updating appointment to remove quote reference...');
+      const { error: updateError } = await supabase
+        .from('appointments')
+        .update({ selected_quote_id: null })
+        .eq('id', appointmentId)
+        .eq('selected_quote_id', myQuote.id);
 
-      console.log('11. Attempting to delete quote...');
-      // Delete using the quote's ID directly
+      if (updateError) {
+        console.error('11. Error updating appointment:', updateError);
+        throw new Error(`Failed to update appointment: ${updateError.message}`);
+      }
+
+      console.log('12. Appointment updated successfully');
+
+      // Now delete the quote
+      console.log('13. Attempting to delete quote...');
       const { data: deletedData, error: deleteError } = await supabase
         .from('mechanic_quotes')
         .delete()
         .eq('id', myQuote.id)
         .select();
 
-      console.log('12. Delete response:', {
+      console.log('14. Delete response:', {
         deletedData,
         deleteError,
         deletedCount: deletedData?.length,
@@ -877,36 +883,36 @@ export default function MechanicDashboard() {
       });
 
       if (deleteError) {
-        console.error('13. Delete error:', deleteError);
+        console.error('15. Delete error:', deleteError);
         throw deleteError;
       }
 
       if (!deletedData || deletedData.length === 0) {
-        console.error('14. No records deleted!');
+        console.error('16. No records deleted!');
         showNotification('Failed to delete quote - no matching record found', 'error');
         return;
       }
 
       // Verify quote is gone after delete
-      console.log('15. Verifying quote is deleted...');
+      console.log('17. Verifying quote is deleted...');
       const { data: checkAfter, error: afterError } = await supabase
         .from('mechanic_quotes')
         .select('*')
         .eq('id', myQuote.id);
 
-      console.log('16. Post-delete verification:', {
+      console.log('18. Post-delete verification:', {
         stillExists: checkAfter?.length > 0,
         checkAfter,
         afterError
       });
 
       if (checkAfter && checkAfter.length > 0) {
-        console.error('17. Quote still exists after delete!');
+        console.error('19. Quote still exists after delete!');
         showNotification('Failed to delete quote - please try again', 'error');
         return;
       }
 
-      console.log('18. Delete successful, updating UI...');
+      console.log('20. Delete successful, updating UI...');
       // Update UI state
       setUpcomingAppointments(prev => prev.filter(apt => apt.id !== appointmentId));
 
@@ -920,7 +926,7 @@ export default function MechanicDashboard() {
       showNotification('Quote cancelled successfully', 'success');
 
     } catch (error) {
-      console.error('19. Error in handleCancelQuote:', error);
+      console.error('21. Error in handleCancelQuote:', error);
       showNotification('Failed to cancel quote', 'error');
     }
   };
