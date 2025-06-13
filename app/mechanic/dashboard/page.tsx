@@ -815,7 +815,7 @@ export default function MechanicDashboard() {
 
       console.log('Before delete - upcoming appointments:', upcomingAppointments.length);
 
-      // Delete the quote
+      // Delete from database
       const { error } = await supabase
         .from('mechanic_quotes')
         .delete()
@@ -825,28 +825,32 @@ export default function MechanicDashboard() {
         throw error;
       }
 
-      console.log('Delete successful, refreshing...');
+      console.log('Delete successful, updating UI...');
 
-      // Immediately update the UI state
-      setUpcomingAppointments(prev => 
-        prev.filter(apt => apt.id !== appointmentId)
-      );
+      // IMMEDIATE UI UPDATE - Filter out this appointment
+      setUpcomingAppointments(prevAppointments => {
+        const filtered = prevAppointments.filter(apt => apt.id !== appointmentId);
+        console.log('Filtered appointments:', filtered.length);
+        return filtered;
+      });
 
-      // Then refresh from the database
-      await fetchInitialAppointments();
-      
-      console.log('After refresh - upcoming appointments:', upcomingAppointments.length);
+      // Also update availableAppointments to force a re-render
+      setAvailableAppointments(prev => [...prev]);
+
+      // Reset form state
+      setSelectedAppointment(null);
+      setPrice('');
+      setSelectedDate('');
+      setSelectedTime('');
+      setNotes('');
 
       showNotification('Quote cancelled successfully', 'success');
-      
-      // Reset form if it was being edited
-      if (selectedAppointment?.id === appointmentId) {
-        setSelectedAppointment(null);
-        setPrice('');
-        setSelectedDate('');
-        setSelectedTime('');
-        setNotes('');
-      }
+
+      // Then refresh from database (don't await)
+      fetchInitialAppointments().catch(error => {
+        console.error('Error refreshing appointments:', error);
+      });
+
     } catch (error) {
       console.error('Error cancelling quote:', error);
       showNotification('Failed to cancel quote', 'error');
@@ -967,7 +971,7 @@ export default function MechanicDashboard() {
                   const isEditing = selectedAppointment?.id === appointment.id;
                   
                   return (
-                    <div key={appointment.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                    <div key={`${appointment.id}-${Date.now()}`} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
                       {/* Vehicle Information */}
                       <div className="mb-6">
                         <h3 className="text-lg font-medium mb-2 text-gray-900">
