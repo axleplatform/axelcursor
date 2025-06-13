@@ -1041,23 +1041,45 @@ export default function MechanicDashboard() {
 
       // Update appointment status with cancellation fee
       console.log('12. Updating appointment status...');
-      const { data: updateData, error: updateError } = await supabase
-        .from('appointments')
-        .update({ 
-          status: 'cancelled',
-          cancelled_by: 'mechanic',
-          cancellation_fee: cancellationFee,
-          cancelled_at: new Date().toISOString()
-        })
-        .eq('id', appointment.id)
-        .select();
+      const updateData = {
+        status: 'cancelled',
+        cancelled_by: 'mechanic',
+        cancellation_fee: cancellationFee
+      };
 
-      if (updateError) {
-        console.error('13. Error updating appointment status:', updateError);
-        throw new Error(`Failed to update appointment: ${updateError.message}`);
+      // Try to update with cancelled_at
+      try {
+        const { data: updateData, error: updateError } = await supabase
+          .from('appointments')
+          .update({ 
+            ...updateData,
+            cancelled_at: new Date().toISOString()
+          })
+          .eq('id', appointment.id)
+          .select();
+
+        if (updateError) {
+          console.warn('13. Warning: Could not update with cancelled_at:', updateError);
+          // Try again without cancelled_at
+          const { data: retryData, error: retryError } = await supabase
+            .from('appointments')
+            .update(updateData)
+            .eq('id', appointment.id)
+            .select();
+
+          if (retryError) {
+            console.error('14. Error updating appointment status:', retryError);
+            throw new Error(`Failed to update appointment: ${retryError.message}`);
+          }
+
+          console.log('15. Appointment status updated successfully (without cancelled_at):', retryData);
+        } else {
+          console.log('16. Appointment status updated successfully (with cancelled_at):', updateData);
+        }
+      } catch (error) {
+        console.error('17. Error in update process:', error);
+        throw error;
       }
-
-      console.log('14. Appointment status updated successfully:', updateData);
 
       // Remove from UI
       setUpcomingAppointments(prev => prev.filter(apt => apt.id !== appointment.id));
@@ -1065,7 +1087,7 @@ export default function MechanicDashboard() {
       showNotification(`Appointment cancelled. A $${cancellationFee} cancellation fee will be deducted from your account.`, 'info');
       
     } catch (error) {
-      console.error('15. Error in cancellation process:', error);
+      console.error('18. Error in cancellation process:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       showNotification(`Failed to cancel appointment: ${errorMessage}`, 'error');
     }
