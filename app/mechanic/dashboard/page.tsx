@@ -790,6 +790,58 @@ export default function MechanicDashboard() {
     }
   };
 
+  // Add handleCancelQuote function after handleUpdateQuote
+  const handleCancelQuote = async (appointmentId: string) => {
+    try {
+      // Get the appointment and quote details
+      const appointment = upcomingAppointments.find(apt => apt.id === appointmentId);
+      const myQuote = appointment?.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
+      
+      if (!appointment || !myQuote) {
+        showNotification('Quote not found', 'error');
+        return;
+      }
+
+      // Check if payment has been made
+      if (appointment.payment_status === 'paid') {
+        showNotification('Cannot cancel quote after payment has been made', 'error');
+        return;
+      }
+
+      // Show confirmation dialog
+      if (!window.confirm('Are you sure you want to cancel this quote? This action cannot be undone.')) {
+        return;
+      }
+
+      // Delete the quote
+      const { error } = await supabase
+        .from('mechanic_quotes')
+        .delete()
+        .eq('id', myQuote.id);
+
+      if (error) {
+        throw error;
+      }
+
+      showNotification('Quote cancelled successfully', 'success');
+      
+      // Refresh appointments
+      await fetchInitialAppointments();
+      
+      // Reset form if it was being edited
+      if (selectedAppointment?.id === appointmentId) {
+        setSelectedAppointment(null);
+        setPrice('');
+        setSelectedDate('');
+        setSelectedTime('');
+        setNotes('');
+      }
+    } catch (error) {
+      console.error('Error cancelling quote:', error);
+      showNotification('Failed to cancel quote', 'error');
+    }
+  };
+
   // Loading state
   if (isAuthLoading) {
     return (
@@ -1085,19 +1137,29 @@ export default function MechanicDashboard() {
                                 </button>
                               </>
                             ) : (
-                              <button
-                                onClick={() => {
-                                  setSelectedAppointment(appointment);
-                                  setPrice(myQuote?.price.toString() || '');
-                                  const quoteDate = new Date(myQuote?.eta);
-                                  setSelectedDate(quoteDate.toISOString().split('T')[0]);
-                                  setSelectedTime(quoteDate.toTimeString().slice(0,5));
-                                  setNotes(myQuote?.notes || '');
-                                }}
-                                className="w-full bg-[#294a46] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
-                              >
-                                Edit Quote
-                              </button>
+                              <div className="flex gap-3 w-full">
+                                <button
+                                  onClick={() => {
+                                    setSelectedAppointment(appointment);
+                                    setPrice(myQuote?.price.toString() || '');
+                                    const quoteDate = new Date(myQuote?.eta);
+                                    setSelectedDate(quoteDate.toISOString().split('T')[0]);
+                                    setSelectedTime(quoteDate.toTimeString().slice(0,5));
+                                    setNotes(myQuote?.notes || '');
+                                  }}
+                                  className="flex-1 bg-[#294a46] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
+                                >
+                                  Edit Quote
+                                </button>
+                                {appointment.payment_status !== 'paid' && (
+                                  <button
+                                    onClick={() => handleCancelQuote(appointment.id)}
+                                    className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
+                                  >
+                                    Cancel Quote
+                                  </button>
+                                )}
+                              </div>
                             )}
                           </>
                         )}
