@@ -154,14 +154,13 @@ export default function MechanicDashboard() {
       setIsAppointmentsLoading(true);
       console.log('🔍 Fetching appointments for mechanic:', mechanicId);
       
-      // Get all appointments with quotes
+      // Get all appointments with quotes - removed invalid customer relationship
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select(`
           *,
           vehicles!appointment_id(*),
-          mechanic_quotes!appointment_id(*),
-          customer:customers(*)
+          mechanic_quotes!appointment_id(*)
         `)
         .order('created_at', { ascending: false });
         
