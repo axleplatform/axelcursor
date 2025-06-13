@@ -150,7 +150,7 @@ export default function MechanicDashboard() {
             mileage,
             color
           ),
-          mechanic_quotes(
+          mechanic_quotes!appointment_id(
             id,
             mechanic_id,
             price,
