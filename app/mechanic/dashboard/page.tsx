@@ -1360,26 +1360,37 @@ export default function MechanicDashboard() {
                       )}
 
                       {/* Vehicle Information */}
-                      <div className="mb-6">
-                        <h3 className="text-lg font-medium mb-2 text-gray-900">
-                          {appointment.vehicles?.year}{" "}
-                          {appointment.vehicles?.make}{" "}
-                          {appointment.vehicles?.model}
-                        </h3>
-                        {appointment.vehicles?.vin && (
-                          <p className="text-sm text-gray-600">
-                            VIN: {appointment.vehicles.vin}
-                          </p>
-                        )}
-                        {appointment.vehicles?.mileage && (
-                          <p className="text-sm text-gray-600">
-                            Mileage: {appointment.vehicles.mileage} miles
-                          </p>
-                        )}
+                      <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Vehicle Details</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-gray-600">
+                              <span className="font-medium">Year:</span> {appointment.vehicles?.year}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              <span className="font-medium">Make:</span> {appointment.vehicles?.make}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              <span className="font-medium">Model:</span> {appointment.vehicles?.model}
+                            </p>
+                          </div>
+                          <div>
+                            {appointment.vehicles?.vin && (
+                              <p className="text-sm text-gray-600">
+                                <span className="font-medium">VIN:</span> {appointment.vehicles.vin}
+                              </p>
+                            )}
+                            {appointment.vehicles?.mileage && (
+                              <p className="text-sm text-gray-600">
+                                <span className="font-medium">Mileage:</span> {appointment.vehicles.mileage.toLocaleString()} miles
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
                       {/* Location and Date */}
-                      <div className="flex items-center gap-4 mb-6">
+                      <div className="flex items-center gap-4 mb-4">
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 text-gray-500" />
                           <span className="text-sm text-gray-600">{appointment.location}</span>
