@@ -1015,7 +1015,7 @@ export default function MechanicDashboard() {
         throw new Error(`Cannot cancel appointment in ${appointmentCheck.status} status`);
       }
 
-      // Try to log the cancellation, but don't fail if the table doesn't exist
+      // Try to log the cancellation
       try {
         console.log('8. Attempting to log cancellation with fee...');
         const { error: logError } = await supabase
@@ -1039,7 +1039,7 @@ export default function MechanicDashboard() {
         // Continue with the cancellation process even if logging fails
       }
 
-      // Update appointment status
+      // Update appointment status with cancellation fee
       console.log('12. Updating appointment status...');
       const { data: updateData, error: updateError } = await supabase
         .from('appointments')
