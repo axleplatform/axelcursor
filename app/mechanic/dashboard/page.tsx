@@ -3,7 +3,7 @@
 import React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Search, User, Loader2, Clock, MapPin, Check, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { Search, User, Loader2, Clock, MapPin, Check, X, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { UpcomingAppointments } from "@/components/upcoming-appointments"
 import { useToast } from "@/components/ui/use-toast"
@@ -1327,22 +1327,26 @@ export default function MechanicDashboard() {
                       {/* Price Quote and ETA Section */}
                       {myQuote && (
                         <div className="mb-6 border-b border-gray-100 pb-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <div className="text-4xl font-bold text-[#294a46]">
-                                ${myQuote.price.toFixed(2)}
-                              </div>
-                            </div>
+                          <div className="flex flex-col">
                             {/* Status Badge */}
-                            <div className="flex flex-col items-end">
+                            <div className="flex flex-col items-start mb-3">
                               {isConfirmed ? (
-                                <div className="flex flex-col items-end gap-1">
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm" style={{ backgroundColor: '#294A46', color: 'white' }}>
+                                <div className="flex flex-col w-full">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2" style={{ backgroundColor: '#294A46', color: 'white' }}>
                                     ✓ Confirmed
                                   </span>
-                                  <div className="text-sm text-gray-600 flex items-center gap-2">
-                                    <Clock className="h-4 w-4" />
-                                    <span>ETA: {new Date(myQuote.eta).toLocaleString()}</span>
+                                  <div className="flex justify-between items-center w-full text-sm text-gray-600">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-4 w-4" />
+                                      <span>ETA: {new Date(myQuote.eta).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <CalendarDays className="h-4 w-4" />
+                                      <span>{formatDate(appointment.appointment_date)}</span>
+                                    </div>
+                                  </div>
+                                  <div className="text-4xl font-bold text-[#294a46] mt-3">
+                                    ${myQuote.price.toFixed(2)}
                                   </div>
                                 </div>
                               ) : isSelected ? (
@@ -1396,7 +1400,7 @@ export default function MechanicDashboard() {
                           <span className="text-sm text-gray-600">{appointment.location}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-500" />
+                          <CalendarDays className="h-4 w-4 text-gray-500" />
                           <span className="text-sm text-gray-600">{formatDate(appointment.appointment_date)}</span>
                         </div>
                       </div>
@@ -1611,7 +1615,7 @@ export default function MechanicDashboard() {
                         <span className="text-sm">{availableAppointments[currentAvailableIndex].location}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
+                        <CalendarDays className="h-4 w-4" />
                         <span className="text-sm">{formatDate(availableAppointments[currentAvailableIndex].appointment_date)}</span>
                     </div>
                     </div>
