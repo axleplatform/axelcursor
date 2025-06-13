@@ -44,6 +44,16 @@ interface Appointment {
     price: number
     created_at: string
   }
+  selected_mechanic_id?: string
+  mechanic_quotes?: Array<{
+    id: string
+    mechanic_id: string
+    price: number
+    eta: string
+  }>
+  mechanic_skips?: Array<{
+    mechanic_id: string
+  }>
 }
 
 interface UpcomingAppointmentsProps {
@@ -139,76 +149,59 @@ export default function MechanicDashboard() {
   // Update fetchInitialAppointments function
   const fetchInitialAppointments = async () => {
     try {
-      setIsAppointmentsLoading(true);
-      console.log("🔍 Fetching initial appointments for mechanic:", mechanicId);
+      console.log('🔍 Fetching initial appointments...');
       
-      // Fetch ALL pending appointments with related data
-      const { data: appointments, error: appointmentError } = await supabase
+      // Fetch all pending appointments with related data
+      const { data: appointments, error } = await supabase
         .from('appointments')
         .select(`
           *,
-          vehicles(
-            make,
-            model,
-            year,
-            vin,
-            mileage,
-            color
-          ),
-          mechanic_quotes!appointment_id(
-            id,
-            mechanic_id,
-            price,
-            eta,
-            created_at,
-            updated_at
-          ),
-          mechanic_skipped_appointments(
-            mechanic_id
-          )
+          vehicles(*),
+          mechanic_quotes(*)
         `)
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
 
-      if (appointmentError) {
-        console.error("❌ Error fetching available appointments:", appointmentError);
-        throw new Error("Failed to fetch available appointments");
-      }
+      if (error) throw error;
 
-      // Filter available appointments: not skipped AND not quoted by me
-      const availableAppointments = appointments?.filter(apt => {
-        const skippedByMe = apt.mechanic_skipped_appointments?.some(
-          skip => skip.mechanic_id === mechanicId
+      console.log('📦 Raw appointments data:', appointments);
+
+      // Filter available appointments (not skipped or quoted by this mechanic)
+      const availableAppointments = appointments?.filter((apt: Appointment) => {
+        const skippedByMe = apt.mechanic_skips?.some(
+          (skip: { mechanic_id: string }) => skip.mechanic_id === mechanicId
         );
         const quotedByMe = apt.mechanic_quotes?.some(
-          quote => quote.mechanic_id === mechanicId
+          (quote: { mechanic_id: string }) => quote.mechanic_id === mechanicId
         );
-        
         return !skippedByMe && !quotedByMe;
       }) || [];
 
-      // Get upcoming appointments: where THIS mechanic has quoted AND quote still exists
-      const upcomingAppointments = appointments?.filter(apt => {
-        // Check if there's an active quote from this mechanic
-        const hasActiveQuote = apt.mechanic_quotes?.some(
-          quote => quote.mechanic_id === mechanicId
+      // Filter upcoming appointments (has a quote from this mechanic OR is selected as mechanic)
+      const upcomingAppointments = appointments?.filter((apt: Appointment) => {
+        // Check if this mechanic has quoted
+        const quotedByMe = apt.mechanic_quotes?.some(
+          (quote: { mechanic_id: string }) => quote.mechanic_id === mechanicId
         );
-        return hasActiveQuote;
+        
+        // Check if this mechanic is selected
+        const selectedAsMe = apt.selected_mechanic_id === mechanicId;
+        
+        // Show if either condition is true
+        return quotedByMe || selectedAsMe;
       }) || [];
 
-      console.log('Initial appointments loaded:', {
+      console.log('🔍 Filtered appointments:', {
+        total: appointments?.length || 0,
         available: availableAppointments.length,
-        upcoming: upcomingAppointments.length,
-        total: appointments?.length || 0
+        upcoming: upcomingAppointments.length
       });
 
       setAvailableAppointments(availableAppointments);
       setUpcomingAppointments(upcomingAppointments);
     } catch (error) {
-      console.error("Error fetching initial appointments:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to load appointments";
-      showNotification(errorMessage, 'error');
-    } finally {
-      setIsAppointmentsLoading(false);
+      console.error('❌ Error fetching appointments:', error);
+      showNotification('Failed to load appointments', 'error');
     }
   };
 
