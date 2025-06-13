@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -22,85 +22,6 @@ export default function LoginPage() {
 
   // Create Supabase client
   const supabase = createClient()
-
-  // Check if user is already logged in
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        console.log("🔍 Checking session...")
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        
-        if (sessionError) {
-          console.error("❌ Session error:", sessionError)
-          return
-        }
-        
-        if (session) {
-          console.log("✅ Session found, checking user type...")
-          
-          // Check if user is a mechanic
-          const { data: mechanicProfile, error: profileError } = await supabase
-            .from("mechanic_profiles")
-            .select("id, onboarding_completed, onboarding_step")
-            .eq("user_id", session.user.id)
-            .maybeSingle()
-
-          if (profileError) {
-            console.error("❌ Error checking mechanic profile:", profileError)
-            return
-          }
-
-          if (mechanicProfile) {
-            console.log("✅ Mechanic profile found:", mechanicProfile.id)
-            if (mechanicProfile.onboarding_completed) {
-              console.log("✅ Mechanic profile complete, redirecting to dashboard")
-              router.replace("/mechanic/dashboard")
-            } else {
-              const step = mechanicProfile.onboarding_step || "personal_info"
-              console.log("🔄 Redirecting to onboarding step:", step)
-              router.replace(`/onboarding-mechanic-${getStepNumber(step)}`)
-            }
-            return
-          }
-
-          // Check if this is a customer account
-          const { data: customerProfile, error: customerError } = await supabase
-            .from("customer_profiles")
-            .select("id")
-            .eq("user_id", session.user.id)
-            .maybeSingle()
-
-          if (customerError) {
-            console.error("❌ Error checking customer profile:", customerError)
-            return
-          }
-
-          if (customerProfile) {
-            console.log("✅ Customer profile found:", customerProfile.id)
-            router.replace("/dashboard")
-          } else {
-            // No profile found - redirect to onboarding
-            console.log("🔄 No profile found, redirecting to onboarding")
-            router.replace("/onboarding-mechanic-1")
-          }
-        }
-      } catch (error) {
-        console.error("❌ Session check error:", error)
-      }
-    }
-    checkSession()
-  }, [router])
-
-  const getStepNumber = (step: string) => {
-    switch (step) {
-      case "personal_info": return "1"
-      case "professional_info": return "2"
-      case "certifications": return "3"
-      case "rates": return "4"
-      case "profile": return "5"
-      default: return "1"
-    }
-  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -127,24 +48,11 @@ export default function LoginPage() {
 
       console.log("✅ Login successful, user:", user.id)
 
-      // Wait for session to be established
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      // Verify session is established
-      const { data: { session: verifiedSession }, error: verifyError } = await supabase.auth.getSession()
-      
-      if (verifyError || !verifiedSession) {
-        console.error("❌ Session verification failed:", verifyError)
-        throw new Error("Failed to establish session")
-      }
-
-      console.log("✅ Session verified:", verifiedSession.user.id)
-
       // Check if user has a mechanic profile
       const { data: mechanicProfile, error: profileError } = await supabase
         .from("mechanic_profiles")
         .select("id, onboarding_completed, onboarding_step")
-        .eq("user_id", verifiedSession.user.id)
+        .eq("user_id", user.id)
         .maybeSingle()
 
       if (profileError && profileError.code !== "PGRST116") {
@@ -167,7 +75,7 @@ export default function LoginPage() {
         const { data: customerProfile } = await supabase
           .from("customer_profiles")
           .select("id")
-          .eq("user_id", verifiedSession.user.id)
+          .eq("user_id", user.id)
           .maybeSingle()
 
         if (customerProfile) {
@@ -183,6 +91,17 @@ export default function LoginPage() {
       setError(error.message || "Failed to log in")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const getStepNumber = (step: string) => {
+    switch (step) {
+      case "personal_info": return "1"
+      case "professional_info": return "2"
+      case "certifications": return "3"
+      case "rates": return "4"
+      case "profile": return "5"
+      default: return "1"
     }
   }
 
