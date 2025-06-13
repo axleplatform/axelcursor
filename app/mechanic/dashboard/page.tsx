@@ -1149,14 +1149,14 @@ export default function MechanicDashboard() {
                                   }}
                                   className="flex-1 bg-[#294a46] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
                                 >
-                                  Edit Quote
+                                  Edit
                                 </button>
                                 {appointment.payment_status !== 'paid' && (
                                   <button
                                     onClick={() => handleCancelQuote(appointment.id)}
                                     className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
                                   >
-                                    Cancel Quote
+                                    Cancel
                                   </button>
                                 )}
                               </div>
