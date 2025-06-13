@@ -1324,88 +1324,42 @@ export default function MechanicDashboard() {
                   
                   return (
                     <div key={`${appointment.id}-${Date.now()}`} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                      {/* Price Quote and ETA Section */}
-                      {myQuote && (
-                        <div className="mb-6 border-b border-gray-100 pb-4">
-                          <div className="flex flex-col">
-                            {/* Status Badge */}
-                            <div className="flex flex-col items-start mb-3">
-                              {isConfirmed ? (
-                                <div className="flex flex-col w-full">
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2" style={{ backgroundColor: '#294A46', color: 'white' }}>
-                                    ✓ Confirmed
-                                  </span>
-                                  <div className="flex justify-between items-center w-full text-sm text-gray-600">
-                                    <div className="flex items-center gap-2">
-                                      <Clock className="h-4 w-4" />
-                                      <span>ETA: {new Date(myQuote.eta).toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <CalendarDays className="h-4 w-4" />
-                                      <span>{formatDate(appointment.appointment_date)}</span>
-                                    </div>
-                                  </div>
-                                  <div className="text-4xl font-bold text-[#294a46] mt-3">
-                                    ${myQuote.price.toFixed(2)}
-                                  </div>
+                      {/* Card Header with Price and Status */}
+                      <div className="flex justify-between items-start mb-6">
+                        {/* Price Quote */}
+                        {myQuote && (
+                          <div className="text-4xl font-bold text-[#294a46]">
+                            ${myQuote.price.toFixed(2)}
+                          </div>
+                        )}
+                        
+                        {/* Status and ETA */}
+                        <div className="text-right">
+                          {isConfirmed ? (
+                            <div className="flex flex-col items-end">
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2" style={{ backgroundColor: '#294A46', color: 'white' }}>
+                                ✓ Confirmed
+                              </span>
+                              <div className="text-sm text-gray-600">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-4 w-4" />
+                                  <span>ETA: {new Date(myQuote?.eta || '').toLocaleString()}</span>
                                 </div>
-                              ) : isSelected ? (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                                  ✓ Customer selected you
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
-                                  ⏳ Awaiting customer selection
-                                </span>
-                              )}
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Vehicle Information */}
-                      <div className="mb-6 bg-gray-50 p-4 rounded-lg">
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">Vehicle Details</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Year:</span> {appointment.vehicles?.year}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Make:</span> {appointment.vehicles?.make}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Model:</span> {appointment.vehicles?.model}
-                            </p>
-                          </div>
-                          <div>
-                            {appointment.vehicles?.vin && (
-                              <p className="text-sm text-gray-600">
-                                <span className="font-medium">VIN:</span> {appointment.vehicles.vin}
-                              </p>
-                            )}
-                            {appointment.vehicles?.mileage && (
-                              <p className="text-sm text-gray-600">
-                                <span className="font-medium">Mileage:</span> {appointment.vehicles.mileage.toLocaleString()} miles
-                              </p>
-                            )}
-                          </div>
+                          ) : isSelected ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                              ✓ Customer selected you
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+                              ⏳ Awaiting customer selection
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      {/* Location and Date */}
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm text-gray-600">{appointment.location}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm text-gray-600">{formatDate(appointment.appointment_date)}</span>
-                        </div>
-                      </div>
-
-                      {/* Vehicle Information - Concise Format */}
+                      {/* Vehicle Details */}
                       <div className="mb-6">
                         <div className="flex flex-wrap gap-3 text-sm text-gray-600">
                           {appointment.vehicles?.year && (
@@ -1423,6 +1377,18 @@ export default function MechanicDashboard() {
                           {appointment.vehicles?.mileage && (
                             <span className="ml-2">{appointment.vehicles.mileage.toLocaleString()} miles</span>
                           )}
+                        </div>
+                      </div>
+
+                      {/* Location and Date */}
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">{appointment.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">{formatDate(appointment.appointment_date)}</span>
                         </div>
                       </div>
 
