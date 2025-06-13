@@ -228,6 +228,40 @@ export default function MechanicDashboard() {
         vehicleFields: apt.vehicles ? Object.keys(apt.vehicles) : []
       })));
       
+      // Upcoming appointments: quoted by this mechanic or selected as mechanic, not cancelled or skipped
+      const upcomingAppointments = appointments?.filter(apt => {
+        const quotedByMe = apt.mechanic_quotes?.some(
+          (quote: any) => quote.mechanic_id === mechanicId
+        );
+        const selectedAsMe = apt.selected_mechanic_id === mechanicId;
+        const alreadySkipped = apt.mechanic_skipped_appointments?.some(
+          (skip: any) => skip.mechanic_id === mechanicId
+        );
+        const isCancelled = apt.status === 'cancelled';
+
+        // Debug log for each appointment's filtering
+        console.log('🔍 Filtering appointment:', {
+          id: apt.id,
+          status: apt.status,
+          quotedByMe,
+          selectedAsMe,
+          alreadySkipped,
+          isCancelled,
+          willShow: (quotedByMe || selectedAsMe) && !alreadySkipped && !isCancelled
+        });
+
+        return (quotedByMe || selectedAsMe) && !alreadySkipped && !isCancelled;
+      }) || [];
+
+      // Debug log for upcoming appointments
+      console.log('📅 Upcoming appointments:', upcomingAppointments.map(apt => ({
+        id: apt.id,
+        status: apt.status,
+        selected_mechanic_id: apt.selected_mechanic_id,
+        hasQuotes: apt.mechanic_quotes?.length > 0,
+        myQuote: apt.mechanic_quotes?.find((q: any) => q.mechanic_id === mechanicId)
+      })));
+      
       setAvailableAppointments(availableAppointments);
       setUpcomingAppointments(upcomingAppointments);
       
