@@ -24,6 +24,9 @@ import { ProfileDropdown } from "@/components/profile-dropdown"
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
+// Constants
+const ITEMS_PER_PAGE = 10;
+
 interface Appointment {
   id: string
   status: string
@@ -155,34 +158,36 @@ export default function MechanicDashboard() {
   };
 
   // Update fetchInitialAppointments function
-  const fetchInitialAppointments = async () => {
+  const fetchInitialAppointments = async (page = 1) => {
     if (!mechanicId) return;
     
     try {
       setIsAppointmentsLoading(true);
       console.log('🔍 Starting appointment fetch for mechanic:', mechanicId);
       
-      // Get all appointments with quotes and skips
-      const { data: appointments, error } = await supabase
+      // Calculate offset for pagination
+      const offset = (page - 1) * ITEMS_PER_PAGE;
+      
+      // Get appointments with pagination
+      const { data: appointments, error, count } = await supabase
         .from("appointments")
         .select(`
           *,
           vehicles!appointment_id(*)
-        `)
+        `, { count: 'exact' })
         .eq("status", "pending")
-        .order("appointment_date", { ascending: true });
+        .order("appointment_date", { ascending: true })
+        .range(offset, offset + ITEMS_PER_PAGE - 1);
         
       if (error) {
         console.error('❌ Error fetching appointments:', error);
         throw error;
       }
       
-      console.log('📦 Raw appointments data:', appointments);
-      
-      // Log vehicle information for each appointment
-      appointments?.forEach((apt, index) => {
-        console.log(`🚗 Vehicle data for appointment ${index}:`, apt.vehicles)
-      })
+      // Update hasMore state based on total count
+      if (count !== null) {
+        setHasMore(offset + ITEMS_PER_PAGE < count);
+      }
       
       // Available appointments: pending status, no quote from this mechanic yet, not cancelled or skipped
       const availableAppointments = appointments?.filter(apt => {
@@ -194,14 +199,6 @@ export default function MechanicDashboard() {
         );
         return apt.status === 'pending' && !alreadyQuoted && !alreadySkipped && apt.status !== 'cancelled';
       }) || [];
-      
-      console.log('✅ Available appointments after filtering:', availableAppointments.map(apt => ({
-        id: apt.id,
-        hasVehicle: !!apt.vehicles,
-        vehicleData: apt.vehicles
-      })));
-      
-      setAvailableAppointments(availableAppointments);
       
       // Upcoming appointments: has quote from this mechanic OR mechanic is selected, not cancelled or skipped
       const upcomingAppointments = appointments?.filter(apt => {
@@ -222,7 +219,9 @@ export default function MechanicDashboard() {
       console.log('Appointments loaded:', {
         available: availableAppointments.length,
         upcoming: upcomingAppointments.length,
-        total: appointments?.length
+        total: appointments?.length,
+        page,
+        hasMore
       });
       
     } catch (error) {
@@ -231,6 +230,13 @@ export default function MechanicDashboard() {
     } finally {
       setIsAppointmentsLoading(false);
     }
+  };
+
+  // Add loadMore function
+  const loadMore = () => {
+    if (!hasMore || isAppointmentsLoading) return;
+    setCurrentPage(prev => prev + 1);
+    fetchInitialAppointments(currentPage + 1);
   };
 
   useEffect(() => {
@@ -312,34 +318,11 @@ export default function MechanicDashboard() {
 
   // Real-time subscription handlers
   useEffect(() => {
-    console.log("🔄 Setting up subscriptions with mechanicId:", { 
-      mechanicId, 
-      type: typeof mechanicId,
-      isString: typeof mechanicId === 'string',
-      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
-      isZero: mechanicId === '0'
-    })
-    
-    if (!mechanicId) {
-      console.log("⏳ Waiting for mechanicId before setting up subscriptions...")
-      return
-    }
+    if (!mechanicId) return;
 
-    if (!validateMechanicId(mechanicId)) {
-      console.error("❌ Invalid mechanicId, redirecting to login")
-      setError("Invalid mechanic ID")
-      toast({
-        title: "Error",
-        description: "Invalid mechanic ID. Please try logging in again.",
-        variant: "destructive",
-      })
-      window.location.href = "/login"
-      return
-    }
-
-    // Subscribe to appointment changes
-    const appointmentsSubscription = supabase
-      .channel('appointments_changes')
+    // Subscribe to appointment changes with specific filters
+    const appointmentSubscription = supabase
+      .channel('appointment-changes')
       .on(
         'postgres_changes',
         {
@@ -349,39 +332,58 @@ export default function MechanicDashboard() {
           filter: `status=eq.pending`
         },
         async (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('Appointment change received:', payload)
-          await fetchInitialAppointments();
+          console.log('📡 Appointment change received:', payload);
+          
+          // Only fetch if it's a relevant change
+          if (payload.eventType === 'INSERT' || 
+              (payload.eventType === 'UPDATE' && payload.new.status === 'pending')) {
+            await fetchInitialAppointments(currentPage);
+          }
         }
       )
-      .subscribe()
+      .subscribe();
 
-    // Subscribe to quote changes
-    const quotesSubscription = supabase
-      .channel('quotes_changes')
+    // Subscribe to vehicle changes with specific filters
+    const vehicleSubscription = supabase
+      .channel('vehicle-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vehicles'
+        },
+        async (payload: RealtimePostgresChangesPayload<any>) => {
+          console.log('🚗 Vehicle change received:', payload);
+          await fetchInitialAppointments(currentPage);
+        }
+      )
+      .subscribe();
+
+    // Subscribe to mechanic quotes with specific filters
+    const quoteSubscription = supabase
+      .channel('quote-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'mechanic_quotes',
+          filter: `mechanic_id=eq.${mechanicId}`
         },
         async (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('Quote change received:', payload)
-          await fetchInitialAppointments();
+          console.log('💰 Quote change received:', payload);
+          await fetchInitialAppointments(currentPage);
         }
       )
-      .subscribe()
+      .subscribe();
 
-    // Initial fetch of appointments
-    fetchInitialAppointments()
-
-    // Cleanup subscription on unmount
     return () => {
-      console.log("🧹 Cleaning up subscriptions")
-      appointmentsSubscription.unsubscribe()
-      quotesSubscription.unsubscribe()
-    }
-  }, [mechanicId])
+      appointmentSubscription.unsubscribe();
+      vehicleSubscription.unsubscribe();
+      quoteSubscription.unsubscribe();
+    };
+  }, [mechanicId, currentPage]);
 
   // Add useEffect to load mechanic profile on component mount
   useEffect(() => {
