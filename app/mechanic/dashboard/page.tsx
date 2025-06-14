@@ -3,7 +3,7 @@
 import React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Search, User, Loader2, Clock, MapPin, Check, X, ChevronLeft, ChevronRight, CalendarDays, Calendar } from "lucide-react"
+import { Search, User, Loader2, Clock, MapPin, Check, X, ChevronLeft, ChevronRight, CalendarDays, Calendar, Car, Hash } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { UpcomingAppointments } from "@/components/upcoming-appointments"
 import { useToast } from "@/components/ui/use-toast"
@@ -164,20 +164,13 @@ export default function MechanicDashboard() {
       
       // Get all appointments with quotes and skips
       const { data: appointments, error } = await supabase
-        .from('appointments')
+        .from("appointments")
         .select(`
           *,
-          vehicles!appointment_id(
-            year,
-            make,
-            model,
-            vin,
-            mileage
-          ),
-          mechanic_quotes!appointment_id(*),
-          mechanic_skipped_appointments!appointment_id(*)
+          vehicles!appointment_id(*)
         `)
-        .order('created_at', { ascending: false });
+        .eq("status", "pending")
+        .order("appointment_date", { ascending: true });
         
       if (error) {
         console.error('❌ Error fetching appointments:', error);
@@ -186,25 +179,10 @@ export default function MechanicDashboard() {
       
       console.log('📦 Raw appointments data:', appointments);
       
-      // Debug log for vehicle data
-      console.log('🚗 Vehicle data analysis:', appointments?.map(apt => ({
-        appointmentId: apt.id,
-        hasVehicle: !!apt.vehicles,
-        vehicleData: apt.vehicles ? {
-          year: apt.vehicles.year,
-          make: apt.vehicles.make,
-          model: apt.vehicles.model,
-          vin: apt.vehicles.vin,
-          mileage: apt.vehicles.mileage
-        } : null,
-        vehicleFieldsPresent: apt.vehicles ? {
-          hasYear: !!apt.vehicles.year,
-          hasMake: !!apt.vehicles.make,
-          hasModel: !!apt.vehicles.model,
-          hasVin: !!apt.vehicles.vin,
-          hasMileage: !!apt.vehicles.mileage
-        } : null
-      })));
+      // Log vehicle information for each appointment
+      appointments?.forEach((apt, index) => {
+        console.log(`🚗 Vehicle data for appointment ${index}:`, apt.vehicles)
+      })
       
       // Available appointments: pending status, no quote from this mechanic yet, not cancelled or skipped
       const availableAppointments = appointments?.filter(apt => {
