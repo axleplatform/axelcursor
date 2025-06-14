@@ -166,8 +166,15 @@ export default function MechanicDashboard() {
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select(`
-          *,
-          vehicles!appointment_id(
+          id,
+          status,
+          appointment_date,
+          location,
+          issue_description,
+          car_runs,
+          selected_services,
+          created_at,
+          vehicles!inner(
             year,
             make,
             model,
@@ -184,7 +191,7 @@ export default function MechanicDashboard() {
         throw error;
       }
       
-      console.log('📦 Raw appointments data:', appointments);
+      console.log('📦 Raw appointments data:', appointments?.length);
       
       // Debug log for vehicle data
       console.log('🚗 Vehicle data analysis:', appointments?.map(apt => ({
@@ -1624,19 +1631,30 @@ export default function MechanicDashboard() {
                         {/* Year, Make, Model Row */}
                         <div className="flex items-center gap-2 text-white">
                           {(() => {
-                            const vehicle = availableAppointments[currentAvailableIndex]?.vehicles;
+                            const appointment = availableAppointments[currentAvailableIndex];
+                            const vehicle = appointment?.vehicles;
+                            
                             console.log('🎯 Rendering vehicle info for appointment:', {
-                              appointmentId: availableAppointments[currentAvailableIndex]?.id,
+                              appointmentId: appointment?.id,
                               hasVehicle: !!vehicle,
-                              vehicleData: vehicle
+                              vehicleData: vehicle,
+                              currentIndex: currentAvailableIndex,
+                              totalAppointments: availableAppointments.length
                             });
                             
+                            if (!appointment) {
+                              console.error('❌ No appointment found at index:', currentAvailableIndex);
+                              return <span className="text-white/70">No appointment data available</span>;
+                            }
+                            
                             if (!vehicle) {
+                              console.error('❌ No vehicle data for appointment:', appointment.id);
                               return <span className="text-white/70">Vehicle information not available</span>;
                             }
                             
                             const hasBasicInfo = vehicle.year || vehicle.make || vehicle.model;
                             if (!hasBasicInfo) {
+                              console.error('❌ No basic vehicle info for appointment:', appointment.id);
                               return <span className="text-white/70">No vehicle details available</span>;
                             }
                             
@@ -1656,7 +1674,10 @@ export default function MechanicDashboard() {
                             if (!vehicle) return null;
                             
                             const hasDetails = vehicle.vin || vehicle.mileage;
-                            if (!hasDetails) return null;
+                            if (!hasDetails) {
+                              console.log('ℹ️ No additional vehicle details for appointment:', availableAppointments[currentAvailableIndex]?.id);
+                              return null;
+                            }
                             
                             return (
                               <>
