@@ -1572,11 +1572,11 @@ export default function MechanicDashboard() {
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
                         <span className="text-sm">{availableAppointments[currentAvailableIndex].location}</span>
-                      </div>
+                        </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4" />
                         <span className="text-sm">{formatDate(availableAppointments[currentAvailableIndex].appointment_date)}</span>
-                      </div>
+                        </div>
                     </div>
 
                     {/* Vehicle Information */}
@@ -1593,7 +1593,7 @@ export default function MechanicDashboard() {
                           {availableAppointments[currentAvailableIndex].vehicles?.model && (
                             <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
                           )}
-                        </div>
+                      </div>
                         {/* VIN and Mileage Row */}
                         <div className="flex items-center gap-4 text-white/70 text-sm">
                           {availableAppointments[currentAvailableIndex].vehicles?.vin && (
@@ -1602,9 +1602,9 @@ export default function MechanicDashboard() {
                           {availableAppointments[currentAvailableIndex].vehicles?.mileage && (
                             <span>{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
                           )}
-                        </div>
-                      </div>
                     </div>
+                    </div>
+                        </div>
 
                     {/* Services and Car Status Row */}
                     <div className="flex justify-between items-start mb-6">
