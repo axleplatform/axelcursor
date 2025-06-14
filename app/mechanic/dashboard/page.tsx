@@ -175,6 +175,12 @@ export default function MechanicDashboard() {
         
       if (error) throw error;
       
+      // Debug log for vehicle data
+      console.log('🚗 Vehicle data in appointments:', appointments?.map(apt => ({
+        id: apt.id,
+        vehicle: apt.vehicles
+      })));
+      
       // Available appointments: pending status, no quote from this mechanic yet, not cancelled or skipped
       const availableAppointments = appointments?.filter(apt => {
         const alreadyQuoted = apt.mechanic_quotes?.some(
