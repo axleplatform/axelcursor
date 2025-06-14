@@ -166,15 +166,8 @@ export default function MechanicDashboard() {
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select(`
-          id,
-          status,
-          appointment_date,
-          location,
-          issue_description,
-          car_runs,
-          selected_services,
-          created_at,
-          vehicles!inner(
+          *,
+          vehicles!appointment_id(
             year,
             make,
             model,
@@ -191,7 +184,7 @@ export default function MechanicDashboard() {
         throw error;
       }
       
-      console.log('📦 Raw appointments data:', appointments?.length);
+      console.log('📦 Raw appointments data:', appointments);
       
       // Debug log for vehicle data
       console.log('🚗 Vehicle data analysis:', appointments?.map(apt => ({
@@ -1631,30 +1624,19 @@ export default function MechanicDashboard() {
                         {/* Year, Make, Model Row */}
                         <div className="flex items-center gap-2 text-white">
                           {(() => {
-                            const appointment = availableAppointments[currentAvailableIndex];
-                            const vehicle = appointment?.vehicles;
-                            
+                            const vehicle = availableAppointments[currentAvailableIndex]?.vehicles;
                             console.log('🎯 Rendering vehicle info for appointment:', {
-                              appointmentId: appointment?.id,
+                              appointmentId: availableAppointments[currentAvailableIndex]?.id,
                               hasVehicle: !!vehicle,
-                              vehicleData: vehicle,
-                              currentIndex: currentAvailableIndex,
-                              totalAppointments: availableAppointments.length
+                              vehicleData: vehicle
                             });
                             
-                            if (!appointment) {
-                              console.error('❌ No appointment found at index:', currentAvailableIndex);
-                              return <span className="text-white/70">No appointment data available</span>;
-                            }
-                            
                             if (!vehicle) {
-                              console.error('❌ No vehicle data for appointment:', appointment.id);
                               return <span className="text-white/70">Vehicle information not available</span>;
                             }
                             
                             const hasBasicInfo = vehicle.year || vehicle.make || vehicle.model;
                             if (!hasBasicInfo) {
-                              console.error('❌ No basic vehicle info for appointment:', appointment.id);
                               return <span className="text-white/70">No vehicle details available</span>;
                             }
                             
@@ -1666,7 +1648,7 @@ export default function MechanicDashboard() {
                               </>
                             );
                           })()}
-                        </div>
+                    </div>
                         {/* VIN and Mileage Row */}
                         <div className="flex items-center gap-4 text-white/70 text-sm">
                           {(() => {
@@ -1674,10 +1656,7 @@ export default function MechanicDashboard() {
                             if (!vehicle) return null;
                             
                             const hasDetails = vehicle.vin || vehicle.mileage;
-                            if (!hasDetails) {
-                              console.log('ℹ️ No additional vehicle details for appointment:', availableAppointments[currentAvailableIndex]?.id);
-                              return null;
-                            }
+                            if (!hasDetails) return null;
                             
                             return (
                               <>
@@ -1690,7 +1669,7 @@ export default function MechanicDashboard() {
                           })()}
                         </div>
                       </div>
-                    </div>
+                      </div>
 
                     {/* Services and Car Status Row */}
                     <div className="flex justify-between items-start mb-6">
