@@ -176,13 +176,13 @@ export default function MechanicDashboard() {
             vin,
             mileage
           ),
-          mechanic_quotes (
+          mechanic_quotes!appointments_mechanic_quotes_appointment_id_fkey (
             id,
             mechanic_id,
             price,
             eta
           ),
-          mechanic_skipped_appointments (
+          mechanic_skipped_appointments!appointments_mechanic_skipped_appointments_appointment_id_fkey (
             mechanic_id
           )
         `)
