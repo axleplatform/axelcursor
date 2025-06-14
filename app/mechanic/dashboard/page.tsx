@@ -160,7 +160,7 @@ export default function MechanicDashboard() {
     
     try {
       setIsAppointmentsLoading(true);
-      console.log('🔍 Fetching appointments for mechanic:', mechanicId);
+      console.log('🔍 Starting appointment fetch for mechanic:', mechanicId);
       
       // Get all appointments with quotes and skips
       const { data: appointments, error } = await supabase
@@ -179,19 +179,30 @@ export default function MechanicDashboard() {
         `)
         .order('created_at', { ascending: false });
         
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching appointments:', error);
+        throw error;
+      }
+      
+      console.log('📦 Raw appointments data:', appointments);
       
       // Debug log for vehicle data
-      console.log('🚗 Vehicle data in appointments:', appointments?.map(apt => ({
-        id: apt.id,
-        vehicle: apt.vehicles,
+      console.log('🚗 Vehicle data analysis:', appointments?.map(apt => ({
+        appointmentId: apt.id,
         hasVehicle: !!apt.vehicles,
-        vehicleFields: apt.vehicles ? {
+        vehicleData: apt.vehicles ? {
           year: apt.vehicles.year,
           make: apt.vehicles.make,
           model: apt.vehicles.model,
           vin: apt.vehicles.vin,
           mileage: apt.vehicles.mileage
+        } : null,
+        vehicleFieldsPresent: apt.vehicles ? {
+          hasYear: !!apt.vehicles.year,
+          hasMake: !!apt.vehicles.make,
+          hasModel: !!apt.vehicles.model,
+          hasVin: !!apt.vehicles.vin,
+          hasMileage: !!apt.vehicles.mileage
         } : null
       })));
       
@@ -205,6 +216,14 @@ export default function MechanicDashboard() {
         );
         return apt.status === 'pending' && !alreadyQuoted && !alreadySkipped && apt.status !== 'cancelled';
       }) || [];
+      
+      console.log('✅ Available appointments after filtering:', availableAppointments.map(apt => ({
+        id: apt.id,
+        hasVehicle: !!apt.vehicles,
+        vehicleData: apt.vehicles
+      })));
+      
+      setAvailableAppointments(availableAppointments);
       
       // Upcoming appointments: has quote from this mechanic OR mechanic is selected, not cancelled or skipped
       const upcomingAppointments = appointments?.filter(apt => {
@@ -1604,30 +1623,50 @@ export default function MechanicDashboard() {
                       <div className="flex flex-col gap-2">
                         {/* Year, Make, Model Row */}
                         <div className="flex items-center gap-2 text-white">
-                          {availableAppointments[currentAvailableIndex].vehicles ? (
-                            <>
-                              {availableAppointments[currentAvailableIndex].vehicles.year && (
-                                <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.year}</span>
-                              )}
-                              {availableAppointments[currentAvailableIndex].vehicles.make && (
-                                <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.make}</span>
-                              )}
-                              {availableAppointments[currentAvailableIndex].vehicles.model && (
-                                <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-white/70">Vehicle information not available</span>
-                          )}
+                          {(() => {
+                            const vehicle = availableAppointments[currentAvailableIndex]?.vehicles;
+                            console.log('🎯 Rendering vehicle info for appointment:', {
+                              appointmentId: availableAppointments[currentAvailableIndex]?.id,
+                              hasVehicle: !!vehicle,
+                              vehicleData: vehicle
+                            });
+                            
+                            if (!vehicle) {
+                              return <span className="text-white/70">Vehicle information not available</span>;
+                            }
+                            
+                            const hasBasicInfo = vehicle.year || vehicle.make || vehicle.model;
+                            if (!hasBasicInfo) {
+                              return <span className="text-white/70">No vehicle details available</span>;
+                            }
+                            
+                            return (
+                              <>
+                                {vehicle.year && <span className="font-medium">{vehicle.year}</span>}
+                                {vehicle.make && <span className="font-medium">{vehicle.make}</span>}
+                                {vehicle.model && <span className="font-medium">{vehicle.model}</span>}
+                              </>
+                            );
+                          })()}
                         </div>
                         {/* VIN and Mileage Row */}
                         <div className="flex items-center gap-4 text-white/70 text-sm">
-                          {availableAppointments[currentAvailableIndex].vehicles?.vin && (
-                            <span>VIN: {availableAppointments[currentAvailableIndex].vehicles.vin}</span>
-                          )}
-                          {availableAppointments[currentAvailableIndex].vehicles?.mileage && (
-                            <span>{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
-                          )}
+                          {(() => {
+                            const vehicle = availableAppointments[currentAvailableIndex]?.vehicles;
+                            if (!vehicle) return null;
+                            
+                            const hasDetails = vehicle.vin || vehicle.mileage;
+                            if (!hasDetails) return null;
+                            
+                            return (
+                              <>
+                                {vehicle.vin && <span>VIN: {vehicle.vin}</span>}
+                                {vehicle.mileage && (
+                                  <span>{vehicle.mileage.toLocaleString()} miles</span>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
