@@ -74,6 +74,8 @@ export default function MechanicDashboard() {
   const [mechanicProfile, setMechanicProfile] = useState<any>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
   const supabase = createClientComponentClient()
 
   // Appointment states
@@ -235,9 +237,18 @@ export default function MechanicDashboard() {
   // Add loadMore function
   const loadMore = () => {
     if (!hasMore || isAppointmentsLoading) return;
-    setCurrentPage(prev => prev + 1);
-    fetchInitialAppointments(currentPage + 1);
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    fetchInitialAppointments(nextPage);
   };
+
+  // Add useEffect to fetch initial appointments when mechanicId changes
+  useEffect(() => {
+    if (mechanicId) {
+      setCurrentPage(1); // Reset to first page
+      fetchInitialAppointments(1);
+    }
+  }, [mechanicId]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -316,7 +327,7 @@ export default function MechanicDashboard() {
     })
   }, [mechanicId])
 
-  // Real-time subscription handlers
+  // Update real-time subscription to use currentPage
   useEffect(() => {
     if (!mechanicId) return;
 
@@ -1812,6 +1823,26 @@ export default function MechanicDashboard() {
                             className={`w-2 h-2 rounded-full ${index === currentAvailableIndex ? "bg-white" : "bg-white/30"}`}
                           ></div>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Load More Button */}
+                    {hasMore && (
+                      <div className="mt-4 text-center">
+                        <button
+                          onClick={loadMore}
+                          disabled={isAppointmentsLoading}
+                          className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isAppointmentsLoading ? (
+                            <span className="flex items-center justify-center">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              Loading...
+                            </span>
+                          ) : (
+                            "Load More"
+                          )}
+                        </button>
                       </div>
                     )}
                   </div>
