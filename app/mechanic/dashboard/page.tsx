@@ -167,7 +167,13 @@ export default function MechanicDashboard() {
         .from('appointments')
         .select(`
           *,
-          vehicles!appointment_id(*),
+          vehicles!appointment_id(
+            year,
+            make,
+            model,
+            vin,
+            mileage
+          ),
           mechanic_quotes!appointment_id(*),
           mechanic_skipped_appointments!appointment_id(*)
         `)
@@ -178,7 +184,15 @@ export default function MechanicDashboard() {
       // Debug log for vehicle data
       console.log('🚗 Vehicle data in appointments:', appointments?.map(apt => ({
         id: apt.id,
-        vehicle: apt.vehicles
+        vehicle: apt.vehicles,
+        hasVehicle: !!apt.vehicles,
+        vehicleFields: apt.vehicles ? {
+          year: apt.vehicles.year,
+          make: apt.vehicles.make,
+          model: apt.vehicles.model,
+          vin: apt.vehicles.vin,
+          mileage: apt.vehicles.mileage
+        } : null
       })));
       
       // Available appointments: pending status, no quote from this mechanic yet, not cancelled or skipped
@@ -1590,16 +1604,22 @@ export default function MechanicDashboard() {
                       <div className="flex flex-col gap-2">
                         {/* Year, Make, Model Row */}
                         <div className="flex items-center gap-2 text-white">
-                          {availableAppointments[currentAvailableIndex].vehicles?.year && (
-                            <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.year}</span>
+                          {availableAppointments[currentAvailableIndex].vehicles ? (
+                            <>
+                              {availableAppointments[currentAvailableIndex].vehicles.year && (
+                                <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.year}</span>
+                              )}
+                              {availableAppointments[currentAvailableIndex].vehicles.make && (
+                                <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.make}</span>
+                              )}
+                              {availableAppointments[currentAvailableIndex].vehicles.model && (
+                                <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-white/70">Vehicle information not available</span>
                           )}
-                          {availableAppointments[currentAvailableIndex].vehicles?.make && (
-                            <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.make}</span>
-                          )}
-                          {availableAppointments[currentAvailableIndex].vehicles?.model && (
-                            <span className="font-medium">{availableAppointments[currentAvailableIndex].vehicles.model}</span>
-                          )}
-                      </div>
+                        </div>
                         {/* VIN and Mileage Row */}
                         <div className="flex items-center gap-4 text-white/70 text-sm">
                           {availableAppointments[currentAvailableIndex].vehicles?.vin && (
@@ -1608,9 +1628,9 @@ export default function MechanicDashboard() {
                           {availableAppointments[currentAvailableIndex].vehicles?.mileage && (
                             <span>{availableAppointments[currentAvailableIndex].vehicles.mileage.toLocaleString()} miles</span>
                           )}
-                    </div>
-                    </div>
                         </div>
+                      </div>
+                    </div>
 
                     {/* Services and Car Status Row */}
                     <div className="flex justify-between items-start mb-6">
