@@ -160,79 +160,41 @@ export default function MechanicDashboard() {
   };
 
   // Update fetchInitialAppointments function
-  const fetchInitialAppointments = async (page = 1) => {
-    if (!mechanicId) return;
-    
+  const fetchInitialAppointments = async () => {
     try {
-      setIsAppointmentsLoading(true);
-      console.log('🔍 Starting appointment fetch for mechanic:', mechanicId);
+      console.log('🔍 Starting appointment fetch...');
       
-      // Calculate offset for pagination
-      const offset = (page - 1) * ITEMS_PER_PAGE;
-      
-      // Get appointments with pagination
-      const { data: appointments, error, count } = await supabase
+      const { data: appointments, error } = await supabase
         .from("appointments")
         .select(`
           *,
           vehicles!appointment_id(*)
-        `, { count: 'exact' })
+        `)
         .eq("status", "pending")
         .order("appointment_date", { ascending: true })
-        .range(offset, offset + ITEMS_PER_PAGE - 1);
-        
+        .limit(ITEMS_PER_PAGE)
+
       if (error) {
-        console.error('❌ Error fetching appointments:', error);
-        throw error;
+        console.error("❌ Error fetching appointments:", error)
+        return
       }
-      
-      // Update hasMore state based on total count
-      if (count !== null) {
-        setHasMore(offset + ITEMS_PER_PAGE < count);
-      }
-      
-      // Available appointments: pending status, no quote from this mechanic yet, not cancelled or skipped
-      const availableAppointments = appointments?.filter(apt => {
-        const alreadyQuoted = apt.mechanic_quotes?.some(
-          (quote: any) => quote.mechanic_id === mechanicId
-        );
-        const alreadySkipped = apt.mechanic_skipped_appointments?.some(
-          (skip: any) => skip.mechanic_id === mechanicId
-        );
-        return apt.status === 'pending' && !alreadyQuoted && !alreadySkipped && apt.status !== 'cancelled';
-      }) || [];
-      
-      // Upcoming appointments: has quote from this mechanic OR mechanic is selected, not cancelled or skipped
-      const upcomingAppointments = appointments?.filter(apt => {
-        const quotedByMe = apt.mechanic_quotes?.some(
-          (quote: any) => quote.mechanic_id === mechanicId
-        );
-        const selectedAsMe = apt.selected_mechanic_id === mechanicId;
-        const alreadySkipped = apt.mechanic_skipped_appointments?.some(
-          (skip: any) => skip.mechanic_id === mechanicId
-        );
-        
-        return (quotedByMe || selectedAsMe) && !alreadySkipped && apt.status !== 'cancelled';
-      }) || [];
-      
-      setAvailableAppointments(availableAppointments);
-      setUpcomingAppointments(upcomingAppointments);
-      
-      console.log('Appointments loaded:', {
-        available: availableAppointments.length,
-        upcoming: upcomingAppointments.length,
-        total: appointments?.length,
-        page,
-        hasMore
-      });
-      
+
+      console.log("✅ Raw appointments data:", appointments)
+      appointments?.forEach((apt, index) => {
+        console.log(`🚗 Vehicle data for appointment ${index}:`, {
+          appointmentId: apt.id,
+          vehicleData: apt.vehicles,
+          hasVehicle: !!apt.vehicles,
+          vehicleFields: apt.vehicles ? Object.keys(apt.vehicles) : []
+        })
+      })
+
+      setAppointments(appointments || [])
+      setHasMore(appointments?.length === ITEMS_PER_PAGE)
     } catch (error) {
-      console.error('❌ Error fetching appointments:', error);
-      showNotification('Failed to load appointments', 'error');
-    } finally {
-      setIsAppointmentsLoading(false);
+      console.error("❌ Error in fetchInitialAppointments:", error)
     }
-  };
+  }
 
   // Add loadMore function
   const loadMore = () => {
