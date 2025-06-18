@@ -174,7 +174,7 @@ export default function MechanicDashboard() {
           issue_description,
           car_runs,
           selected_services,
-          vehicles (
+          vehicles:vehicles!fk_appointment_id (
             id,
             year,
             make,
