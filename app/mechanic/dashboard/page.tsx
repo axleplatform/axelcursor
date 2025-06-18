@@ -219,7 +219,7 @@ export default function MechanicDashboard() {
         });
       }
 
-      setAppointments(appointments || []);
+      setAvailableAppointments(appointments || []);
       setHasMore(appointments?.length === ITEMS_PER_PAGE);
     } catch (error) {
       console.error("❌ Error in fetchInitialAppointments:", error);
