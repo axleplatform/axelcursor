@@ -167,34 +167,64 @@ export default function MechanicDashboard() {
       const { data: appointments, error } = await supabase
         .from("appointments")
         .select(`
-          *,
-          vehicles!appointment_id(*)
+          id,
+          status,
+          appointment_date,
+          location,
+          issue_description,
+          car_runs,
+          selected_services,
+          vehicles (
+            id,
+            year,
+            make,
+            model,
+            vin,
+            mileage
+          )
         `)
-        .eq("status", "pending")
-        .order("appointment_date", { ascending: true })
-        .limit(ITEMS_PER_PAGE)
+        .eq('status', 'pending')
+        .order('appointment_date', { ascending: true })
+        .limit(ITEMS_PER_PAGE);
 
       if (error) {
-        console.error("❌ Error fetching appointments:", error)
-        return
+        console.error("❌ Error fetching appointments:", error);
+        console.error("Error details:", {
+          code: error.code,
+          message: error.message,
+          details: error.details
+        });
+        return;
       }
 
-      console.log("✅ Raw appointments data:", appointments)
+      console.log("✅ Raw appointments data:", appointments);
+      
+      // Log each appointment's vehicle data
       appointments?.forEach((apt, index) => {
         console.log(`🚗 Vehicle data for appointment ${index}:`, {
           appointmentId: apt.id,
           vehicleData: apt.vehicles,
           hasVehicle: !!apt.vehicles,
           vehicleFields: apt.vehicles ? Object.keys(apt.vehicles) : []
-        })
-      })
+        });
+      });
 
-      setAppointments(appointments || [])
-      setHasMore(appointments?.length === ITEMS_PER_PAGE)
+      // Log the first appointment's full structure
+      if (appointments && appointments.length > 0) {
+        console.log("📋 First appointment structure:", {
+          id: appointments[0].id,
+          status: appointments[0].status,
+          vehicle: appointments[0].vehicles,
+          allFields: Object.keys(appointments[0])
+        });
+      }
+
+      setAppointments(appointments || []);
+      setHasMore(appointments?.length === ITEMS_PER_PAGE);
     } catch (error) {
-      console.error("❌ Error in fetchInitialAppointments:", error)
+      console.error("❌ Error in fetchInitialAppointments:", error);
     }
-  }
+  };
 
   // Add loadMore function
   const loadMore = () => {
