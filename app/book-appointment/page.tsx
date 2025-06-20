@@ -530,7 +530,7 @@ export default function BookAppointment() {
           .from("appointments")
           .select(`
             *,
-            vehicles(*)
+            vehicles!fk_appointment_id(*)
           `)
           .eq("id", appointmentId)
           .single()

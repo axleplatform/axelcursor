@@ -100,7 +100,7 @@ export default function AppointmentConfirmationPage() {
           .from("appointments")
           .select(`
             *,
-            vehicles:vehicles!fk_appointment_id(*)
+            vehicles!fk_appointment_id(*)
           `)
           .eq("id", appointmentId)
           .single()
