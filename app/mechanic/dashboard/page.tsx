@@ -167,7 +167,7 @@ export default function MechanicDashboard() {
         .from('appointments')
         .select(`
           *,
-          vehicles!fk_appointment_id(
+          vehicles!appointment_id(
             year,
             make,
             model,
@@ -186,11 +186,11 @@ export default function MechanicDashboard() {
       
       console.log("Full appointment data:", appointments);
       if (appointments && appointments.length > 0) {
-        console.log("First appointment structure:", appointments[0]);
-        console.log("Vehicle data path:", {
+        console.log("Full appointment structure:", appointments[0]);
+        console.log("Vehicles field:", {
           vehicles: appointments[0].vehicles,
-          vehicle: appointments[0].vehicle,
-          vehicleData: appointments[0].vehicleData
+          isArray: Array.isArray(appointments[0].vehicles),
+          length: appointments[0].vehicles?.length
         });
       }
 

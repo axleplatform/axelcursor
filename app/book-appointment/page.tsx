@@ -32,6 +32,11 @@ interface BookingFormData {
   carRuns: boolean | null
   selectedServices: string[]
   selectedCarIssues: string[]
+  vin: string
+  year: string
+  make: string
+  model: string
+  mileage: string
 }
 
 // Define database schema types
@@ -48,6 +53,13 @@ interface AppointmentData {
   selected_services: string[]
   selected_car_issues: string[]
   phone_number: string
+  vehicles: {
+    vin: string
+    year: string
+    make: string
+    model: string
+    mileage: string
+  } | null
 }
 
 // Default recommended services to show before user input
@@ -487,18 +499,22 @@ const getAllServices = (aiSuggestions: Array<{ service: string; description: str
 }
 
 export default function BookAppointment() {
-  const { toast } = useToast()
+  const { toast: newToast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = router.pathname
-  const appointmentId = searchParams.get("appointmentId")
-
+  const [appointmentId, setAppointmentId] = useState<string | null>(null)
   const [formData, setFormData] = useState<BookingFormData>({
     issueDescription: "",
     phoneNumber: "",
     carRuns: null,
     selectedServices: [],
     selectedCarIssues: [],
+    vin: "",
+    year: "",
+    make: "",
+    model: "",
+    mileage: "",
   })
 
   const [aiSuggestions, setAiSuggestions] = useState<Array<{
@@ -513,19 +529,21 @@ export default function BookAppointment() {
   const [validationError, setValidationError] = useState<string | null>(null)
   const [appointmentData, setAppointmentData] = useState<any>(null)
 
-  // Fetch appointment data on component mount
+  // Set appointmentId from URL
+  useEffect(() => {
+    const id = searchParams.get("appointmentId")
+    if (id) {
+      setAppointmentId(id)
+    }
+  }, [searchParams])
+
+  // Fetch existing appointment and vehicle data
   useEffect(() => {
     const fetchAppointmentData = async () => {
-      if (!appointmentId) {
-        console.error("No appointment ID provided")
-        setIsLoading(false)
-        return
-      }
+      if (!appointmentId) return;
 
+      setIsLoading(true);
       try {
-        // Force refresh the schema cache
-        await supabase.rpc("reload_schema_cache")
-
         const { data, error } = await supabase
           .from("appointments")
           .select(`
@@ -533,21 +551,37 @@ export default function BookAppointment() {
             vehicles!fk_appointment_id(*)
           `)
           .eq("id", appointmentId)
-          .single()
+          .single();
 
-        if (error) throw error
+        if (error) throw error;
 
-        setAppointmentData(data)
-        console.log("Fetched appointment data:", data)
+        if (data) {
+          setAppointmentData(data);
+          // --- PRE-FILL FORM DATA ---
+          setFormData(prev => ({
+            ...prev,
+            issueDescription: data.issue_description || "",
+            phoneNumber: data.phone_number || "",
+            carRuns: data.car_runs,
+            selectedServices: data.selected_services || [],
+            selectedCarIssues: data.selected_car_issues || [],
+            vin: data.vehicles?.vin || "",
+            year: data.vehicles?.year?.toString() || "",
+            make: data.vehicles?.make || "",
+            model: data.vehicles?.model || "",
+            mileage: data.vehicles?.mileage?.toString() || "",
+          }));
+          console.log("Fetched and pre-filled appointment data:", data);
+        }
       } catch (error) {
-        console.error("Error fetching appointment data:", error)
+        console.error("Error fetching appointment data:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchAppointmentData()
-  }, [appointmentId])
+    fetchAppointmentData();
+  }, [appointmentId]);
 
   // Format phone number as user types
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -640,78 +674,77 @@ export default function BookAppointment() {
     setValidationError(null)
 
     try {
-      // Get the current user or sign in anonymously
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      let userId: string
+      const { data: { user } } = await supabase.auth.getUser()
+      let userId = user?.id
 
-      if (user) {
-        // Use the authenticated user's ID
-        userId = user.id
-      } else {
-        // Sign in anonymously using Supabase's built-in function
+      if (!userId) {
         const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously()
-        
-        if (anonError) {
-          console.error('Error signing in anonymously:', anonError)
-          throw new Error('Failed to create anonymous user. Please try again.')
+        if (anonError || !anonData.user) {
+          throw new Error('Failed to create anonymous user.')
         }
-
-        if (!anonData.user) {
-          throw new Error('Failed to create anonymous user. Please try again.')
-        }
-
         userId = anonData.user.id
       }
+      
+      const now = new Date().toISOString();
 
-      // Prepare appointment data
-      const appointmentData = {
-        user_id: userId,
-        location: "Mobile Service",
-        appointment_date: new Date().toISOString(),
-        status: "pending",
-        source: "web",
-        car_runs: formData.carRuns,
-        issue_description: formData.issueDescription,
-        selected_services: formData.selectedServices,
-        selected_car_issues: formData.selectedCarIssues,
-        phone_number: formData.phoneNumber,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-
-      console.log("Creating appointment with data:", appointmentData)
-
-      // Create the appointment
+      // Upsert appointment data
       const { data: appointment, error: appointmentError } = await supabase
         .from("appointments")
-        .insert([appointmentData])
+        .upsert({
+          id: appointmentId || undefined, // Use existing ID if available
+          user_id: userId,
+          location: "Mobile Service",
+          appointment_date: new Date().toISOString(), // This might need to be preserved
+          status: "pending",
+          source: "web",
+          car_runs: formData.carRuns,
+          issue_description: formData.issueDescription,
+          selected_services: formData.selectedServices,
+          selected_car_issues: formData.selectedCarIssues,
+          phone_number: formData.phoneNumber,
+          created_at: appointmentId ? undefined : now,
+          updated_at: now
+        })
         .select()
-        .single()
+        .single();
+        
+      if (appointmentError) throw appointmentError;
+      if (!appointment) throw new Error("Failed to create or update appointment");
+      
+      // --- UPSERT VEHICLE DATA ---
+      const vehicleData = {
+        appointment_id: appointment.id,
+        vin: formData.vin,
+        year: parseInt(formData.year),
+        make: formData.make,
+        model: formData.model,
+        mileage: parseInt(formData.mileage),
+        updated_at: now,
+      };
 
-      if (appointmentError) {
-        console.error("Supabase error creating appointment:", appointmentError)
-        throw appointmentError
+      const { error: vehicleError } = await supabase
+        .from("vehicles")
+        .upsert(vehicleData, { onConflict: 'appointment_id' });
+        
+      if (vehicleError) {
+        // Simple rollback not feasible with upsert, but log critical error
+        console.error("CRITICAL: Failed to upsert vehicle data:", vehicleError);
+        throw new Error(`Failed to save vehicle details: ${vehicleError.message}`);
       }
 
-      if (!appointment) {
-        throw new Error("Failed to create appointment")
-      }
-
-      // Show success message
       toast({
         title: "Success!",
-        description: "Your appointment has been booked successfully.",
+        description: "Your appointment has been saved.",
       })
       
-      // Redirect to pick mechanic page
       router.push(`/pick-mechanic?appointmentId=${appointment.id}`)
 
     } catch (err) {
-      console.error("Error creating appointment:", err)
-      setValidationError(err instanceof Error ? err.message : "Failed to create appointment")
+      console.error("Error creating/updating appointment:", err)
+      setValidationError(err instanceof Error ? err.message : "Failed to save appointment")
       toast({
         title: "Error",
-        description: "Failed to create appointment. Please try again.",
+        description: "Failed to save appointment. Please try again.",
         variant: "destructive"
       })
     } finally {
