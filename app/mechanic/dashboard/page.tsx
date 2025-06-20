@@ -3,7 +3,7 @@
 import React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Search, User, Loader2, Clock, MapPin, Check, X, ChevronLeft, ChevronRight, CalendarDays, Calendar, Car, Hash } from "lucide-react"
+import { Search, User, Loader2, Clock, MapPin, Check, X, ChevronLeft, ChevronRight, CalendarDays, Calendar } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { UpcomingAppointments } from "@/components/upcoming-appointments"
 import { useToast } from "@/components/ui/use-toast"
@@ -23,9 +23,6 @@ import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { ProfileDropdown } from "@/components/profile-dropdown"
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-
-// Constants
-const ITEMS_PER_PAGE = 10;
 
 interface Appointment {
   id: string
@@ -74,8 +71,6 @@ export default function MechanicDashboard() {
   const [mechanicProfile, setMechanicProfile] = useState<any>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
   const supabase = createClientComponentClient()
 
   // Appointment states
@@ -161,86 +156,104 @@ export default function MechanicDashboard() {
 
   // Update fetchInitialAppointments function
   const fetchInitialAppointments = async () => {
+    if (!mechanicId) return;
+    
     try {
-      console.log('🔍 Starting appointment fetch...');
+      setIsAppointmentsLoading(true);
+      console.log('🔍 Starting appointment fetch for mechanic:', mechanicId);
       
+      // Get all appointments with quotes and skips
       const { data: appointments, error } = await supabase
-        .from("appointments")
+        .from('appointments')
         .select(`
-          id,
-          status,
-          appointment_date,
-          location,
-          issue_description,
-          car_runs,
-          selected_services,
-          vehicles:vehicles!fk_appointment_id (
-            id,
+          *,
+          vehicles!appointment_id(
             year,
             make,
             model,
             vin,
             mileage
-          )
+          ),
+          mechanic_quotes!appointment_id(*),
+          mechanic_skipped_appointments!appointment_id(*)
         `)
-        .eq('status', 'pending')
-        .order('appointment_date', { ascending: true })
-        .limit(ITEMS_PER_PAGE);
-
+        .order('created_at', { ascending: false });
+        
       if (error) {
-        console.error("❌ Error fetching appointments:", error);
-        console.error("Error details:", {
-          code: error.code,
-          message: error.message,
-          details: error.details
-        });
-        return;
+        console.error('❌ Error fetching appointments:', error);
+        throw error;
       }
-
-      console.log("✅ Raw appointments data:", appointments);
       
-      // Log each appointment's vehicle data
-      appointments?.forEach((apt, index) => {
-        console.log(`🚗 Vehicle data for appointment ${index}:`, {
-          appointmentId: apt.id,
-          vehicleData: apt.vehicles,
-          hasVehicle: !!apt.vehicles,
-          vehicleFields: apt.vehicles ? Object.keys(apt.vehicles) : []
-        });
+      console.log('📦 Raw appointments data:', appointments);
+      
+      // Debug log for vehicle data
+      console.log('🚗 Vehicle data analysis:', appointments?.map(apt => ({
+        appointmentId: apt.id,
+        hasVehicle: !!apt.vehicles,
+        vehicleData: apt.vehicles ? {
+          year: apt.vehicles.year,
+          make: apt.vehicles.make,
+          model: apt.vehicles.model,
+          vin: apt.vehicles.vin,
+          mileage: apt.vehicles.mileage
+        } : null,
+        vehicleFieldsPresent: apt.vehicles ? {
+          hasYear: !!apt.vehicles.year,
+          hasMake: !!apt.vehicles.make,
+          hasModel: !!apt.vehicles.model,
+          hasVin: !!apt.vehicles.vin,
+          hasMileage: !!apt.vehicles.mileage
+        } : null
+      })));
+      
+      // Available appointments: pending status, no quote from this mechanic yet, not cancelled or skipped
+      const availableAppointments = appointments?.filter(apt => {
+        const alreadyQuoted = apt.mechanic_quotes?.some(
+          (quote: any) => quote.mechanic_id === mechanicId
+        );
+        const alreadySkipped = apt.mechanic_skipped_appointments?.some(
+          (skip: any) => skip.mechanic_id === mechanicId
+        );
+        return apt.status === 'pending' && !alreadyQuoted && !alreadySkipped && apt.status !== 'cancelled';
+      }) || [];
+      
+      console.log('✅ Available appointments after filtering:', availableAppointments.map(apt => ({
+        id: apt.id,
+        hasVehicle: !!apt.vehicles,
+        vehicleData: apt.vehicles
+      })));
+      
+      setAvailableAppointments(availableAppointments);
+      
+      // Upcoming appointments: has quote from this mechanic OR mechanic is selected, not cancelled or skipped
+      const upcomingAppointments = appointments?.filter(apt => {
+        const quotedByMe = apt.mechanic_quotes?.some(
+          (quote: any) => quote.mechanic_id === mechanicId
+        );
+        const selectedAsMe = apt.selected_mechanic_id === mechanicId;
+        const alreadySkipped = apt.mechanic_skipped_appointments?.some(
+          (skip: any) => skip.mechanic_id === mechanicId
+        );
+        
+        return (quotedByMe || selectedAsMe) && !alreadySkipped && apt.status !== 'cancelled';
+      }) || [];
+      
+      setAvailableAppointments(availableAppointments);
+      setUpcomingAppointments(upcomingAppointments);
+      
+      console.log('Appointments loaded:', {
+        available: availableAppointments.length,
+        upcoming: upcomingAppointments.length,
+        total: appointments?.length
       });
-
-      // Log the first appointment's full structure
-      if (appointments && appointments.length > 0) {
-        console.log("📋 First appointment structure:", {
-          id: appointments[0].id,
-          status: appointments[0].status,
-          vehicle: appointments[0].vehicles,
-          allFields: Object.keys(appointments[0])
-        });
-      }
-
-      setAvailableAppointments(appointments || []);
-      setHasMore(appointments?.length === ITEMS_PER_PAGE);
+      
     } catch (error) {
-      console.error("❌ Error in fetchInitialAppointments:", error);
+      console.error('❌ Error fetching appointments:', error);
+      showNotification('Failed to load appointments', 'error');
+    } finally {
+      setIsAppointmentsLoading(false);
     }
   };
-
-  // Add loadMore function
-  const loadMore = () => {
-    if (!hasMore || isAppointmentsLoading) return;
-    const nextPage = currentPage + 1;
-    setCurrentPage(nextPage);
-    fetchInitialAppointments(nextPage);
-  };
-
-  // Add useEffect to fetch initial appointments when mechanicId changes
-  useEffect(() => {
-    if (mechanicId) {
-      setCurrentPage(1); // Reset to first page
-      fetchInitialAppointments(1);
-    }
-  }, [mechanicId]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -319,13 +332,36 @@ export default function MechanicDashboard() {
     })
   }, [mechanicId])
 
-  // Update real-time subscription to use currentPage
+  // Real-time subscription handlers
   useEffect(() => {
-    if (!mechanicId) return;
+    console.log("🔄 Setting up subscriptions with mechanicId:", { 
+      mechanicId, 
+      type: typeof mechanicId,
+      isString: typeof mechanicId === 'string',
+      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
+      isZero: mechanicId === '0'
+    })
+    
+    if (!mechanicId) {
+      console.log("⏳ Waiting for mechanicId before setting up subscriptions...")
+      return
+    }
 
-    // Subscribe to appointment changes with specific filters
-    const appointmentSubscription = supabase
-      .channel('appointment-changes')
+    if (!validateMechanicId(mechanicId)) {
+      console.error("❌ Invalid mechanicId, redirecting to login")
+      setError("Invalid mechanic ID")
+      toast({
+        title: "Error",
+        description: "Invalid mechanic ID. Please try logging in again.",
+        variant: "destructive",
+      })
+      window.location.href = "/login"
+      return
+    }
+
+    // Subscribe to appointment changes
+    const appointmentsSubscription = supabase
+      .channel('appointments_changes')
       .on(
         'postgres_changes',
         {
@@ -335,58 +371,39 @@ export default function MechanicDashboard() {
           filter: `status=eq.pending`
         },
         async (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('📡 Appointment change received:', payload);
-          
-          // Only fetch if it's a relevant change
-          if (payload.eventType === 'INSERT' || 
-              (payload.eventType === 'UPDATE' && payload.new.status === 'pending')) {
-            await fetchInitialAppointments(currentPage);
-          }
+          console.log('Appointment change received:', payload)
+          await fetchInitialAppointments();
         }
       )
-      .subscribe();
+      .subscribe()
 
-    // Subscribe to vehicle changes with specific filters
-    const vehicleSubscription = supabase
-      .channel('vehicle-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'vehicles'
-        },
-        async (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('🚗 Vehicle change received:', payload);
-          await fetchInitialAppointments(currentPage);
-        }
-      )
-      .subscribe();
-
-    // Subscribe to mechanic quotes with specific filters
-    const quoteSubscription = supabase
-      .channel('quote-changes')
+    // Subscribe to quote changes
+    const quotesSubscription = supabase
+      .channel('quotes_changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'mechanic_quotes',
-          filter: `mechanic_id=eq.${mechanicId}`
         },
         async (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('💰 Quote change received:', payload);
-          await fetchInitialAppointments(currentPage);
+          console.log('Quote change received:', payload)
+          await fetchInitialAppointments();
         }
       )
-      .subscribe();
+      .subscribe()
 
+    // Initial fetch of appointments
+    fetchInitialAppointments()
+
+    // Cleanup subscription on unmount
     return () => {
-      appointmentSubscription.unsubscribe();
-      vehicleSubscription.unsubscribe();
-      quoteSubscription.unsubscribe();
-    };
-  }, [mechanicId, currentPage]);
+      console.log("🧹 Cleaning up subscriptions")
+      appointmentsSubscription.unsubscribe()
+      quotesSubscription.unsubscribe()
+    }
+  }, [mechanicId])
 
   // Add useEffect to load mechanic profile on component mount
   useEffect(() => {
@@ -1815,26 +1832,6 @@ export default function MechanicDashboard() {
                             className={`w-2 h-2 rounded-full ${index === currentAvailableIndex ? "bg-white" : "bg-white/30"}`}
                           ></div>
                         ))}
-                      </div>
-                    )}
-
-                    {/* Load More Button */}
-                    {hasMore && (
-                      <div className="mt-4 text-center">
-                        <button
-                          onClick={loadMore}
-                          disabled={isAppointmentsLoading}
-                          className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isAppointmentsLoading ? (
-                            <span className="flex items-center justify-center">
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              Loading...
-                            </span>
-                          ) : (
-                            "Load More"
-                          )}
-                        </button>
                       </div>
                     )}
                   </div>

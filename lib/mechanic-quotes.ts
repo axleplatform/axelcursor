@@ -210,7 +210,7 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
     
     const { data: appointments, error } = await supabase
       .from("appointments")
-      .select("*, vehicles(*)")
+      .select("*, vehicles!fk_appointment_id(*)")
       .eq("status", "pending")
       .order("appointment_date", { ascending: true })
 
@@ -264,7 +264,7 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
     
     const { data: appointments, error } = await supabase
       .from("appointments")
-      .select("*, vehicles(*), mechanic_quotes!inner(*)")
+      .select("*, vehicles!fk_appointment_id(*), mechanic_quotes!inner(*)")
       .eq("mechanic_quotes.mechanic_id", mechanicId)
       .order("appointment_date", { ascending: true })
 

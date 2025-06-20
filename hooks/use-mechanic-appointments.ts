@@ -76,7 +76,7 @@ export function useMechanicAppointments(mechanicId: string) {
           .from("appointments")
           .select(`
             *,
-            vehicles(*)
+            vehicles!fk_appointment_id(*)
           `)
           .eq("mechanic_id", mechanicId)
           .in("status", ["confirmed", "in_progress"])
@@ -99,7 +99,7 @@ export function useMechanicAppointments(mechanicId: string) {
           .from("appointments")
           .select(`
             *,
-            vehicles(*)
+            vehicles!fk_appointment_id(*)
           `)
           .eq("status", "pending")
           .not("id", "in", quotedAppointmentIds.length > 0 ? `(${quotedAppointmentIds.join(",")})` : "(0)")

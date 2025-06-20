@@ -44,7 +44,7 @@ export default function PickMechanicPage() {
       // ABSOLUTELY NO .single() - Handle arrays
       const { data: appointments, error: aptError } = await supabase
         .from('appointments')
-        .select('*, vehicles(*)')
+        .select('*, vehicles!fk_appointment_id(*)')
         .eq('id', appointmentId)
       
       console.log('Appointment query:', { data: appointments, error: aptError })

@@ -50,7 +50,7 @@ export function useAppointments() {
           .from("appointments")
           .select(`
             *,
-            vehicles(*)
+            vehicles!fk_appointment_id(*)
           `)
           .order("appointment_date", { ascending: true })
 
