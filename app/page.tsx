@@ -285,6 +285,26 @@ export default function HomePage() {
       {/* Header */}
       <SiteHeader />
 
+      {/* Log In and Sign Up Buttons */}
+      <div className="flex justify-center gap-4 mt-6 mb-2">
+        <Link href="/login">
+          <button
+            className="bg-[#294a46] text-white px-6 py-2 rounded-full font-semibold shadow hover:bg-[#1e3632] focus:outline-none focus:ring-2 focus:ring-[#294a46] transition"
+            aria-label="Log In"
+          >
+            Log In
+          </button>
+        </Link>
+        <Link href="/signup">
+          <button
+            className="bg-white text-[#294a46] border border-[#294a46] px-6 py-2 rounded-full font-semibold shadow hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#294a46] transition"
+            aria-label="Sign Up"
+          >
+            Sign Up
+          </button>
+        </Link>
+      </div>
+
       {/* Main Content */}
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8 max-w-3xl">
