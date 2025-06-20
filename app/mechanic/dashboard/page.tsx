@@ -167,7 +167,7 @@ export default function MechanicDashboard() {
         .from('appointments')
         .select(`
           *,
-          vehicles!appointment_id(
+          vehicles!fk_appointment_id(
             year,
             make,
             model,
