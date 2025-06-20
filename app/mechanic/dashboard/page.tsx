@@ -184,6 +184,16 @@ export default function MechanicDashboard() {
         throw error;
       }
       
+      console.log("Full appointment data:", appointments);
+      if (appointments && appointments.length > 0) {
+        console.log("First appointment structure:", appointments[0]);
+        console.log("Vehicle data path:", {
+          vehicles: appointments[0].vehicles,
+          vehicle: appointments[0].vehicle,
+          vehicleData: appointments[0].vehicleData
+        });
+      }
+
       console.log('📦 Raw appointments data:', appointments);
       
       // Debug log for vehicle data
