@@ -14,9 +14,10 @@ import { useToast } from "@/components/ui/use-toast"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 export default function PickMechanicPage() {
+  console.log("🔍 PickMechanicPage component mounting...")
+  
   const router = useRouter()
   const searchParams = useSearchParams()
-  const appointmentId = searchParams.get("appointmentId")
   const { toast } = useToast()
   const supabase = createClientComponentClient()
 
@@ -27,15 +28,18 @@ export default function PickMechanicPage() {
   const [error, setError] = useState(null)
   const [mechanicQuotes, setMechanicQuotes] = useState([])
 
+  // Get appointmentId from searchParams
+  const appointmentId = searchParams?.get("appointmentId")
+  
+  console.log("🔍 AppointmentId from searchParams:", appointmentId)
+
   const fetchAppointmentData = async () => {
     try {
-      const params = new URLSearchParams(window.location.search)
-      const appointmentId = params.get('appointmentId')
-      
       console.log('=== FETCH DEBUG ===')
       console.log('Appointment ID:', appointmentId)
       
       if (!appointmentId) {
+        console.log('No appointment ID provided')
         setError('No appointment ID provided')
         setIsLoading(false)
         return
@@ -110,20 +114,26 @@ export default function PickMechanicPage() {
 
   // Initial fetch
   useEffect(() => {
+    console.log("🔍 useEffect triggered with appointmentId:", appointmentId)
     if (appointmentId) {
       fetchAppointmentData()
+    } else {
+      console.log("🔍 No appointmentId, setting loading to false")
+      setIsLoading(false)
     }
   }, [appointmentId])
 
   // Auto-refresh every 8 seconds
   useEffect(() => {
+    if (!appointmentId) return
+    
     const interval = setInterval(() => {
       console.log('Auto-refreshing quotes...')
       fetchAppointmentData()
     }, 8000) // 8 seconds
 
     return () => clearInterval(interval)
-  }, [])
+  }, [appointmentId])
 
   // Real-time subscription for instant updates
   useEffect(() => {
@@ -151,6 +161,43 @@ export default function PickMechanicPage() {
       subscription.unsubscribe()
     }
   }, [appointmentId])
+
+  // Show loading state
+  if (isLoading) {
+    console.log("🔍 Showing loading state...")
+    return (
+      <div className="flex flex-col min-h-screen">
+        <SiteHeader />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#294a46] mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading mechanic quotes...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    console.log("🔍 Showing error state:", error)
+    return (
+      <div className="flex flex-col min-h-screen">
+        <SiteHeader />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button onClick={() => router.push('/')}>
+              Return to Home
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
 
   const handleSelectMechanic = async (mechanicId, quoteId) => {
     try {
@@ -198,79 +245,6 @@ export default function PickMechanicPage() {
       hour: "numeric",
       minute: "numeric",
     })
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <SiteHeader />
-        <main className="flex-grow bg-[#f5f5f5]">
-          <div className="container mx-auto py-8 px-4">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-[#294a46]">Pick Your Mechanic</h1>
-              <p className="text-lg text-gray-600 mt-1">Pick & Pay</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6 max-w-5xl mx-auto">
-              <div className="md:col-span-3">
-                <Card className="overflow-hidden h-full bg-white">
-                  <div className="p-4 border-b">
-                    <h2 className="text-xl font-semibold text-[#294a46]">Available Mechanics</h2>
-                  </div>
-                  <div className="p-8 flex flex-col items-center justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#294a46]"></div>
-                    <p className="mt-4 text-gray-600">Loading available mechanics...</p>
-                  </div>
-                </Card>
-              </div>
-
-              <div className="md:col-span-2">
-                <Card className="p-0 sticky top-8 h-full bg-white">
-                  <div className="p-4 border-b">
-                    <h2 className="text-xl font-semibold text-[#294a46]">Order Summary</h2>
-                  </div>
-                  <div className="p-8 flex flex-col items-center justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#294a46]"></div>
-                    <p className="mt-4 text-gray-600">Loading appointment details...</p>
-                  </div>
-                </Card>
-              </div>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    )
-  }
-
-  if (error || !appointment) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <SiteHeader />
-        <main className="flex-grow bg-[#f5f5f5]">
-          <div className="container mx-auto py-8 px-4">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-[#294a46]">Pick Your Mechanic</h1>
-              <p className="text-lg text-gray-600 mt-1">Pick & Pay</p>
-            </div>
-
-            <div className="max-w-md mx-auto">
-              <Card className="p-6 bg-white">
-                <div className="text-center">
-                  <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                  <h2 className="text-xl font-semibold text-gray-800 mb-2">Error Loading Data</h2>
-                  <p className="text-gray-600 mb-4">{error || "Failed to load appointment data"}</p>
-                  <Button onClick={() => router.push("/")} className="bg-[#294a46] hover:bg-[#1e3632] text-white">
-                    Return to Home
-                  </Button>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    )
   }
 
   return (
