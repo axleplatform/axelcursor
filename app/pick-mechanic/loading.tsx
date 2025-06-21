@@ -1,25 +1,22 @@
-import { Skeleton } from "@/components/ui/skeleton"
+import { SiteHeader } from "@/components/site-header"
+import Footer from "@/components/footer"
 
 export default function Loading() {
   return (
-    <div className="container mx-auto py-8 px-4">
-      <Skeleton className="h-10 w-64 mb-8" />
+    <div className="flex flex-col min-h-screen">
+      {/* Header */}
+      <SiteHeader />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Mechanics List */}
-        <div className="lg:col-span-2 space-y-6">
-          <Skeleton className="h-8 w-48 mb-4" />
-
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-40 w-full rounded-lg" />
-          ))}
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#294a46] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading mechanic quotes...</p>
         </div>
+      </main>
 
-        {/* Right Column - Order Summary & Payment */}
-        <div className="lg:col-span-1">
-          <Skeleton className="h-[600px] w-full rounded-lg" />
-        </div>
-      </div>
+      {/* Footer */}
+      <Footer />
     </div>
   )
 }
