@@ -737,7 +737,7 @@ export default function BookAppointment() {
         description: "Your appointment has been saved.",
       })
       
-      router.push(`/appointment-confirmation/${appointment.id}`)
+      router.push(`/pick-mechanic?appointmentId=${appointment.id}`)
 
     } catch (err) {
       console.error("Error creating/updating appointment:", err)
