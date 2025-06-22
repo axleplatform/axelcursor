@@ -30,7 +30,8 @@
   "git": {
     "deploymentEnabled": {
       "main": true,
-      "axle-cursor": true
+      "axle-cursor": true,
+      "restore-v113": true
     },
     "productionBranch": "main"
   }
