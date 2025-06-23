@@ -1,7 +1,5 @@
 {
   "version": 2,
-  "installCommand": "rm -rf node_modules pnpm-lock.yaml && pnpm install",
-  "buildCommand": "pnpm run build",
   "devCommand": "next dev",
   "framework": "nextjs",
   "outputDirectory": ".next",
