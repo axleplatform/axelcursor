@@ -275,7 +275,7 @@ export default function AppointmentConfirmationPage() {
       <div className="min-h-screen flex flex-col">
         <SiteHeader />
         <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
+                <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-800 mb-4">Appointment Not Found</h1>
             <p className="text-gray-600 mb-4">The appointment you're looking for doesn't exist or has been removed.</p>
             <button
@@ -328,12 +328,12 @@ export default function AppointmentConfirmationPage() {
                   <div>
                     <h3 className="font-medium text-gray-700">Date & Time</h3>
                     <p className="text-gray-600">{formatDate(appointmentData.appointment_date)}</p>
-                  </div>
-                </div>
+                      </div>
+                    </div>
 
                 <div className="flex items-start gap-3">
                   <Car className="h-5 w-5 text-gray-500 mt-1" />
-                  <div>
+                    <div>
                     <h3 className="font-medium text-gray-700">Vehicle</h3>
                     <p className="text-gray-600">
                       {appointmentData.vehicles
@@ -499,7 +499,7 @@ export default function AppointmentConfirmationPage() {
                   </div>
                 </>
               )}
-            </div>
+              </div>
           </div>
         </div>
       </main>
