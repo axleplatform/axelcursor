@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useCallback, type FormEvent, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { MapPin, ChevronRight, User, Settings, Home } from "lucide-react"
+import { MapPin, ChevronRight, User,  } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
 import Footer from "@/components/footer"
@@ -571,7 +571,7 @@ export default function HomePage() {
 
             {/* Register Mechanic */}
             <div className="flex flex-col items-center justify-center mx-auto text-center">
-              <Settings className="h-10 w-10 mb-4" />
+              <div className="h-10 w-10 mb-4">⚙️</div>
               <h3 className="text-xl font-medium mb-2">Register Mobile Mechanic</h3>
               <div className="space-y-1 mb-2">
                 <p className="text-sm">Get job requests</p>
@@ -585,7 +585,7 @@ export default function HomePage() {
 
             {/* Register Shop */}
             <div className="flex flex-col items-center justify-center mx-auto text-center">
-              <Home className="h-10 w-10 mb-4" />
+              <div className="h-10 w-10 mb-4">🏠</div>
               <h3 className="text-xl font-medium mb-2">Register your Shop</h3>
               <div className="space-y-1 mb-2">
                 <p className="text-sm">Custom pricing and quotes</p>

@@ -1,12 +1,9 @@
 "use client"
-
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   Check,
-  Phone,
   AlertTriangle,
   Battery,
   Gauge,
@@ -22,7 +19,6 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
 import { useToast } from "@/components/ui/use-toast"
-
 // Define types for form data
 interface BookingFormData {
   issueDescription: string
@@ -36,7 +32,6 @@ interface BookingFormData {
   model: string
   mileage: string
 }
-
 // Define database schema types
 interface AppointmentData {
   location: string
@@ -59,7 +54,6 @@ interface AppointmentData {
     mileage: string
   } | null
 }
-
 // Default recommended services to show before user input
 const defaultRecommendedServices = [
   {
@@ -78,7 +72,6 @@ const defaultRecommendedServices = [
     confidence: 0.7,
   },
 ]
-
 // Additional common services that can be offered regardless of the specific issue
 const commonServices = [
   {
@@ -98,7 +91,6 @@ const commonServices = [
     description: "Refill essential fluids to proper levels.",
   },
 ]
-
 // Define car issue options
 const carIssueOptions = [
   {
@@ -162,7 +154,6 @@ const carIssueOptions = [
     description: "Shaking or vibration when driving",
   },
 ]
-
 // Enhanced diagnostic system with more comprehensive categories and responses
 const diagnosticSystem = {
   categories: [
@@ -335,16 +326,13 @@ const diagnosticSystem = {
     },
   ],
 }
-
 // Enhance the getAIDiagnostics function to return at least 3 relevant services
 function getAIDiagnostics(carIssue: string) {
   if (!carIssue.trim()) {
     return null
   }
-
   const issue = carIssue.toLowerCase()
   let possibleServices: { service: string; description: string; confidence: number }[] = []
-
   // Default services if no specific matches are found
   const defaultServices = [
     {
@@ -363,24 +351,19 @@ function getAIDiagnostics(carIssue: string) {
       confidence: 0.4,
     },
   ]
-
   // Analyze each category
   for (const category of diagnosticSystem.categories) {
     // Check how many keywords match
     const matchingKeywords = category.keywords.filter((keyword) => issue.includes(keyword))
-
     if (matchingKeywords.length > 0) {
       // Calculate match confidence based on keyword matches
       const keywordConfidence = matchingKeywords.length / category.keywords.length
-
       // Check specific conditions within the category
       for (const response of category.responses) {
         const matchingConditions = response.conditions.filter((condition) => issue.includes(condition))
-
         if (matchingConditions.length > 0) {
           const conditionConfidence = matchingConditions.length / response.conditions.length
           const totalConfidence = (keywordConfidence + conditionConfidence) / 2
-
           possibleServices.push({
             service: response.service,
             description: response.description,
@@ -388,7 +371,6 @@ function getAIDiagnostics(carIssue: string) {
           })
         }
       }
-
       // If no specific conditions matched but we matched keywords, add a general category service
       if (
         possibleServices.filter((s) => s.service.includes(category.name)).length === 0 &&
@@ -402,17 +384,14 @@ function getAIDiagnostics(carIssue: string) {
       }
     }
   }
-
   // Sort by confidence
   possibleServices.sort((a, b) => b.confidence - a.confidence)
-
   // If we don't have enough services, add some defaults
   if (possibleServices.length === 0) {
     possibleServices = [...defaultServices]
   } else if (possibleServices.length < 3) {
     // Add related services based on the matched category
     const highestConfidenceService = possibleServices[0]
-
     // Find which category the highest confidence service belongs to
     let relatedCategory = null
     for (const category of diagnosticSystem.categories) {
@@ -421,7 +400,6 @@ function getAIDiagnostics(carIssue: string) {
         break
       }
     }
-
     // Add related services from default list
     let remainingDefaultsToAdd = 3 - possibleServices.length
     for (const defaultService of defaultServices) {
@@ -429,30 +407,25 @@ function getAIDiagnostics(carIssue: string) {
       if (possibleServices.some((s) => s.service === defaultService.service)) {
         continue
       }
-
       possibleServices.push({
         ...defaultService,
         description: relatedCategory
           ? defaultService.description + ` Focus on ${relatedCategory.toLowerCase()} components.`
           : defaultService.description,
       })
-
       remainingDefaultsToAdd--
       if (remainingDefaultsToAdd <= 0) break
     }
   }
-
   // Return top 3 services instead of 2
   return possibleServices.slice(0, 3)
 }
-
 // Get all available services (AI suggestions + common services)
 const getAllServices = (aiSuggestions: Array<{ service: string; description: string; confidence: number }> | null) => {
   const services = [
     ...(aiSuggestions || []),
     ...commonServices.filter((cs) => !aiSuggestions?.some((ai) => ai.service === cs.service)),
   ]
-
   // Add more services if we don't have enough to demonstrate scrolling
   if (services.length < 6) {
     const additionalServices = [
@@ -482,7 +455,6 @@ const getAllServices = (aiSuggestions: Array<{ service: string; description: str
         confidence: 0.3,
       },
     ]
-
     // Add as many additional services as needed to reach at least 8 total
     let i = 0
     while (services.length < 8 && i < additionalServices.length) {
@@ -492,16 +464,14 @@ const getAllServices = (aiSuggestions: Array<{ service: string; description: str
       i++
     }
   }
-
   return services
 }
-
 export default function BookAppointment() {
   const { toast: newToast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = router.pathname
-  const [appointmentId, setAppointmentId] = useState<string | null>(null)
+  const appointmentId = searchParams.get("appointmentId") || pathname.split("/").pop()
   const [formData, setFormData] = useState<BookingFormData>({
     issueDescription: "",
     phoneNumber: "",
@@ -514,32 +484,20 @@ export default function BookAppointment() {
     model: "",
     mileage: "",
   })
-
   const [aiSuggestions, setAiSuggestions] = useState<Array<{
     service: string
     description: string
     confidence: number
   }> | null>(defaultRecommendedServices)
-
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [hasInteractedWithTextArea, setHasInteractedWithTextArea] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [appointmentData, setAppointmentData] = useState<any>(null)
-
-  // Set appointmentId from URL
-  useEffect(() => {
-    const id = searchParams.get("appointmentId")
-    if (id) {
-      setAppointmentId(id)
-    }
-  }, [searchParams])
-
   // Fetch existing appointment and vehicle data
   useEffect(() => {
     const fetchAppointmentData = async () => {
       if (!appointmentId) return;
-
       setIsLoading(true);
       try {
         const { data, error } = await supabase
@@ -550,9 +508,7 @@ export default function BookAppointment() {
           `)
           .eq("id", appointmentId)
           .single();
-
         if (error) throw error;
-
         if (data) {
           setAppointmentData(data);
           // --- PRE-FILL FORM DATA ---
@@ -577,15 +533,12 @@ export default function BookAppointment() {
         setIsLoading(false);
       }
     };
-
     fetchAppointmentData();
   }, [appointmentId]);
-
   // Format phone number as user types
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Remove all non-numeric characters
     const cleaned = e.target.value.replace(/\D/g, "")
-
     // Format the phone number
     let formatted = ""
     if (cleaned.length <= 3) {
@@ -595,32 +548,26 @@ export default function BookAppointment() {
     } else {
       formatted = `(${cleaned.slice(0, 3)})-${cleaned.slice(3, 6)} ${cleaned.slice(6, 10)}`
     }
-
     setFormData((prev) => ({ ...prev, phoneNumber: formatted }))
   }
-
   // Toggle service selection
   const toggleService = (service: string) => {
     setFormData((prev) => {
       const newSelectedServices = prev.selectedServices.includes(service)
         ? prev.selectedServices.filter((s) => s !== service)
         : [...prev.selectedServices, service]
-
       return { ...prev, selectedServices: newSelectedServices }
     })
   }
-
   // Toggle car issue selection
   const toggleCarIssue = (issueId: string) => {
     setFormData((prev) => {
       const newSelectedCarIssues = prev.selectedCarIssues.includes(issueId)
         ? prev.selectedCarIssues.filter((id) => id !== issueId)
         : [...prev.selectedCarIssues, issueId]
-
       return { ...prev, selectedCarIssues: newSelectedCarIssues }
     })
   }
-
   // Handle text area focus and input
   const handleTextAreaFocus = () => {
     setHasInteractedWithTextArea(true)
@@ -629,25 +576,21 @@ export default function BookAppointment() {
       setAiSuggestions(defaultRecommendedServices)
     }
   }
-
   // Handle car issue description changes
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     setFormData((prev) => ({ ...prev, issueDescription: value }))
   }
-
   // Handle car runs selection - now using boolean values
   const handleCarRunsChange = (value: boolean) => {
     setFormData((prev) => ({ ...prev, carRuns: value }))
   }
-
   // Update AI suggestions based on issue description
   useEffect(() => {
     // Skip this effect if we're still loading initial data
     if (!hasInteractedWithTextArea && !formData.issueDescription) {
       return
     }
-
     // Update AI suggestions if there's text in the description
     if (formData.issueDescription.trim().length > 0) {
       const result = getAIDiagnostics(formData.issueDescription)
@@ -664,17 +607,14 @@ export default function BookAppointment() {
       }
     }
   }, [formData.issueDescription, hasInteractedWithTextArea, aiSuggestions])
-
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setValidationError(null)
-
     try {
       const { data: { user } } = await supabase.auth.getUser()
       let userId = user?.id
-
       if (!userId) {
         const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously()
         if (anonError || !anonData.user) {
@@ -682,9 +622,7 @@ export default function BookAppointment() {
         }
         userId = anonData.user.id
       }
-      
       const now = new Date().toISOString();
-
       // Upsert appointment data
       const { data: appointment, error: appointmentError } = await supabase
         .from("appointments")
@@ -705,10 +643,8 @@ export default function BookAppointment() {
         })
         .select()
         .single();
-        
       if (appointmentError) throw appointmentError;
       if (!appointment) throw new Error("Failed to create or update appointment");
-      
       // --- UPSERT VEHICLE DATA ---
       const vehicleData = {
         appointment_id: appointment.id,
@@ -719,24 +655,19 @@ export default function BookAppointment() {
         mileage: parseInt(formData.mileage),
         updated_at: now,
       };
-
       const { error: vehicleError } = await supabase
         .from("vehicles")
         .upsert(vehicleData, { onConflict: 'appointment_id' });
-        
       if (vehicleError) {
         // Simple rollback not feasible with upsert, but log critical error
         console.error("CRITICAL: Failed to upsert vehicle data:", vehicleError);
         throw new Error(`Failed to save vehicle details: ${vehicleError.message}`);
       }
-
       toast({
         title: "Success!",
         description: "Your appointment has been saved.",
       })
-      
       router.push(`/pick-mechanic?appointmentId=${appointment.id}`)
-
     } catch (err) {
       console.error("Error creating/updating appointment:", err)
       setValidationError(err instanceof Error ? err.message : "Failed to save appointment")
@@ -749,15 +680,12 @@ export default function BookAppointment() {
       setIsSubmitting(false)
     }
   }
-
   // Check if form is valid
   const isFormValid =
     formData.phoneNumber && // Phone number is required
     (formData.issueDescription || formData.selectedServices.length > 0) // Either description OR service selection
-
   // Get all available services
   const allServices = getAllServices(aiSuggestions)
-
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -769,7 +697,6 @@ export default function BookAppointment() {
       </div>
     )
   }
-
   if (!appointmentId || !appointmentData) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -791,17 +718,14 @@ export default function BookAppointment() {
       </div>
     )
   }
-
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
       <SiteHeader />
-
       {/* Main Content */}
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8 max-w-2xl">
           <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Book An Appointment</h1>
-
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
               {/* Left half - Car issue description */}
@@ -812,19 +736,17 @@ export default function BookAppointment() {
                   onChange={handleDescriptionChange}
                   onFocus={handleTextAreaFocus}
                   placeholder="Example: My car won't start. When I turn the key, I hear a clicking sound.
-
 or type Oil Change"
                   className="w-full px-4 py-3 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
                   style={{ lineHeight: 1.5 }}
                 />
               </div>
-
               {/* Right half - Phone Number and Car Runs */}
               <div className="space-y-3 md:w-1/2 flex flex-col items-center justify-center">
                 {/* Phone Number Input */}
                 <div className="space-y-0.5 w-full flex flex-col items-center">
                   <div className="flex items-center justify-center mb-1">
-                    <Phone className="h-4 w-4 text-gray-500 mr-2" />
+                    <div className="h-4 w-4 text-gray-500 mr-2">📞</div>
                     <p className="text-gray-600 text-sm">
                       Phone Number <span className="text-red-500">*</span>
                     </p>
@@ -840,7 +762,6 @@ or type Oil Change"
                     />
                   </div>
                 </div>
-
                 {/* Does your car run? - Updated to use boolean values */}
                 <div className="space-y-1 w-full flex flex-col items-center">
                   <p className="text-center text-gray-600 text-sm">Does your car run?</p>
@@ -871,7 +792,6 @@ or type Oil Change"
                 </div>
               </div>
             </div>
-
             {/* AI Recommendations - Now full width */}
             <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden mb-4">
               <h4 className="text-sm font-medium text-gray-700 px-3 py-2 border-b border-gray-100 flex items-center justify-between">
@@ -881,7 +801,6 @@ or type Oil Change"
                   <p className="font-medium">axle ai recommends</p>
                 </div>
               </h4>
-
               <div className="p-4">
                 {aiSuggestions && aiSuggestions.length > 0 ? (
                   <div className="flex flex-row space-x-4">
@@ -918,7 +837,6 @@ or type Oil Change"
                 )}
               </div>
             </div>
-
             {/* Car Issues Section with Multiple Selection - Now Optional */}
             <div className="space-y-3">
               <div className="flex items-center justify-center gap-2">
@@ -929,7 +847,6 @@ or type Oil Change"
                   </div>
                 )}
               </div>
-
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 w-full">
                 {[...carIssueOptions]
                   .sort((a, b) => {
@@ -955,9 +872,7 @@ or type Oil Change"
                   ))}
               </div>
             </div>
-
             {validationError && <div className="text-red-500 text-center font-medium mb-2">{validationError}</div>}
-
             <div className="flex justify-center gap-4 pt-4">
               <a
                 href="/"
@@ -984,7 +899,6 @@ or type Oil Change"
           </form>
         </div>
       </main>
-
       {/* Footer */}
       <Footer />
     </div>
