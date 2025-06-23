@@ -3,7 +3,7 @@
 import React from "react"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { Input } from "@/components/ui/input"
-import { CalendarDays, MapPin, Car, Phone, Check, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Calendar, MapPin, Car, Phone, Check, Eye, EyeOff, Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -321,7 +321,7 @@ export default function AppointmentConfirmationPage() {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <CalendarDays className="h-5 w-5 text-gray-500 mt-1" />
+                  <Calendar className="h-5 w-5 text-gray-500 mt-1" />
                   <div>
                     <h3 className="font-medium text-gray-700">Date & Time</h3>
                     <p className="text-gray-600">{formatDate(appointmentData.appointment_date)}</p>
