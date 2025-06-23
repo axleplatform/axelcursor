@@ -2,7 +2,6 @@
 
 import React from "react"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
-import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
