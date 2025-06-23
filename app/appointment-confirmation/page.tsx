@@ -2,7 +2,6 @@
 
 import React from "react"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Calendar, MapPin, Car, Phone, Check, Eye, EyeOff, Loader2 } from "lucide-react"
