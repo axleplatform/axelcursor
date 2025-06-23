@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { ChevronDown } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // Common car makes for the dropdown
@@ -220,7 +220,7 @@ export default function VehicleInfoForm({ initialData = {}, onChange, errors = {
             ))}
           </select>
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-            <ChevronDown className="h-4 w-4 text-gray-400" />
+            <ChevronRight className="h-4 w-4 text-gray-400" />
           </div>
         </div>
         {errors.year && <p className="mt-1 text-sm text-red-600">{errors.year}</p>}
@@ -251,7 +251,7 @@ export default function VehicleInfoForm({ initialData = {}, onChange, errors = {
             )}
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-            <ChevronDown className="h-4 w-4 text-gray-400" />
+            <ChevronRight className="h-4 w-4 text-gray-400" />
           </div>
 
           {showMakeDropdown && (
@@ -306,7 +306,7 @@ export default function VehicleInfoForm({ initialData = {}, onChange, errors = {
             )}
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-            <ChevronDown className="h-4 w-4 text-gray-400" />
+            <ChevronRight className="h-4 w-4 text-gray-400" />
           </div>
 
           {showModelDropdown && make && (

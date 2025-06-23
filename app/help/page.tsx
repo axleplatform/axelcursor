@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import HelpSearchForm from "@/components/help-search-form"
-import { HelpCircle, Settings, Mail, ChevronDown } from "lucide-react"
+import { HelpCircle, Settings, Mail, ChevronRight } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Help & Support | Axle",
@@ -76,7 +76,7 @@ export default function HelpPage() {
                 <summary className="list-none flex justify-between items-center cursor-pointer">
                   <h3 className="text-lg font-medium">How do I book a mechanic?</h3>
                   <span className="transition group-open:rotate-180">
-                    <ChevronDown className="h-6 w-6 text-[#294a46]" />
+                    <ChevronRight className="h-6 w-6 text-[#294a46]" />
                   </span>
                 </summary>
                 <div className="mt-4 text-gray-600">
@@ -99,7 +99,7 @@ export default function HelpPage() {
                 <summary className="list-none flex justify-between items-center cursor-pointer">
                   <h3 className="text-lg font-medium">How do payments work?</h3>
                   <span className="transition group-open:rotate-180">
-                    <ChevronDown className="h-6 w-6 text-[#294a46]" />
+                    <ChevronRight className="h-6 w-6 text-[#294a46]" />
                   </span>
                 </summary>
                 <div className="mt-4 text-gray-600">
@@ -121,7 +121,7 @@ export default function HelpPage() {
                 <summary className="list-none flex justify-between items-center cursor-pointer">
                   <h3 className="text-lg font-medium">What if I need to reschedule or cancel?</h3>
                   <span className="transition group-open:rotate-180">
-                    <ChevronDown className="h-6 w-6 text-[#294a46]" />
+                    <ChevronRight className="h-6 w-6 text-[#294a46]" />
                   </span>
                 </summary>
                 <div className="mt-4 text-gray-600">
@@ -145,7 +145,7 @@ export default function HelpPage() {
                 <summary className="list-none flex justify-between items-center cursor-pointer">
                   <h3 className="text-lg font-medium">Are your mechanics certified?</h3>
                   <span className="transition group-open:rotate-180">
-                    <ChevronDown className="h-6 w-6 text-[#294a46]" />
+                    <ChevronRight className="h-6 w-6 text-[#294a46]" />
                   </span>
                 </summary>
                 <div className="mt-4 text-gray-600">
@@ -167,7 +167,7 @@ export default function HelpPage() {
                 <summary className="list-none flex justify-between items-center cursor-pointer">
                   <h3 className="text-lg font-medium">What services do you offer?</h3>
                   <span className="transition group-open:rotate-180">
-                    <ChevronDown className="h-6 w-6 text-[#294a46]" />
+                    <ChevronRight className="h-6 w-6 text-[#294a46]" />
                   </span>
                 </summary>
                 <div className="mt-4 text-gray-600">
@@ -203,7 +203,7 @@ export default function HelpPage() {
                 <summary className="list-none flex justify-between items-center cursor-pointer">
                   <h3 className="text-lg font-medium">I can't log in to my account</h3>
                   <span className="transition group-open:rotate-180">
-                    <ChevronDown className="h-6 w-6 text-[#294a46]" />
+                    <ChevronRight className="h-6 w-6 text-[#294a46]" />
                   </span>
                 </summary>
                 <div className="mt-4 text-gray-600">
@@ -223,7 +223,7 @@ export default function HelpPage() {
                 <summary className="list-none flex justify-between items-center cursor-pointer">
                   <h3 className="text-lg font-medium">My appointment doesn't appear in my dashboard</h3>
                   <span className="transition group-open:rotate-180">
-                    <ChevronDown className="h-6 w-6 text-[#294a46]" />
+                    <ChevronRight className="h-6 w-6 text-[#294a46]" />
                   </span>
                 </summary>
                 <div className="mt-4 text-gray-600">
@@ -246,7 +246,7 @@ export default function HelpPage() {
                 <summary className="list-none flex justify-between items-center cursor-pointer">
                   <h3 className="text-lg font-medium">Payment issues or declined transactions</h3>
                   <span className="transition group-open:rotate-180">
-                    <ChevronDown className="h-6 w-6 text-[#294a46]" />
+                    <ChevronRight className="h-6 w-6 text-[#294a46]" />
                   </span>
                 </summary>
                 <div className="mt-4 text-gray-600">
@@ -270,7 +270,7 @@ export default function HelpPage() {
                 <summary className="list-none flex justify-between items-center cursor-pointer">
                   <h3 className="text-lg font-medium">The mechanic didn't arrive at the scheduled time</h3>
                   <span className="transition group-open:rotate-180">
-                    <ChevronDown className="h-6 w-6 text-[#294a46]" />
+                    <ChevronRight className="h-6 w-6 text-[#294a46]" />
                   </span>
                 </summary>
                 <div className="mt-4 text-gray-600">

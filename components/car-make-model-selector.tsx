@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Plus, X, ChevronDown } from "lucide-react"
+import { Plus, X, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // Common car makes for the dropdown
@@ -206,7 +206,7 @@ export default function CarMakeModelSelector({ onAddCar, selectedCars, onRemoveC
               className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46]"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-              <ChevronDown className="h-4 w-4 text-gray-400" />
+              <ChevronRight className="h-4 w-4 text-gray-400" />
             </div>
           </div>
 
@@ -258,7 +258,7 @@ export default function CarMakeModelSelector({ onAddCar, selectedCars, onRemoveC
               )}
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-              <ChevronDown className="h-4 w-4 text-gray-400" />
+              <ChevronRight className="h-4 w-4 text-gray-400" />
             </div>
           </div>
 

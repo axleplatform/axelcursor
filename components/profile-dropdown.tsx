@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { User, LogOut, Settings, ChevronDown } from "lucide-react"
+import { User, LogOut, Settings, ChevronRight } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
 export function ProfileDropdown() {
@@ -43,7 +43,7 @@ export function ProfileDropdown() {
         aria-label="Profile menu"
       >
         <User className="h-5 w-5" />
-        <ChevronDown className="h-4 w-4 ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <ChevronRight className="h-4 w-4 ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
       </button>
 
       {isOpen && (
