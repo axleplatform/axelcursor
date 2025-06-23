@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   Check,
-  Wrench,
+  
 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
@@ -88,61 +88,61 @@ const carIssueOptions = [
   {
     id: "warning_lights",
     label: "Warning Lights On",
-    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
+    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
     description: "Dashboard warning lights are illuminated",
   },
   {
     id: "battery_issues",
     label: "Battery Issues",
-    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
+    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
     description: "Car won't start or battery dies quickly",
   },
   {
     id: "engine_performance",
     label: "Engine Performance",
-    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
+    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
     description: "Rough idle, stalling, or power loss",
   },
   {
     id: "overheating",
     label: "Overheating",
-    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
+    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
     description: "Engine temperature too high",
   },
   {
     id: "fluid_leaks",
     label: "Fluid Leaks",
-    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
+    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
     description: "Visible fluid leaking under vehicle",
   },
   {
     id: "mechanical_damage",
     label: "Mechanical Damage",
-    icon: Wrench,
+    icon: 
     description: "Physical damage to components",
   },
   {
     id: "electrical_problems",
     label: "Electrical Problems",
-    icon: Check,
+    icon: () => <div className="h-5 w-5 mb-1">⚡</div>,
     description: "Issues with lights, electronics, or wiring",
   },
   {
     id: "needs_towing",
     label: "Needs Towing",
-    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
+    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
     description: "Vehicle cannot be driven to service location",
   },
   {
     id: "unusual_noises",
     label: "Unusual Noises",
-    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
+    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
     description: "Knocking, grinding, or squealing sounds",
   },
   {
     id: "vibration",
     label: "Vibration",
-    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
+    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
     description: "Shaking or vibration when driving",
   },
 ]
