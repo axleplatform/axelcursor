@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   Check,
-  
 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
@@ -88,7 +87,7 @@ const carIssueOptions = [
   {
     id: "warning_lights",
     label: "Warning Lights On",
-    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
+    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
     description: "Dashboard warning lights are illuminated",
   },
   {
@@ -100,25 +99,25 @@ const carIssueOptions = [
   {
     id: "engine_performance",
     label: "Engine Performance",
-    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
+    icon: () => <div className="h-5 w-5 mb-1">⏲️</div>,
     description: "Rough idle, stalling, or power loss",
   },
   {
     id: "overheating",
     label: "Overheating",
-    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
+    icon: () => <div className="h-5 w-5 mb-1">🌡️</div>,
     description: "Engine temperature too high",
   },
   {
     id: "fluid_leaks",
     label: "Fluid Leaks",
-    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
+    icon: () => <div className="h-5 w-5 mb-1">💧</div>,
     description: "Visible fluid leaking under vehicle",
   },
   {
     id: "mechanical_damage",
     label: "Mechanical Damage",
-    icon: 
+    icon: () => <div className="h-5 w-5 mb-1">🔧</div>,
     description: "Physical damage to components",
   },
   {
@@ -130,19 +129,19 @@ const carIssueOptions = [
   {
     id: "needs_towing",
     label: "Needs Towing",
-    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
+    icon: () => <div className="h-5 w-5 mb-1">🚛</div>,
     description: "Vehicle cannot be driven to service location",
   },
   {
     id: "unusual_noises",
     label: "Unusual Noises",
-    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
+    icon: () => <div className="h-5 w-5 mb-1">🔊</div>,
     description: "Knocking, grinding, or squealing sounds",
   },
   {
     id: "vibration",
     label: "Vibration",
-    icon: () => <div className="h-5 w-5 mb-1">🔋</div>,
+    icon: () => <div className="h-5 w-5 mb-1">📳</div>,
     description: "Shaking or vibration when driving",
   },
 ]
