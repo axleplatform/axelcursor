@@ -5,7 +5,6 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
-  Lightbulb,
   Check,
   Phone,
   AlertTriangle,
@@ -14,7 +13,6 @@ import {
   Thermometer,
   Droplet,
   Wrench,
-  Zap,
   Truck,
   Volume2,
   Vibrate,
@@ -142,7 +140,7 @@ const carIssueOptions = [
   {
     id: "electrical_problems",
     label: "Electrical Problems",
-    icon: Zap,
+    icon: Check,
     description: "Issues with lights, electronics, or wiring",
   },
   {
@@ -879,7 +877,7 @@ or type Oil Change"
               <h4 className="text-sm font-medium text-gray-700 px-3 py-2 border-b border-gray-100 flex items-center justify-between">
                 Recommended Services
                 <div className="flex items-center text-[#294a46] text-[10px]">
-                  <Lightbulb className="h-2 w-2 mr-1" />
+                  <div className="h-2 w-2 mr-1">💡</div>
                   <p className="font-medium">axle ai recommends</p>
                 </div>
               </h4>
