@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { Loader2, Upload, X, User } from "lucide-react"
+import { Loader2,  X, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 
@@ -177,7 +177,7 @@ export default function ProfileImageUpload({ initialImageUrl, onImageChange, use
             isUploading ? "bg-gray-400 cursor-not-allowed" : "bg-[#294a46] hover:bg-[#1e3632]",
           )}
         >
-          <Upload className="h-4 w-4" />
+          <div className="h-4 w-4">📤</div>
           {imageUrl ? "Change Photo" : "Upload Photo"}
         </button>
         <input

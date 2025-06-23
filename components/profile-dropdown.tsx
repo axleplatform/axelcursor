@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { User, LogOut, Settings, ChevronRight } from "lucide-react"
+import { User, LogOut,  ChevronRight } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
 export function ProfileDropdown() {
@@ -57,7 +57,7 @@ export function ProfileDropdown() {
               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
               role="menuitem"
             >
-              <Settings className="h-4 w-4" />
+              <div className="h-4 w-4">⚙️</div>
               Profile Settings
             </button>
             <button

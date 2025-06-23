@@ -4,15 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   Check,
-  AlertTriangle,
-  Battery,
-  Gauge,
-  Thermometer,
-  Droplet,
   Wrench,
-  Truck,
-  Volume2,
-  Vibrate,
 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
@@ -96,31 +88,31 @@ const carIssueOptions = [
   {
     id: "warning_lights",
     label: "Warning Lights On",
-    icon: AlertTriangle,
+    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
     description: "Dashboard warning lights are illuminated",
   },
   {
     id: "battery_issues",
     label: "Battery Issues",
-    icon: Battery,
+    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
     description: "Car won't start or battery dies quickly",
   },
   {
     id: "engine_performance",
     label: "Engine Performance",
-    icon: Gauge,
+    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
     description: "Rough idle, stalling, or power loss",
   },
   {
     id: "overheating",
     label: "Overheating",
-    icon: Thermometer,
+    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
     description: "Engine temperature too high",
   },
   {
     id: "fluid_leaks",
     label: "Fluid Leaks",
-    icon: Droplet,
+    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
     description: "Visible fluid leaking under vehicle",
   },
   {
@@ -138,19 +130,19 @@ const carIssueOptions = [
   {
     id: "needs_towing",
     label: "Needs Towing",
-    icon: Truck,
+    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
     description: "Vehicle cannot be driven to service location",
   },
   {
     id: "unusual_noises",
     label: "Unusual Noises",
-    icon: Volume2,
+    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
     description: "Knocking, grinding, or squealing sounds",
   },
   {
     id: "vibration",
     label: "Vibration",
-    icon: Vibrate,
+    icon: () => <div className="h-5 w-5 mb-1">⚠️</div>,
     description: "Shaking or vibration when driving",
   },
 ]

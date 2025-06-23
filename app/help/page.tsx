@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import HelpSearchForm from "@/components/help-search-form"
-import { HelpCircle, Settings, Mail, ChevronRight } from "lucide-react"
+import { HelpCircle,  ChevronRight } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Help & Support | Axle",
@@ -42,7 +42,7 @@ export default function HelpPage() {
 
               <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-shadow">
                 <div className="w-16 h-16 bg-[#F9F9F9] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Settings className="h-8 w-8 text-[#294a46]" />
+                  <div className="h-8 w-8 text-[#294a46]">⚙️</div>
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Troubleshooting</h3>
                 <p className="text-gray-600 mb-4">Solutions to common issues you might encounter.</p>
@@ -53,7 +53,7 @@ export default function HelpPage() {
 
               <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-shadow">
                 <div className="w-16 h-16 bg-[#F9F9F9] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Mail className="h-8 w-8 text-[#294a46]" />
+                  <div className="h-8 w-8 text-[#294a46]">📧</div>
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Contact Support</h3>
                 <p className="text-gray-600 mb-4">Get in touch with our customer support team.</p>
