@@ -10,18 +10,6 @@ import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
 import { formatDate } from "@/lib/utils"
 
-interface Mechanic {
-  id: string
-  name: string
-  avatar_url: string | null
-  rating: number | null
-  review_count: number | null
-  price: number
-  eta: string | null
-  specialties: string[] | null
-  experience: string | null
-}
-
 interface Vehicle {
   id: string
   year: number
