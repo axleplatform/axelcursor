@@ -2,6 +2,8 @@
   "version": 2,
   "devCommand": "next dev",
   "framework": "nextjs",
+  "installCommand": "echo 'Starting clean install' && rm -rf node_modules package-lock.json pnpm-lock.yaml yarn.lock .npm .pnpm-store 2>/dev/null || true && npm cache clean --force && npm install --verbose",
+  "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "regions": ["iad1"],
   "rewrites": [
