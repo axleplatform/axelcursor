@@ -525,7 +525,7 @@ export default function MechanicDashboard() {
       });
 
       // Debug and get mechanic profile
-      const mechanicProfile = await debugMechanicProfile();
+      let mechanicProfile = await debugMechanicProfile();
       if (!mechanicProfile) {
         console.log('Attempting to create new mechanic profile...');
         const newProfile = await createMechanicProfile();
