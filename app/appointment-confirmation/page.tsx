@@ -3,7 +3,7 @@
 import React from "react"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { Input } from "@/components/ui/input"
-import { Calendar, MapPin, Car, Phone, Check, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Clock, MapPin, Check, Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -321,7 +321,7 @@ export default function AppointmentConfirmationPage() {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Calendar className="h-5 w-5 text-gray-500 mt-1" />
+                  <Clock className="h-5 w-5 text-gray-500 mt-1" />
                   <div>
                     <h3 className="font-medium text-gray-700">Date & Time</h3>
                     <p className="text-gray-600">{formatDate(appointmentData.appointment_date)}</p>
@@ -329,7 +329,7 @@ export default function AppointmentConfirmationPage() {
                     </div>
 
                 <div className="flex items-start gap-3">
-                  <Car className="h-5 w-5 text-gray-500 mt-1" />
+                  <div className="h-5 w-5 text-gray-500 mt-1">🚗</div>
                     <div>
                     <h3 className="font-medium text-gray-700">Vehicle</h3>
                     <p className="text-gray-600">
@@ -342,7 +342,7 @@ export default function AppointmentConfirmationPage() {
 
                 {appointmentData.phone_number && (
                   <div className="flex items-start gap-3">
-                    <Phone className="h-5 w-5 text-gray-500 mt-1" />
+                    <div className="h-5 w-5 text-gray-500 mt-1">📞</div>
                     <div>
                       <h3 className="font-medium text-gray-700">Phone Number</h3>
                       <p className="text-gray-600">{appointmentData.phone_number}</p>
@@ -459,7 +459,11 @@ export default function AppointmentConfirmationPage() {
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
                         >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {showPassword ? (
+                            <div className="h-4 w-4">🙈</div>
+                          ) : (
+                            <div className="h-4 w-4">👁️</div>
+                          )}
                         </button>
                       </div>
                       {formErrors.password && (
