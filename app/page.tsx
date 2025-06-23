@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useCallback, type FormEvent, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { MapPin, Calendar, ChevronRight, User, Settings, Home } from "lucide-react"
+import { MapPin, ChevronRight, User, Settings, Home } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
 import Footer from "@/components/footer"
@@ -514,7 +514,7 @@ export default function HomePage() {
             <div className="flex flex-col items-center text-center">
               <div className="w-28 h-28 flex items-center justify-center mb-2">
                 <div className="w-20 h-20 border-2 border-[#294a46] rounded flex items-center justify-center">
-                  <Calendar className="h-10 w-10 text-[#294a46]" />
+                  <div className="h-5 w-5 text-gray-500 mt-1">📅</div>
                 </div>
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">Book Appointments Online</h3>

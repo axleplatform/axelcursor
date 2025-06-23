@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Loader2, CalendarIcon } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 
@@ -181,7 +181,7 @@ export default function PersonalInfoForm({
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <CalendarIcon className="h-4 w-4 text-gray-400" />
+                <div className="h-4 w-4 text-gray-400">📅</div>
               </div>
               <input
                 type="date"

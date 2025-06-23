@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { Eye, EyeOff, Loader2, AlertCircle, Clock } from "lucide-react"
+import { Loader2, AlertCircle, Clock } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -294,11 +294,7 @@ export default function MechanicSignupPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     disabled={isLoading || isRateLimited}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400" />
-                    )}
+                    {showPassword ? <div className="h-4 w-4">🙈</div> : <div className="h-4 w-4">👁️</div>}
                   </button>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">Password must be at least 8 characters long</p>
