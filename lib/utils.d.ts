@@ -13,4 +13,4 @@ export function cn(...inputs: ClassValue[]): string
  * @returns A formatted date string in the format "YYYY-MM-DD @ HH:MM AM/PM"
  * @throws Will return "Invalid date" if the input is not a valid date
  */
-export function formatDate(dateString: string): string 
+export function formatDate(dateString: string): string

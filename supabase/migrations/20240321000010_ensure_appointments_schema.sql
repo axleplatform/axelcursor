@@ -226,4 +226,4 @@ CREATE INDEX IF NOT EXISTS idx_appointments_appointment_date ON public.appointme
 SELECT public.force_schema_reload();
 
 -- Verify the schema cache
-SELECT public.verify_schema_cache(); 
+SELECT public.verify_schema_cache();

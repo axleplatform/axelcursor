@@ -52,4 +52,4 @@ BEGIN
     -- Add indexes for performance
     CREATE INDEX IF NOT EXISTS idx_vehicles_appointment_id ON vehicles(appointment_id);
     CREATE INDEX IF NOT EXISTS idx_vehicles_vin ON vehicles(vin);
-END $$; 
+END $$;

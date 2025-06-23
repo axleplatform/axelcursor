@@ -158,4 +158,4 @@ GRANT ALL ON public.appointments TO service_role;
 SELECT public.refresh_schema_cache();
 
 -- Verify the schema cache
-SELECT public.verify_schema_cache(); 
+SELECT public.verify_schema_cache();

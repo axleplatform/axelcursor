@@ -73,4 +73,4 @@ BEGIN
     -- Return true if all mechanics have skipped
     RETURN skipped_mechanics >= total_mechanics;
 END;
-$$; 
+$$;

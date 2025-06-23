@@ -10,4 +10,4 @@ BEGIN
 
     -- Create an index for performance if it doesn't exist
     CREATE INDEX IF NOT EXISTS idx_appointments_mechanic_id ON appointments(mechanic_id);
-END $$; 
+END $$;

@@ -45,4 +45,4 @@ declare module '@supabase/supabase-js' {
     }
     from(table: string): any
   }
-} 
+}

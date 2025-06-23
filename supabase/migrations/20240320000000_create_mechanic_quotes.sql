@@ -64,4 +64,4 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER set_mechanic_quotes_updated_at
     BEFORE UPDATE ON public.mechanic_quotes
     FOR EACH ROW
-    EXECUTE FUNCTION public.handle_updated_at(); 
+    EXECUTE FUNCTION public.handle_updated_at();

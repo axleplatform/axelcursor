@@ -57,4 +57,4 @@ USING (
         WHERE mechanic_profiles.id = mechanic_quotes.mechanic_id 
         AND mechanic_profiles.user_id = auth.uid()
     )
-); 
+);

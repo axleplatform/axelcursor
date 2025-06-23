@@ -24,4 +24,4 @@ CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments(status);
 CREATE INDEX IF NOT EXISTS idx_appointments_user_id ON appointments(user_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_mechanic_id ON appointments(mechanic_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_appointment_date ON appointments(appointment_date);
-CREATE INDEX IF NOT EXISTS idx_appointments_source ON appointments(source); 
+CREATE INDEX IF NOT EXISTS idx_appointments_source ON appointments(source);

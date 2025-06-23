@@ -14,4 +14,4 @@ BEGIN
         -- Create an index for performance
         CREATE INDEX IF NOT EXISTS idx_appointments_user_id ON appointments(user_id);
     END IF;
-END $$; 
+END $$;

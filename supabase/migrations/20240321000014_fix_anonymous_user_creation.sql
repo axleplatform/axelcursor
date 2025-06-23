@@ -82,4 +82,4 @@ $$;
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION public.verify_anonymous_user(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.verify_anonymous_user(UUID) TO anon;
-GRANT EXECUTE ON FUNCTION public.verify_anonymous_user(UUID) TO service_role; 
+GRANT EXECUTE ON FUNCTION public.verify_anonymous_user(UUID) TO service_role;

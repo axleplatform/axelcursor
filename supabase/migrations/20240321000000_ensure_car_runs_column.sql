@@ -32,4 +32,4 @@ BEGIN
 END $$;
 
 -- Refresh schema cache
-NOTIFY pgrst, 'reload schema'; 
+NOTIFY pgrst, 'reload schema';

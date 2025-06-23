@@ -66,4 +66,4 @@ BEGIN
     WHERE status = 'pending'
     AND appointment_date < NOW() - INTERVAL '7 days';
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER; 
+$$ LANGUAGE plpgsql SECURITY DEFINER;

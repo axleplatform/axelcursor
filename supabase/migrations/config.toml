@@ -20,4 +20,4 @@ auto_apply = true
 allow_destructive = false
 
 # The maximum number of migrations to apply at once
-max_migrations = 100 
+max_migrations = 100

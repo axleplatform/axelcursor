@@ -35,4 +35,4 @@ CREATE TRIGGER on_quote_accept
 
 -- Add real-time publication for appointments and quotes
 ALTER PUBLICATION supabase_realtime ADD TABLE appointments;
-ALTER PUBLICATION supabase_realtime ADD TABLE mechanic_quotes; 
+ALTER PUBLICATION supabase_realtime ADD TABLE mechanic_quotes;
