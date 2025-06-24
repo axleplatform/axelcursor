@@ -680,7 +680,8 @@ export default function BookAppointment() {
     setIsSubmitting(true)
     setValidationError(null)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       let userId = user?.id
       if (!userId) {
         const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously()
