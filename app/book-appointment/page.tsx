@@ -620,27 +620,9 @@ export default function BookAppointment() {
       const user = session?.user
       let userId = user?.id
       if (!userId) {
-        // Create a real guest user in Supabase Auth using a full client
-        const guestEmail = `guest-${Date.now()}@temp.com`
-        const guestPassword = crypto.randomUUID()
-        // Create full client for signUp operation
-        const supabaseClient = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
-        // Use it for signUp
-        const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
-          email: guestEmail,
-          password: guestPassword,
-        })
-        console.log('Guest signUp result:', { signUpData, signUpError });
-        if (signUpData?.user) {
-          userId = signUpData.user.id;
-        } else {
-          throw new Error('Failed to create guest user: ' + (signUpError?.message || 'Unknown error'));
-        }
+        // Guest flow: generate a UUID for userId
+        userId = crypto.randomUUID();
       }
-      const now = new Date().toISOString();
       // Upsert appointment data
       const { data: appointment, error: appointmentError } = await supabase
         .from("appointments")
