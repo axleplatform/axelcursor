@@ -680,7 +680,8 @@ export default function BookAppointment() {
     setIsSubmitting(true)
     setValidationError(null)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data } = await supabase.auth.getSession()
+      const session = data?.session
       const user = session?.user
       let userId = user?.id
       if (!userId) {
