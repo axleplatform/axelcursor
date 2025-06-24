@@ -673,17 +673,33 @@ export default function BookAppointment() {
         mileage: parseInt(formData.mileage) || null,
       };
 
-      const { error: vehicleError } = await supabase
+      // Check if a vehicle already exists for this appointment
+      const { data: existingVehicle, error: vehicleFetchError } = await supabase
         .from("vehicles")
-        .insert(vehicleData);
+        .select("id")
+        .eq("appointment_id", appointment.id)
+        .single();
 
-      if (vehicleError) {
-        // If vehicle creation fails, roll back the appointment to prevent orphans.
-        console.error("Error creating vehicle, rolling back appointment...", vehicleError);
-        await supabase.from("appointments").delete().eq("id", appointment.id);
-        throw new Error(`Failed to create vehicle: ${vehicleError.message}`);
+      if (vehicleFetchError && vehicleFetchError.code !== "PGRST116") { // PGRST116: No rows found
+        throw new Error("Error checking for existing vehicle: " + vehicleFetchError.message);
       }
-      console.log("Vehicle created successfully for appointment:", appointment.id);
+
+      if (!existingVehicle) {
+        // Only insert if no vehicle exists
+        const { error: vehicleError } = await supabase
+          .from("vehicles")
+          .insert(vehicleData);
+
+        if (vehicleError) {
+          // If vehicle creation fails, roll back the appointment to prevent orphans.
+          console.error("Error creating vehicle, rolling back appointment...", vehicleError);
+          await supabase.from("appointments").delete().eq("id", appointment.id);
+          throw new Error(`Failed to create vehicle: ${vehicleError.message}`);
+        }
+        console.log("Vehicle created successfully for appointment:", appointment.id);
+      } else {
+        console.log("Vehicle already exists for appointment:", appointment.id);
+      }
       // --- FIX ENDS HERE ---
 
       toast({
