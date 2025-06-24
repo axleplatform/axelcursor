@@ -620,18 +620,19 @@ export default function BookAppointment() {
       const user = session?.user
       let userId = user?.id
       if (!userId) {
-        // Anonymous auth not available - using a generated UUID for guest
-        userId = crypto.randomUUID()
-        console.log('Creating guest user with ID:', userId);
-        // Insert guest user record to satisfy foreign key constraint
-        const guestEmail = `guest+${userId}@example.com`
-        const { error: userError } = await supabase.from('auth.users').insert({
-          id: userId,
+        // Create a real guest user in Supabase Auth
+        const guestEmail = `guest-${Date.now()}@temp.com`
+        const guestPassword = crypto.randomUUID()
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: guestEmail,
-          is_sso_user: false,
-          is_anonymous: true
+          password: guestPassword,
         })
-        console.log('Guest user creation result:', { error: userError });
+        console.log('Guest signUp result:', { signUpData, signUpError });
+        if (signUpData?.user) {
+          userId = signUpData.user.id;
+        } else {
+          throw new Error('Failed to create guest user: ' + (signUpError?.message || 'Unknown error'));
+        }
       }
       const now = new Date().toISOString();
       // Upsert appointment data
