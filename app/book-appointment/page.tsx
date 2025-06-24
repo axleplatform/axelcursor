@@ -9,7 +9,6 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
-import { createClient } from '@supabase/supabase-js'
 // Define types for form data
 interface BookingFormData {
   issueDescription: string
