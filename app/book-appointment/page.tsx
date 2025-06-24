@@ -622,6 +622,9 @@ export default function BookAppointment() {
       if (!userId) {
         // Anonymous auth not available - using a generated UUID for guest
         userId = crypto.randomUUID()
+        // Insert guest user record to satisfy foreign key constraint
+        const guestEmail = `guest+${userId}@example.com`
+        await supabase.from('users').insert({ id: userId, email: guestEmail })
       }
       const now = new Date().toISOString();
       // Upsert appointment data
@@ -876,6 +879,8 @@ or type Oil Change"
                       }`}
                     >
                       <div className="flex flex-col items-center justify-center">
+                        <span className="h-5 w-5 mb-1">
+                          <option.icon />
                         <option.icon className="h-5 w-5 mb-1" />
                         <span className="text-sm">{option.label}</span>
                       </div>
