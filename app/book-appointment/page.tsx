@@ -1,7 +1,7 @@
 "use client"
 import type React from "react"
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import {
   Check,
 } from "lucide-react"
@@ -537,7 +537,7 @@ interface AppointmentData {
 export default function BookAppointment() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const pathname = router.pathname
+  const pathname = usePathname()
   const appointmentId = searchParams.get("appointmentId") || pathname.split("/").pop()
   const [formData, setFormData] = useState<BookingFormData>({
     issueDescription: "",
