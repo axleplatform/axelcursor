@@ -18,9 +18,6 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    serverActions: true,
-  },
   async headers() {
     return [
       {

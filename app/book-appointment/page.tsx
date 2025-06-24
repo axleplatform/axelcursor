@@ -9,7 +9,6 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
-import { useToast } from "@/components/ui/use-toast"
 // Define types for form data
 interface BookingFormData {
   issueDescription: string
@@ -712,25 +711,36 @@ export default function BookAppointment() {
         .select()
         .single();
       if (appointmentError) throw appointmentError;
-      if (!appointment) throw new Error("Failed to create or update appointment");
-      // --- UPSERT VEHICLE DATA ---
+      if (!appointment) {
+        throw new Error("Failed to create appointment")
+      }
+
+      // --- FIX STARTS HERE ---
+      // After creating the appointment, create the associated vehicle record.
+      // NOTE: This assumes the vehicle form fields are being added to this page's state.
+      console.log("Creating vehicle for new appointment:", appointment.id);
       const vehicleData = {
         appointment_id: appointment.id,
         vin: formData.vin,
-        year: parseInt(formData.year),
+        year: parseInt(formData.year) || null,
         make: formData.make,
         model: formData.model,
-        mileage: parseInt(formData.mileage),
-        updated_at: now,
+        mileage: parseInt(formData.mileage) || null,
       };
+
       const { error: vehicleError } = await supabase
         .from("vehicles")
-        .upsert(vehicleData, { onConflict: 'appointment_id' });
+        .insert(vehicleData);
+
       if (vehicleError) {
-        // Simple rollback not feasible with upsert, but log critical error
-        console.error("CRITICAL: Failed to upsert vehicle data:", vehicleError);
-        throw new Error(`Failed to save vehicle details: ${vehicleError.message}`);
+        // If vehicle creation fails, roll back the appointment to prevent orphans.
+        console.error("Error creating vehicle, rolling back appointment...", vehicleError);
+        await supabase.from("appointments").delete().eq("id", appointment.id);
+        throw new Error(`Failed to create vehicle: ${vehicleError.message}`);
       }
+      console.log("Vehicle created successfully for appointment:", appointment.id);
+      // --- FIX ENDS HERE ---
+
       toast({
         title: "Success!",
         description: "Your appointment has been saved.",
