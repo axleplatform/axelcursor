@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import HelpSearchForm from "@/components/help-search-form"
-import { Circle, ChevronRight } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Help & Support | Axle",
@@ -31,7 +31,7 @@ export default function HelpPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-shadow">
                 <div className="w-16 h-16 bg-[#F9F9F9] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Circle className="h-8 w-8 text-[#294a46]" />
+                  <span className="text-3xl">❓</span>
                 </div>
                 <h3 className="text-xl font-semibold mb-2">FAQs</h3>
                 <p className="text-gray-600 mb-4">Find answers to the most commonly asked questions.</p>
