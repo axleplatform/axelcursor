@@ -685,11 +685,7 @@ export default function BookAppointment() {
       const user = session?.user
       let userId = user?.id
       if (!userId) {
-        const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously()
-        if (anonError || !anonData.user) {
-          throw new Error('Failed to create anonymous user.')
-        }
-        userId = anonData.user.id
+        userId = 'guest-' + Date.now()
       }
       const now = new Date().toISOString();
       // Upsert appointment data
