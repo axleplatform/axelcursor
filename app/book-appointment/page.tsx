@@ -9,7 +9,7 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 // Define types for form data
 interface BookingFormData {
   issueDescription: string
@@ -624,7 +624,7 @@ export default function BookAppointment() {
         // Create a real guest user in Supabase Auth using the full client
         const guestEmail = `guest-${Date.now()}@temp.com`
         const guestPassword = crypto.randomUUID()
-        const supabaseAuth = createClient(
+        const supabaseAuth = createSupabaseClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         )
