@@ -621,7 +621,7 @@ export default function BookAppointment() {
       let userId = user?.id
       if (!userId) {
         // Anonymous auth not available - using a placeholder
-        userId = 'guest-' + Date.now()
+        userId = crypto.randomUUID()
       }
       const now = new Date().toISOString();
       // Upsert appointment data
