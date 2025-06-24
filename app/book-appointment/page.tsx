@@ -762,7 +762,6 @@ export default function BookAppointment() {
     formData.phoneNumber && // Phone number is required
     (formData.issueDescription || formData.selectedServices.length > 0) // Either description OR service selection
   // Get all available services
-  const allServices = getAllServices(aiSuggestions)
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
