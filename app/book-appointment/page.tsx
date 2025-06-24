@@ -63,8 +63,7 @@ const defaultRecommendedServices = [
     service: "Maintenance Check",
     description: "Review upcoming service requirements.",
     confidence: 0.7,
-  },
-  },
+  }
 ]
 // Define car issue options
 const carIssueOptions = [
