@@ -64,24 +64,6 @@ const defaultRecommendedServices = [
     description: "Review upcoming service requirements.",
     confidence: 0.7,
   },
-]
-// Additional common services that can be offered regardless of the specific issue
-const commonServices = [
-  {
-    service: "Oil Change",
-    description: "Replace engine oil and filter.",
-  },
-  {
-    service: "Tire Rotation",
-    description: "Rotate tires for even wear.",
-  },
-  {
-    service: "Multi-Point Inspection",
-    description: "Check all major vehicle systems.",
-  },
-  {
-    service: "Fluid Top-Off",
-    description: "Refill essential fluids to proper levels.",
   },
 ]
 // Define car issue options
