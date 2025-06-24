@@ -463,52 +463,6 @@ interface AppointmentData {
   } | null
 }
 // Define database schema types
-// Get all available services (AI suggestions + common services)
-const getAllServices = (aiSuggestions: Array<{ service: string; description: string; confidence: number }> | null) => {
-  const services = [
-    ...(aiSuggestions || []),
-    ...commonServices.filter((cs) => !aiSuggestions?.some((ai) => ai.service === cs.service)),
-  ]
-  // Add more services if we don't have enough to demonstrate scrolling
-  if (services.length < 6) {
-    const additionalServices = [
-      {
-        service: "Brake Pad Replacement",
-        description: "Replace worn brake pads for better stopping.",
-        confidence: 0.35,
-      },
-      {
-        service: "Wheel Alignment",
-        description: "Adjust wheel angles to specifications.",
-        confidence: 0.33,
-      },
-      {
-        service: "Battery Replacement",
-        description: "Install new battery with testing.",
-        confidence: 0.32,
-      },
-      {
-        service: "Air Filter Replacement",
-        description: "Replace filter for better performance.",
-        confidence: 0.31,
-      },
-      {
-        service: "Spark Plug Replacement",
-        description: "Replace plugs for improved efficiency.",
-        confidence: 0.3,
-      },
-    ]
-    // Add as many additional services as needed to reach at least 8 total
-    let i = 0
-    while (services.length < 8 && i < additionalServices.length) {
-      if (!services.some((s) => s.service === additionalServices[i].service)) {
-        services.push(additionalServices[i])
-      }
-      i++
-    }
-  }
-  return services
-}
 // Define database schema types
 interface AppointmentData {
   id: string
