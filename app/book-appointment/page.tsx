@@ -536,7 +536,6 @@ interface AppointmentData {
 }
 // Define database schema types
 export default function BookAppointment() {
-  const { toast: newToast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = router.pathname
