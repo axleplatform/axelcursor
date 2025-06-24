@@ -685,6 +685,7 @@ export default function BookAppointment() {
       const user = session?.user
       let userId = user?.id
       if (!userId) {
+        // Anonymous auth not available - using a placeholder
         userId = 'guest-' + Date.now()
       }
       const now = new Date().toISOString();
