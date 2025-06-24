@@ -23,6 +23,31 @@ interface BookingFormData {
   model: string
   mileage: string
 }
+// Define database schema types
+interface AppointmentData {
+  id: string
+  user_id: string
+  location: string
+  appointment_date: string
+  status: string
+  source: string
+  is_guest: boolean
+  created_at: string
+  updated_at: string
+  car_runs: boolean | null
+  issue_description: string
+  selected_services: string[]
+  selected_car_issues: string[]
+  phone_number: string
+  vehicles: {
+    vin: string
+    year: string
+    make: string
+    model: string
+    mileage: string
+  } | null
+}
+// Define database schema types
 // Default recommended services to show before user input
 const defaultRecommendedServices = [
   {
@@ -295,6 +320,31 @@ const diagnosticSystem = {
     },
   ],
 }
+// Define database schema types
+interface AppointmentData {
+  id: string
+  user_id: string
+  location: string
+  appointment_date: string
+  status: string
+  source: string
+  is_guest: boolean
+  created_at: string
+  updated_at: string
+  car_runs: boolean | null
+  issue_description: string
+  selected_services: string[]
+  selected_car_issues: string[]
+  phone_number: string
+  vehicles: {
+    vin: string
+    year: string
+    make: string
+    model: string
+    mileage: string
+  } | null
+}
+// Define database schema types
 // Enhance the getAIDiagnostics function to return at least 3 relevant services
 function getAIDiagnostics(carIssue: string) {
   if (!carIssue.trim()) {
@@ -389,6 +439,31 @@ function getAIDiagnostics(carIssue: string) {
   // Return top 3 services instead of 2
   return possibleServices.slice(0, 3)
 }
+// Define database schema types
+interface AppointmentData {
+  id: string
+  user_id: string
+  location: string
+  appointment_date: string
+  status: string
+  source: string
+  is_guest: boolean
+  created_at: string
+  updated_at: string
+  car_runs: boolean | null
+  issue_description: string
+  selected_services: string[]
+  selected_car_issues: string[]
+  phone_number: string
+  vehicles: {
+    vin: string
+    year: string
+    make: string
+    model: string
+    mileage: string
+  } | null
+}
+// Define database schema types
 // Get all available services (AI suggestions + common services)
 const getAllServices = (aiSuggestions: Array<{ service: string; description: string; confidence: number }> | null) => {
   const services = [
@@ -435,6 +510,31 @@ const getAllServices = (aiSuggestions: Array<{ service: string; description: str
   }
   return services
 }
+// Define database schema types
+interface AppointmentData {
+  id: string
+  user_id: string
+  location: string
+  appointment_date: string
+  status: string
+  source: string
+  is_guest: boolean
+  created_at: string
+  updated_at: string
+  car_runs: boolean | null
+  issue_description: string
+  selected_services: string[]
+  selected_car_issues: string[]
+  phone_number: string
+  vehicles: {
+    vin: string
+    year: string
+    make: string
+    model: string
+    mileage: string
+  } | null
+}
+// Define database schema types
 export default function BookAppointment() {
   const { toast: newToast } = useToast()
   const router = useRouter()
@@ -462,7 +562,7 @@ export default function BookAppointment() {
   const [isLoading, setIsLoading] = useState(true)
   const [hasInteractedWithTextArea, setHasInteractedWithTextArea] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
-  const [appointmentData, setAppointmentData] = useState<any>(null)
+  const [appointmentData, setAppointmentData] = useState<AppointmentData | null>(null)
   // Fetch existing appointment and vehicle data
   useEffect(() => {
     const fetchAppointmentData = async () => {
