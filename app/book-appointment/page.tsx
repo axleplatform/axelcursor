@@ -623,6 +623,10 @@ export default function BookAppointment() {
         // Guest flow: generate a UUID for userId
         userId = crypto.randomUUID();
       }
+      
+      // Add the missing now variable declaration
+      const now = new Date().toISOString()
+      
       // Upsert appointment data
       const { data: appointment, error: appointmentError } = await supabase
         .from("appointments")
