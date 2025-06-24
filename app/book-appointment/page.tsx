@@ -881,7 +881,7 @@ or type Oil Change"
                       <div className="flex flex-col items-center justify-center">
                         <span className="h-5 w-5 mb-1">
                           <option.icon />
-                        <option.icon className="h-5 w-5 mb-1" />
+                        </span>
                         <span className="text-sm">{option.label}</span>
                       </div>
                     </button>
