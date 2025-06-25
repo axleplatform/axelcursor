@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
-import { supabase } from "@/lib/supabase"
+import { createBrowserClient } from '@supabase/ssr'
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -25,8 +25,14 @@ export default function LoginPage() {
     try {
       console.log("🔑 Starting login process...")
       
-      // Try using auth-helpers client
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      // Create Supabase client for auth operations
+      const supabaseClient = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      // Sign in with password using SSR client
+      const { data, error: signInError } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
       })
@@ -65,7 +71,13 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const { error } = await supabase.auth.resend({
+      // Create Supabase client for auth operations
+      const supabaseClient = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      const { error } = await supabaseClient.auth.resend({
         type: 'signup',
         email,
       })
