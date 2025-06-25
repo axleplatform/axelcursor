@@ -10,7 +10,6 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import MechanicSchedule from "@/components/mechanic-schedule"
 import {
-  getAvailableAppointmentsForMechanic,
   getQuotedAppointmentsForMechanic,
   createOrUpdateQuote,
 } from "@/lib/mechanic-quotes"
