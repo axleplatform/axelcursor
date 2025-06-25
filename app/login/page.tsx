@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
-import * as Supabase from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -26,7 +26,7 @@ export default function LoginPage() {
       console.log("🔑 Starting login process...")
       
       // Create full Supabase client for auth operations
-      const supabaseClient = Supabase.createClient(
+      const supabaseClient = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
@@ -72,7 +72,7 @@ export default function LoginPage() {
 
     try {
       // Create full Supabase client for auth operations
-      const supabaseClient = Supabase.createClient(
+      const supabaseClient = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
