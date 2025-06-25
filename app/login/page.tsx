@@ -25,8 +25,15 @@ export default function LoginPage() {
     try {
       console.log("🔑 Starting login process...")
       
-      // Sign in with password
-      const { data: { session: _session, user }, error: signInError } = await supabase.auth.signInWithPassword({
+      // Create full Supabase client for auth operations
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabaseClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      // Sign in with password using full client
+      const { data: { session: _session, user }, error: signInError } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
       })
@@ -65,7 +72,14 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const { error } = await supabase.auth.resend({
+      // Create full Supabase client for auth operations
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabaseClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      
+      const { error } = await supabaseClient.auth.resend({
         type: 'signup',
         email,
       })
