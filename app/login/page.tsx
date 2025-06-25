@@ -3,12 +3,14 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { createBrowserClient } from '@supabase/ssr'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
@@ -48,10 +50,11 @@ export default function LoginPage() {
 
       console.log("✅ Login successful, user:", data.user.id)
 
-      // Give the session cookie time to be set
-      setTimeout(() => {
-        window.location.href = '/mechanic/dashboard'
-      }, 500)
+      // Refresh the router to sync session state
+      router.refresh()
+      
+      // Use Next.js router for navigation
+      router.push('/mechanic/dashboard')
 
     } catch (error: any) {
       console.error("❌ Error:", error)

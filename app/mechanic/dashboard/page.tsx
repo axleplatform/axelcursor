@@ -5,7 +5,6 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Search, Loader2, Clock, MapPin, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
-import { UpcomingAppointments } from "@/components/upcoming-appointments"
 import { useToast } from "@/components/ui/use-toast"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -17,7 +16,6 @@ import {
 } from "@/lib/mechanic-quotes"
 import { formatDate, validateMechanicId } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import type { ChangeEvent } from 'react'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { ProfileDropdown } from "@/components/profile-dropdown"
@@ -71,7 +69,6 @@ export default function MechanicDashboard() {
   const [mechanicProfile, setMechanicProfile] = useState<any>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClientComponentClient()
 
   // Appointment states
   const [availableAppointments, setAvailableAppointments] = useState<Appointment[]>([])

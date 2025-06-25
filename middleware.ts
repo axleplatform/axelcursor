@@ -1,23 +1,51 @@
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 // Middleware for handling authentication and protected routes
-// This middleware ensures proper session handling and route protection
-// Last updated: 2024-06-04 - Simplified for temporary mechanic dashboard access
+// Updated to use modern Supabase SSR approach
 export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
   try {
     console.log("🔒 Middleware executing for path:", request.nextUrl.pathname)
     
-    // Create a Supabase client configured to use cookies
-    const res = NextResponse.next()
-    const supabase = createMiddlewareClient({ req: request, res })
+    // Create a Supabase server client
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            response.cookies.set({
+              name,
+              value,
+              ...options,
+            })
+          },
+          remove(name: string, options: any) {
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+            })
+          },
+        },
+      }
+    )
 
     const isProtectedRoute = request.nextUrl.pathname.startsWith("/mechanic/") ||
       request.nextUrl.pathname.startsWith("/onboarding-mechanic-")
 
     if (!isProtectedRoute) {
-      return res
+      return response
     }
 
     // Verify session with Supabase
@@ -40,24 +68,7 @@ export async function middleware(request: NextRequest) {
     // TEMPORARY FIX: Allow access to mechanic dashboard for all authenticated users
     if (request.nextUrl.pathname.startsWith("/mechanic/")) {
       console.log("✅ Allowing access to mechanic dashboard for authenticated user:", session.user.id)
-      
-      // Set session cookies
-      res.cookies.set("sb-auth-token", session.access_token, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7 // 1 week
-      })
-
-      res.cookies.set("sb-auth-token-client", session.access_token, {
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7 // 1 week
-      })
-
-      return res
+      return response
     }
 
     // For other protected routes, verify mechanic profile
@@ -88,24 +99,8 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Set session cookies for other routes
-    res.cookies.set("sb-auth-token", session.access_token, {
-      path: "/",
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7 // 1 week
-    })
-
-    res.cookies.set("sb-auth-token-client", session.access_token, {
-      path: "/",
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7 // 1 week
-    })
-
     console.log("✅ Session validated for user:", session.user.id)
-    return res
+    return response
   } catch (error) {
     console.error("❌ Middleware error:", error)
     const redirectUrl = new URL("/login", request.url)
