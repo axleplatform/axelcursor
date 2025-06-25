@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from "@/lib/supabase"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -25,14 +25,8 @@ export default function LoginPage() {
     try {
       console.log("🔑 Starting login process...")
       
-      // Create full Supabase client for auth operations
-      const supabaseClient = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      
-      // Sign in with password using full client
-      const { data: { session: _session, user }, error: signInError } = await supabaseClient.auth.signInWithPassword({
+      // Try using auth-helpers client
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
@@ -42,11 +36,11 @@ export default function LoginPage() {
         throw signInError
       }
 
-      if (!user) {
+      if (!data?.user) {
         throw new Error("No user data returned")
       }
 
-      console.log("✅ Login successful, user:", user.id)
+      console.log("✅ Login successful, user:", data.user.id)
 
       // Give the session cookie time to be set
       setTimeout(() => {
@@ -71,13 +65,7 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      // Create full Supabase client for auth operations
-      const supabaseClient = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      
-      const { error } = await supabaseClient.auth.resend({
+      const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
       })
