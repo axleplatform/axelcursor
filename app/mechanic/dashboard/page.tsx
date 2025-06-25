@@ -10,6 +10,7 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import MechanicSchedule from "@/components/mechanic-schedule"
 import {
+  getAvailableAppointmentsForMechanic,
   getQuotedAppointmentsForMechanic,
   createOrUpdateQuote,
 } from "@/lib/mechanic-quotes"
@@ -158,8 +159,21 @@ export default function MechanicDashboard() {
       setIsAppointmentsLoading(true);
       console.log('🔍 Starting appointment fetch for mechanic:', mechanicId);
       
-      // Get all appointments with quotes and skips
-      const { data: appointments, error } = await supabase
+      // Use helper functions for targeted queries instead of manual filtering
+      
+      // Get available appointments (pending, not quoted/skipped by this mechanic)
+      const availableResult = await getAvailableAppointmentsForMechanic(mechanicId);
+      const availableAppointments = availableResult.success ? availableResult.appointments || [] : [];
+      setAvailableAppointments(availableAppointments);
+      
+      // Get quoted appointments (mechanic has submitted quotes)
+      const quotedResult = await getQuotedAppointmentsForMechanic(mechanicId);
+      const quotedAppointments = quotedResult.success ? quotedResult.appointments || [] : [];
+      setQuotedAppointments(quotedAppointments);
+      
+      // Get upcoming appointments (confirmed/selected for this mechanic)
+      // For now, we'll keep the manual logic for upcoming since there's no specific helper
+      const { data: allAppointments, error } = await supabase
         .from('appointments')
         .select(`
           *,
@@ -170,87 +184,29 @@ export default function MechanicDashboard() {
             vin,
             mileage
           ),
-          mechanic_quotes!appointment_id(*),
-          mechanic_skipped_appointments!appointment_id(*)
+          mechanic_quotes!appointment_id(*)
         `)
+        .or(`selected_mechanic_id.eq.${mechanicId},status.eq.confirmed`)
         .order('created_at', { ascending: false });
         
       if (error) {
-        console.error('❌ Error fetching appointments:', error);
+        console.error('❌ Error fetching upcoming appointments:', error);
         throw error;
       }
       
-      console.log("Full appointment data:", appointments);
-      if (appointments && appointments.length > 0) {
-        console.log("Full appointment structure:", appointments[0]);
-        console.log("Vehicles field:", {
-          vehicles: appointments[0].vehicles,
-          isArray: Array.isArray(appointments[0].vehicles),
-          length: appointments[0].vehicles?.length
-        });
-      }
-
-      console.log('📦 Raw appointments data:', appointments);
-      
-      // Debug log for vehicle data
-      console.log('🚗 Vehicle data analysis:', appointments?.map(apt => ({
-        appointmentId: apt.id,
-        hasVehicle: !!apt.vehicles,
-        vehicleData: apt.vehicles ? {
-          year: apt.vehicles.year,
-          make: apt.vehicles.make,
-          model: apt.vehicles.model,
-          vin: apt.vehicles.vin,
-          mileage: apt.vehicles.mileage
-        } : null,
-        vehicleFieldsPresent: apt.vehicles ? {
-          hasYear: !!apt.vehicles.year,
-          hasMake: !!apt.vehicles.make,
-          hasModel: !!apt.vehicles.model,
-          hasVin: !!apt.vehicles.vin,
-          hasMileage: !!apt.vehicles.mileage
-        } : null
-      })));
-      
-      // Available appointments: pending status, no quote from this mechanic yet, not cancelled or skipped
-      const availableAppointments = appointments?.filter(apt => {
-        const alreadyQuoted = apt.mechanic_quotes?.some(
-          (quote: any) => quote.mechanic_id === mechanicId
-        );
-        const alreadySkipped = apt.mechanic_skipped_appointments?.some(
-          (skip: any) => skip.mechanic_id === mechanicId
-        );
-        return apt.status === 'pending' && !alreadyQuoted && !alreadySkipped && apt.status !== 'cancelled';
+      // Filter for upcoming appointments (confirmed or selected by this mechanic)
+      const upcomingAppointments = allAppointments?.filter(apt => {
+        return apt.selected_mechanic_id === mechanicId || 
+               (apt.status === 'confirmed' && apt.mechanic_quotes?.some((q: any) => q.mechanic_id === mechanicId));
       }) || [];
       
-      console.log('✅ Available appointments after filtering:', availableAppointments.map(apt => ({
-        id: apt.id,
-        hasVehicle: !!apt.vehicles,
-        vehicleData: apt.vehicles
-      })));
-      
-      setAvailableAppointments(availableAppointments);
-      
-      // Upcoming appointments: has quote from this mechanic OR mechanic is selected, not cancelled or skipped
-      const upcomingAppointments = appointments?.filter(apt => {
-        const quotedByMe = apt.mechanic_quotes?.some(
-          (quote: any) => quote.mechanic_id === mechanicId
-        );
-        const selectedAsMe = apt.selected_mechanic_id === mechanicId;
-        const alreadySkipped = apt.mechanic_skipped_appointments?.some(
-          (skip: any) => skip.mechanic_id === mechanicId
-        );
-        
-        return (quotedByMe || selectedAsMe) && !alreadySkipped && apt.status !== 'cancelled';
-      }) || [];
-      
-      setAvailableAppointments(availableAppointments);
       setUpcomingAppointments(upcomingAppointments);
       
       console.log('Appointments loaded:', {
         available: availableAppointments.length,
         upcoming: upcomingAppointments.length,
-        total: appointments?.length
+        quoted: quotedAppointments.length,
+        total: (availableAppointments.length + upcomingAppointments.length + quotedAppointments.length)
       });
       
     } catch (error) {
