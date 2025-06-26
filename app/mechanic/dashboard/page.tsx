@@ -2,6 +2,7 @@
 
 import React from "react"
 import { useState, useEffect } from "react"
+import type { ChangeEvent, FormEvent } from 'react'
 import { useRouter } from "next/navigation"
 import { Search, Loader2, Clock, MapPin, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
@@ -16,43 +17,19 @@ import {
 } from "@/lib/mechanic-quotes"
 import { formatDate, validateMechanicId } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
-import type { ChangeEvent, FormEvent } from 'react'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { ProfileDropdown } from "@/components/profile-dropdown"
-
-interface Appointment {
-  id: string
-  status: string
-  appointment_date: string
-  location: string
-  issue_description?: string
-  car_runs?: boolean
-  selected_services?: string[]
-  payment_status?: string
-  vehicles?: {
-    year: string
-    make: string
-    model: string
-    vin?: string
-    mileage?: number
-  }
-  quote?: {
-    id: string
-    price: number
-    created_at: string
-  }
-  selected_mechanic_id?: string
-  mechanic_quotes?: Array<{
-    id: string
-    mechanic_id: string
-    price: number
-    eta: string
-    notes?: string
-  }>
-  mechanic_skips?: Array<{
-    mechanic_id: string
-  }>
-}
+import type { 
+  Appointment, 
+  MechanicProfile, 
+  MechanicQuote,
+  NotificationState,
+  DateOption,
+  TimeSlot,
+  SelectChangeEvent,
+  InputChangeEvent,
+  UpcomingAppointmentsProps
+} from "@/types/index"
 
 interface UpcomingAppointmentsProps {
   appointments: Appointment[]
@@ -66,7 +43,7 @@ export default function MechanicDashboard() {
   const { toast } = useToast()
   const router = useRouter()
   const [mechanicId, setMechanicId] = useState<string | null>(null)
-  const [mechanicProfile, setMechanicProfile] = useState<any>(null)
+  const [mechanicProfile, setMechanicProfile] = useState<MechanicProfile | null>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -83,7 +60,7 @@ export default function MechanicDashboard() {
   const [isProcessing, setIsProcessing] = useState(false)
 
   // Add notification state at the top of the component
-  const [notification, setNotification] = useState<{type: 'success' | 'error' | 'info' | 'skip', message: string} | null>(null);
+  const [notification, setNotification] = useState<NotificationState | null>(null);
 
   // Add new state for quote editing
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
@@ -110,14 +87,14 @@ export default function MechanicDashboard() {
   const [editNotes, setEditNotes] = useState('');
 
   // Add showNotification function
-  const showNotification = (message: string, type: 'success' | 'error' | 'info' | 'skip' = 'error') => {
+  const showNotification = (message: string, type: NotificationState['type'] = 'error') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
   };
 
   // Generate available dates (next 7 days)
-  const getAvailableDates = () => {
-    const dates = [];
+  const getAvailableDates = (): DateOption[] => {
+    const dates: DateOption[] = [];
     const today = new Date();
     
     for (let i = 0; i < 7; i++) {
@@ -136,8 +113,8 @@ export default function MechanicDashboard() {
   };
 
   // Generate time slots (8 AM to 6 PM, 15-minute increments)
-  const getTimeSlots = () => {
-    const slots = [];
+  const getTimeSlots = (): TimeSlot[] => {
+    const slots: TimeSlot[] = [];
     for (let hour = 8; hour < 18; hour++) {
       for (let minute = 0; minute < 60; minute += 15) {
         const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
@@ -942,7 +919,7 @@ export default function MechanicDashboard() {
 
       console.log('21. Delete successful, updating UI...');
       // Update UI state
-      setUpcomingAppointments(prev => prev.filter(apt => apt.id !== appointmentId));
+      setUpcomingAppointments((prev: Appointment[]) => prev.filter((apt: Appointment) => apt.id !== appointmentId));
 
       // Reset form state
       setSelectedAppointment(null);
@@ -1120,7 +1097,7 @@ export default function MechanicDashboard() {
       }
 
       // Remove from UI
-      setUpcomingAppointments(prev => prev.filter(apt => apt.id !== appointment.id));
+      setUpcomingAppointments((prev: Appointment[]) => prev.filter((apt: Appointment) => apt.id !== appointment.id));
       
       showNotification(`Appointment cancelled. A $${cancellationFee} cancellation fee will be deducted from your account.`, 'info');
       
@@ -1172,7 +1149,7 @@ export default function MechanicDashboard() {
     try {
       setIsProcessing(true);
       
-      const myQuote = editAppointment.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
+      const myQuote = editAppointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
       if (!myQuote) {
         showNotification('Quote not found', 'error');
         return;
