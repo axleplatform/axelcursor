@@ -25,19 +25,8 @@ import type {
   MechanicQuote,
   NotificationState,
   DateOption,
-  TimeSlot,
-  SelectChangeEvent,
-  InputChangeEvent,
-  UpcomingAppointmentsProps
+  TimeSlot
 } from "@/types/index"
-
-interface UpcomingAppointmentsProps {
-  appointments: Appointment[]
-  isLoading: boolean
-  onStart: (id: string) => Promise<boolean>
-  onCancel: (id: string) => Promise<boolean>
-  onUpdatePrice: (id: string, price: number) => Promise<boolean>
-}
 
 export default function MechanicDashboard() {
   const { toast } = useToast()
@@ -61,12 +50,6 @@ export default function MechanicDashboard() {
 
   // Add notification state at the top of the component
   const [notification, setNotification] = useState<NotificationState | null>(null);
-
-  // Add new state for quote editing
-  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
-  const [updatePrice, setUpdatePrice] = useState<string>("");
-  const [updateDate, setUpdateDate] = useState<string>("");
-  const [updateTime, setUpdateTime] = useState<string>("");
 
   // Add new state variables after the existing ones
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
