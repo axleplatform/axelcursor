@@ -469,13 +469,13 @@ export default function MechanicDashboard() {
       // Combine date and time
       const [year, month, day] = selectedDate.split('-');
       const [hour, minute] = selectedTime.split(':');
-      const etaDateTime = new Date(year, month - 1, day, hour, minute);
+      const etaDateTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)).toISOString();
       
       console.log('Creating quote with:', {
         mechanic_id: mechanicProfile.id,
         appointment_id: appointmentId,
         price,
-        eta: etaDateTime.toISOString(),
+        eta: etaDateTime,
         notes
       });
 
@@ -484,7 +484,7 @@ export default function MechanicDashboard() {
         mechanicProfile.id,
         appointmentId,
         price,
-        etaDateTime.toISOString(),
+        etaDateTime,
         notes
       );
 

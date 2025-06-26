@@ -1,1 +1,327 @@
-"use client"\n\nimport React from 'react'\nimport { Clock, MapPin, Check, X } from "lucide-react"\nimport type { Appointment, MechanicQuote } from "@/types/index"\n\ninterface AppointmentCardProps {\n  appointment: Appointment\n  mechanicId: string\n  isUpcoming?: boolean\n  selectedAppointment?: Appointment | null\n  onEdit?: (appointment: Appointment | null) => void\n  onUpdate?: (appointmentId: string) => void\n  onCancel?: (appointmentId: string) => void\n  onSkip?: (appointment: Appointment) => void\n  onSubmit?: (appointmentId: string) => void\n  price: string\n  setPrice: (price: string) => void\n  selectedDate: string\n  setSelectedDate: (date: string) => void\n  selectedTime: string\n  setSelectedTime: (time: string) => void\n  notes: string\n  setNotes: (notes: string) => void\n}\n\ninterface DateOption {\n  value: string\n  label: string\n}\n\ninterface TimeSlot {\n  value: string\n  label: string\n}\n\nexport default function AppointmentCard({ \n  appointment, \n  mechanicId,\n  isUpcoming = false,\n  selectedAppointment,\n  onEdit,\n  onUpdate,\n  onCancel,\n  onSkip,\n  onSubmit,\n  price,\n  setPrice,\n  selectedDate,\n  setSelectedDate,\n  selectedTime,\n  setSelectedTime,\n  notes,\n  setNotes\n}: AppointmentCardProps) {\n  const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId)\n  const isSelected = appointment.selected_mechanic_id === mechanicId\n  const isEditing = selectedAppointment?.id === appointment.id\n\n  // Generate available dates (next 7 days)\n  const getAvailableDates = (): DateOption[] => {\n    const dates: DateOption[] = []\n    const today = new Date()\n    \n    for (let i = 0; i < 7; i++) {\n      const date = new Date(today)\n      date.setDate(date.getDate() + i)\n      dates.push({\n        value: date.toISOString().split('T')[0],\n        label: date.toLocaleDateString('en-US', { \n          weekday: 'long', \n          month: 'short', \n          day: 'numeric' \n        })\n      })\n    }\n    return dates\n  }\n\n  // Generate time slots (8 AM to 6 PM, 15-minute increments)\n  const getTimeSlots = (): TimeSlot[] => {\n    const slots: TimeSlot[] = []\n    for (let hour = 8; hour < 18; hour++) {\n      for (let minute = 0; minute < 60; minute += 15) {\n        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`\n        const displayTime = new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {\n          hour: 'numeric',\n          minute: '2-digit'\n        })\n        slots.push({ value: time, label: displayTime })\n      }\n    }\n    return slots\n  }\n\n  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {\n    setPrice(e.target.value)\n  }\n\n  const handleDateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {\n    setSelectedDate(e.target.value)\n  }\n\n  const handleTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {\n    setSelectedTime(e.target.value)\n  }\n\n  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {\n    setNotes(e.target.value)\n  }\n\n  return (\n    <div className={`bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow ${\n      isUpcoming ? 'border border-gray-200' : 'bg-[#294a46] text-white'\n    }`}>\n      {/* Service type and vehicle info */}\n      <h3 className=\"text-lg font-semibold mb-2\">{appointment.service_type}</h3>\n      <p className={`mb-1 ${isUpcoming ? 'text-gray-600' : 'text-white/70'}`}>\n        {appointment.vehicles?.year} {appointment.vehicles?.make} {appointment.vehicles?.model}\n      </p>\n      <p className={`mb-4 ${isUpcoming ? 'text-gray-600' : 'text-white/70'}`}>{appointment.location}</p>\n      \n      {/* Status indicator */}\n      {isUpcoming && (\n        <div className=\"mb-4\">\n          {isSelected ? (\n            <span className=\"inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800\">\n              <Check className=\"h-4 w-4 mr-1\" />\n              Customer selected you\n            </span>\n          ) : (\n            <span className=\"inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800\">\n              <Clock className=\"h-4 w-4 mr-1\" />\n              Awaiting customer selection\n            </span>\n          )}\n        </div>\n      )}\n      \n      {/* Price and Date/Time fields */}\n      <div className=\"space-y-3 mb-4\">\n        {/* Price */}\n        <div>\n          <label className={`block text-sm font-medium mb-1 ${\n            isUpcoming ? 'text-gray-700' : 'text-white/70'\n          }`}>\n            Your Quote Price\n          </label>\n          <div className=\"relative\">\n            <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${\n              isUpcoming ? 'text-gray-500' : 'text-white/70'\n            }`}>$</span>\n            <input\n              type=\"number\"\n              value={isEditing ? price : myQuote?.price || ''}\n              onChange={handlePriceChange}\n              disabled={!isEditing || isSelected}\n              className={`w-full p-2 border rounded-md pl-8 ${\n                isUpcoming \n                  ? isEditing && !isSelected \n                    ? 'border-blue-500 bg-white' \n                    : 'border-gray-300 bg-gray-50 cursor-not-allowed'\n                  : isEditing && !isSelected\n                    ? 'border-white/50 bg-white/10 text-white'\n                    : 'border-white/20 bg-white/5 text-white/70 cursor-not-allowed'\n              }`}\n            />\n          </div>\n        </div>\n        \n        {/* Date */}\n        <div>\n          <label className={`block text-sm font-medium mb-1 ${\n            isUpcoming ? 'text-gray-700' : 'text-white/70'\n          }`}>\n            Available Date\n          </label>\n          <select\n            value={isEditing ? selectedDate : myQuote?.eta?.split('T')[0] || ''}\n            onChange={handleDateChange}\n            disabled={!isEditing || isSelected}\n            className={`w-full p-2 border rounded-md ${\n              isUpcoming \n                ? isEditing && !isSelected \n                  ? 'border-blue-500 bg-white' \n                  : 'border-gray-300 bg-gray-50 cursor-not-allowed'\n                : isEditing && !isSelected\n                  ? 'border-white/50 bg-white/10 text-white'\n                  : 'border-white/20 bg-white/5 text-white/70 cursor-not-allowed'\n            }`}\n          >\n            {getAvailableDates().map((date: DateOption) => (\n              <option key={date.value} value={date.value} className={isUpcoming ? '' : 'bg-[#294a46]'}>\n                {date.label}\n              </option>\n            ))}\n          </select>\n        </div>\n        \n        {/* Time */}\n        <div>\n          <label className={`block text-sm font-medium mb-1 ${\n            isUpcoming ? 'text-gray-700' : 'text-white/70'\n          }`}>\n            Available Time\n          </label>\n          <select\n            value={isEditing ? selectedTime : myQuote?.eta ? new Date(myQuote.eta).toTimeString().slice(0,5) : ''}\n            onChange={handleTimeChange}\n            disabled={!isEditing || isSelected}\n            className={`w-full p-2 border rounded-md ${\n              isUpcoming \n                ? isEditing && !isSelected \n                  ? 'border-blue-500 bg-white' \n                  : 'border-gray-300 bg-gray-50 cursor-not-allowed'\n                : isEditing && !isSelected\n                  ? 'border-white/50 bg-white/10 text-white'\n                  : 'border-white/20 bg-white/5 text-white/70 cursor-not-allowed'\n            }`}\n          >\n            {getTimeSlots().map((slot: TimeSlot) => (\n              <option key={slot.value} value={slot.value} className={isUpcoming ? '' : 'bg-[#294a46]'}>\n                {slot.label}\n              </option>\n            ))}\n          </select>\n        </div>\n      </div>\n\n      {/* Notes field */}\n      {isEditing && (\n        <div className=\"mb-4\">\n          <label className={`block text-sm font-medium mb-1 ${\n            isUpcoming ? 'text-gray-700' : 'text-white/70'\n          }`}>\n            Additional Notes\n          </label>\n          <textarea\n            value={notes}\n            onChange={handleNotesChange}\n            className={`w-full p-2 border rounded-md ${\n              isUpcoming \n                ? 'border-gray-300'\n                : 'border-white/20 bg-white/10 text-white'\n            }`}\n            rows={2}\n          />\n        </div>\n      )}\n\n      {/* Action buttons */}\n      <div className=\"flex gap-2\">\n        {!isUpcoming && !isEditing && (\n          <>\n            <button\n              onClick={() => onEdit?.(appointment)}\n              className=\"flex-1 bg-white text-[#294a46] px-3 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors\"\n            >\n              Quote\n            </button>\n            <button\n              onClick={() => onSkip?.(appointment)}\n              className=\"flex-1 bg-white/20 text-white px-3 py-2 rounded-md font-medium hover:bg-white/30 transition-colors\"\n            >\n              Skip\n            </button>\n          </>\n        )}\n        \n        {!isUpcoming && isEditing && (\n          <>\n            <button\n              onClick={() => onSubmit?.(appointment.id)}\n              className=\"flex-1 bg-white text-[#294a46] px-3 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors\"\n            >\n              Submit Quote\n            </button>\n            <button\n              onClick={() => onEdit?.(null)}\n              className=\"flex-1 bg-white/20 text-white px-3 py-2 rounded-md font-medium hover:bg-white/30 transition-colors\"\n            >\n              Cancel\n            </button>\n          </>\n        )}\n        \n        {isUpcoming && (\n          <>\n            {!isSelected && (\n              <button\n                onClick={() => onEdit?.(appointment)}\n                className=\"flex-1 bg-blue-600 text-white px-3 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors\"\n              >\n                Edit Quote\n              </button>\n            )}\n            \n            {isSelected && (\n              <>\n                <button\n                  onClick={() => onUpdate?.(appointment.id)}\n                  className=\"flex-1 bg-green-600 text-white px-3 py-2 rounded-md font-medium hover:bg-green-700 transition-colors\"\n                >\n                  Start Service\n                </button>\n                <button\n                  onClick={() => onCancel?.(appointment.id)}\n                  className=\"flex-1 bg-red-600 text-white px-3 py-2 rounded-md font-medium hover:bg-red-700 transition-colors\"\n                >\n                  Cancel\n                </button>\n              </>\n            )}\n          </>\n        )}\n      </div>\n    </div>\n  )\n} 
+"use client"
+
+import React from 'react'
+import { Clock, MapPin, Check, X } from "lucide-react"
+import type { Appointment, MechanicQuote } from "@/types/index"
+
+interface AppointmentCardProps {
+  appointment: Appointment
+  mechanicId: string
+  isUpcoming?: boolean
+  selectedAppointment?: Appointment | null
+  onEdit?: (appointment: Appointment | null) => void
+  onUpdate?: (appointmentId: string) => void
+  onCancel?: (appointmentId: string) => void
+  onSkip?: (appointment: Appointment) => void
+  onSubmit?: (appointmentId: string) => void
+  price: string
+  setPrice: (price: string) => void
+  selectedDate: string
+  setSelectedDate: (date: string) => void
+  selectedTime: string
+  setSelectedTime: (time: string) => void
+  notes: string
+  setNotes: (notes: string) => void
+}
+
+interface DateOption {
+  value: string
+  label: string
+}
+
+interface TimeSlot {
+  value: string
+  label: string
+}
+
+export default function AppointmentCard({ 
+  appointment, 
+  mechanicId,
+  isUpcoming = false,
+  selectedAppointment,
+  onEdit,
+  onUpdate,
+  onCancel,
+  onSkip,
+  onSubmit,
+  price,
+  setPrice,
+  selectedDate,
+  setSelectedDate,
+  selectedTime,
+  setSelectedTime,
+  notes,
+  setNotes
+}: AppointmentCardProps) {
+  const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId)
+  const isSelected = appointment.selected_mechanic_id === mechanicId
+  const isEditing = selectedAppointment?.id === appointment.id
+
+  // Generate available dates (next 7 days)
+  const getAvailableDates = (): DateOption[] => {
+    const dates: DateOption[] = []
+    const today = new Date()
+    
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today)
+      date.setDate(date.getDate() + i)
+      dates.push({
+        value: date.toISOString().split('T')[0],
+        label: date.toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          month: 'short', 
+          day: 'numeric' 
+        })
+      })
+    }
+    return dates
+  }
+
+  // Generate time slots (8 AM to 6 PM, 15-minute increments)
+  const getTimeSlots = (): TimeSlot[] => {
+    const slots: TimeSlot[] = []
+    for (let hour = 8; hour < 18; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+        const displayTime = new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit'
+        })
+        slots.push({ value: time, label: displayTime })
+      }
+    }
+    return slots
+  }
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPrice(e.target.value)
+  }
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedDate(e.target.value)
+  }
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedTime(e.target.value)
+  }
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNotes(e.target.value)
+  }
+
+  // Get service display text
+  const getServiceDisplay = () => {
+    if (appointment.selected_services && appointment.selected_services.length > 0) {
+      return appointment.selected_services.join(', ')
+    }
+    return appointment.issue_description || 'Service Request'
+  }
+
+  return (
+    <div className={`bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow ${
+      isUpcoming ? 'border border-gray-200' : 'bg-[#294a46] text-white'
+    }`}>
+      {/* Service type and vehicle info */}
+      <h3 className="text-lg font-semibold mb-2">{getServiceDisplay()}</h3>
+      <p className={`mb-1 ${isUpcoming ? 'text-gray-600' : 'text-white/70'}`}>
+        {appointment.vehicles?.year} {appointment.vehicles?.make} {appointment.vehicles?.model}
+      </p>
+      <p className={`mb-4 ${isUpcoming ? 'text-gray-600' : 'text-white/70'}`}>{appointment.location}</p>
+      
+      {/* Status indicator */}
+      {isUpcoming && (
+        <div className="mb-4">
+          {isSelected ? (
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+              <Check className="h-4 w-4 mr-1" />
+              Customer selected you
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+              <Clock className="h-4 w-4 mr-1" />
+              Awaiting customer selection
+            </span>
+          )}
+        </div>
+      )}
+      
+      {/* Price and Date/Time fields */}
+      <div className="space-y-3 mb-4">
+        {/* Price */}
+        <div>
+          <label className={`block text-sm font-medium mb-1 ${
+            isUpcoming ? 'text-gray-700' : 'text-white/70'
+          }`}>
+            Your Quote Price
+          </label>
+          <div className="relative">
+            <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+              isUpcoming ? 'text-gray-500' : 'text-white/70'
+            }`}>$</span>
+            <input
+              type="number"
+              value={isEditing ? price : myQuote?.price || ''}
+              onChange={handlePriceChange}
+              disabled={!isEditing || isSelected}
+              className={`w-full p-2 border rounded-md pl-8 ${
+                isUpcoming 
+                  ? isEditing && !isSelected 
+                    ? 'border-blue-500 bg-white' 
+                    : 'border-gray-300 bg-gray-50 cursor-not-allowed'
+                  : isEditing && !isSelected
+                    ? 'border-white/50 bg-white/10 text-white'
+                    : 'border-white/20 bg-white/5 text-white/70 cursor-not-allowed'
+              }`}
+            />
+          </div>
+        </div>
+        
+        {/* Date */}
+        <div>
+          <label className={`block text-sm font-medium mb-1 ${
+            isUpcoming ? 'text-gray-700' : 'text-white/70'
+          }`}>
+            Available Date
+          </label>
+          <select
+            value={isEditing ? selectedDate : myQuote?.eta?.split('T')[0] || ''}
+            onChange={handleDateChange}
+            disabled={!isEditing || isSelected}
+            className={`w-full p-2 border rounded-md ${
+              isUpcoming 
+                ? isEditing && !isSelected 
+                  ? 'border-blue-500 bg-white' 
+                  : 'border-gray-300 bg-gray-50 cursor-not-allowed'
+                : isEditing && !isSelected
+                  ? 'border-white/50 bg-white/10 text-white'
+                  : 'border-white/20 bg-white/5 text-white/70 cursor-not-allowed'
+            }`}
+          >
+            {getAvailableDates().map((date: DateOption) => (
+              <option key={date.value} value={date.value} className={isUpcoming ? '' : 'bg-[#294a46]'}>
+                {date.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Time */}
+        <div>
+          <label className={`block text-sm font-medium mb-1 ${
+            isUpcoming ? 'text-gray-700' : 'text-white/70'
+          }`}>
+            Available Time
+          </label>
+          <select
+            value={isEditing ? selectedTime : myQuote?.eta ? new Date(myQuote.eta).toTimeString().slice(0,5) : ''}
+            onChange={handleTimeChange}
+            disabled={!isEditing || isSelected}
+            className={`w-full p-2 border rounded-md ${
+              isUpcoming 
+                ? isEditing && !isSelected 
+                  ? 'border-blue-500 bg-white' 
+                  : 'border-gray-300 bg-gray-50 cursor-not-allowed'
+                : isEditing && !isSelected
+                  ? 'border-white/50 bg-white/10 text-white'
+                  : 'border-white/20 bg-white/5 text-white/70 cursor-not-allowed'
+            }`}
+          >
+            {getTimeSlots().map((slot: TimeSlot) => (
+              <option key={slot.value} value={slot.value} className={isUpcoming ? '' : 'bg-[#294a46]'}>
+                {slot.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Notes field */}
+      {isEditing && (
+        <div className="mb-4">
+          <label className={`block text-sm font-medium mb-1 ${
+            isUpcoming ? 'text-gray-700' : 'text-white/70'
+          }`}>
+            Additional Notes
+          </label>
+          <textarea
+            value={notes}
+            onChange={handleNotesChange}
+            className={`w-full p-2 border rounded-md ${
+              isUpcoming 
+                ? 'border-gray-300'
+                : 'border-white/20 bg-white/10 text-white'
+            }`}
+            rows={2}
+          />
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        {!isUpcoming && !isEditing && (
+          <>
+            <button
+              onClick={() => onEdit?.(appointment)}
+              className="flex-1 bg-white text-[#294a46] px-3 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors"
+            >
+              Quote
+            </button>
+            <button
+              onClick={() => onSkip?.(appointment)}
+              className="flex-1 bg-white/20 text-white px-3 py-2 rounded-md font-medium hover:bg-white/30 transition-colors"
+            >
+              Skip
+            </button>
+          </>
+        )}
+        
+        {!isUpcoming && isEditing && (
+          <>
+            <button
+              onClick={() => onSubmit?.(appointment.id)}
+              className="flex-1 bg-white text-[#294a46] px-3 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors"
+            >
+              Submit Quote
+            </button>
+            <button
+              onClick={() => onEdit?.(null)}
+              className="flex-1 bg-white/20 text-white px-3 py-2 rounded-md font-medium hover:bg-white/30 transition-colors"
+            >
+              Cancel
+            </button>
+          </>
+        )}
+        
+        {isUpcoming && (
+          <>
+            {!isSelected && (
+              <button
+                onClick={() => onEdit?.(appointment)}
+                className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors"
+              >
+                Edit Quote
+              </button>
+            )}
+            
+            {isSelected && (
+              <>
+                <button
+                  onClick={() => onUpdate?.(appointment.id)}
+                  className="flex-1 bg-green-600 text-white px-3 py-2 rounded-md font-medium hover:bg-green-700 transition-colors"
+                >
+                  Start Service
+                </button>
+                <button
+                  onClick={() => onCancel?.(appointment.id)}
+                  className="flex-1 bg-red-600 text-white px-3 py-2 rounded-md font-medium hover:bg-red-700 transition-colors"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+} 
