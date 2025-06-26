@@ -117,6 +117,9 @@ export default function MechanicDashboard() {
   // Update fetchInitialAppointments function
   const fetchInitialAppointments = async (): Promise<void> => {
     try {
+      console.log('🔍 === FETCHING APPOINTMENTS DEBUG ===');
+      console.log('1. Starting fetch with mechanicId:', mechanicId);
+      
       const { data: allAppointments, error } = await supabase
         .from('appointments')
         .select(`
@@ -127,23 +130,73 @@ export default function MechanicDashboard() {
         .in('status', ['pending', 'quoted', 'confirmed', 'in_progress', 'completed'])
         .order('appointment_date', { ascending: true })
 
+      console.log('2. Raw database response:', {
+        appointmentsCount: allAppointments?.length || 0,
+        error: error,
+        sampleAppointment: allAppointments?.[0]
+      });
+
       if (error) throw error
 
+      console.log('3. All appointments fetched:', allAppointments?.map(apt => ({
+        id: apt.id,
+        status: apt.status,
+        quotesCount: apt.mechanic_quotes?.length || 0,
+        quotes: apt.mechanic_quotes?.map(q => ({
+          mechanicId: q.mechanic_id,
+          price: q.price
+        }))
+      })));
+
       // Separate available vs quoted appointments
-      const available = allAppointments?.filter((apt: Appointment) => 
-        apt.status === 'pending' && 
-        !apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId)
-      ) || []
+      const available = allAppointments?.filter((apt: Appointment) => {
+        const hasMyQuote = apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId);
+        const isAvailable = apt.status === 'pending' && !hasMyQuote;
+        
+        console.log(`4. Checking appointment ${apt.id}:`, {
+          status: apt.status,
+          hasMyQuote,
+          mechanicId,
+          isAvailable,
+          quotes: apt.mechanic_quotes?.map(q => q.mechanic_id)
+        });
+        
+        return isAvailable;
+      }) || []
       
-      const quoted = allAppointments?.filter((apt: Appointment) => 
-        apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId)
-      ) || []
+      const quoted = allAppointments?.filter((apt: Appointment) => {
+        const hasMyQuote = apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId);
+        
+        console.log(`5. Checking quoted appointment ${apt.id}:`, {
+          hasMyQuote,
+          mechanicId,
+          quotes: apt.mechanic_quotes?.map(q => q.mechanic_id)
+        });
+        
+        return hasMyQuote;
+      }) || []
         
       // Filter for upcoming appointments (confirmed or selected by this mechanic)
       const upcomingAppointments = allAppointments?.filter((apt: AppointmentWithRelations) => {
-        const currentDate = new Date();
-        return (apt.status === 'confirmed' && apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId));
+        const hasMyQuote = apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId);
+        const isUpcoming = apt.status === 'confirmed' && hasMyQuote;
+        
+        console.log(`6. Checking upcoming appointment ${apt.id}:`, {
+          status: apt.status,
+          hasMyQuote,
+          mechanicId,
+          isUpcoming
+        });
+        
+        return isUpcoming;
       }) || [];
+
+      console.log('7. Final filtered results:', {
+        available: available.length,
+        quoted: quoted.length,
+        upcoming: upcomingAppointments.length,
+        mechanicId: mechanicId
+      });
 
       setAvailableAppointments(available)
       setQuotedAppointments(quoted)
@@ -151,7 +204,7 @@ export default function MechanicDashboard() {
       
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      console.error('Error fetching appointments:', errorMessage)
+      console.error('❌ Error fetching appointments:', errorMessage)
     }
   }
 
