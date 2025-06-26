@@ -25,7 +25,8 @@ import type {
   MechanicQuote,
   NotificationState,
   DateOption,
-  TimeSlot
+  TimeSlot,
+  AppointmentWithRelations
 } from "@/types/index"
 
 export default function MechanicDashboard() {
@@ -112,131 +113,64 @@ export default function MechanicDashboard() {
   };
 
   // Update fetchInitialAppointments function
-  const fetchInitialAppointments = async () => {
-    if (!mechanicId) return;
-    
+  const fetchInitialAppointments = async (): Promise<void> => {
     try {
-      setIsAppointmentsLoading(true);
-      console.log('🔍 Starting appointment fetch for mechanic:', mechanicId);
-      
-      // Use helper functions for targeted queries instead of manual filtering
-      
-      // Get available appointments (pending, not quoted/skipped by this mechanic)
-      const availableResult = await getAvailableAppointmentsForMechanic(mechanicId);
-      const availableAppointments = availableResult.success ? availableResult.appointments || [] : [];
-      setAvailableAppointments(availableAppointments);
-      
-      // Get quoted appointments (mechanic has submitted quotes)
-      const quotedResult = await getQuotedAppointmentsForMechanic(mechanicId);
-      const quotedAppointments = quotedResult.success ? quotedResult.appointments || [] : [];
-      setQuotedAppointments(quotedAppointments);
-      
-      // Get upcoming appointments (confirmed/selected for this mechanic)
-      // For now, we'll keep the manual logic for upcoming since there's no specific helper
       const { data: allAppointments, error } = await supabase
         .from('appointments')
         .select(`
           *,
-          vehicles!fk_appointment_id(
-            year,
-            make,
-            model,
-            vin,
-            mileage
-          ),
+          vehicles!fk_appointment_id(*),
           mechanic_quotes!appointment_id(*)
         `)
-        .or(`selected_mechanic_id.eq.${mechanicId},status.eq.confirmed`)
-        .order('created_at', { ascending: false });
+        .in('status', ['pending', 'quoted', 'confirmed', 'in_progress', 'completed'])
+        .order('appointment_date', { ascending: true })
+
+      if (error) throw error
+
+      // Separate available vs quoted appointments
+      const available = allAppointments?.filter(apt => 
+        apt.status === 'pending' && 
+        !apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId)
+      ) || []
+      
+      const quoted = allAppointments?.filter(apt => 
+        apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId)
+      ) || []
         
-      if (error) {
-        console.error('❌ Error fetching upcoming appointments:', error);
-        throw error;
-      }
-      
       // Filter for upcoming appointments (confirmed or selected by this mechanic)
-      const upcomingAppointments = allAppointments?.filter((apt: any) => {
-        return apt.selected_mechanic_id === mechanicId || 
-               (apt.status === 'confirmed' && apt.mechanic_quotes?.some((q: any) => q.mechanic_id === mechanicId));
+      const upcomingAppointments = allAppointments?.filter((apt: AppointmentWithRelations) => {
+        const currentDate = new Date();
+        return (apt.status === 'confirmed' && apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId));
       }) || [];
+
+      setAvailableAppointments(available)
+      setQuotedAppointments(quoted)
+      setUpcomingAppointments(upcomingAppointments)
       
-      setUpcomingAppointments(upcomingAppointments);
-      
-      console.log('Appointments loaded:', {
-        available: availableAppointments.length,
-        upcoming: upcomingAppointments.length,
-        quoted: quotedAppointments.length,
-        total: (availableAppointments.length + upcomingAppointments.length + quotedAppointments.length)
-      });
-      
-    } catch (error) {
-      console.error('❌ Error fetching appointments:', error);
-      showNotification('Failed to load appointments', 'error');
-    } finally {
-      setIsAppointmentsLoading(false);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error fetching appointments:', errorMessage)
     }
-  };
+  }
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuth = async (): Promise<void> => {
       try {
-        setIsAuthLoading(true)
-        setError(null)
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) throw error
 
-        // Get current session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        if (!session?.user) {
+          router.push('/login')
+          return
+        }
+
+        setUserId(session.user.id)
+        setIsLoggedIn(true)
         
-        if (sessionError) {
-          console.error("❌ Session error:", sessionError)
-          throw new Error("Failed to get session")
-        }
-
-        if (!session) {
-          console.log("❌ No session found, redirecting to login")
-          router.replace("/login")
-          return
-        }
-
-        // Get mechanic profile
-        const { data: profile, error: profileError } = await supabase
-          .from("mechanic_profiles")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .single()
-
-        if (profileError) {
-          console.error("❌ Profile error:", profileError)
-          if (profileError.code === "PGRST116") {
-            // No profile found
-            console.log("❌ No mechanic profile found, redirecting to onboarding")
-            router.replace("/onboarding-mechanic-1")
-            return
-          }
-          throw new Error("Failed to get mechanic profile")
-        }
-
-        if (!profile) {
-          console.log("❌ No mechanic profile found, redirecting to onboarding")
-          router.replace("/onboarding-mechanic-1")
-          return
-        }
-
-        // Validate profile ID
-        if (!profile.id || typeof profile.id !== "string") {
-          console.error("❌ Invalid profile ID:", profile.id)
-          throw new Error("Invalid profile ID")
-        }
-
-        console.log("✅ Mechanic profile found:", profile.id)
-        setMechanicId(profile.id)
-        setMechanicProfile(profile)
-
-      } catch (error: any) {
-        console.error("❌ Auth check error:", error)
-        setError(error.message || "Authentication failed")
-        router.replace("/login?error=auth_failed")
-      } finally {
-        setIsAuthLoading(false)
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.error('Auth check failed:', errorMessage)
+        router.push('/login')
       }
     }
 

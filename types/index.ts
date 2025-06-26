@@ -108,4 +108,36 @@ export interface UpcomingAppointmentsProps {
   onStart: (id: string) => Promise<boolean>
   onCancel: (id: string) => Promise<boolean>
   onUpdatePrice: (id: string, price: number) => Promise<boolean>
+}
+
+export interface AppointmentWithRelations {
+  id: string
+  status: string
+  appointment_date: string
+  location: string
+  issue_description?: string
+  selected_services?: string[]
+  car_runs?: boolean
+  payment_status?: string
+  selected_mechanic_id?: string
+  vehicles?: {
+    year: string
+    make: string
+    model: string
+    vin?: string
+    mileage?: number
+  } | null
+  mechanic_quotes?: Array<{
+    id: string
+    mechanic_id: string
+    price: number
+    eta: string
+    notes?: string
+    created_at: string
+  }>
+  quote?: {
+    id: string
+    price: number
+    created_at: string
+  }
 } 

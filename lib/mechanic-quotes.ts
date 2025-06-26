@@ -44,6 +44,87 @@ export interface MechanicQuote {
   }
 }
 
+// Define proper types for the function parameters and return values
+interface CreateQuoteParams {
+  mechanic_id: string
+  appointment_id: string
+  price: number
+  eta: string
+  notes?: string
+}
+
+interface QuoteResponse {
+  success: boolean
+  error?: string
+  data?: any
+}
+
+interface AppointmentWithRelations {
+  id: string
+  status: string
+  appointment_date: string
+  location: string
+  issue_description?: string
+  selected_services?: string[]
+  car_runs?: boolean
+  payment_status?: string
+  selected_mechanic_id?: string
+  vehicles?: {
+    year: string
+    make: string
+    model: string
+    vin?: string
+    mileage?: number
+  } | null
+  mechanic_quotes?: Array<{
+    id: string
+    mechanic_id: string
+    price: number
+    eta: string
+    notes?: string
+    created_at: string
+  }>
+  quote?: {
+    id: string
+    price: number
+    created_at: string
+  }
+}
+
+interface GetAppointmentsResponse {
+  success: boolean
+  appointments?: AppointmentWithRelations[]
+  error?: string
+}
+
+// Type for individual appointment items
+interface RawAppointment {
+  id: string
+  status: string
+  appointment_date: string
+  location: string
+  issue_description?: string
+  selected_services?: string[]
+  car_runs?: boolean
+  payment_status?: string
+  selected_mechanic_id?: string
+  vehicles: {
+    year: string
+    make: string
+    model: string
+    vin?: string
+    mileage?: number
+  } | null
+  mechanic_quotes: Array<{
+    id: string
+    mechanic_id: string
+    price: number
+    eta: string
+    notes?: string
+    created_at: string
+  }>
+}
+
 /**
  * Creates or updates a quote from a mechanic for an appointment
  */
@@ -53,35 +134,47 @@ export async function createOrUpdateQuote(
   price: number,
   eta: string,
   notes?: string
-): Promise<{ success: boolean; error?: string }> {
-  console.log('=== CREATE/UPDATE QUOTE DEBUG ===');
-  console.log('Received quote data:', {
-    mechanicId,
-    appointmentId,
-    price,
-    eta,
-    notes
-  });
-
+): Promise<QuoteResponse> {
   try {
+    console.log('=== CREATE/UPDATE QUOTE DEBUG ===');
+    console.log('Received quote data:', {
+      mechanicId,
+      appointmentId,
+      price,
+      eta,
+      notes,
+      timestamp: new Date().toISOString()
+    });
+
+    // Validate mechanic ID format and existence
+    const mechanicValidation = validateMechanicId(mechanicId);
+    if (!mechanicValidation.isValid) {
+      console.error('❌ Invalid mechanic ID:', mechanicValidation.error);
+      return { success: false, error: mechanicValidation.error };
+    }
+
     // Verify mechanic profile exists
     const { data: mechanicProfile, error: mechanicError } = await supabase
       .from('mechanic_profiles')
-      .select('id, user_id')
+      .select('id, status')
       .eq('id', mechanicId)
       .single();
 
     console.log('Mechanic profile verification:', {
+      mechanicId,
       profile: mechanicProfile,
       error: mechanicError
     });
 
-    if (mechanicError || !mechanicProfile) {
+    if (mechanicError) {
       console.error('❌ Mechanic profile verification failed:', mechanicError);
-      return { success: false, error: 'Mechanic profile not found' };
+      return { 
+        success: false, 
+        error: `Mechanic profile not found: ${mechanicError.message}` 
+      };
     }
 
-    // Verify appointment exists and is in a valid state
+    // Verify appointment exists and is valid
     const { data: appointment, error: appointmentError } = await supabase
       .from('appointments')
       .select('id, status')
@@ -89,11 +182,12 @@ export async function createOrUpdateQuote(
       .single();
 
     console.log('Appointment verification:', {
+      appointmentId,
       appointment,
       error: appointmentError
     });
 
-    if (appointmentError || !appointment) {
+    if (appointmentError) {
       console.error('❌ Appointment verification failed:', appointmentError);
       return { success: false, error: 'Appointment not found' };
     }
@@ -103,195 +197,190 @@ export async function createOrUpdateQuote(
       return { success: false, error: `Appointment is ${appointment.status}` };
     }
 
-    // Create or update quote using upsert
-    const quoteData = {
+    // Prepare quote data
+    const quoteData: CreateQuoteParams = {
       mechanic_id: mechanicId,
       appointment_id: appointmentId,
       price,
       eta: new Date(eta).toISOString(),
-      notes: notes || '',
-      status: 'pending',
-      updated_at: new Date().toISOString()
+      notes: notes || ''
     };
 
     console.log('Upserting quote with data:', quoteData);
 
+    // Upsert the quote (insert or update if exists)
     const { data: result, error: upsertError } = await supabase
       .from('mechanic_quotes')
-      .upsert(quoteData, {
-        onConflict: 'mechanic_id,appointment_id'
+      .upsert(quoteData, { 
+        onConflict: 'mechanic_id,appointment_id',
+        ignoreDuplicates: false 
       })
-      .select()
-      .single();
+      .select();
 
     console.log('Quote upsert result:', {
       result,
-      error: upsertError
+      error: upsertError,
+      resultCount: result?.length
     });
 
     if (upsertError) {
       console.error('❌ Quote upsert failed:', upsertError);
-      return { success: false, error: 'Failed to create/update quote' };
+      return { success: false, error: `Failed to create quote: ${upsertError.message}` };
     }
 
     console.log('✅ Quote operation successful:', result);
-    return { success: true };
-  } catch (error) {
+    return { success: true, data: result };
+
+  } catch (error: unknown) {
     console.error('❌ Unexpected error in createOrUpdateQuote:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return { success: false, error: errorMessage };
   }
 }
 
 /**
  * Gets all quotes for an appointment with real-time updates
  */
-export async function getQuotesForAppointment(appointmentId: string): Promise<{
-  success: boolean
-  quotes?: MechanicQuote[]
-  error?: string
-}> {
+export async function getQuotesForAppointment(appointmentId: string): Promise<any[]> {
   try {
-    const { data, error } = await supabase
+    const { data: quotes, error } = await supabase
       .from("mechanic_quotes")
       .select(`
         *,
-        mechanic:mechanic_id(
-          id,
-          first_name,
-          last_name,
-          profile_image_url,
-          metadata,
-          rating,
-          review_count
-        )
+        mechanic_profiles(first_name, last_name)
       `)
       .eq("appointment_id", appointmentId)
       .order("created_at", { ascending: true })
 
     if (error) {
       console.error("Error getting quotes for appointment:", error)
-      return { success: false, error: "Failed to get quotes" }
+      return []
     }
 
-    return { success: true, quotes: data }
-  } catch (err) {
+    return quotes || []
+  } catch (err: unknown) {
     console.error("Exception in getQuotesForAppointment:", err)
-    return { success: false, error: "An unexpected error occurred" }
+    return []
   }
 }
 
 /**
  * Gets all available appointments for a mechanic to quote
  */
-export async function getAvailableAppointmentsForMechanic(mechanicId: string): Promise<{ success: boolean; appointments?: Appointment[]; error?: string }> {
+export async function getAvailableAppointmentsForMechanic(mechanicId: string): Promise<GetAppointmentsResponse> {
   try {
-    console.log("🔍 getAvailableAppointmentsForMechanic called with:", { 
-      mechanicId, 
+    console.log("🔍 getAvailableAppointmentsForMechanic called with:", {
+      mechanicId,
       type: typeof mechanicId,
-      isString: typeof mechanicId === 'string',
-      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
-      isZero: mechanicId === '0'
-    })
+      length: mechanicId?.length,
+      timestamp: new Date().toISOString()
+    });
 
     // Validate mechanic ID
-    const validation = validateMechanicId(mechanicId)
+    const validation = validateMechanicId(mechanicId);
     if (!validation.isValid) {
-      console.error("❌ Mechanic ID validation failed:", validation.error)
-      return { success: false, error: validation.error }
+      console.error("❌ Mechanic ID validation failed:", validation.error);
+      return { success: false, error: validation.error };
     }
 
-    console.log("✅ mechanicId validation passed:", { 
-      mechanicId, 
-      type: typeof mechanicId,
-      isString: typeof mechanicId === 'string',
-      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
-      isZero: mechanicId === '0'
-    })
-    
+    console.log("✅ mechanicId validation passed:", {
+      mechanicId,
+      isValid: validation.isValid
+    });
+
+    // Get pending appointments that this mechanic hasn't quoted or skipped
     const { data: appointments, error } = await supabase
-      .from("appointments")
-      .select("*, vehicles!fk_appointment_id(*)")
-      .eq("status", "pending")
-      .order("appointment_date", { ascending: true })
+      .from('appointments')
+      .select(`
+        *,
+        vehicles!fk_appointment_id(*),
+        mechanic_quotes!appointment_id(*),
+        mechanic_skipped_appointments!appointment_id(*)
+      `)
+      .eq('status', 'pending')
+      .not('mechanic_quotes.mechanic_id', 'eq', mechanicId)
+      .not('mechanic_skipped_appointments.mechanic_id', 'eq', mechanicId);
 
     if (error) {
-      console.error("❌ Error fetching appointments:", error)
-      return { success: false, error: error.message }
+      console.error("❌ Error fetching appointments:", error);
+      return { success: false, error: error.message };
     }
 
-    console.log("✅ Found available appointments:", { count: appointments?.length || 0 })
-    return { success: true, appointments: appointments || [] }
-  } catch (error: any) {
-    console.error("❌ Error getting available appointments:", { 
-      error, 
-      mechanicId, 
-      type: typeof mechanicId,
-      isString: typeof mechanicId === 'string',
-      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
-      isZero: mechanicId === '0'
-    })
-    return { success: false, error: error.message }
+    console.log("✅ Found available appointments:", { count: appointments?.length || 0 });
+    return { success: true, appointments: appointments || [] };
+
+  } catch (error: unknown) {
+    console.error("❌ Error getting available appointments:", {
+      error,
+      mechanicId,
+      timestamp: new Date().toISOString()
+    });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return { success: false, error: errorMessage };
   }
 }
 
 /**
  * Gets all appointments a mechanic has quoted
  */
-export async function getQuotedAppointmentsForMechanic(mechanicId: string): Promise<{ success: boolean; appointments?: Appointment[]; error?: string }> {
+export async function getQuotedAppointmentsForMechanic(mechanicId: string): Promise<GetAppointmentsResponse> {
   try {
-    console.log("🔍 getQuotedAppointmentsForMechanic called with:", { 
-      mechanicId, 
+    console.log("🔍 getQuotedAppointmentsForMechanic called with:", {
+      mechanicId,
       type: typeof mechanicId,
-      isString: typeof mechanicId === 'string',
-      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
-      isZero: mechanicId === '0'
-    })
+      length: mechanicId?.length,
+      timestamp: new Date().toISOString()
+    });
 
     // Validate mechanic ID
-    const validation = validateMechanicId(mechanicId)
+    const validation = validateMechanicId(mechanicId);
     if (!validation.isValid) {
-      console.error("❌ Mechanic ID validation failed:", validation.error)
-      return { success: false, error: validation.error }
+      console.error("❌ Mechanic ID validation failed:", validation.error);
+      return { success: false, error: validation.error };
     }
 
-    console.log("✅ mechanicId validation passed:", { 
-      mechanicId, 
-      type: typeof mechanicId,
-      isString: typeof mechanicId === 'string',
-      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
-      isZero: mechanicId === '0'
-    })
-    
+    console.log("✅ mechanicId validation passed:", {
+      mechanicId,
+      isValid: validation.isValid
+    });
+
+    // Get appointments where this mechanic has submitted quotes
     const { data: appointments, error } = await supabase
-      .from("appointments")
-      .select("*, vehicles!fk_appointment_id(*), mechanic_quotes!inner(*)")
-      .eq("mechanic_quotes.mechanic_id", mechanicId)
-      .order("appointment_date", { ascending: true })
+      .from('appointments')
+      .select(`
+        *,
+        vehicles!fk_appointment_id(*),
+        mechanic_quotes!appointment_id(*)
+      `)
+      .eq('mechanic_quotes.mechanic_id', mechanicId)
+      .in('status', ['pending', 'quoted']);
 
     if (error) {
-      console.error("❌ Error fetching quoted appointments:", error)
-      return { success: false, error: error.message }
+      console.error("❌ Error fetching quoted appointments:", error);
+      return { success: false, error: error.message };
     }
 
-    // Transform the data to match the Appointment interface
-    const transformedAppointments = appointments?.map((appointment: any) => ({
+    // Transform the data to match expected format with proper typing
+    const transformedAppointments = appointments?.map((appointment: RawAppointment): AppointmentWithRelations => ({
       ...appointment,
-      quote: appointment.mechanic_quotes?.[0] ? {
-        id: appointment.mechanic_quotes[0].id,
-        price: appointment.mechanic_quotes[0].price,
-        created_at: appointment.mechanic_quotes[0].created_at
+      quote: appointment.mechanic_quotes.find(q => q.mechanic_id === mechanicId) ? {
+        id: appointment.mechanic_quotes.find(q => q.mechanic_id === mechanicId)!.id,
+        price: appointment.mechanic_quotes.find(q => q.mechanic_id === mechanicId)!.price,
+        created_at: appointment.mechanic_quotes.find(q => q.mechanic_id === mechanicId)!.created_at
       } : undefined
-    })) || []
+    })) || [];
 
-    console.log("✅ Found quoted appointments:", { 
+    console.log("✅ Found quoted appointments:", {
       count: transformedAppointments.length,
-      mechanicId,
-      type: typeof mechanicId
-    })
-    return { success: true, appointments: transformedAppointments }
-  } catch (error: any) {
-    console.error("❌ Error getting quoted appointments:", error)
-    return { success: false, error: error.message }
+      mechanicId
+    });
+
+    return { success: true, appointments: transformedAppointments };
+
+  } catch (error: unknown) {
+    console.error("❌ Error getting quoted appointments:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return { success: false, error: errorMessage };
   }
 }
 
