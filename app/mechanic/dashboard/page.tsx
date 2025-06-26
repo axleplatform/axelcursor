@@ -16,7 +16,7 @@ import {
 } from "@/lib/mechanic-quotes"
 import { formatDate, validateMechanicId } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
-import type { ChangeEvent } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { ProfileDropdown } from "@/components/profile-dropdown"
 
@@ -195,7 +195,7 @@ export default function MechanicDashboard() {
       }
       
       // Filter for upcoming appointments (confirmed or selected by this mechanic)
-      const upcomingAppointments = allAppointments?.filter(apt => {
+      const upcomingAppointments = allAppointments?.filter((apt: any) => {
         return apt.selected_mechanic_id === mechanicId || 
                (apt.status === 'confirmed' && apt.mechanic_quotes?.some((q: any) => q.mechanic_id === mechanicId));
       }) || [];
@@ -717,8 +717,8 @@ export default function MechanicDashboard() {
       }
 
       // Update local state - immediately remove the skipped appointment
-      setAvailableAppointments(prev => 
-        prev.filter(a => a.id !== appointment.id)
+      setAvailableAppointments((prev: Appointment[]) => 
+        prev.filter((a: Appointment) => a.id !== appointment.id)
       );
 
       // Show success message
@@ -728,7 +728,7 @@ export default function MechanicDashboard() {
       await fetchInitialAppointments();
 
       // Move to next appointment if available
-      const nextAppointment = availableAppointments.find(a => a.id !== appointment.id);
+      const nextAppointment = availableAppointments.find((a: Appointment) => a.id !== appointment.id);
       if (nextAppointment) {
         setCurrentAvailableIndex(availableAppointments.indexOf(nextAppointment));
       }
@@ -761,8 +761,8 @@ export default function MechanicDashboard() {
   const handleUpdateQuote = async (appointmentId: string) => {
     try {
       const myQuote = upcomingAppointments
-        .find(apt => apt.id === appointmentId)
-        ?.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
+        .find((apt: Appointment) => apt.id === appointmentId)
+        ?.mechanic_quotes?.find((q: any) => q.mechanic_id === mechanicId);
       
       if (!myQuote) {
         showNotification('Quote not found', 'error');
@@ -813,8 +813,8 @@ export default function MechanicDashboard() {
 
     try {
       // Get the appointment and quote details
-      const appointment = upcomingAppointments.find(apt => apt.id === appointmentId);
-      const myQuote = appointment?.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
+      const appointment = upcomingAppointments.find((apt: Appointment) => apt.id === appointmentId);
+      const myQuote = appointment?.mechanic_quotes?.find((q: any) => q.mechanic_id === mechanicId);
       
       console.log('2. Found appointment and quote:', {
         appointment,

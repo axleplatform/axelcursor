@@ -4,10 +4,6 @@ const nextConfig = {
     // Enable ESLint during builds
     ignoreDuringBuilds: false,
   },
-  typescript: {
-    // Temporarily disable TypeScript checking during builds for deployment
-    ignoreBuildErrors: true,
-  },
   images: {
     unoptimized: true,
     domains: ['localhost'],
