@@ -1,8 +1,8 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useCallback, type FormEvent, useEffect } from "react"
+import * as React from "react"
+import { useState, useCallback, useEffect } from "react"
+import type { FormEvent, ChangeEvent } from 'react'
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { MapPin, ChevronRight, User } from "lucide-react"
@@ -10,7 +10,6 @@ import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
-// Import the DateTimeSelector component
 import { DateTimeSelector } from "@/components/date-time-selector"
 import { toast } from "@/components/ui/use-toast"
 
@@ -24,12 +23,20 @@ interface AppointmentFormData {
   mileage: string
   appointmentDate: string
   appointmentTime: string
+  issueDescription?: string
+  selectedServices?: string[]
+  carRuns?: boolean
 }
 
-export default function HomePage() {
+interface SupabaseQueryResult {
+  data: any
+  error: any
+}
+
+export default function HomePage(): React.JSX.Element {
   const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [errors, setErrors] = useState<Partial<AppointmentFormData>>({})
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [errors, setErrors] = useState<Partial<AppointmentFormData & { general?: string }>>({})
   const [formData, setFormData] = useState<AppointmentFormData>({
     address: "",
     vin: "",
@@ -43,12 +50,9 @@ export default function HomePage() {
 
   // Add debug logging
   useEffect(() => {
-    console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
-    console.log("Supabase Anon Key exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-    
     // Test Supabase connection
     supabase.from('appointments').select('count').then(
-      ({ data, error }) => {
+      ({ data, error }: SupabaseQueryResult) => {
         if (error) {
           console.error("Supabase connection error:", error)
         } else {
@@ -95,18 +99,18 @@ export default function HomePage() {
   ]
 
   // Handle form input changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = React.useCallback((e: ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev: AppointmentFormData) => ({ ...prev, [name]: value }))
 
     // Clear error for this field if it exists
     if (errors[name as keyof AppointmentFormData]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }))
+      setErrors((prev: typeof errors) => ({ ...prev, [name]: undefined }))
     }
-  }
+  }, [errors])
 
   // Validate form fields
-  const validateForm = (): boolean => {
+  const validateForm = React.useCallback((): boolean => {
     const newErrors: { [key: string]: string } = {}
 
     if (!formData.address.trim()) {
@@ -145,10 +149,10 @@ export default function HomePage() {
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
-  }
+  }, [formData])
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSubmit = React.useCallback(async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
     
     if (!validateForm()) {
@@ -158,18 +162,6 @@ export default function HomePage() {
     setIsSubmitting(true)
 
     try {
-      // Environment check
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        throw new Error("Supabase configuration missing")
-      }
-
-      // Refresh schema cache
-      try {
-        await refreshSchemaCache()
-      } catch (cacheError) {
-        // Continue even if cache refresh fails
-      }
-
       const appointmentDate = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`)
       
       if (isNaN(appointmentDate.getTime())) {
@@ -231,7 +223,36 @@ export default function HomePage() {
     } finally {
       setIsSubmitting(false)
     }
-  }
+  }, [formData, validateForm, router])
+
+  const handleDateTimeChange = React.useCallback((date: Date, time: string): void => {
+    // Convert the selected date and time to the format expected by the form
+    const formattedDate = date.toISOString().split("T")[0]
+
+    // Handle the "Now" case
+    let formattedTime: string
+    if (time === "Now") {
+      const now = new Date()
+      const hours = now.getHours().toString().padStart(2, "0")
+      const minutes = now.getMinutes().toString().padStart(2, "0")
+      formattedTime = `${hours}:${minutes}`
+    } else {
+      // Parse the time string (e.g., "9:30 AM") to 24-hour format
+      const [timePart, ampm] = time.split(" ")
+      let [hours, minutes] = timePart.split(":").map(Number)
+
+      if (ampm === "PM" && hours < 12) hours += 12
+      if (ampm === "AM" && hours === 12) hours = 0
+
+      formattedTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`
+    }
+
+    setFormData((prev: AppointmentFormData) => ({
+      ...prev,
+      appointmentDate: formattedDate,
+      appointmentTime: formattedTime,
+    }))
+  }, [])
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -395,34 +416,7 @@ export default function HomePage() {
             {/* Date Time Selector */}
             <div className="mb-6">
               <DateTimeSelector
-                onDateTimeChange={useCallback((date, time) => {
-                  // Convert the selected date and time to the format expected by the form
-                  const formattedDate = date.toISOString().split("T")[0]
-
-                  // Handle the "Now" case
-                  let formattedTime
-                  if (time === "Now") {
-                    const now = new Date()
-                    const hours = now.getHours().toString().padStart(2, "0")
-                    const minutes = now.getMinutes().toString().padStart(2, "0")
-                    formattedTime = `${hours}:${minutes}`
-                  } else {
-                    // Parse the time string (e.g., "9:30 AM") to 24-hour format
-                    const [timePart, ampm] = time.split(" ")
-                    let [hours, minutes] = timePart.split(":").map(Number)
-
-                    if (ampm === "PM" && hours < 12) hours += 12
-                    if (ampm === "AM" && hours === 12) hours = 0
-
-                    formattedTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`
-                  }
-
-                  setFormData((prev) => ({
-                    ...prev,
-                    appointmentDate: formattedDate,
-                    appointmentTime: formattedTime,
-                  }))
-                }, [])}
+                onDateTimeChange={handleDateTimeChange}
               />
             </div>
 
