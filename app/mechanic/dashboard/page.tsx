@@ -19,8 +19,6 @@ import { Card } from "@/components/ui/card"
 import type { ChangeEvent } from 'react'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { ProfileDropdown } from "@/components/profile-dropdown"
-import { toast } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
 
 interface Appointment {
   id: string
@@ -30,6 +28,7 @@ interface Appointment {
   issue_description?: string
   car_runs?: boolean
   selected_services?: string[]
+  payment_status?: string
   vehicles?: {
     year: string
     make: string
@@ -48,6 +47,7 @@ interface Appointment {
     mechanic_id: string
     price: number
     eta: string
+    notes?: string
   }>
   mechanic_skips?: Array<{
     mechanic_id: string
