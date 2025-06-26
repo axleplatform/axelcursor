@@ -173,6 +173,9 @@ export default function MechanicDashboard() {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
         console.error('Auth check failed:', errorMessage)
         router.push('/login')
+      } finally {
+        // Set auth loading to false after auth check completes
+        setIsAuthLoading(false)
       }
     }
 
@@ -263,36 +266,43 @@ export default function MechanicDashboard() {
     }
   }, [mechanicId])
 
-  // Add useEffect to load mechanic profile on component mount
+  // Add useEffect to load mechanic profile ONLY after auth is complete
   useEffect(() => {
+    // Only run after auth is complete and user is authenticated
+    if (isAuthLoading || !userId) {
+      return
+    }
+
     const loadMechanicProfile = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.error('No authenticated user found');
-          return;
-        }
-
-        console.log('Loading mechanic profile for user:', user.id);
+        console.log('Loading mechanic profile for user:', userId);
         
         const { data: profile, error: profileError } = await supabase
           .from('mechanic_profiles')
           .select('id, user_id, first_name, last_name')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .single();
 
         if (profileError) {
           console.error('Error loading mechanic profile:', profileError);
+          if (profileError.code === 'PGRST116') {
+            // No mechanic profile found - redirect to onboarding
+            console.log('No mechanic profile found, redirecting to onboarding');
+            router.push('/onboarding-mechanic-1');
+            return;
+          }
+          setError('Failed to load mechanic profile');
           return;
         }
 
         if (!profile) {
-          console.error('No mechanic profile found for user:', user.id);
+          console.error('No mechanic profile found for user:', userId);
+          router.push('/onboarding-mechanic-1');
           return;
         }
 
         console.log('Debug - IDs being used:', {
-          userId: user.id,
+          userId: userId,
           mechanicProfileId: profile.id,
           whatWeNeedForQuote: profile.id
         });
@@ -302,11 +312,12 @@ export default function MechanicDashboard() {
         setMechanicProfile(profile);
       } catch (error) {
         console.error('Error in loadMechanicProfile:', error);
+        setError('Failed to load mechanic profile');
       }
     };
 
     loadMechanicProfile();
-  }, []);
+  }, [userId, isAuthLoading, router]);
 
   // Add debug function for mechanic profile
   const debugMechanicProfile = async (): Promise<any> => {
