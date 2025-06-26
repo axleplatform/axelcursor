@@ -105,178 +105,131 @@ export default function HomePage() {
     }
   }
 
-  // Validate form data
+  // Validate form fields
   const validateForm = (): boolean => {
-    const newErrors: Partial<AppointmentFormData> = {}
-    console.log("Validating form data:", formData)
+    const newErrors: { [key: string]: string } = {}
 
     if (!formData.address.trim()) {
-      console.log("Address validation failed: empty address")
       newErrors.address = "Address is required"
     }
-    if (!formData.year) {
-      console.log("Year validation failed: empty year")
+
+    if (!formData.year.trim()) {
       newErrors.year = "Year is required"
     }
-    if (!formData.make) {
-      console.log("Make validation failed: empty make")
+
+    if (!formData.make.trim()) {
       newErrors.make = "Make is required"
     }
+
     if (!formData.model.trim()) {
-      console.log("Model validation failed: empty model")
       newErrors.model = "Model is required"
     }
-    if (!formData.appointmentDate) {
-      console.log("Date validation failed: empty date")
+
+    if (!formData.appointmentDate.trim()) {
       newErrors.appointmentDate = "Date is required"
     }
-    if (!formData.appointmentTime) {
-      console.log("Time validation failed: empty time")
+
+    if (!formData.appointmentTime.trim()) {
       newErrors.appointmentTime = "Time is required"
     }
 
-    // Add validation for appointment date/time
+    // Validate appointment date is not in the past
     if (formData.appointmentDate && formData.appointmentTime) {
       const appointmentDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`)
       const now = new Date()
-      console.log("Validating appointment date:", {
-        appointmentDateTime,
-        now,
-        isValid: appointmentDateTime > now
-      })
       
-      if (appointmentDateTime < now) {
-        console.log("Date validation failed: appointment in the past")
-        newErrors.appointmentDate = "Appointment date must be in the future"
+      if (appointmentDateTime <= now) {
+        newErrors.appointmentDate = "Appointment must be in the future"
       }
     }
 
-    console.log("Validation errors:", newErrors)
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   // Handle form submission
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
-    console.log("Form submission started")
-
+    
     if (!validateForm()) {
-      console.log("Form validation failed, stopping submission")
       return
     }
 
     setIsSubmitting(true)
-    console.log("Form is valid, proceeding with submission")
 
     try {
-      // Check Supabase connection first
+      // Environment check
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        console.error("Supabase environment variables missing")
-        throw new Error("Supabase environment variables are not configured")
+        throw new Error("Supabase configuration missing")
       }
 
-      // Force refresh the schema cache with error handling
-      console.log("Refreshing schema cache...")
-      const { error: cacheError } = await supabase.rpc("reload_schema_cache")
-      if (cacheError) {
-        console.warn("Schema cache refresh failed:", cacheError)
-        // Continue anyway as this is not critical
-      } else {
-        console.log("Schema cache refreshed successfully")
+      // Refresh schema cache
+      try {
+        await refreshSchemaCache()
+      } catch (cacheError) {
+        // Continue even if cache refresh fails
       }
 
-      // Combine date and time for the appointment
-      const appointmentDateTime = `${formData.appointmentDate}T${formData.appointmentTime}`
-      const now = new Date().toISOString()
-
-      // Validate appointment date is in the future
-      const appointmentDate = new Date(appointmentDateTime)
-      if (appointmentDate < new Date()) {
-        console.error("Invalid appointment date:", appointmentDate)
-        throw new Error("Appointment date must be in the future")
+      const appointmentDate = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`)
+      
+      if (isNaN(appointmentDate.getTime())) {
+        throw new Error("Invalid appointment date")
       }
 
+      // Create appointment first
       const initialAppointmentData = {
+        status: "pending",
+        appointment_date: appointmentDate.toISOString(),
         location: formData.address,
-        appointment_date: appointmentDateTime,
-        status: "draft",
-        notes: "Initial appointment details submitted",
-        mechanic_id: null,
-        created_at: now,
-        updated_at: now,
-        source: "landing_page",
-        user_id: null,
+        issue_description: formData.issueDescription,
+        selected_services: formData.selectedServices,
+        car_runs: formData.carRuns
       }
 
-      console.log("Creating appointment with data:", initialAppointmentData)
-
-      // Create the appointment with initial status
       const { data: createdAppointment, error: appointmentError } = await supabase
-        .from("appointments")
-        .insert([initialAppointmentData])
-        .select()
+        .from('appointments')
+        .insert(initialAppointmentData)
+        .select('id')
+        .single()
 
       if (appointmentError) {
-        console.error("Error creating appointment:", appointmentError)
-        throw new Error(`Failed to create appointment: ${appointmentError.message}`)
+        throw appointmentError
       }
 
-      if (!createdAppointment || createdAppointment.length === 0) {
-        console.error("No appointment data returned after creation")
-        throw new Error("No appointment data returned after creation")
+      if (!createdAppointment?.id) {
+        throw new Error("Failed to create appointment")
       }
 
-      console.log("Appointment created successfully:", createdAppointment)
+      const appointmentId = createdAppointment.id
 
-      // Create the vehicle with the appointment_id
-      const appointmentId = createdAppointment[0].id
+      // Create vehicle with foreign key
       const vehicleData = {
-        appointment_id: appointmentId,
-        vin: formData.vin || null,
-        year: Number.parseInt(formData.year),
+        appointment_id: appointmentId, // Foreign key to appointment
+        year: formData.year,
         make: formData.make,
         model: formData.model,
-        mileage: formData.mileage ? Number.parseInt(formData.mileage) : null,
-        created_at: now,
-        updated_at: now,
+        mileage: parseInt(formData.mileage) || 0,
+        vin: formData.vin || null
       }
-
-      console.log("Creating vehicle with data:", vehicleData)
 
       const { error: vehicleError } = await supabase
-        .from("vehicles")
-        .insert([vehicleData])
+        .from('vehicles')
+        .insert(vehicleData)
 
       if (vehicleError) {
-        console.error("Error creating vehicle:", vehicleError)
-        // Try to delete the appointment if vehicle creation fails
-        console.log("Attempting to delete appointment after vehicle creation failure")
-        await supabase.from("appointments").delete().eq("id", appointmentId)
-        throw new Error(`Failed to create vehicle: ${vehicleError.message}`)
+        // If vehicle creation fails, clean up the appointment
+        await supabase.from('appointments').delete().eq('id', appointmentId)
+        throw vehicleError
       }
 
-      console.log("Vehicle created successfully for appointment:", appointmentId)
-
-      // Show success message
-      toast({
-        title: "Success",
-        description: "Appointment created successfully! Redirecting to next step...",
-      })
-
-      // Navigate to the book appointment page
-      console.log("Redirecting to book appointment page")
-      router.push(`/book-appointment?appointmentId=${appointmentId}`)
-    } catch (error) {
-      console.error("Error in appointment creation:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create appointment. Please try again.",
-        variant: "destructive",
-      })
+      // Success - redirect to book appointment page
+      router.push(`/book-appointment?appointment_id=${appointmentId}`)
+      
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+      setErrors({ general: errorMessage })
     } finally {
       setIsSubmitting(false)
-      console.log("Form submission completed")
     }
   }
 

@@ -12,7 +12,7 @@ export interface Vehicle {
 export interface MechanicQuote {
   id: string
   mechanic_id: string
-  appointment_id: string
+  appointment_id?: string
   price: number
   eta: string
   notes?: string

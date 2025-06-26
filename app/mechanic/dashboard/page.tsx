@@ -36,6 +36,8 @@ export default function MechanicDashboard() {
   const [mechanicProfile, setMechanicProfile] = useState<MechanicProfile | null>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   // Appointment states
   const [availableAppointments, setAvailableAppointments] = useState<Appointment[]>([])
@@ -1028,7 +1030,7 @@ export default function MechanicDashboard() {
 
   // Add handleEditAppointment function
   const handleEditAppointment = (appointment: Appointment) => {
-    const myQuote = appointment.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
+    const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
     
     if (!myQuote) {
       showNotification('No quote found for this appointment', 'error');
@@ -1212,8 +1214,8 @@ export default function MechanicDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                {upcomingAppointments.map((appointment) => {
-                  const myQuote = appointment.mechanic_quotes?.find(q => q.mechanic_id === mechanicId);
+                {upcomingAppointments.map((appointment: Appointment) => {
+                  const myQuote = appointment.mechanic_quotes?.find((q: any) => q.mechanic_id === mechanicId);
                   const isSelected = appointment.selected_mechanic_id === mechanicId;
                   const isEditing = selectedAppointment?.id === appointment.id;
                   const isConfirmed = appointment.payment_status === 'paid' || appointment.status === 'confirmed';
