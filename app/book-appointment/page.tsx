@@ -473,7 +473,11 @@ export default function BookAppointment() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
-  const appointmentId = searchParams.get("appointmentId") || pathname.split("/").pop()
+  
+  // Fix the appointment ID extraction - check for both parameter names
+  // but don't fall back to pathname for route-based IDs
+  const appointmentId = searchParams.get("appointment_id") || searchParams.get("appointmentId") || null
+  
   const [formData, setFormData] = useState<BookingFormData>({
     issueDescription: "",
     phoneNumber: "",
@@ -496,12 +500,28 @@ export default function BookAppointment() {
   const [hasInteractedWithTextArea, setHasInteractedWithTextArea] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [appointmentData, setAppointmentData] = useState<AppointmentData | null>(null)
-  // Fetch existing appointment and vehicle data
+  
+  // Fetch existing appointment and vehicle data ONLY if we have a valid appointment ID
   useEffect(() => {
     const fetchAppointmentData = async () => {
-      if (!appointmentId) return;
-      setIsLoading(true);
+      // Only fetch if we have a valid UUID-format appointment ID
+      if (!appointmentId) {
+        console.log("No appointment ID provided - this is a new appointment creation")
+        setIsLoading(false)
+        return
+      }
+      
+      // Validate that the appointmentId looks like a UUID (basic check)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      if (!uuidRegex.test(appointmentId)) {
+        console.log("Invalid appointment ID format, treating as new appointment:", appointmentId)
+        setIsLoading(false)
+        return
+      }
+      
+      setIsLoading(true)
       try {
+        console.log("Fetching appointment data for ID:", appointmentId)
         const { data, error } = await supabase
           .from("appointments")
           .select(`
@@ -509,10 +529,20 @@ export default function BookAppointment() {
             vehicles!fk_appointment_id(*)
           `)
           .eq("id", appointmentId)
-          .single();
-        if (error) throw error;
+          .single()
+
+        if (error) {
+          if (error.code === 'PGRST116') {
+            console.log("Appointment not found, treating as new appointment")
+          } else {
+            console.error("Error fetching appointment data:", error)
+          }
+          setIsLoading(false)
+          return
+        }
+
         if (data) {
-          setAppointmentData(data);
+          setAppointmentData(data)
           // --- PRE-FILL FORM DATA ---
           setFormData(prev => ({
             ...prev,
@@ -526,17 +556,18 @@ export default function BookAppointment() {
             make: data.vehicles?.make || "",
             model: data.vehicles?.model || "",
             mileage: data.vehicles?.mileage?.toString() || "",
-          }));
-          console.log("Fetched and pre-filled appointment data:", data);
+          }))
+          console.log("Fetched and pre-filled appointment data:", data)
         }
-      } catch (error) {
-        console.error("Error fetching appointment data:", error);
+      } catch (error: unknown) {
+        console.error("Error fetching appointment data:", error)
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
-    fetchAppointmentData();
-  }, [appointmentId]);
+    }
+
+    fetchAppointmentData()
+  }, [appointmentId])
   // Format phone number as user types
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Remove all non-numeric characters
