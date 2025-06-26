@@ -2,7 +2,7 @@
 
 import React from "react"
 import { useState, useEffect } from "react"
-import type { ChangeEvent, FormEvent } from 'react'
+import type { ChangeEvent } from 'react'
 import { useRouter } from "next/navigation"
 import { Search, Loader2, Clock, MapPin, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
