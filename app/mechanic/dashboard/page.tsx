@@ -128,12 +128,12 @@ export default function MechanicDashboard() {
       if (error) throw error
 
       // Separate available vs quoted appointments
-      const available = allAppointments?.filter(apt => 
+      const available = allAppointments?.filter((apt: Appointment) => 
         apt.status === 'pending' && 
         !apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId)
       ) || []
       
-      const quoted = allAppointments?.filter(apt => 
+      const quoted = allAppointments?.filter((apt: Appointment) => 
         apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId)
       ) || []
         
@@ -307,7 +307,7 @@ export default function MechanicDashboard() {
   }, []);
 
   // Add debug function for mechanic profile
-  const debugMechanicProfile = async () => {
+  const debugMechanicProfile = async (): Promise<any> => {
     const { data: { user } } = await supabase.auth.getUser();
     console.log('=== MECHANIC PROFILE DEBUG ===');
     console.log('1. Current auth user ID:', user?.id);
@@ -335,7 +335,7 @@ export default function MechanicDashboard() {
   };
 
   // Add function to create mechanic profile if needed
-  const createMechanicProfile = async () => {
+  const createMechanicProfile = async (): Promise<any> => {
     const { data: { user } } = await supabase.auth.getUser();
     
     const { data: newProfile, error } = await supabase
@@ -359,7 +359,7 @@ export default function MechanicDashboard() {
   };
 
   // Update handleSubmitQuote with debugging
-  const handleSubmitQuote = async (appointmentId: string, price: number, eta: string, notes?: string) => {
+  const handleSubmitQuote = async (appointmentId: string, price: number, eta: string, notes?: string): Promise<void> => {
     try {
       setIsProcessing(true);
       console.log('=== QUOTE SUBMISSION DEBUG ===');
@@ -439,11 +439,12 @@ export default function MechanicDashboard() {
 
       // Refresh appointments after successful quote
       await fetchInitialAppointments();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error submitting quote:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to submit quote. Please try again.";
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to submit quote. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -452,7 +453,7 @@ export default function MechanicDashboard() {
   };
 
   // Handle skipping an appointment
-  const handleSkipAppointment = async (appointment: Appointment) => {
+  const handleSkipAppointment = async (appointment: Appointment): Promise<void> => {
     if (!appointment.id) {
       console.error('❌ Skip failed: No appointment ID');
       showNotification('Invalid appointment', 'error');
@@ -627,7 +628,7 @@ export default function MechanicDashboard() {
         setCurrentAvailableIndex(availableAppointments.indexOf(nextAppointment));
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Skip process failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       showNotification(errorMessage, 'error');
@@ -637,14 +638,14 @@ export default function MechanicDashboard() {
   };
 
   // Navigate through available appointments
-  const goToNextAvailable = () => {
+  const goToNextAvailable = (): void => {
     if (availableAppointments.length > 1) {
       setCurrentAvailableIndex((prev: number) => (prev + 1) % availableAppointments.length)
       setPriceInput("")
     }
   }
 
-  const goToPrevAvailable = () => {
+  const goToPrevAvailable = (): void => {
     if (availableAppointments.length > 1) {
       setCurrentAvailableIndex((prev: number) => (prev === 0 ? availableAppointments.length - 1 : prev - 1))
       setPriceInput("")

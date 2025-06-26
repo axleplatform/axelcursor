@@ -19,24 +19,24 @@ export default function LoginPage() {
   const [isResendingEmail, setIsResendingEmail] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     setIsLoading(true)
-    setError(null)
+    setError("")
 
     try {
       console.log("🔑 Starting login process...")
       
-      // Create Supabase client for auth operations
-      const supabaseClient = createBrowserClient(
+      if (!email || !password) {
+        throw new Error("Please enter both email and password")
+      }
+
+      const { data, error: signInError } = await createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      
-      // Sign in with password using SSR client
-      const { data, error: signInError } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password,
+      ).auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
       })
 
       if (signInError) {
@@ -44,52 +44,61 @@ export default function LoginPage() {
         throw signInError
       }
 
-      if (!data?.user) {
-        throw new Error("No user data returned")
+      if (!data.user) {
+        throw new Error("Login failed - no user data received")
       }
 
       console.log("✅ Login successful, user:", data.user.id)
-
-      // Refresh the router to sync session state
-      router.refresh()
       
-      // Use Next.js router for navigation
-      router.push('/mechanic/dashboard')
+      // Check if this is a mechanic
+      const { data: profile } = await createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      ).from('mechanic_profiles')
+        .select('id')
+        .eq('user_id', data.user.id)
+        .single()
 
-    } catch (error: any) {
+      if (profile) {
+        router.push('/mechanic/dashboard')
+      } else {
+        router.push('/')
+      }
+    } catch (error: unknown) {
       console.error("❌ Error:", error)
-      setError(error.message || "Failed to log in")
+      const errorMessage = error instanceof Error ? error.message : 'Login failed'
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleResendConfirmationEmail = async () => {
+  const handleResendConfirmationEmail = async (): Promise<void> => {
     if (!email) {
-      setError("Please enter your email address")
+      setError("Please enter your email address first")
       return
     }
 
     setIsResendingEmail(true)
-    setError(null)
-
     try {
-      // Create Supabase client for auth operations
-      const supabaseClient = createBrowserClient(
+      const { error } = await createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      
-      const { error } = await supabaseClient.auth.resend({
+      ).auth.resend({
         type: 'signup',
-        email,
+        email: email.trim(),
       })
 
-      if (error) throw error
+      if (error) {
+        throw error
+      }
 
+      setError("")
       setResendSuccess(true)
-    } catch (error: any) {
-      setError(error.message)
+    } catch (error: unknown) {
+      console.error("❌ Error:", error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resend confirmation email'
+      setError(errorMessage)
     } finally {
       setIsResendingEmail(false)
     }

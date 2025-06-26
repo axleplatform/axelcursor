@@ -30,25 +30,20 @@ export default function MechanicOnboardingStep1Page() {
 
   // Check if user is authenticated
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuth = async (): Promise<void> => {
       try {
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser()
-
-        if (authError) throw authError
-
-        if (!user) {
-          // Not authenticated, redirect to signup
-          router.push("/onboarding/mechanic/signup")
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) throw error
+        
+        if (!session?.user) {
+          router.push('/login')
           return
         }
-
-        setUser(user)
+        
+        setUser(session.user)
 
         // Check if user already has a mechanic profile
-        const profile = await getMechanicProfile(user.id)
+        const profile = await getMechanicProfile(session.user.id)
 
         if (profile) {
           setProfileId(profile.id)
@@ -61,9 +56,10 @@ export default function MechanicOnboardingStep1Page() {
             phoneNumber: profile.phone_number || "",
           })
         }
-      } catch (error: any) {
-        console.error("Auth check error:", error)
-        setError("Authentication error. Please try logging in again.")
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Authentication failed'
+        console.error('Auth error:', errorMessage)
+        router.push('/login')
       } finally {
         setIsLoading(false)
       }
@@ -97,19 +93,19 @@ export default function MechanicOnboardingStep1Page() {
   }
 
   // Validate form data
-  const validateForm = () => {
-    const errors = []
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {}
 
     if (!formData.firstName.trim()) {
-      errors.push("First name is required")
+      newErrors.firstName = "First name is required"
     }
 
     if (!formData.lastName.trim()) {
-      errors.push("Last name is required")
+      newErrors.lastName = "Last name is required"
     }
 
     if (!formData.dateOfBirth) {
-      errors.push("Date of birth is required")
+      newErrors.dateOfBirth = "Date of birth is required"
     } else {
       // Check if user is at least 18 years old
       const dob = new Date(formData.dateOfBirth)
@@ -118,27 +114,28 @@ export default function MechanicOnboardingStep1Page() {
       const monthDiff = today.getMonth() - dob.getMonth()
 
       if (age < 18 || (age === 18 && (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())))) {
-        errors.push("You must be at least 18 years old")
+        newErrors.dateOfBirth = "You must be at least 18 years old"
       }
     }
 
     if (!formData.phoneNumber || formData.phoneNumber.replace(/\D/g, "").length < 10) {
-      errors.push("Valid phone number is required")
+      newErrors.phoneNumber = "Valid phone number is required"
     }
 
-    if (errors.length > 0) {
-      setError(errors.join(". "))
-      return false
-    }
-
-    return true
+    setError(newErrors.dateOfBirth || newErrors.phoneNumber || newErrors.firstName || newErrors.lastName ? newErrors.dateOfBirth || newErrors.phoneNumber || newErrors.firstName || newErrors.lastName : null)
+    return Object.keys(newErrors).length === 0
   }
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
-    setError(null)
+    
+    if (!validateForm()) {
+      return
+    }
+
     setIsSaving(true)
+    setError(null)
 
     try {
       if (!user) {
@@ -251,12 +248,13 @@ export default function MechanicOnboardingStep1Page() {
 
       // Redirect to next step
       router.push("/onboarding-mechanic-2")
-    } catch (error: any) {
-      console.error("❌ Form submission error:", error)
-      setError(error.message || "An error occurred while saving your information")
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save information'
+      console.error('Error saving profile:', errorMessage)
+      setError(errorMessage)
       toast({
         title: "Error",
-        description: error.message || "Please try again",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
