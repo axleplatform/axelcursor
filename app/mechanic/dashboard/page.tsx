@@ -211,14 +211,14 @@ export default function MechanicDashboard() {
     if (!validateMechanicId(mechanicId)) {
       console.error("❌ Invalid mechanicId, redirecting to login")
       setError("Invalid mechanic ID")
-      toast({
+          toast({
         title: "Error",
         description: "Invalid mechanic ID. Please try logging in again.",
-        variant: "destructive",
-      })
+            variant: "destructive",
+          })
       window.location.href = "/login"
-      return
-    }
+          return
+        }
 
     // Subscribe to appointment changes
     const appointmentsSubscription = supabase
@@ -270,8 +270,8 @@ export default function MechanicDashboard() {
   useEffect(() => {
     // Only run after auth is complete and user is authenticated
     if (isAuthLoading || !userId) {
-      return
-    }
+          return
+        }
 
     const loadMechanicProfile = async () => {
       try {
@@ -405,10 +405,10 @@ export default function MechanicDashboard() {
       // Validate ETA selection
       if (!selectedDate || !selectedTime) {
         setShowETAError(true);
-        toast({
+            toast({
           title: "Error",
           description: "Please select both date and time for when you can show up.",
-          variant: "destructive",
+              variant: "destructive",
         });
         return;
       }
@@ -455,12 +455,12 @@ export default function MechanicDashboard() {
     } catch (error: unknown) {
       console.error("Error submitting quote:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to submit quote. Please try again.";
-      toast({
-        title: "Error",
+        toast({
+          title: "Error",
         description: errorMessage,
-        variant: "destructive",
+          variant: "destructive",
       });
-    } finally {
+      } finally {
       setIsProcessing(false);
     }
   };
@@ -645,7 +645,7 @@ export default function MechanicDashboard() {
       console.error('❌ Skip process failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       showNotification(errorMessage, 'error');
-    } finally {
+      } finally {
       setIsProcessing(false);
     }
   };
@@ -670,7 +670,8 @@ export default function MechanicDashboard() {
     try {
       const myQuote = upcomingAppointments
         .find((apt: Appointment) => apt.id === appointmentId)
-        ?.mechanic_quotes?.find((q: any) => q.mechanic_id === mechanicId);
+        ?.mechanic_quotes
+        ?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
       
       if (!myQuote) {
         showNotification('Quote not found', 'error');
@@ -722,7 +723,7 @@ export default function MechanicDashboard() {
     try {
       // Get the appointment and quote details
       const appointment = upcomingAppointments.find((apt: Appointment) => apt.id === appointmentId);
-      const myQuote = appointment?.mechanic_quotes?.find((q: any) => q.mechanic_id === mechanicId);
+      const myQuote = appointment?.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
       
       console.log('2. Found appointment and quote:', {
         appointment,
@@ -1226,7 +1227,7 @@ export default function MechanicDashboard() {
             ) : (
               <div className="space-y-4">
                 {upcomingAppointments.map((appointment: Appointment) => {
-                  const myQuote = appointment.mechanic_quotes?.find((q: any) => q.mechanic_id === mechanicId);
+                  const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
                   const isSelected = appointment.selected_mechanic_id === mechanicId;
                   const isEditing = selectedAppointment?.id === appointment.id;
                   const isConfirmed = appointment.payment_status === 'paid' || appointment.status === 'confirmed';

@@ -68,8 +68,9 @@ export default function MechanicOnboardingStep2Page() {
             travelDistance: profile.service_radius?.toString() || "",
           })
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Auth check error:", error)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
         setError("Authentication error. Please try logging in again.")
       } finally {
         setIsLoading(false)
@@ -197,9 +198,10 @@ export default function MechanicOnboardingStep2Page() {
 
       // Redirect to next step
       router.push("/onboarding-mechanic-3")
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving data:", error)
-      setError("Failed to save your information. Please try again. " + (error.message || ""))
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      setError("Failed to save your information. Please try again. " + errorMessage)
 
       toast({
         title: "Error",

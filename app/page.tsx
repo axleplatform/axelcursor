@@ -29,8 +29,8 @@ interface AppointmentFormData {
 }
 
 interface SupabaseQueryResult {
-  data: any
-  error: any
+  data: unknown
+  error: unknown
 }
 
 export default function HomePage(): React.JSX.Element {

@@ -101,23 +101,24 @@ export default function MechanicSignupPage() {
           // Redirect to the next onboarding step
           router.push("/onboarding-mechanic-1")
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (!isActive) return
 
         console.error("Error during signup:", error)
 
         // Check for rate limit errors in the caught error
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
         if (
-          error.message &&
-          (error.message.toLowerCase().includes("rate limit") ||
-            error.message.toLowerCase().includes("too many requests") ||
-            error.message.toLowerCase().includes("exceeded"))
+          errorMessage &&
+          (errorMessage.toLowerCase().includes("rate limit") ||
+            errorMessage.toLowerCase().includes("too many requests") ||
+            errorMessage.toLowerCase().includes("exceeded"))
         ) {
-          console.warn("Rate limit hit during signup:", error.message)
+          console.warn("Rate limit hit during signup:", errorMessage)
           setIsRateLimited(true)
           setError("Too many signup attempts. Please wait a few minutes and try again.")
         } else {
-          setError(error.message || "An error occurred during signup. Please try again.")
+          setError(errorMessage || "An error occurred during signup. Please try again.")
         }
       } finally {
         if (isActive) {
@@ -186,21 +187,22 @@ export default function MechanicSignupPage() {
           throw error
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error during Google sign-in:", error)
 
       // Check for rate limit errors in the caught error
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       if (
-        error.message &&
-        (error.message.toLowerCase().includes("rate limit") ||
-          error.message.toLowerCase().includes("too many requests") ||
-          error.message.toLowerCase().includes("exceeded"))
+        errorMessage &&
+        (errorMessage.toLowerCase().includes("rate limit") ||
+          errorMessage.toLowerCase().includes("too many requests") ||
+          errorMessage.toLowerCase().includes("exceeded"))
       ) {
-        console.warn("Rate limit hit during Google sign-in:", error.message)
+        console.warn("Rate limit hit during Google sign-in:", errorMessage)
         setIsRateLimited(true)
         setError("Too many sign-in attempts. Please wait a few minutes and try again.")
       } else {
-        setError(error.message || "An error occurred during sign-in. Please try again.")
+        setError(errorMessage || "An error occurred during sign-in. Please try again.")
       }
     } finally {
       setIsLoading(false)
