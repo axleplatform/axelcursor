@@ -201,10 +201,21 @@ export default function MechanicDashboard() {
       setAvailableAppointments(available)
       setQuotedAppointments(quoted)
       setUpcomingAppointments(upcomingAppointments)
+
+      console.log('8. 🎯 RENDER DEBUG - Setting loading to false and updating state:', {
+        availableCount: available.length,
+        quotedCount: quoted.length,
+        upcomingCount: upcomingAppointments.length,
+        aboutToSetLoadingFalse: true
+      });
       
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.error('❌ Error fetching appointments:', errorMessage)
+    } finally {
+      // CRITICAL FIX: Set loading to false after fetch completes
+      setIsAppointmentsLoading(false);
+      console.log('9. 🎯 RENDER DEBUG - Loading state set to FALSE');
     }
   }
 
@@ -1265,6 +1276,15 @@ export default function MechanicDashboard() {
                 Your quoted & confirmed jobs
               </p>
             </div>
+            {(() => {
+              console.log('🎯 UPCOMING APPOINTMENTS RENDER DEBUG:', {
+                isAppointmentsLoading,
+                upcomingAppointmentsLength: upcomingAppointments.length,
+                upcomingAppointments: upcomingAppointments,
+                willShowCards: !isAppointmentsLoading && upcomingAppointments.length > 0
+              });
+              return null;
+            })()}
             {isAppointmentsLoading ? (
               <div className="flex items-center justify-center h-[400px]">
                 <Loader2 className="h-8 w-8 animate-spin text-[#294a46]" />
@@ -1279,6 +1299,10 @@ export default function MechanicDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
+                {(() => {
+                  console.log('🎯 RENDERING UPCOMING APPOINTMENT CARDS:', upcomingAppointments.length);
+                  return null;
+                })()}
                 {upcomingAppointments.map((appointment: Appointment) => {
                   const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
                   const isSelected = appointment.selected_mechanic_id === mechanicId;
@@ -1481,6 +1505,15 @@ export default function MechanicDashboard() {
                 New appointments to quote
               </p>
             </div>
+            {(() => {
+              console.log('🎯 AVAILABLE APPOINTMENTS RENDER DEBUG:', {
+                isAppointmentsLoading,
+                availableAppointmentsLength: availableAppointments.length,
+                availableAppointments: availableAppointments,
+                willShowCards: !isAppointmentsLoading && availableAppointments.length > 0
+              });
+              return null;
+            })()}
             {isAppointmentsLoading ? (
               <div className="flex items-center justify-center h-[400px]">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
@@ -1501,6 +1534,10 @@ export default function MechanicDashboard() {
               </div>
             ) : (
               <div className="relative">
+                {(() => {
+                  console.log('🎯 RENDERING AVAILABLE APPOINTMENT CARDS:', availableAppointments.length);
+                  return null;
+                })()}
                 {/* Navigation buttons for multiple appointments */}
                 {availableAppointments.length > 1 && (
                   <>
