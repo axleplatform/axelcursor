@@ -35,6 +35,7 @@ export default function MechanicDashboard() {
   const [mechanicId, setMechanicId] = useState<string | null>(null)
   const [mechanicProfile, setMechanicProfile] = useState<MechanicProfile | null>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
+  const [isMechanicLoading, setIsMechanicLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -339,7 +340,8 @@ export default function MechanicDashboard() {
 
     const loadMechanicProfile = async () => {
       try {
-        console.log('Loading mechanic profile for user:', userId);
+        console.log('🔄 Loading mechanic profile for user:', userId);
+        setIsMechanicLoading(true);
         
         const { data: profile, error: profileError } = await supabase
           .from('mechanic_profiles')
@@ -348,10 +350,10 @@ export default function MechanicDashboard() {
           .single();
 
         if (profileError) {
-          console.error('Error loading mechanic profile:', profileError);
+          console.error('❌ Error loading mechanic profile:', profileError);
           if (profileError.code === 'PGRST116') {
             // No mechanic profile found - redirect to onboarding
-            console.log('No mechanic profile found, redirecting to onboarding');
+            console.log('📝 No mechanic profile found, redirecting to onboarding');
             router.push('/onboarding-mechanic-1');
             return;
           }
@@ -360,23 +362,25 @@ export default function MechanicDashboard() {
         }
 
         if (!profile) {
-          console.error('No mechanic profile found for user:', userId);
+          console.error('❌ No mechanic profile found for user:', userId);
           router.push('/onboarding-mechanic-1');
           return;
         }
 
-        console.log('Debug - IDs being used:', {
+        console.log('✅ Mechanic profile loaded successfully:', {
           userId: userId,
           mechanicProfileId: profile.id,
-          whatWeNeedForQuote: profile.id
+          mechanicName: `${profile.first_name} ${profile.last_name}`
         });
 
-        console.log('Mechanic profile loaded:', profile);
         setMechanicId(profile.id);
         setMechanicProfile(profile);
       } catch (error) {
-        console.error('Error in loadMechanicProfile:', error);
+        console.error('❌ Error in loadMechanicProfile:', error);
         setError('Failed to load mechanic profile');
+      } finally {
+        setIsMechanicLoading(false);
+        console.log('🎯 MECHANIC LOADING: Set to false');
       }
     };
 
@@ -439,32 +443,44 @@ export default function MechanicDashboard() {
   const handleSubmitQuote = async (appointmentId: string, price: number, eta: string, notes?: string): Promise<void> => {
     try {
       setIsProcessing(true);
-      console.log('=== QUOTE SUBMISSION DEBUG ===');
-      console.log('Starting quote submission with:', {
+      console.log('🎯 === QUOTE SUBMISSION DEBUG ===');
+      console.log('1. Starting quote submission with:', {
         appointmentId,
         price,
         eta,
-        notes
+        notes,
+        mechanicId,
+        mechanicIdType: typeof mechanicId,
+        isMechanicLoading
       });
 
-      // Debug and get mechanic profile
-      let mechanicProfile = await debugMechanicProfile();
-      if (!mechanicProfile) {
-        console.log('Attempting to create new mechanic profile...');
-        const newProfile = await createMechanicProfile();
-        if (!newProfile) {
-          throw new Error('Failed to create mechanic profile');
+      // CRITICAL: Check if mechanicId is available
+      if (!mechanicId) {
+        console.error('❌ CRITICAL: mechanicId is undefined!', {
+          mechanicId,
+          mechanicProfile,
+          isMechanicLoading,
+          isAuthLoading
+        });
+        
+        if (isMechanicLoading) {
+          toast({
+            title: "Please wait",
+            description: "Loading your mechanic profile...",
+            variant: "destructive",
+          });
+          return;
+        } else {
+          toast({
+            title: "Profile Error",
+            description: "Unable to load your mechanic profile. Please refresh the page.",
+            variant: "destructive",
+          });
+          return;
         }
-        mechanicProfile = newProfile;
       }
-      
-      // Log what we're about to submit
-      console.log('Quote submission details:', {
-        mechanicId: mechanicProfile.id,
-        appointmentId,
-        price,
-        eta
-      });
+
+      console.log('2. mechanicId validation passed:', mechanicId);
 
       // Validate ETA selection
       if (!selectedDate || !selectedTime) {
@@ -482,8 +498,8 @@ export default function MechanicDashboard() {
       const [hour, minute] = selectedTime.split(':');
       const etaDateTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)).toISOString();
       
-      console.log('Creating quote with:', {
-        mechanic_id: mechanicProfile.id,
+      console.log('3. Creating quote with validated mechanicId:', {
+        mechanic_id: mechanicId,
         appointment_id: appointmentId,
         price,
         eta: etaDateTime,
@@ -492,7 +508,7 @@ export default function MechanicDashboard() {
 
       // Submit quote with verified mechanic ID and ISO timestamp
       const { success, error } = await createOrUpdateQuote(
-        mechanicProfile.id,
+        mechanicId,
         appointmentId,
         price,
         etaDateTime,
@@ -517,7 +533,7 @@ export default function MechanicDashboard() {
       // Refresh appointments after successful quote
       await fetchInitialAppointments();
     } catch (error: unknown) {
-      console.error("Error submitting quote:", error);
+      console.error("❌ Error submitting quote:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to submit quote. Please try again.";
         toast({
           title: "Error",
@@ -1182,15 +1198,17 @@ export default function MechanicDashboard() {
     }
   };
 
-  // Loading state
-  if (isAuthLoading) {
+  // Loading state - show loading while auth OR mechanic profile is loading
+  if (isAuthLoading || isMechanicLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <SiteHeader />
         <div className="flex-grow flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-[#294a46] mx-auto mb-4" />
-            <p className="text-gray-600">Loading your dashboard...</p>
+            <p className="text-gray-600">
+              {isAuthLoading ? "Loading your dashboard..." : "Loading your mechanic profile..."}
+            </p>
           </div>
         </div>
         <Footer />
