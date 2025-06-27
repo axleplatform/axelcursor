@@ -156,7 +156,7 @@ export async function createOrUpdateQuote(
     // Verify mechanic profile exists
     const { data: mechanicProfile, error: mechanicError } = await supabase
       .from('mechanic_profiles')
-      .select('id, status')
+      .select('id')
       .eq('id', mechanicId)
       .single();
 
