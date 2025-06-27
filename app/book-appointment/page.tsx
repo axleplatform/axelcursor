@@ -326,7 +326,7 @@ interface AppointmentData {
 }
 // Define database schema types
 // Enhance the getAIDiagnostics function to return at least 3 relevant services
-function getAIDiagnostics(carIssue: string) {
+function getAIDiagnostics(carIssue: string): Array<{ service: string; description: string; confidence: number }> | null {
   if (!carIssue.trim()) {
     return null
   }
