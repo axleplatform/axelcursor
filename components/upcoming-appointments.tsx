@@ -10,6 +10,7 @@ interface UpcomingAppointmentsProps {
   isLoading: boolean
   onStart: (id: string) => Promise<boolean>
   onCancel: (id: string) => Promise<boolean>
+  onComplete: (id: string) => Promise<boolean>
   onUpdatePrice: (id: string, price: number) => Promise<boolean>
 }
 
@@ -18,6 +19,7 @@ export function UpcomingAppointments({
   isLoading,
   onStart,
   onCancel,
+  onComplete,
   onUpdatePrice,
 }: UpcomingAppointmentsProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -92,6 +94,7 @@ export function UpcomingAppointments({
         appointment={upcomingAppointments[currentIndex]}
         onStart={onStart}
         onCancel={onCancel}
+        onComplete={onComplete}
         onUpdatePrice={onUpdatePrice}
         currentIndex={currentIndex}
         totalAppointments={upcomingAppointments.length}
