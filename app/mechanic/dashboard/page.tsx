@@ -121,6 +121,11 @@ export default function MechanicDashboard() {
       console.log('🔍 === FETCHING APPOINTMENTS DEBUG ===');
       console.log('1. Starting fetch with mechanicId:', mechanicId);
       
+      if (!mechanicId) {
+        console.log('⏳ No mechanicId available, skipping appointments fetch');
+        return;
+      }
+
       const { data: allAppointments, error } = await supabase
         .from('appointments')
         .select(`
@@ -139,24 +144,41 @@ export default function MechanicDashboard() {
 
       if (error) throw error
 
-      console.log('3. All appointments fetched:', allAppointments?.map(apt => ({
+      // Get skipped appointments for this mechanic
+      const { data: skippedAppointments, error: skippedError } = await supabase
+        .from('mechanic_skipped_appointments')
+        .select('appointment_id')
+        .eq('mechanic_id', mechanicId);
+
+      console.log('3. Skipped appointments:', {
+        skippedCount: skippedAppointments?.length || 0,
+        skippedError,
+        skippedIds: skippedAppointments?.map(s => s.appointment_id)
+      });
+
+      const skippedIds = new Set(skippedAppointments?.map(s => s.appointment_id) || []);
+
+      console.log('4. All appointments fetched:', allAppointments?.map(apt => ({
         id: apt.id,
         status: apt.status,
         quotesCount: apt.mechanic_quotes?.length || 0,
         quotes: apt.mechanic_quotes?.map(q => ({
           mechanicId: q.mechanic_id,
           price: q.price
-        }))
+        })),
+        isSkipped: skippedIds.has(apt.id)
       })));
 
       // Separate available vs quoted appointments
       const available = allAppointments?.filter((apt: Appointment) => {
         const hasMyQuote = apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId);
-        const isAvailable = apt.status === 'pending' && !hasMyQuote;
+        const isSkipped = skippedIds.has(apt.id);
+        const isAvailable = apt.status === 'pending' && !hasMyQuote && !isSkipped;
         
-        console.log(`4. Checking appointment ${apt.id}:`, {
+        console.log(`5. Checking appointment ${apt.id}:`, {
           status: apt.status,
           hasMyQuote,
+          isSkipped,
           mechanicId,
           isAvailable,
           quotes: apt.mechanic_quotes?.map(q => q.mechanic_id)
@@ -168,7 +190,7 @@ export default function MechanicDashboard() {
       const quoted = allAppointments?.filter((apt: Appointment) => {
         const hasMyQuote = apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId);
         
-        console.log(`5. Checking quoted appointment ${apt.id}:`, {
+        console.log(`6. Checking quoted appointment ${apt.id}:`, {
           hasMyQuote,
           mechanicId,
           quotes: apt.mechanic_quotes?.map(q => q.mechanic_id)
@@ -182,7 +204,7 @@ export default function MechanicDashboard() {
         const hasMyQuote = apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId);
         const isUpcoming = apt.status === 'confirmed' && hasMyQuote;
         
-        console.log(`6. Checking upcoming appointment ${apt.id}:`, {
+        console.log(`7. Checking upcoming appointment ${apt.id}:`, {
           status: apt.status,
           hasMyQuote,
           mechanicId,
@@ -192,7 +214,7 @@ export default function MechanicDashboard() {
         return isUpcoming;
       }) || [];
 
-      console.log('7. Final filtered results:', {
+      console.log('8. Final filtered results:', {
         available: available.length,
         quoted: quoted.length,
         upcoming: upcomingAppointments.length,
@@ -203,7 +225,7 @@ export default function MechanicDashboard() {
       setQuotedAppointments(quoted)
       setUpcomingAppointments(upcomingAppointments)
 
-      console.log('8. 🎯 RENDER DEBUG - Setting loading to false and updating state:', {
+      console.log('9. 🎯 RENDER DEBUG - Setting loading to false and updating state:', {
         availableCount: available.length,
         quotedCount: quoted.length,
         upcomingCount: upcomingAppointments.length,
@@ -216,7 +238,7 @@ export default function MechanicDashboard() {
     } finally {
       // CRITICAL FIX: Set loading to false after fetch completes
       setIsAppointmentsLoading(false);
-      console.log('9. 🎯 RENDER DEBUG - Loading state set to FALSE');
+      console.log('10. 🎯 RENDER DEBUG - Loading state set to FALSE');
     }
   }
 
@@ -293,12 +315,14 @@ export default function MechanicDashboard() {
       return
     }
 
-    if (!validateMechanicId(mechanicId)) {
-      console.error("❌ Invalid mechanicId, redirecting to login")
-      setError("Invalid mechanic ID")
+    // CRITICAL FIX: Use new validation return format
+    const validation = validateMechanicId(mechanicId);
+    if (!validation.isValid) {
+      console.error("❌ Invalid mechanicId, redirecting to login:", validation.error)
+      setError(`Invalid mechanic ID: ${validation.error}`)
           toast({
         title: "Error",
-        description: "Invalid mechanic ID. Please try logging in again.",
+        description: `Invalid mechanic ID: ${validation.error}. Please try logging in again.`,
             variant: "destructive",
           })
       window.location.href = "/login"
@@ -408,17 +432,12 @@ export default function MechanicDashboard() {
         });
 
         console.log('🎯 SETTING MECHANIC ID TO:', profile.id);
-        console.log('🎯 BEFORE setState - Current mechanicId:', mechanicId);
         
+        // CRITICAL FIX: Set both state values together
         setMechanicId(profile.id);
         setMechanicProfile(profile);
         
         console.log('🎯 AFTER setState - mechanicId should be:', profile.id);
-        
-        // Add a small delay and check if it was set correctly
-        setTimeout(() => {
-          console.log('🎯 DELAYED CHECK - mechanicId is now:', mechanicId);
-        }, 100);
         
       } catch (error) {
         console.error('❌ Error in loadMechanicProfile:', error);
@@ -430,7 +449,7 @@ export default function MechanicDashboard() {
     };
 
     loadMechanicProfile();
-  }, [userId, isAuthLoading, router]);
+  }, [userId, isAuthLoading, router]); // CRITICAL: Add mechanicId dependency if needed for re-runs
 
   // Add debug function for mechanic profile
   const debugMechanicProfile = async (): Promise<any> => {
@@ -693,14 +712,22 @@ export default function MechanicDashboard() {
       }
 
       // Check if mechanic has already skipped
+      console.log('🔍 Checking if mechanic has already skipped...');
       const { data: existingSkip, error: skipCheckError } = await supabase
         .from('mechanic_skipped_appointments')
         .select('id')
         .eq('mechanic_id', mechanicId)
         .eq('appointment_id', appointment.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to handle no results
 
-      if (skipCheckError && skipCheckError.code !== 'PGRST116') {
+      console.log('🔍 Skip check result:', {
+        existingSkip,
+        skipCheckError,
+        errorCode: skipCheckError?.code,
+        hasPreviousSkip: !!existingSkip
+      });
+
+      if (skipCheckError) {
         console.error('❌ Skip check failed:', skipCheckError);
         throw new Error(`Failed to check existing skips: ${skipCheckError.message}`);
       }
@@ -708,7 +735,8 @@ export default function MechanicDashboard() {
       if (existingSkip) {
         console.error('❌ Mechanic already skipped:', {
           mechanicId,
-          appointmentId: appointment.id
+          appointmentId: appointment.id,
+          existingSkipId: existingSkip.id
         });
         throw new Error('You have already skipped this appointment');
       }

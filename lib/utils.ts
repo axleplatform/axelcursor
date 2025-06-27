@@ -34,11 +34,24 @@ export function formatDate(dateString: string): string {
  * @param id The mechanic ID to validate
  * @returns An object containing validation result and error message if invalid
  */
-export function validateMechanicId(mechanicId: string | null): boolean {
+export function validateMechanicId(mechanicId: string | null): { isValid: boolean; error?: string } {
   if (!mechanicId || typeof mechanicId !== 'string') {
-    return false
+    return { isValid: false, error: 'Mechanic ID is required and must be a string' }
   }
   
-  const isValid = mechanicId.length > 0 && mechanicId !== '0' && mechanicId.trim().length > 0
-  return isValid
+  if (mechanicId.trim().length === 0) {
+    return { isValid: false, error: 'Mechanic ID cannot be empty' }
+  }
+  
+  if (mechanicId === '0') {
+    return { isValid: false, error: 'Invalid mechanic ID: cannot be "0"' }
+  }
+  
+  // Basic UUID format check (loose validation)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(mechanicId)) {
+    return { isValid: false, error: 'Invalid mechanic ID format' }
+  }
+  
+  return { isValid: true }
 }
