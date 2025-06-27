@@ -92,7 +92,7 @@ export default function PreferenceTagInput({
             inputValue.trim() ? "bg-[#294a46] hover:bg-[#1e3632]" : "bg-gray-300 cursor-not-allowed",
           )}
         >
-          <Plus className="h-5 w-5" />
+          <span className="text-lg font-bold">+</span>
         </button>
       </div>
     </div>

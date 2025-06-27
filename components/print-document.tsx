@@ -16,7 +16,7 @@ export function PrintDocument() {
       className="flex items-center gap-2 print:hidden"
       aria-label="Print this document"
     >
-      <Printer className="h-4 w-4" />
+      <span>🖨️</span>
       <span>Print</span>
     </Button>
   )

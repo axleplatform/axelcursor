@@ -202,7 +202,7 @@ export default function SearchableMultiSelect({
             onClick={() => setShowCustomInput(true)}
             className="px-3 py-2 border-t border-gray-100 hover:bg-gray-100 cursor-pointer flex items-center text-sm text-[#294a46]"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <span className="text-sm mr-2">+</span>
             {addCustomLabel}
           </div>
         ) : (

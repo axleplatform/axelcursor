@@ -135,7 +135,7 @@ export default function TagInput({
             onClick={() => handleSuggestionClick(suggestion)}
             className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center text-sm"
           >
-            <Plus className="h-3 w-3 mr-2 text-gray-500" />
+            <span className="text-sm mr-2 text-gray-500">+</span>
             {suggestion}
           </div>
         ))}
