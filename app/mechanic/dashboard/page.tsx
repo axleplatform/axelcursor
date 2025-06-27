@@ -258,6 +258,26 @@ export default function MechanicDashboard() {
     })
   }, [mechanicId])
 
+  // NEW: Add debug tracking for mechanicId changes
+  useEffect(() => {
+    console.log("🎯 MECHANIC ID STATE CHANGE DETECTED:", {
+      mechanicId,
+      type: typeof mechanicId,
+      isNull: mechanicId === null,
+      isUndefined: mechanicId === undefined,
+      timestamp: new Date().toISOString(),
+      mechanicProfile: mechanicProfile?.id
+    });
+    
+    // Check if mechanicId was set and then lost
+    if (mechanicProfile?.id && !mechanicId) {
+      console.error("🚨 CRITICAL: mechanicProfile exists but mechanicId is missing!", {
+        mechanicProfileId: mechanicProfile.id,
+        mechanicId: mechanicId
+      });
+    }
+  }, [mechanicId, mechanicProfile])
+
   // Real-time subscription handlers
   useEffect(() => {
     console.log("🔄 Setting up subscriptions with mechanicId:", { 
@@ -341,6 +361,12 @@ export default function MechanicDashboard() {
     const loadMechanicProfile = async () => {
       try {
         console.log('🔄 Loading mechanic profile for user:', userId);
+        console.log('🔄 MECHANIC PROFILE LOAD START - Current state:', {
+          userId,
+          mechanicId: mechanicId,
+          mechanicProfile: mechanicProfile,
+          isMechanicLoading: isMechanicLoading
+        });
         setIsMechanicLoading(true);
         
         const { data: profile, error: profileError } = await supabase
@@ -348,6 +374,14 @@ export default function MechanicDashboard() {
           .select('id, user_id, first_name, last_name')
           .eq('user_id', userId)
           .single();
+
+        console.log('🔄 MECHANIC PROFILE DB RESPONSE:', {
+          profile: profile,
+          error: profileError,
+          hasProfile: !!profile,
+          profileId: profile?.id,
+          profileUserId: profile?.user_id
+        });
 
         if (profileError) {
           console.error('❌ Error loading mechanic profile:', profileError);
@@ -373,8 +407,19 @@ export default function MechanicDashboard() {
           mechanicName: `${profile.first_name} ${profile.last_name}`
         });
 
+        console.log('🎯 SETTING MECHANIC ID TO:', profile.id);
+        console.log('🎯 BEFORE setState - Current mechanicId:', mechanicId);
+        
         setMechanicId(profile.id);
         setMechanicProfile(profile);
+        
+        console.log('🎯 AFTER setState - mechanicId should be:', profile.id);
+        
+        // Add a small delay and check if it was set correctly
+        setTimeout(() => {
+          console.log('🎯 DELAYED CHECK - mechanicId is now:', mechanicId);
+        }, 100);
+        
       } catch (error) {
         console.error('❌ Error in loadMechanicProfile:', error);
         setError('Failed to load mechanic profile');
@@ -505,6 +550,23 @@ export default function MechanicDashboard() {
         eta: etaDateTime,
         notes
       });
+
+      // DEEP DEBUG: Log everything right before the call
+      console.log('=== FINAL QUOTE SUBMISSION DEBUG ===');
+      console.log('mechanicId:', mechanicId);
+      console.log('typeof mechanicId:', typeof mechanicId);
+      console.log('mechanicId === null:', mechanicId === null);
+      console.log('mechanicId === undefined:', mechanicId === undefined);
+      console.log('mechanicProfile:', mechanicProfile);
+      console.log('mechanicProfile?.id:', mechanicProfile?.id);
+      console.log('isMechanicLoading:', isMechanicLoading);
+      console.log('isAuthLoading:', isAuthLoading);
+      console.log('userId:', userId);
+      
+      // Get current user to compare
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('Current auth user:', user);
+      console.log('User error:', userError);
 
       // Submit quote with verified mechanic ID and ISO timestamp
       const { success, error } = await createOrUpdateQuote(
