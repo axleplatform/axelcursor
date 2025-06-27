@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js"
 
 export type AppointmentStatus = "pending" | "quoted" | "confirmed" | "in_progress" | "completed" | "cancelled"
 
@@ -77,7 +78,7 @@ export function useAppointments() {
           schema: "public",
           table: "appointments",
         },
-        (payload) => {
+        (payload: RealtimePostgresChangesPayload<Appointment>) => {
           console.log("Real-time update received:", payload)
           if (payload.eventType === "INSERT") {
             setAppointments((prev) => [...prev, payload.new as Appointment])

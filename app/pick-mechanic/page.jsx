@@ -299,7 +299,10 @@ export default function PickMechanicPage() {
                 {quote.mechanic_profiles?.business_name || `${quote.mechanic_profiles?.first_name} ${quote.mechanic_profiles?.last_name}`}
                </h3>
                <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                <span>⭐ {quote.mechanic_profiles?.rating || 'N/A'}</span>
+                <span className="flex items-center">
+                  <span className="text-base sm:text-lg lg:text-xl leading-none inline-flex items-center justify-center mr-1">⭐</span>
+                  {quote.mechanic_profiles?.rating || 'N/A'}
+                </span>
                 <span>• {quote.mechanic_profiles?.review_count || 0} reviews</span>
                </div>
               </div>
@@ -376,7 +379,7 @@ export default function PickMechanicPage() {
         <div className="p-4">
          <div className="space-y-4">
           <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-           <div className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0">📅</div>
+           <span className="text-sm sm:text-base lg:text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
            <div>
             <h3 className="font-medium text-gray-700 text-sm">Appointment Details</h3>
             <p className="text-xs text-gray-600">{formatDate(appointment.appointment_date)}</p>
@@ -389,7 +392,7 @@ export default function PickMechanicPage() {
 
           {appointment.vehicles && (
            <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-            <div className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0">🚗</div>
+            <span className="text-sm sm:text-base lg:text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
             <div>
              <h3 className="font-medium text-gray-700 text-sm">Vehicle</h3>
              <p className="text-xs text-gray-600">
@@ -410,7 +413,7 @@ export default function PickMechanicPage() {
 
           {appointment.selected_services && appointment.selected_services.length > 0 && (
            <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-            <div className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0">🔧</div>
+            <span className="text-sm sm:text-base lg:text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
             <div>
              <h3 className="font-medium text-gray-700 text-sm">Requested Services</h3>
              <ul className="mt-1 space-y-1">
@@ -427,7 +430,7 @@ export default function PickMechanicPage() {
 
           {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
            <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-            <div className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0">🚗</div>
+            <span className="text-sm sm:text-base lg:text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
             <div>
              <h3 className="font-medium text-gray-700 text-sm">Reported Issues</h3>
              <ul className="mt-1 space-y-1">
@@ -453,7 +456,7 @@ export default function PickMechanicPage() {
           )}
 
           <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-           <div className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0">🚗</div>
+           <span className="text-sm sm:text-base lg:text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
            <div>
             <h3 className="font-medium text-gray-700 text-sm">Car Status</h3>
             <p className="text-xs text-gray-600 mt-1">

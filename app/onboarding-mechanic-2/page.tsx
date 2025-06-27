@@ -264,7 +264,7 @@ export default function MechanicOnboardingStep2Page() {
                   </label>
                   <div className="mt-1 relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <div className="h-10 w-10 text-[#294a46]">🚗</div>
+                      <span className="text-lg sm:text-xl lg:text-2xl leading-none text-[#294a46] inline-flex items-center justify-center">🚗</span>
                     </div>
                     <select
                       id="businessStartYear"
@@ -297,7 +297,7 @@ export default function MechanicOnboardingStep2Page() {
                   </label>
                   <div className="mt-1 relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <div className="h-10 w-10 text-[#294a46]">📍</div>
+                      <span className="text-lg sm:text-xl lg:text-2xl leading-none text-[#294a46] inline-flex items-center justify-center">📍</span>
                     </div>
                     <input
                       type="text"
@@ -326,7 +326,7 @@ export default function MechanicOnboardingStep2Page() {
                   </label>
                   <div className="mt-1 relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <div className="h-10 w-10 text-[#294a46]">🚗</div>
+                      <span className="text-lg sm:text-xl lg:text-2xl leading-none text-[#294a46] inline-flex items-center justify-center">🚗</span>
                     </div>
                     <input
                       type="number"

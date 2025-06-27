@@ -461,7 +461,7 @@ export default function HomePage(): React.JSX.Element {
             <div className="flex flex-col items-center text-center">
               <div className="w-28 h-28 flex items-center justify-center mb-2">
                 <div className="w-20 h-20 border-2 border-[#294a46] rounded flex items-center justify-center">
-                  <div className="h-5 w-5 text-gray-500 mt-1">📅</div>
+                  <span className="text-xl sm:text-2xl lg:text-3xl leading-none text-gray-500 inline-flex items-center justify-center">📅</span>
                 </div>
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">Book Appointments Online</h3>
@@ -518,7 +518,7 @@ export default function HomePage(): React.JSX.Element {
 
             {/* Register Mechanic */}
             <div className="flex flex-col items-center justify-center mx-auto text-center">
-              <div className="h-10 w-10 mb-4">⚙️</div>
+              <span className="text-2xl sm:text-3xl lg:text-4xl leading-none text-white inline-flex items-center justify-center mb-4">⚙️</span>
               <h3 className="text-xl font-medium mb-2">Register Mobile Mechanic</h3>
               <div className="space-y-1 mb-2">
                 <p className="text-sm">Get job requests</p>
@@ -532,7 +532,7 @@ export default function HomePage(): React.JSX.Element {
 
             {/* Register Shop */}
             <div className="flex flex-col items-center justify-center mx-auto text-center">
-              <div className="h-10 w-10 mb-4">🏠</div>
+              <span className="text-2xl sm:text-3xl lg:text-4xl leading-none text-white inline-flex items-center justify-center mb-4">🏠</span>
               <h3 className="text-xl font-medium mb-2">Register your Shop</h3>
               <div className="space-y-1 mb-2">
                 <p className="text-sm">Custom pricing and quotes</p>
