@@ -14,6 +14,7 @@ import {
   getAvailableAppointmentsForMechanic,
   getQuotedAppointmentsForMechanic,
   createOrUpdateQuote,
+  selectQuoteForAppointment,
 } from "@/lib/mechanic-quotes"
 import { formatDate, validateMechanicId } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
@@ -26,7 +27,8 @@ import type {
   NotificationState,
   DateOption,
   TimeSlot,
-  AppointmentWithRelations
+  AppointmentWithRelations,
+  MechanicSkip
 } from "@/types/index"
 
 export default function MechanicDashboard() {
@@ -42,9 +44,9 @@ export default function MechanicDashboard() {
 
   // Appointment states
   const [availableAppointments, setAvailableAppointments] = useState<Appointment[]>([])
-  const [quotedAppointments, setQuotedAppointments] = useState<Appointment[]>([])
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
-  const [isAppointmentsLoading, setIsAppointmentsLoading] = useState(true)
+  const [skippedAppointments, setSkippedAppointments] = useState<MechanicSkip[]>([])
+  const [isAppointmentsLoading, setIsAppointmentsLoading] = useState<boolean>(true)
   const [currentAvailableIndex, setCurrentAvailableIndex] = useState(0)
   const [priceInput, setPriceInput] = useState<string>("")
   const [selectedDate, setSelectedDate] = useState('')
@@ -187,47 +189,32 @@ export default function MechanicDashboard() {
         return isAvailable;
       }) || []
       
-      const quoted = allAppointments?.filter((apt: Appointment) => {
-        const hasMyQuote = apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId);
-        
-        console.log(`6. Checking quoted appointment ${apt.id}:`, {
-          hasMyQuote,
-          mechanicId,
-          quotes: apt.mechanic_quotes?.map(q => q.mechanic_id)
-        });
-        
-        return hasMyQuote;
-      }) || []
-        
-      // Filter for upcoming appointments (confirmed or selected by this mechanic)
+      // FIXED: Upcoming appointments = ANY appointment where this mechanic has submitted a quote
+      // This includes pending (awaiting customer selection), quoted, and confirmed appointments
       const upcomingAppointments = allAppointments?.filter((apt: AppointmentWithRelations) => {
         const hasMyQuote = apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId);
-        const isUpcoming = apt.status === 'confirmed' && hasMyQuote;
         
-        console.log(`7. Checking upcoming appointment ${apt.id}:`, {
+        console.log(`6. Checking upcoming appointment ${apt.id}:`, {
           status: apt.status,
           hasMyQuote,
           mechanicId,
-          isUpcoming
+          shouldShow: hasMyQuote
         });
         
-        return isUpcoming;
+        return hasMyQuote;
       }) || [];
 
-      console.log('8. Final filtered results:', {
+      console.log('7. Final filtered results:', {
         available: available.length,
-        quoted: quoted.length,
         upcoming: upcomingAppointments.length,
         mechanicId: mechanicId
       });
 
       setAvailableAppointments(available)
-      setQuotedAppointments(quoted)
       setUpcomingAppointments(upcomingAppointments)
 
-      console.log('9. 🎯 RENDER DEBUG - Setting loading to false and updating state:', {
+      console.log('8. 🎯 RENDER DEBUG - Setting loading to false and updating state:', {
         availableCount: available.length,
-        quotedCount: quoted.length,
         upcomingCount: upcomingAppointments.length,
         aboutToSetLoadingFalse: true
       });
@@ -238,7 +225,7 @@ export default function MechanicDashboard() {
     } finally {
       // CRITICAL FIX: Set loading to false after fetch completes
       setIsAppointmentsLoading(false);
-      console.log('10. 🎯 RENDER DEBUG - Loading state set to FALSE');
+      console.log('9. 🎯 RENDER DEBUG - Loading state set to FALSE');
     }
   }
 
@@ -1910,57 +1897,11 @@ export default function MechanicDashboard() {
           </div>
         </div>
 
-        {/* Quoted Appointments Section */}
-        {quotedAppointments.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-4">Your Quoted Appointments</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {quotedAppointments.map((appointment: Appointment) => (
-                <Card key={appointment.id} className="p-4 border border-gray-200">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-semibold">{formatDate(appointment.appointment_date)}</h3>
-                      <div className="flex items-center text-sm text-gray-600 mt-1">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        <span>{appointment.location}</span>
-                      </div>
-                    </div>
-                    <div className="bg-[#294a46] text-white px-3 py-1 rounded-md">
-                      <p className="text-lg font-bold">${appointment.quote?.price}</p>
-                    </div>
-                  </div>
-
-                  {appointment.vehicles && (
-                    <div className="mb-3 text-sm">
-                      <div className="font-medium">
-                        {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
-                      </div>
-                      {appointment.vehicles.mileage && (
-                        <div className="text-gray-600">Mileage: {appointment.vehicles.mileage}</div>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="text-sm text-gray-600">
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      <span>Quote submitted: {new Date(appointment.quote?.created_at || "").toLocaleDateString()}</span>
-                    </div>
-                    <div className="mt-1 text-xs bg-yellow-50 p-2 rounded border border-yellow-100">
-                      Waiting for customer selection
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Empty State for No Appointments */}
         {!isAppointmentsLoading && 
          availableAppointments.length === 0 && 
          upcomingAppointments.length === 0 && 
-         quotedAppointments.length === 0 && (
+         skippedAppointments.length === 0 && (
           <div className="mt-8 bg-white rounded-lg shadow-sm p-8 text-center">
             <Clock className="h-16 w-16 mx-auto mb-4 text-gray-400" />
             <h2 className="text-2xl font-semibold mb-2">Welcome to Your Dashboard</h2>
