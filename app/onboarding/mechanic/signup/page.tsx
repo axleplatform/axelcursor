@@ -33,6 +33,9 @@ export default function MechanicSignupPage() {
       }
     }
 
+    // Return undefined for the case when submitAttempt <= 0
+    return
+
     async function handleSignupAttempt() {
       if (!isActive) return
 
