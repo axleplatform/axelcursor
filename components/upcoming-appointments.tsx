@@ -22,9 +22,9 @@ export function UpcomingAppointments({
 }: UpcomingAppointmentsProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
 
-  // Filter to only show accepted or in_progress appointments
+  // Filter to only show confirmed or in_progress appointments
   const upcomingAppointments = appointments.filter(
-    (appointment) => appointment.status === "accepted" || appointment.status === "in_progress",
+    (appointment) => appointment.status === "confirmed" || appointment.status === "in_progress",
   )
 
   const nextAppointment = () => {

@@ -515,10 +515,10 @@ export default function MechanicDashboard() {
         });
         
         if (isMechanicLoading) {
-          toast({
+            toast({
             title: "Please wait",
             description: "Loading your mechanic profile...",
-            variant: "destructive",
+              variant: "destructive",
           });
           return;
         } else {
@@ -536,10 +536,10 @@ export default function MechanicDashboard() {
       // Validate ETA selection
       if (!selectedDate || !selectedTime) {
         setShowETAError(true);
-            toast({
+        toast({
           title: "Error",
           description: "Please select both date and time for when you can show up.",
-              variant: "destructive",
+          variant: "destructive",
         });
         return;
       }
@@ -1922,10 +1922,10 @@ export default function MechanicDashboard() {
               >
                 Update Profile
               </button>
-            </div>
-          </div>
+                      </div>
+                    </div>
         )}
-      </div>
+                    </div>
 
       {/* ETA Modal */}
       {startingAppointment && (
@@ -1951,8 +1951,8 @@ export default function MechanicDashboard() {
               <p className="text-sm text-gray-500 mt-1">
                 Customer will be notified of your ETA
               </p>
-            </div>
-            
+                  </div>
+
             <div className="flex gap-3">
               <button
                 onClick={confirmStartAppointment}
@@ -1971,10 +1971,10 @@ export default function MechanicDashboard() {
               >
                 Go Back
               </button>
-            </div>
+                      </div>
           </div>
-        </div>
-      )}
+                    </div>
+                  )}
 
       {/* Edit Modal */}
       {showEditModal && editAppointment && (
@@ -2000,8 +2000,8 @@ export default function MechanicDashboard() {
                     step="0.01"
                     required
                   />
-                </div>
-              </div>
+                    </div>
+                    </div>
 
               {/* ETA Selection */}
               <div className="mb-6">
@@ -2043,9 +2043,9 @@ export default function MechanicDashboard() {
                         </option>
                       ))}
                     </select>
-                  </div>
-                </div>
-              </div>
+            </div>
+          </div>
+      </div>
 
               {/* Action Buttons */}
               <div className="flex gap-3">
