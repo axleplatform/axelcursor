@@ -155,16 +155,16 @@ export default function MechanicDashboard() {
       console.log('3. Skipped appointments:', {
         skippedCount: skippedAppointments?.length || 0,
         skippedError,
-        skippedIds: skippedAppointments?.map(s => s.appointment_id)
+        skippedIds: skippedAppointments?.map((s: { appointment_id: string }) => s.appointment_id)
       });
 
-      const skippedIds = new Set(skippedAppointments?.map(s => s.appointment_id) || []);
+      const skippedIds = new Set(skippedAppointments?.map((s: { appointment_id: string }) => s.appointment_id) || []);
 
-      console.log('4. All appointments fetched:', allAppointments?.map(apt => ({
+      console.log('4. All appointments fetched:', allAppointments?.map((apt: any) => ({
         id: apt.id,
         status: apt.status,
         quotesCount: apt.mechanic_quotes?.length || 0,
-        quotes: apt.mechanic_quotes?.map(q => ({
+        quotes: apt.mechanic_quotes?.map((q: any) => ({
           mechanicId: q.mechanic_id,
           price: q.price
         })),
