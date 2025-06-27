@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { Loader2, AlertCircle, Clock } from "lucide-react"
+import { Loader2, X, Clock } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -248,7 +248,7 @@ export default function MechanicSignupPage() {
                   className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-start"
                   role="alert"
                 >
-                  <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                  <X className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
                   <span className="block">{error}</span>
                 </div>
               )}

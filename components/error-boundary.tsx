@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Button } from '@/components/ui/button'
-import { AlertCircle } from 'lucide-react'
+import { X } from 'lucide-react'
 
 interface ErrorBoundaryState {
   hasError: boolean
@@ -43,7 +43,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         <div className="flex flex-col min-h-screen">
           <main className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <X className="h-12 w-12 text-red-500 mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-gray-800 mb-2">Something went wrong</h2>
               <p className="text-gray-600 mb-4">
                 {this.state.error?.message || 'An unexpected error occurred'}
