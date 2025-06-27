@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect, useMemo } from "react"
-import { X, Plus } from "lucide-react"
+import { X } from "lucide-react"
 import { createPortal } from "react-dom"
 
 interface TagInputProps {

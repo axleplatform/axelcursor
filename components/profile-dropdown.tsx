@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { User, LogOut,  ChevronRight } from "lucide-react"
+import { User, ChevronRight } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
 export function ProfileDropdown() {
@@ -66,7 +66,6 @@ export function ProfileDropdown() {
               className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               role="menuitem"
             >
-              <LogOut className="h-4 w-4" />
               {isLoggingOut ? "Logging out..." : "Logout"}
             </button>
           </div>

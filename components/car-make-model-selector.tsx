@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Plus, X, ChevronRight } from "lucide-react"
+import { X, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // Common car makes for the dropdown
@@ -294,7 +294,7 @@ export default function CarMakeModelSelector({ onAddCar, selectedCars, onRemoveC
             selectedMake && selectedModel ? "bg-[#294a46] hover:bg-[#1e3632]" : "bg-gray-300 cursor-not-allowed",
           )}
         >
-          <Plus className="h-5 w-5" />
+          <span className="text-sm">+</span>
         </button>
       </div>
     </div>
