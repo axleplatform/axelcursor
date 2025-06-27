@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Menu, X } from "lucide-react"
+import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function SiteHeader() {
@@ -76,7 +76,7 @@ export function SiteHeader() {
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             className="p-2 text-gray-700"
           >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {isMenuOpen ? <X size={24} /> : "☰"}
           </button>
         </div>
       </div>
