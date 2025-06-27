@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
-import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 export type AppointmentStatus = "draft" | "pending" | "quoted" | "confirmed" | "in_progress" | "completed" | "cancelled"
 
