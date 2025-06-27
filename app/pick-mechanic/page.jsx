@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Star, Clock, MapPin, Wrench, X, FileText, CreditCard, User } from "lucide-react"
+import { Star, Clock, MapPin, X, FileText, CreditCard, User } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -410,7 +410,7 @@ export default function PickMechanicPage() {
 
           {appointment.selected_services && appointment.selected_services.length > 0 && (
            <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-            <Wrench className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
+            <div className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0">🔧</div>
             <div>
              <h3 className="font-medium text-gray-700 text-sm">Requested Services</h3>
              <ul className="mt-1 space-y-1">
@@ -427,7 +427,7 @@ export default function PickMechanicPage() {
 
           {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
            <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-            <X className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
+            <div className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0">🚗</div>
             <div>
              <h3 className="font-medium text-gray-700 text-sm">Reported Issues</h3>
              <ul className="mt-1 space-y-1">

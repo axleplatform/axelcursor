@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { Wrench, Check } from "lucide-react"
+import { Check } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 
@@ -75,7 +75,7 @@ export default function SignupPage() {
               className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
               style={{ backgroundColor: "#F9F9F9" }}
             >
-              <Wrench className="h-10 w-10 text-[#294a46]" />
+              <div className="h-10 w-10 text-[#294a46]">🔧</div>
             </div>
             <h2 className="text-xl font-bold text-gray-800 mb-4">Mobile Mechanic</h2>
 
