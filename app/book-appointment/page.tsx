@@ -646,29 +646,21 @@ export default function BookAppointment() {
     setIsSubmitting(true)
     setValidationError(null)
     try {
-      // Check user authentication FIRST
+      // Check if user is authenticated (optional for guest bookings)
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       
-      if (authError || !user) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to book an appointment",
-          variant: "destructive"
-        })
-        // Redirect to login or home page
-        router.push("/")
-        return
-      }
+      // For guest bookings, user will be null - this is now allowed
+      const userId = user?.id || null // null for guest bookings
       
       // Add the missing now variable declaration
       const now = new Date().toISOString()
       
-      // Upsert appointment data with authenticated user ID
+      // Upsert appointment data (supports both authenticated and guest users)
       const { data: appointment, error: appointmentError } = await supabase
         .from("appointments")
         .upsert({
           id: appointmentId || undefined, // Use existing ID if available
-          user_id: user.id, // Use authenticated user ID
+          user_id: userId, // null for guest bookings, user.id for authenticated users
           location: "Mobile Service",
           appointment_date: new Date().toISOString(), // This might need to be preserved
           status: "pending",
