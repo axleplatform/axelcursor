@@ -73,8 +73,12 @@ export default function PickMechanicPage() {
    const { data: { user } } = await supabase.auth.getUser()
    console.log('Current user:', user?.id, 'Appointment user:', appointment.user_id)
    
-   // Allow access if user matches OR if no user (guest flow)
-   if (user?.id && appointment.user_id !== user.id) {
+   // Allow access in these cases:
+   // 1. Guest appointment (user_id is null) - anyone can access
+   // 2. User appointment where current user matches appointment.user_id
+   // Deny access only if:
+   // - appointment has a user_id AND current user doesn't match
+   if (appointment.user_id !== null && user?.id !== appointment.user_id) {
     console.error('Appointment does not belong to current user')
     setError('You do not have access to this appointment')
     setIsLoading(false)
