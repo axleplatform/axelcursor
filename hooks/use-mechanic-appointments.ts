@@ -92,7 +92,7 @@ export function useMechanicAppointments(mechanicId: string) {
 
         if (quotedError) throw quotedError
 
-        const quotedAppointmentIds = quotedData?.map((quote) => quote.appointment_id) || []
+        const quotedAppointmentIds = quotedData?.map((quote: any) => quote.appointment_id) || []
 
         // Fetch available appointments (pending, not quoted by this mechanic yet)
         const { data: availableData, error: availableError } = await supabase
