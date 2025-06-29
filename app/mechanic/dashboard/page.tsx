@@ -117,115 +117,26 @@ export default function MechanicDashboard() {
     return slots;
   };
 
-  // Update fetchInitialAppointments function
+  // OPTIMIZED: Simplified fetch using database filters (performance fix applied to hook)
   const fetchInitialAppointments = async (): Promise<void> => {
     try {
-      console.log('🔍 === FETCHING APPOINTMENTS DEBUG ===');
-      console.log('1. Starting fetch with mechanicId:', mechanicId);
+      console.log('🚀 DASHBOARD: Using optimized appointment fetching');
       
       if (!mechanicId) {
         console.log('⏳ No mechanicId available, skipping appointments fetch');
         return;
       }
 
-      const { data: allAppointments, error } = await supabase
-        .from('appointments')
-        .select(`
-          *,
-          vehicles!fk_appointment_id(*),
-          mechanic_quotes!appointment_id(*)
-        `)
-        .in('status', ['pending', 'quoted', 'confirmed', 'in_progress', 'completed'])
-        .order('appointment_date', { ascending: true })
-
-      console.log('2. Raw database response:', {
-        appointmentsCount: allAppointments?.length || 0,
-        error: error,
-        sampleAppointment: allAppointments?.[0]
-      });
-
-      if (error) throw error
-
-      // Get skipped appointments for this mechanic
-      const { data: skippedAppointments, error: skippedError } = await supabase
-        .from('mechanic_skipped_appointments')
-        .select('appointment_id')
-        .eq('mechanic_id', mechanicId);
-
-      console.log('3. Skipped appointments:', {
-        skippedCount: skippedAppointments?.length || 0,
-        skippedError,
-        skippedIds: skippedAppointments?.map((s: { appointment_id: string }) => s.appointment_id)
-      });
-
-      const skippedIds = new Set(skippedAppointments?.map((s: { appointment_id: string }) => s.appointment_id) || []);
-
-      console.log('4. All appointments fetched:', allAppointments?.map((apt: any) => ({
-        id: apt.id,
-        status: apt.status,
-        quotesCount: apt.mechanic_quotes?.length || 0,
-        quotes: apt.mechanic_quotes?.map((q: any) => ({
-          mechanicId: q.mechanic_id,
-          price: q.price
-        })),
-        isSkipped: skippedIds.has(apt.id)
-      })));
-
-      // Separate available vs quoted appointments
-      const available = allAppointments?.filter((apt: Appointment) => {
-        const hasMyQuote = apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId);
-        const isSkipped = skippedIds.has(apt.id);
-        const isAvailable = apt.status === 'pending' && !hasMyQuote && !isSkipped;
-        
-        console.log(`5. Checking appointment ${apt.id}:`, {
-          status: apt.status,
-          hasMyQuote,
-          isSkipped,
-          mechanicId,
-          isAvailable,
-          quotes: apt.mechanic_quotes?.map(q => q.mechanic_id)
-        });
-        
-        return isAvailable;
-      }) || []
-      
-      // FIXED: Upcoming appointments = ANY appointment where this mechanic has submitted a quote
-      // This includes pending (awaiting customer selection), quoted, and confirmed appointments
-      const upcomingAppointments = allAppointments?.filter((apt: AppointmentWithRelations) => {
-        const hasMyQuote = apt.mechanic_quotes?.some((q: MechanicQuote) => q.mechanic_id === mechanicId);
-        
-        console.log(`6. Checking upcoming appointment ${apt.id}:`, {
-          status: apt.status,
-          hasMyQuote,
-          mechanicId,
-          shouldShow: hasMyQuote
-        });
-        
-        return hasMyQuote;
-      }) || [];
-
-      console.log('7. Final filtered results:', {
-        available: available.length,
-        upcoming: upcomingAppointments.length,
-        mechanicId: mechanicId
-      });
-
-      setAvailableAppointments(available)
-      setUpcomingAppointments(upcomingAppointments)
-
-      console.log('8. 🎯 RENDER DEBUG - Setting loading to false and updating state:', {
-        availableCount: available.length,
-        upcomingCount: upcomingAppointments.length,
-        aboutToSetLoadingFalse: true
-      });
+      // Note: The heavy lifting is now done in the useMechanicAppointments hook
+      // with proper database filtering instead of fetching all appointments
+      console.log('✅ DASHBOARD: Appointments will be fetched via optimized hook');
       
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      console.error('❌ Error fetching appointments:', errorMessage)
+      console.error('❌ Error in appointment fetch setup:', errorMessage)
     } finally {
-      // CRITICAL FIX: Set loading to false after fetch completes
       setIsAppointmentsLoading(false);
-      console.log('9. 🎯 RENDER DEBUG - Loading state set to FALSE');
+      console.log('✅ DASHBOARD: Loading state set to FALSE');
     }
   }
 
@@ -316,49 +227,15 @@ export default function MechanicDashboard() {
           return
         }
 
-    // Subscribe to appointment changes
-    const appointmentsSubscription = supabase
-      .channel('appointments_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'appointments',
-          filter: `status=eq.pending`
-        },
-        async (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('Appointment change received:', payload)
-          await fetchInitialAppointments();
-        }
-      )
-      .subscribe()
-
-    // Subscribe to quote changes
-    const quotesSubscription = supabase
-      .channel('quotes_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'mechanic_quotes',
-        },
-        async (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('Quote change received:', payload)
-          await fetchInitialAppointments();
-        }
-      )
-      .subscribe()
-
-    // Initial fetch of appointments
+    // Note: Real-time subscriptions are now handled in the useMechanicAppointments hook
+    // This eliminates duplicate subscriptions and improves performance
+    
+    // Initial setup
     fetchInitialAppointments()
 
-    // Cleanup subscription on unmount
+    // Cleanup function for any local resources
     return () => {
-      console.log("🧹 Cleaning up subscriptions")
-      appointmentsSubscription.unsubscribe()
-      quotesSubscription.unsubscribe()
+      console.log("🧹 Dashboard cleanup")
     }
   }, [mechanicId])
 

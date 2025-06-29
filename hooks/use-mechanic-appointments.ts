@@ -70,22 +70,20 @@ export function useMechanicAppointments(mechanicId: string) {
     const fetchAppointments = async () => {
       try {
         setIsLoading(true)
-        console.log("Fetching appointments for mechanic:", mechanicId)
+        console.log("🚀 OPTIMIZED: Fetching appointments for mechanic:", mechanicId)
 
-        // Fetch upcoming appointments (confirmed or in progress)
-        const { data: upcomingData, error: upcomingError } = await supabase
-          .from("appointments")
-          .select(`
-            *,
-            vehicles!fk_appointment_id(*)
-          `)
+        // PERFORMANCE FIX 1: Get skipped appointment IDs first for exclusion
+        const { data: skippedData, error: skippedError } = await supabase
+          .from("mechanic_skipped_appointments")
+          .select("appointment_id")
           .eq("mechanic_id", mechanicId)
-          .in("status", ["confirmed", "in_progress"])
-          .order("appointment_date", { ascending: true })
 
-        if (upcomingError) throw upcomingError
+        if (skippedError) throw skippedError
 
-        // Get IDs of appointments already quoted by this mechanic
+        const skippedAppointmentIds = skippedData?.map((skip: any) => skip.appointment_id) || []
+        console.log("🚀 OPTIMIZED: Found skipped appointments:", skippedAppointmentIds.length)
+
+        // PERFORMANCE FIX 2: Get quoted appointment IDs for exclusion
         const { data: quotedData, error: quotedError } = await supabase
           .from("mechanic_quotes")
           .select("appointment_id")
@@ -94,28 +92,85 @@ export function useMechanicAppointments(mechanicId: string) {
         if (quotedError) throw quotedError
 
         const quotedAppointmentIds = quotedData?.map((quote: any) => quote.appointment_id) || []
+        console.log("🚀 OPTIMIZED: Found quoted appointments:", quotedAppointmentIds.length)
 
-        // Fetch available appointments (pending, not quoted by this mechanic yet)
-        const { data: availableData, error: availableError } = await supabase
+        // PERFORMANCE FIX 3: Fetch ONLY relevant upcoming appointments with database filters
+        let upcomingQuery = supabase
           .from("appointments")
           .select(`
             *,
-            vehicles!fk_appointment_id(*)
+            vehicles!fk_appointment_id(*),
+            mechanic_quotes!appointment_id(*)
           `)
-          .eq("status", "pending")
-          .not("id", "in", quotedAppointmentIds.length > 0 ? `(${quotedAppointmentIds.join(",")})` : "(0)")
+          .eq("mechanic_id", mechanicId)
+          .in("status", ["confirmed", "in_progress"])
+          .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Last 30 days for upcoming
           .order("appointment_date", { ascending: true })
+          .limit(20)
+
+        const { data: upcomingData, error: upcomingError } = await upcomingQuery
+
+        if (upcomingError) throw upcomingError
+
+        // PERFORMANCE FIX 4: Fetch ONLY available appointments with aggressive database filtering
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        
+        let availableQuery = supabase
+          .from("appointments")
+          .select(`
+            *,
+            vehicles!fk_appointment_id(*),
+            mechanic_quotes!appointment_id(*)
+          `)
+          .in("status", ["pending", "quoted"]) // Only pending or quoted status
+          .gte("created_at", sevenDaysAgo) // Only last 7 days
+          .order("created_at", { ascending: false }) // Newest first
+          .limit(20) // Maximum 20 results
+
+        // Exclude skipped appointments at database level
+        if (skippedAppointmentIds.length > 0) {
+          availableQuery = availableQuery.not("id", "in", `(${skippedAppointmentIds.join(",")})`)
+        }
+
+        // Exclude already quoted appointments at database level  
+        if (quotedAppointmentIds.length > 0) {
+          availableQuery = availableQuery.not("id", "in", `(${quotedAppointmentIds.join(",")})`)
+        }
+
+        const { data: availableData, error: availableError } = await availableQuery
 
         if (availableError) throw availableError
 
-        setUpcomingAppointments(upcomingData as Appointment[])
-        setAvailableAppointments(availableData as Appointment[])
-        console.log("Fetched appointments:", {
-          upcoming: upcomingData?.length,
-          available: availableData?.length
+        console.log("🚀 OPTIMIZED: Database query results:", {
+          upcoming: upcomingData?.length || 0,
+          available: availableData?.length || 0,
+          totalFetched: (upcomingData?.length || 0) + (availableData?.length || 0),
+          skippedCount: skippedAppointmentIds.length,
+          quotedCount: quotedAppointmentIds.length
         })
+
+        // Filter available appointments to only show those without quotes from this mechanic
+        const filteredAvailable = availableData?.filter((appointment: any) => {
+          const hasMyQuote = appointment.mechanic_quotes?.some((quote: any) => quote.mechanic_id === mechanicId)
+          return !hasMyQuote
+        }) || []
+
+        // For upcoming, include appointments where this mechanic has quotes
+        const filteredUpcoming = upcomingData?.filter((appointment: any) => {
+          const hasMyQuote = appointment.mechanic_quotes?.some((quote: any) => quote.mechanic_id === mechanicId)
+          return hasMyQuote || appointment.mechanic_id === mechanicId
+        }) || []
+
+        setUpcomingAppointments(filteredUpcoming as Appointment[])
+        setAvailableAppointments(filteredAvailable as Appointment[])
+        
+        console.log("🚀 OPTIMIZED: Final filtered results:", {
+          upcomingFinal: filteredUpcoming.length,
+          availableFinal: filteredAvailable.length
+        })
+
       } catch (err) {
-        console.error("Error fetching appointments:", err)
+        console.error("❌ Error fetching appointments:", err)
         setError(err instanceof Error ? err : new Error("Failed to load appointments"))
         toast({
           title: "Error",
@@ -129,43 +184,42 @@ export function useMechanicAppointments(mechanicId: string) {
 
     fetchAppointments()
 
-    // Set up real-time subscription for appointments
+    // REAL-TIME FIX: Enhanced subscription with proper state updates
     const appointmentsSubscription = supabase
-      .channel("appointments-changes")
+      .channel("appointments-changes-optimized")
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "appointments",
+          filter: `status=in.(pending,quoted,confirmed,in_progress)` // Only relevant statuses
         },
         (payload: RealtimePostgresChangesPayload<Appointment>) => {
-          console.log("Appointment change detected:", payload)
+          console.log("🔔 REAL-TIME: Appointment change detected:", payload.eventType)
           // Refresh appointments when changes occur
           fetchAppointments()
         },
       )
       .subscribe((status: SubscriptionStatus) => {
         if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to appointments changes')
+          console.log('✅ REAL-TIME: Successfully subscribed to appointments changes')
         } else if (status === 'CLOSED') {
-          console.log('Subscription closed, attempting to reconnect...')
-          // Attempt to reconnect after a delay
+          console.log('🔄 REAL-TIME: Subscription closed, attempting to reconnect...')
           setTimeout(() => {
             appointmentsSubscription.subscribe()
           }, 1000)
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('Subscription error, attempting to reconnect...')
-          // Attempt to reconnect after a delay
+          console.error('❌ REAL-TIME: Subscription error, attempting to reconnect...')
           setTimeout(() => {
             appointmentsSubscription.subscribe()
           }, 1000)
         }
       })
 
-    // Set up real-time subscription for mechanic quotes
+    // Enhanced quotes subscription
     const quotesSubscription = supabase
-      .channel("mechanic-quotes-changes")
+      .channel("mechanic-quotes-changes-optimized")
       .on(
         "postgres_changes",
         {
@@ -174,32 +228,51 @@ export function useMechanicAppointments(mechanicId: string) {
           table: "mechanic_quotes",
         },
         (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log("Quote change detected:", payload)
+          console.log("🔔 REAL-TIME: Quote change detected:", payload.eventType)
           // Refresh appointments when quotes change
           fetchAppointments()
         },
       )
       .subscribe((status: SubscriptionStatus) => {
         if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to quotes changes')
+          console.log('✅ REAL-TIME: Successfully subscribed to quotes changes')
         } else if (status === 'CLOSED') {
-          console.log('Subscription closed, attempting to reconnect...')
-          // Attempt to reconnect after a delay
+          console.log('🔄 REAL-TIME: Subscription closed, attempting to reconnect...')
           setTimeout(() => {
             quotesSubscription.subscribe()
           }, 1000)
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('Subscription error, attempting to reconnect...')
-          // Attempt to reconnect after a delay
+          console.error('❌ REAL-TIME: Subscription error, attempting to reconnect...')
           setTimeout(() => {
             quotesSubscription.subscribe()
           }, 1000)
         }
       })
 
+    // Subscribe to mechanic skips for real-time skip updates
+    const skipsSubscription = supabase
+      .channel("mechanic-skips-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "mechanic_skipped_appointments",
+          filter: `mechanic_id=eq.${mechanicId}`
+        },
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          console.log("🔔 REAL-TIME: Skip change detected:", payload.eventType)
+          // Refresh appointments when skips change
+          fetchAppointments()
+        },
+      )
+      .subscribe()
+
     return () => {
+      console.log("🧹 CLEANUP: Removing optimized subscriptions")
       supabase.removeChannel(appointmentsSubscription)
-      supabase.removeChannel(quotesSubscription)
+      supabase.removeChannel(quotesSubscription) 
+      supabase.removeChannel(skipsSubscription)
     }
   }, [mechanicId, toast])
 
