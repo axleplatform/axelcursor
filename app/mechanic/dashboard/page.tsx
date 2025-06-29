@@ -1047,9 +1047,8 @@ export default function MechanicDashboard() {
         
       if (error) throw error;
       
-      // TODO: Send notification to customer about ETA
-      
-      showNotification(`Job started! Customer has been notified of your ${etaMinutes} minute ETA.`, 'success');
+      // Note: Customer notification system will be implemented in future update
+      showNotification(`Job started! ETA: ${etaMinutes} minutes.`, 'success');
       
       // Refresh appointments
       await fetchInitialAppointments();
