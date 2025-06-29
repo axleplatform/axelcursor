@@ -649,19 +649,69 @@ export default function BookAppointment() {
       // Check if user is authenticated (optional for guest bookings)
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       
-      // For guest bookings with shadow users, we'll use the appointment's existing user_id
-      // For authenticated users, we'll use their actual user_id
-      const userId = user?.id || appointmentData?.user_id // Use shadow user_id for guests
+      let finalUserId: string
+      let normalizedPhone: string | null = null
+      
+      if (user?.id) {
+        // Authenticated user - use their real user ID
+        finalUserId = user.id
+      } else {
+        // Guest booking - implement phone-based tracking
+        normalizedPhone = formData.phoneNumber.replace(/\D/g, '')
+        
+        console.log('🔍 Guest booking - checking phone-based tracking for:', formData.phoneNumber)
+        
+        // Check if this phone has been used before
+        const { data: existingGuest, error: guestCheckError } = await supabase
+          .from('guest_profiles')
+          .select('shadow_user_id, total_appointments')
+          .eq('phone_normalized', normalizedPhone)
+          .single()
+        
+        if (guestCheckError && guestCheckError.code !== 'PGRST116') {
+          console.error('Error checking guest profile:', guestCheckError)
+        }
+        
+        if (existingGuest) {
+          // Returning guest! Use their existing shadow user ID
+          finalUserId = existingGuest.shadow_user_id
+          
+          console.log('🎉 Returning guest found! Using existing shadow user ID:', finalUserId)
+          console.log('   Previous appointments:', existingGuest.total_appointments)
+          
+          // Update guest profile with new booking
+          await supabase.from('guest_profiles').update({
+            last_seen: new Date().toISOString(),
+            total_appointments: supabase.raw('total_appointments + 1'),
+            updated_at: new Date().toISOString()
+          }).eq('phone_normalized', normalizedPhone)
+          
+        } else {
+          // New guest - use existing shadow ID from landing page
+          finalUserId = appointmentData?.user_id || crypto.randomUUID()
+          
+          console.log('👋 New guest! Creating profile with shadow user ID:', finalUserId)
+          
+          // Create new guest profile
+          await supabase.from('guest_profiles').insert({
+            phone_normalized: normalizedPhone,
+            shadow_user_id: finalUserId,
+            first_appointment_id: appointmentId,
+            total_appointments: 1,
+            last_seen: new Date().toISOString()
+          })
+        }
+      }
       
       // Add the missing now variable declaration
       const now = new Date().toISOString()
       
-      // Upsert appointment data (supports both authenticated and guest users)
+      // Upsert appointment data with consistent user_id and phone tracking
       const { data: appointment, error: appointmentError } = await supabase
         .from("appointments")
         .upsert({
           id: appointmentId || undefined, // Use existing ID if available
-          user_id: userId, // null for guest bookings, user.id for authenticated users
+          user_id: finalUserId, // Consistent shadow user ID for guests, real user ID for authenticated
           location: "Mobile Service",
           appointment_date: new Date().toISOString(), // This might need to be preserved
           status: "pending",
@@ -671,6 +721,7 @@ export default function BookAppointment() {
           selected_services: formData.selectedServices,
           selected_car_issues: formData.selectedCarIssues,
           phone_number: formData.phoneNumber,
+          phone_normalized: normalizedPhone, // Add normalized phone for tracking
           created_at: appointmentId ? undefined : now,
           updated_at: now
         })
