@@ -44,9 +44,9 @@ export async function examineSchema() {
 
       // Look for potential junction tables
       const potentialJunctionTables = tables
-        .map((t) => t.tablename)
+        .map((t: { tablename: string }) => t.tablename)
         .filter(
-          (name) =>
+          (name: string) =>
             (name.includes("mechanic") && name.includes("appointment")) ||
             (name.includes("technician") && name.includes("appointment")) ||
             (name.includes("provider") && name.includes("appointment")),
