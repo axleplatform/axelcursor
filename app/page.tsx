@@ -179,11 +179,17 @@ export default function HomePage(): React.JSX.Element {
         car_runs: formData.carRuns
       }
 
+      console.log("🚨 DEBUG: Creating guest appointment with data:", initialAppointmentData)
+      console.log("🚨 DEBUG: user_id is explicitly set to:", initialAppointmentData.user_id)
+
       const { data: createdAppointment, error: appointmentError } = await supabase
         .from('appointments')
         .insert(initialAppointmentData)
-        .select('id')
+        .select('*')
         .single()
+
+      console.log("🚨 DEBUG: Created appointment result:", createdAppointment)
+      console.log("🚨 DEBUG: Created appointment user_id:", createdAppointment?.user_id)
 
       if (appointmentError) {
         throw appointmentError
