@@ -73,16 +73,34 @@ export default function PickMechanicPage() {
    const { data: { user } } = await supabase.auth.getUser()
    console.log('Current user:', user?.id, 'Appointment user:', appointment.user_id)
    
+   // FIXED ACCESS CONTROL FOR GUEST BOOKINGS:
    // Allow access in these cases:
    // 1. Guest appointment (user_id is null) - anyone can access
    // 2. User appointment where current user matches appointment.user_id
    // Deny access only if:
    // - appointment has a user_id AND current user doesn't match
+   
+   console.log('🔍 Access Control Check:', {
+    appointmentUserId: appointment.user_id,
+    currentUserId: user?.id,
+    isGuestAppointment: appointment.user_id === null,
+    hasCurrentUser: !!user,
+    accessGranted: appointment.user_id === null || user?.id === appointment.user_id
+   })
+   
    if (appointment.user_id !== null && user?.id !== appointment.user_id) {
-    console.error('Appointment does not belong to current user')
+    console.error('❌ Access denied: Appointment belongs to different user')
+    console.error('Appointment user_id:', appointment.user_id)
+    console.error('Current user_id:', user?.id)
     setError('You do not have access to this appointment')
     setIsLoading(false)
     return
+   }
+   
+   if (appointment.user_id === null) {
+    console.log('✅ Guest appointment access granted')
+   } else {
+    console.log('✅ User appointment access granted')
    }
    
    // Fetch quotes separately - NO .single()

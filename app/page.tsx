@@ -168,8 +168,9 @@ export default function HomePage(): React.JSX.Element {
         throw new Error("Invalid appointment date")
       }
 
-      // Create appointment first
+      // Create appointment first - explicitly set user_id to null for guest bookings
       const initialAppointmentData = {
+        user_id: null, // CRITICAL: Explicitly set to null for guest appointments
         status: "pending",
         appointment_date: appointmentDate.toISOString(),
         location: formData.address,
@@ -229,22 +230,25 @@ export default function HomePage(): React.JSX.Element {
     // Convert the selected date and time to the format expected by the form
     const formattedDate = date.toISOString().split("T")[0]
 
-    // Handle the "Now" case
-    let formattedTime: string
-    if (time === "Now") {
-      const now = new Date()
-      const hours = now.getHours().toString().padStart(2, "0")
-      const minutes = now.getMinutes().toString().padStart(2, "0")
-      formattedTime = `${hours}:${minutes}`
-    } else {
-      // Parse the time string (e.g., "9:30 AM") to 24-hour format
-      const [timePart, ampm] = time.split(" ")
-      let [hours, minutes] = timePart.split(":").map(Number)
+    // Only update time if a time is actually selected (prevents auto-submission)
+    let formattedTime: string = ""
+    
+    if (time && time !== "Select time") {
+      if (time === "Now") {
+        const now = new Date()
+        const hours = now.getHours().toString().padStart(2, "0")
+        const minutes = now.getMinutes().toString().padStart(2, "0")
+        formattedTime = `${hours}:${minutes}`
+      } else {
+        // Parse the time string (e.g., "9:30 AM") to 24-hour format
+        const [timePart, ampm] = time.split(" ")
+        let [hours, minutes] = timePart.split(":").map(Number)
 
-      if (ampm === "PM" && hours < 12) hours += 12
-      if (ampm === "AM" && hours === 12) hours = 0
+        if (ampm === "PM" && hours < 12) hours += 12
+        if (ampm === "AM" && hours === 12) hours = 0
 
-      formattedTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`
+        formattedTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`
+      }
     }
 
     setFormData((prev: AppointmentFormData) => ({

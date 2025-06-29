@@ -75,7 +75,7 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimeSelector, setShowTimeSelector] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [selectedTime, setSelectedTime] = useState("Now")
+  const [selectedTime, setSelectedTime] = useState("")
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()))
 
@@ -185,24 +185,26 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
       // Add "Now" option at the top of the list for today
       setAvailableTimeSlots(["Now", ...futureTimeSlots])
 
-      // If the time was not explicitly selected by the user or is not valid anymore,
-      // default to the next available time slot
-      if (selectedTime === "Now" || !["Now", ...futureTimeSlots].includes(selectedTime)) {
-        setSelectedTime(timeSlot)
+      // For today, default to "Now" if no time is selected
+      if (!selectedTime || !["Now", ...futureTimeSlots].includes(selectedTime)) {
+        setSelectedTime("Now")
       }
     } else {
       // For future dates, show all time slots without "Now" option
       setAvailableTimeSlots(allTimeSlots)
 
-      // If coming from today with "Now" selected to a future date
-      if (selectedTime === "Now") {
-        setSelectedTime("9:00 AM") // Default time for future dates
+      // For future dates, clear time selection to force user to pick
+      if (selectedTime === "Now" || !allTimeSlots.includes(selectedTime)) {
+        setSelectedTime("") // Force user to select a time for future dates
       }
     }
   }, [selectedDate])
 
   // Notify parent component when date or time changes
+  // Prevent auto-submit by only notifying when user has made explicit selections
   useEffect(() => {
+    // Always notify parent of changes, but the parent form should handle validation
+    // The key is that we don't auto-submit forms - only update form state
     onDateTimeChange(selectedDate, selectedTime)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedTime])
@@ -334,7 +336,7 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
           }}
         >
           <Clock />
-          <span>{selectedTime}</span>
+          <span>{selectedTime || "Select time"}</span>
           <span className="ml-1">▼</span>
         </button>
 
