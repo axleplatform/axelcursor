@@ -155,33 +155,18 @@ export default function HomePage(): React.JSX.Element {
   const createShadowUserId = async () => {
     try {
       // Generate a consistent UUID for the shadow user
-      // We'll use this as a virtual user_id without creating an actual auth user
+      // This replaces the null user_id approach with a proper shadow user system
       const shadowUserId = crypto.randomUUID()
       
-      console.log('🔄 Creating shadow user ID for guest booking:', shadowUserId)
+      // We don't need to insert into any tracking table at this stage
+      // The guest_profiles tracking will happen later when phone number is provided
+      // in the book-appointment page
       
-      // Optionally store this shadow user info in a separate table for tracking
-      // This could be useful for analytics and account merging later
-      try {
-        await supabase.from('guest_users').insert({
-          id: shadowUserId,
-          is_shadow_user: true,
-          created_for: 'guest_booking',
-          created_at: new Date().toISOString()
-        })
-      } catch (guestTableError) {
-        // If guest_users table doesn't exist, that's okay - we'll still use the UUID
-        console.log('📝 Guest users table not available, using UUID only')
-      }
-
-      console.log('✅ Shadow user ID created successfully:', shadowUserId)
       return shadowUserId
 
     } catch (error) {
-      console.error('❌ Failed to create shadow user ID:', error)
       // Fallback: generate a simple UUID
       const fallbackUserId = crypto.randomUUID()
-      console.log('🔄 Using fallback UUID for user_id:', fallbackUserId)
       return fallbackUserId
     }
   }
@@ -267,14 +252,29 @@ export default function HomePage(): React.JSX.Element {
     }
   }, [formData, validateForm, router])
 
+  // Check if all required fields are filled (for button state)
+  const isFormComplete = React.useMemo((): boolean => {
+    return !!(
+      formData.address.trim() &&
+      formData.year.trim() &&
+      formData.make.trim() &&
+      formData.model.trim() &&
+      formData.appointmentDate.trim() &&
+      formData.appointmentTime.trim()
+    )
+  }, [formData])
+
   const handleDateTimeChange = React.useCallback((date: Date, time: string): void => {
+    // This function is only called when BOTH date AND time are properly selected
+    // (thanks to our DateTimeSelector improvement)
+    
     // Convert the selected date and time to the format expected by the form
     const formattedDate = date.toISOString().split("T")[0]
 
-    // Only update time if a time is actually selected (prevents auto-submission)
+    // Process the time selection
     let formattedTime: string = ""
     
-    if (time && time !== "Select time") {
+    if (time && time !== "Select time" && time !== "") {
       if (time === "Now") {
         const now = new Date()
         const hours = now.getHours().toString().padStart(2, "0")
@@ -292,6 +292,7 @@ export default function HomePage(): React.JSX.Element {
       }
     }
 
+    // Update form data - this will NOT trigger form submission, only state update
     setFormData((prev: AppointmentFormData) => ({
       ...prev,
       appointmentDate: formattedDate,
@@ -469,8 +470,12 @@ export default function HomePage(): React.JSX.Element {
             <div className="flex justify-center mb-8">
               <Button
                 type="submit"
-                disabled={isSubmitting}
-                className="bg-[#294a46] hover:bg-[#1e3632] text-white font-medium py-6 px-10 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
+                disabled={isSubmitting || !isFormComplete}
+                className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 ${
+                  isFormComplete && !isSubmitting 
+                    ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] hover:shadow-md active:scale-[0.99]" 
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
               >
                 {isSubmitting ? (
                   <div className="flex items-center">
@@ -482,6 +487,15 @@ export default function HomePage(): React.JSX.Element {
                 )}
               </Button>
             </div>
+            
+            {/* Form Progress Indicator */}
+            {!isFormComplete && (
+              <div className="text-center mb-4">
+                <p className="text-sm text-gray-500">
+                  Please fill in all required fields to continue
+                </p>
+              </div>
+            )}
           </form>
 
           {/* Description */}

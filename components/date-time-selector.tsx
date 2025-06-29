@@ -200,12 +200,14 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
     }
   }, [selectedDate])
 
-  // Notify parent component when date or time changes
-  // Prevent auto-submit by only notifying when user has made explicit selections
+  // Notify parent component when BOTH date AND time are properly selected
+  // This prevents auto-submission by ensuring incomplete selections don't trigger updates
   useEffect(() => {
-    // Always notify parent of changes, but the parent form should handle validation
-    // The key is that we don't auto-submit forms - only update form state
-    onDateTimeChange(selectedDate, selectedTime)
+    // Only notify parent when we have a complete date/time selection
+    // This prevents partial selections from triggering form validation or submission
+    if (selectedTime && selectedTime !== "") {
+      onDateTimeChange(selectedDate, selectedTime)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedTime])
 
