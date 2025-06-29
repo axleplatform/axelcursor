@@ -9,7 +9,7 @@ export async function createProfileImagesBucket() {
       throw listError
     }
 
-    const bucketExists = buckets.some((bucket) => bucket.name === "profile-images")
+    const bucketExists = buckets.some((bucket: { name: string }) => bucket.name === "profile-images")
 
     if (!bucketExists) {
       // Create the bucket if it doesn't exist
