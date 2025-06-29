@@ -151,6 +151,41 @@ export default function HomePage(): React.JSX.Element {
     return Object.keys(newErrors).length === 0
   }, [formData])
 
+  // Helper function to create a shadow user ID for guest bookings
+  const createShadowUserId = async () => {
+    try {
+      // Generate a consistent UUID for the shadow user
+      // We'll use this as a virtual user_id without creating an actual auth user
+      const shadowUserId = crypto.randomUUID()
+      
+      console.log('🔄 Creating shadow user ID for guest booking:', shadowUserId)
+      
+      // Optionally store this shadow user info in a separate table for tracking
+      // This could be useful for analytics and account merging later
+      try {
+        await supabase.from('guest_users').insert({
+          id: shadowUserId,
+          is_shadow_user: true,
+          created_for: 'guest_booking',
+          created_at: new Date().toISOString()
+        })
+      } catch (guestTableError) {
+        // If guest_users table doesn't exist, that's okay - we'll still use the UUID
+        console.log('📝 Guest users table not available, using UUID only')
+      }
+
+      console.log('✅ Shadow user ID created successfully:', shadowUserId)
+      return shadowUserId
+
+    } catch (error) {
+      console.error('❌ Failed to create shadow user ID:', error)
+      // Fallback: generate a simple UUID
+      const fallbackUserId = crypto.randomUUID()
+      console.log('🔄 Using fallback UUID for user_id:', fallbackUserId)
+      return fallbackUserId
+    }
+  }
+
   // Handle form submission
   const handleSubmit = React.useCallback(async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
@@ -168,28 +203,28 @@ export default function HomePage(): React.JSX.Element {
         throw new Error("Invalid appointment date")
       }
 
-      // Create appointment first - explicitly set user_id to null for guest bookings
+      // Create shadow user ID for guest booking (replaces null user_id approach)
+      const shadowUserId = await createShadowUserId()
+      
+      // Create appointment with shadow user_id (no more null user_id!)
       const initialAppointmentData = {
-        user_id: null, // CRITICAL: Explicitly set to null for guest appointments
+        user_id: shadowUserId, // IMPROVED: Use shadow user instead of null
         status: "pending",
         appointment_date: appointmentDate.toISOString(),
         location: formData.address,
         issue_description: formData.issueDescription,
         selected_services: formData.selectedServices,
-        car_runs: formData.carRuns
+        car_runs: formData.carRuns,
+        // Mark as guest appointment for easy identification
+        is_guest: true,
+        source: 'web_guest_booking'
       }
-
-      console.log("🚨 DEBUG: Creating guest appointment with data:", initialAppointmentData)
-      console.log("🚨 DEBUG: user_id is explicitly set to:", initialAppointmentData.user_id)
 
       const { data: createdAppointment, error: appointmentError } = await supabase
         .from('appointments')
         .insert(initialAppointmentData)
-        .select('*')
+        .select('id')
         .single()
-
-      console.log("🚨 DEBUG: Created appointment result:", createdAppointment)
-      console.log("🚨 DEBUG: Created appointment user_id:", createdAppointment?.user_id)
 
       if (appointmentError) {
         throw appointmentError

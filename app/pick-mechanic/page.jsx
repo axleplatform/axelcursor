@@ -73,32 +73,36 @@ export default function PickMechanicPage() {
    const { data: { user } } = await supabase.auth.getUser()
    console.log('Current user:', user?.id, 'Appointment user:', appointment.user_id)
    
-   // FIXED ACCESS CONTROL FOR GUEST BOOKINGS:
+   // SIMPLIFIED ACCESS CONTROL WITH SHADOW USERS:
+   // Now all appointments have real user_ids (including shadow users for guests)
    // Allow access in these cases:
-   // 1. Guest appointment (user_id is null) - anyone can access
+   // 1. Guest appointment (is_guest flag is true) - anyone can access
    // 2. User appointment where current user matches appointment.user_id
    // Deny access only if:
-   // - appointment has a user_id AND current user doesn't match
+   // - appointment is NOT a guest appointment AND current user doesn't match
    
    console.log('🔍 Access Control Check:', {
     appointmentUserId: appointment.user_id,
     currentUserId: user?.id,
-    isGuestAppointment: appointment.user_id === null,
+    isGuestAppointment: appointment.is_guest,
     hasCurrentUser: !!user,
-    accessGranted: appointment.user_id === null || user?.id === appointment.user_id
+    accessGranted: appointment.is_guest || user?.id === appointment.user_id
    })
    
-   if (appointment.user_id !== null && user?.id !== appointment.user_id) {
+   // For guest appointments, allow access regardless of current user
+   // For user appointments, require matching user_id
+   if (!appointment.is_guest && user?.id !== appointment.user_id) {
     console.error('❌ Access denied: Appointment belongs to different user')
     console.error('Appointment user_id:', appointment.user_id)
     console.error('Current user_id:', user?.id)
+    console.error('Is guest appointment:', appointment.is_guest)
     setError('You do not have access to this appointment')
     setIsLoading(false)
     return
    }
    
-   if (appointment.user_id === null) {
-    console.log('✅ Guest appointment access granted')
+   if (appointment.is_guest) {
+    console.log('✅ Guest appointment access granted (shadow user)')
    } else {
     console.log('✅ User appointment access granted')
    }

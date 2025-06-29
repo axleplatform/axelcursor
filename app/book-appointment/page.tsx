@@ -649,30 +649,19 @@ export default function BookAppointment() {
       // Check if user is authenticated (optional for guest bookings)
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       
-      console.log("🚨 DEBUG: Book appointment - current user:", user?.id || "null (guest)")
-      console.log("🚨 DEBUG: Book appointment - appointmentId:", appointmentId)
-      
-      // CRITICAL FIX: For guest bookings, preserve the original null user_id
-      // Don't override with a generated user ID!
-      let userId = null // Default to null for guest bookings
-      
-      if (user?.id) {
-        // Only set user_id if we have an authenticated user
-        userId = user.id
-        console.log("🚨 DEBUG: Authenticated user detected, setting user_id:", userId)
-      } else {
-        console.log("🚨 DEBUG: Guest booking detected, keeping user_id as null")
-      }
+      // For guest bookings with shadow users, we'll use the appointment's existing user_id
+      // For authenticated users, we'll use their actual user_id
+      const userId = user?.id || appointmentData?.user_id // Use shadow user_id for guests
       
       // Add the missing now variable declaration
       const now = new Date().toISOString()
       
-      // Update appointment data - PRESERVE existing user_id for guest bookings
+      // Upsert appointment data (supports both authenticated and guest users)
       const { data: appointment, error: appointmentError } = await supabase
         .from("appointments")
-        .update({
-          // CRITICAL: Do NOT update user_id for existing appointments (preserves null for guests)
-          // user_id: userId, // REMOVED - Don't override existing user_id
+        .upsert({
+          id: appointmentId || undefined, // Use existing ID if available
+          user_id: userId, // null for guest bookings, user.id for authenticated users
           location: "Mobile Service",
           appointment_date: new Date().toISOString(), // This might need to be preserved
           status: "pending",
@@ -682,14 +671,11 @@ export default function BookAppointment() {
           selected_services: formData.selectedServices,
           selected_car_issues: formData.selectedCarIssues,
           phone_number: formData.phoneNumber,
+          created_at: appointmentId ? undefined : now,
           updated_at: now
         })
-        .eq('id', appointmentId)
         .select()
         .single();
-
-      console.log("🚨 DEBUG: Updated appointment result:", appointment)
-      console.log("🚨 DEBUG: Final appointment user_id:", appointment?.user_id)
       if (appointmentError) throw appointmentError;
       if (!appointment) {
         throw new Error("Failed to create appointment")
