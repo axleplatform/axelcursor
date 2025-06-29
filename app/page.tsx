@@ -151,23 +151,23 @@ export default function HomePage(): React.JSX.Element {
     return Object.keys(newErrors).length === 0
   }, [formData])
 
-  // Helper function to create a shadow user ID for guest bookings
-  const createShadowUserId = async () => {
+  // Create a temporary user record immediately (no more NULL user_id!)
+  const createTemporaryUser = async () => {
     try {
-      // Generate a consistent UUID for the shadow user
-      // This replaces the null user_id approach with a proper shadow user system
-      const shadowUserId = crypto.randomUUID()
-      
-      // We don't need to insert into any tracking table at this stage
-      // The guest_profiles tracking will happen later when phone number is provided
-      // in the book-appointment page
-      
-      return shadowUserId
+      // Call Supabase function to create a temporary user
+      const { data, error } = await supabase.rpc('create_temporary_user')
 
+      if (error) {
+        throw error
+      }
+
+      if (!data) {
+        throw new Error("Failed to create temporary user")
+      }
+
+      return data as string
     } catch (error) {
-      // Fallback: generate a simple UUID
-      const fallbackUserId = crypto.randomUUID()
-      return fallbackUserId
+      throw new Error(`Failed to create user: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -188,12 +188,12 @@ export default function HomePage(): React.JSX.Element {
         throw new Error("Invalid appointment date")
       }
 
-      // Create shadow user ID for guest booking (replaces null user_id approach)
-      const shadowUserId = await createShadowUserId()
+      // Create temporary user immediately (no more NULL user_id!)
+      const tempUserId = await createTemporaryUser()
       
-      // Create appointment with shadow user_id (no more null user_id!)
+      // Create appointment with real user_id (never NULL!)
       const initialAppointmentData = {
-        user_id: shadowUserId, // IMPROVED: Use shadow user instead of null
+        user_id: tempUserId, // ALWAYS has a user_id
         status: "pending",
         appointment_date: appointmentDate.toISOString(),
         location: formData.address,

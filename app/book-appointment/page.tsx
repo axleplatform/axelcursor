@@ -646,85 +646,49 @@ export default function BookAppointment() {
     setIsSubmitting(true)
     setValidationError(null)
     try {
-      // Check if user is authenticated (optional for guest bookings)
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      // Always-Create-User System: Handle phone number merging
+      const currentUserId = appointmentData?.user_id
       
-      let finalUserId: string
-      let normalizedPhone: string | null = null
-      
-      if (user?.id) {
-        // Authenticated user - use their real user ID
-        finalUserId = user.id
-      } else {
-        // Guest booking - implement phone-based tracking
-        normalizedPhone = formData.phoneNumber.replace(/\D/g, '')
-        
-        console.log('🔍 Guest booking - checking phone-based tracking for:', formData.phoneNumber)
-        
-        // Check if this phone has been used before
-        const { data: existingGuest, error: guestCheckError } = await supabase
-          .from('guest_profiles')
-          .select('shadow_user_id, total_appointments')
-          .eq('phone_normalized', normalizedPhone)
-          .single()
-        
-        if (guestCheckError && guestCheckError.code !== 'PGRST116') {
-          console.error('Error checking guest profile:', guestCheckError)
-        }
-        
-        if (existingGuest) {
-          // Returning guest! Use their existing shadow user ID
-          finalUserId = existingGuest.shadow_user_id
-          
-          console.log('🎉 Returning guest found! Using existing shadow user ID:', finalUserId)
-          console.log('   Previous appointments:', existingGuest.total_appointments)
-          
-          // Update guest profile with new booking
-          await supabase.from('guest_profiles').update({
-            last_seen: new Date().toISOString(),
-            total_appointments: supabase.raw('total_appointments + 1'),
-            updated_at: new Date().toISOString()
-          }).eq('phone_normalized', normalizedPhone)
-          
-        } else {
-          // New guest - use existing shadow ID from landing page
-          finalUserId = appointmentData?.user_id || crypto.randomUUID()
-          
-          console.log('👋 New guest! Creating profile with shadow user ID:', finalUserId)
-          
-          // Create new guest profile
-          await supabase.from('guest_profiles').insert({
-            phone_normalized: normalizedPhone,
-            shadow_user_id: finalUserId,
-            first_appointment_id: appointmentId,
-            total_appointments: 1,
-            last_seen: new Date().toISOString()
-          })
-        }
+      if (!currentUserId) {
+        throw new Error("Invalid appointment - no user ID found")
       }
       
-      // Add the missing now variable declaration
+      // Normalize phone number for matching
+      const normalizedPhone = formData.phoneNumber.replace(/\D/g, '')
+      
+      // Use Supabase function to merge users by phone number
+      const { data: finalUserId, error: mergeError } = await supabase.rpc(
+        'merge_users_by_phone',
+        {
+          phone_to_check: normalizedPhone,
+          current_user_id: currentUserId
+        }
+      )
+      
+      if (mergeError) {
+        throw new Error(`Failed to process phone number: ${mergeError.message}`)
+      }
+      
+      if (!finalUserId) {
+        throw new Error("Failed to get final user ID")
+      }
+      
+      // Update appointment with phone number and final user ID
       const now = new Date().toISOString()
       
-      // Upsert appointment data with consistent user_id and phone tracking
+      // Update appointment data (never upsert - appointment already exists from landing page)
       const { data: appointment, error: appointmentError } = await supabase
         .from("appointments")
-        .upsert({
-          id: appointmentId || undefined, // Use existing ID if available
-          user_id: finalUserId, // Consistent shadow user ID for guests, real user ID for authenticated
-          location: "Mobile Service",
-          appointment_date: new Date().toISOString(), // This might need to be preserved
-          status: "pending",
-          source: "web",
+        .update({
+          user_id: finalUserId, // Use final user ID (might be merged)
           car_runs: formData.carRuns,
           issue_description: formData.issueDescription,
           selected_services: formData.selectedServices,
           selected_car_issues: formData.selectedCarIssues,
-          phone_number: formData.phoneNumber,
-          phone_normalized: normalizedPhone, // Add normalized phone for tracking
-          created_at: appointmentId ? undefined : now,
+                     phone_number: formData.phoneNumber,
           updated_at: now
         })
+        .eq('id', appointmentId)
         .select()
         .single();
       if (appointmentError) throw appointmentError;
