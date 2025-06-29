@@ -81,15 +81,15 @@ export function useAppointments() {
         (payload: RealtimePostgresChangesPayload<Appointment>) => {
           console.log("Real-time update received:", payload)
           if (payload.eventType === "INSERT") {
-            setAppointments((prev) => [...prev, payload.new as Appointment])
+            setAppointments((prev: Appointment[]) => [...prev, payload.new as Appointment])
           } else if (payload.eventType === "UPDATE") {
-            setAppointments((prev) =>
-              prev.map((appointment) =>
+            setAppointments((prev: Appointment[]) =>
+              prev.map((appointment: Appointment) =>
                 appointment.id === payload.new.id ? (payload.new as Appointment) : appointment,
               ),
             )
           } else if (payload.eventType === "DELETE") {
-            setAppointments((prev) => prev.filter((appointment) => appointment.id !== payload.old.id))
+            setAppointments((prev: Appointment[]) => prev.filter((appointment: Appointment) => appointment.id !== payload.old.id))
           }
         },
       )
@@ -114,8 +114,8 @@ export function useAppointments() {
       if (error) throw error
 
       // Update local state
-      setAppointments((prev) =>
-        prev.map((appointment) =>
+      setAppointments((prev: Appointment[]) =>
+        prev.map((appointment: Appointment) =>
           appointment.id === appointmentId ? { ...appointment, status } : appointment,
         ),
       )
@@ -141,8 +141,8 @@ export function useAppointments() {
       if (error) throw error
 
       // Update local state
-      setAppointments((prev) =>
-        prev.map((appointment) =>
+      setAppointments((prev: Appointment[]) =>
+        prev.map((appointment: Appointment) =>
           appointment.id === appointmentId ? { ...appointment, price } : appointment,
         ),
       )

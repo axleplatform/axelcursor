@@ -221,7 +221,7 @@ export function useMechanicAppointments(mechanicId: string) {
 
       // Update local state
       setUpcomingAppointments((prev: Appointment[]) =>
-        prev.map((appointment) => (appointment.id === appointmentId ? { ...appointment, status } : appointment)),
+        prev.map((appointment: Appointment) => (appointment.id === appointmentId ? { ...appointment, status } : appointment)),
       )
 
       return true
@@ -265,7 +265,7 @@ export function useMechanicAppointments(mechanicId: string) {
       if (updateAppointmentError) throw updateAppointmentError
 
       // Remove from available appointments
-      setAvailableAppointments((prev) => prev.filter((a) => a.id !== appointmentId))
+      setAvailableAppointments((prev: Appointment[]) => prev.filter((a: Appointment) => a.id !== appointmentId))
 
       return true
     } catch (err) {
@@ -280,7 +280,7 @@ export function useMechanicAppointments(mechanicId: string) {
 
     try {
       // Check if this is a direct appointment update or a quote update
-      const appointment = upcomingAppointments.find((a) => a.id === appointmentId)
+      const appointment = upcomingAppointments.find((a: Appointment) => a.id === appointmentId)
 
       if (appointment) {
         // Direct appointment update
@@ -317,7 +317,7 @@ export function useMechanicAppointments(mechanicId: string) {
     try {
       // For denying, we just remove it from the available list for this mechanic
       // We don't update the backend status since other mechanics might want to accept it
-      setAvailableAppointments((prev: Appointment[]) => prev.filter((a) => a.id !== appointmentId))
+      setAvailableAppointments((prev: Appointment[]) => prev.filter((a: Appointment) => a.id !== appointmentId))
       return true
     } catch (err) {
       console.error("Error denying appointment:", err)
@@ -340,8 +340,8 @@ export function useMechanicAppointments(mechanicId: string) {
       if (error) throw error
 
       // Update local state
-      setUpcomingAppointments((prev) =>
-        prev.map((appointment) =>
+      setUpcomingAppointments((prev: Appointment[]) =>
+        prev.map((appointment: Appointment) =>
           appointment.id === appointmentId ? { ...appointment, status: "in_progress" } : appointment,
         ),
       )
@@ -368,8 +368,8 @@ export function useMechanicAppointments(mechanicId: string) {
       if (error) throw error
 
       // Update local state
-      setUpcomingAppointments((prev) =>
-        prev.map((appointment) =>
+      setUpcomingAppointments((prev: Appointment[]) =>
+        prev.map((appointment: Appointment) =>
           appointment.id === appointmentId ? { ...appointment, status: "completed" } : appointment,
         ),
       )
@@ -396,8 +396,8 @@ export function useMechanicAppointments(mechanicId: string) {
       if (error) throw error
 
       // Update local state
-      setUpcomingAppointments((prev) =>
-        prev.map((appointment) =>
+      setUpcomingAppointments((prev: Appointment[]) =>
+        prev.map((appointment: Appointment) =>
           appointment.id === appointmentId ? { ...appointment, status: "cancelled" } : appointment,
         ),
       )
