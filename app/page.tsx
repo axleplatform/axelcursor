@@ -170,7 +170,7 @@ export default function HomePage(): React.JSX.Element {
       newErrors.appointmentTime = "Time is required"
     }
 
-    // Validate appointment date is not in the past
+    // Validate appointment date with 30-minute buffer for better UX
     if (formData.appointmentDate && formData.appointmentTime) {
       try {
         console.log('🔄 validateForm: Parsing date:', `${formData.appointmentDate}T${formData.appointmentTime}`)
@@ -182,11 +182,32 @@ export default function HomePage(): React.JSX.Element {
           newErrors.appointmentDate = "Invalid date or time format"
         } else {
           const now = new Date()
+          const appointmentDate = new Date(formData.appointmentDate)
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          appointmentDate.setHours(0, 0, 0, 0)
+          
           console.log('🔄 validateForm: Comparing dates - appointment:', appointmentDateTime, 'now:', now)
           
-          if (appointmentDateTime <= now) {
+          // If appointment is today, require 30-minute buffer
+          if (appointmentDate.getTime() === today.getTime()) {
+            const bufferTime = new Date(now.getTime() + 30 * 60 * 1000) // Add 30 minutes
+            
+            if (appointmentDateTime <= bufferTime) {
+              console.log('❌ validateForm: Appointment too soon (less than 30 min buffer)')
+              newErrors.appointmentDate = "Please select a time at least 30 minutes from now"
+            } else {
+              console.log('✅ validateForm: Today appointment with sufficient buffer')
+            }
+          }
+          // If appointment is in the past (previous date), reject
+          else if (appointmentDate.getTime() < today.getTime()) {
             console.log('❌ validateForm: Date is in the past')
-            newErrors.appointmentDate = "Appointment must be in the future"
+            newErrors.appointmentDate = "Appointment date cannot be in the past"
+          }
+          // If appointment is in the future (tomorrow or later), always allow
+          else {
+            console.log('✅ validateForm: Future date appointment - always allowed')
           }
         }
       } catch (error) {
