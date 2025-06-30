@@ -526,7 +526,7 @@ export default function MechanicDashboard() {
   };
 
   // Handle skipping an appointment
-  const handleSkipAppointment = async (appointment: Appointment): Promise<void> => {
+  const handleSkipAppointment = async (appointment: AppointmentWithRelations): Promise<void> => {
     if (!appointment.id) {
       console.error('❌ Skip failed: No appointment ID');
       showNotification('Invalid appointment', 'error');
@@ -694,7 +694,7 @@ export default function MechanicDashboard() {
       }
 
       // Calculate the new index before updating state
-      const newAvailableAppointments = availableAppointments.filter((a: AppointmentWithRelations) => a.id !== appointment.id);
+      const newAvailableAppointments = availableAppointments.filter((a) => a.id !== appointment.id);
       const newLength = newAvailableAppointments.length;
       
       // Reset index to 0 if current index would be out of bounds, otherwise keep current position
@@ -743,7 +743,7 @@ export default function MechanicDashboard() {
   const handleUpdateQuote = async (appointmentId: string) => {
     try {
       const myQuote = upcomingAppointments
-        .find((apt: AppointmentWithRelations) => apt.id === appointmentId)
+        .find((apt) => apt.id === appointmentId)
         ?.mechanic_quotes
         ?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
       
@@ -796,7 +796,7 @@ export default function MechanicDashboard() {
 
     try {
       // Get the appointment and quote details
-      const appointment = upcomingAppointments.find((apt: AppointmentWithRelations) => apt.id === appointmentId);
+      const appointment = upcomingAppointments.find((apt) => apt.id === appointmentId);
       const myQuote = appointment?.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
       
       console.log('2. Found appointment and quote:', {
@@ -925,7 +925,7 @@ export default function MechanicDashboard() {
 
       console.log('21. Delete successful, updating UI...');
       // Update UI state
-      setUpcomingAppointments((prev: AppointmentWithRelations[]) => prev.filter((apt: AppointmentWithRelations) => apt.id !== appointmentId));
+      setUpcomingAppointments((prev) => prev.filter((apt) => apt.id !== appointmentId));
 
       // Reset form state
       setSelectedAppointment(null);
@@ -943,7 +943,7 @@ export default function MechanicDashboard() {
   };
 
   // Add new handler functions before the return statement
-  const handleStartAppointment = (appointment: Appointment) => {
+  const handleStartAppointment = (appointment: AppointmentWithRelations) => {
     setStartingAppointment(appointment);
   };
 
@@ -980,7 +980,7 @@ export default function MechanicDashboard() {
     }
   };
 
-  const handleCancelConfirmedAppointment = async (appointment: Appointment, quotePrice: number) => {
+  const handleCancelConfirmedAppointment = async (appointment: AppointmentWithRelations, quotePrice: number) => {
     const cancellationFee = (quotePrice * 0.05).toFixed(2);
     
     console.log('=== CANCELLATION DEBUG ===');
@@ -1102,7 +1102,7 @@ export default function MechanicDashboard() {
       }
 
       // Remove from UI
-      setUpcomingAppointments((prev: Appointment[]) => prev.filter((apt: Appointment) => apt.id !== appointment.id));
+              setUpcomingAppointments((prev) => prev.filter((apt) => apt.id !== appointment.id));
       
       showNotification(`Appointment cancelled. A $${cancellationFee} cancellation fee will be deducted from your account.`, 'info');
       
@@ -1114,7 +1114,7 @@ export default function MechanicDashboard() {
   };
 
   // Add handleEditAppointment function
-  const handleEditAppointment = (appointment: Appointment) => {
+  const handleEditAppointment = (appointment: AppointmentWithRelations) => {
     const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
     
     if (!myQuote) {
@@ -1314,7 +1314,7 @@ export default function MechanicDashboard() {
                   console.log('🎯 RENDERING UPCOMING APPOINTMENT CARDS:', upcomingAppointments.length);
                   return null;
                 })()}
-                {upcomingAppointments.map((appointment: Appointment) => {
+                                    {upcomingAppointments.map((appointment) => {
                   const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
                   const isSelected = appointment.selected_mechanic_id === mechanicId;
                   const isEditing = selectedAppointment?.id === appointment.id;
@@ -1798,7 +1798,7 @@ export default function MechanicDashboard() {
                     {/* Pagination Dots */}
                     {availableAppointments.length > 1 && (
                       <div className="flex justify-center mt-4 gap-1">
-                        {availableAppointments.map((_: Appointment, index: number) => (
+                        {availableAppointments.map((_, index: number) => (
                           <div
                             key={index}
                             className={`w-2 h-2 rounded-full ${index === currentAvailableIndex ? "bg-white" : "bg-white/30"}`}

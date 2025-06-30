@@ -744,7 +744,7 @@ export default function HomePage(): React.JSX.Element {
           height: 24px;
         }
 
-        /* Snake Light Animation for Location Input */
+        /* Snake Light Trail Animation for Location Input */
         .location-input-container {
           position: relative;
         }
@@ -752,21 +752,26 @@ export default function HomePage(): React.JSX.Element {
         .location-input-container::before {
           content: '';
           position: absolute;
-          inset: -3px;
+          top: -3px;
+          left: -3px;
+          right: -3px;
+          bottom: -3px;
           border-radius: 12px;
-          padding: 3px;
-          background: conic-gradient(from 0deg, #294a46, transparent, transparent, transparent, #294a46);
           opacity: 0;
           transition: opacity 0.3s ease;
-          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          -webkit-mask-composite: subtract;
-          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          mask-composite: subtract;
+          background: 
+            linear-gradient(90deg, transparent 0%, transparent 40%, #294a46 50%, transparent 60%, transparent 100%),
+            linear-gradient(180deg, transparent 0%, transparent 40%, #294a46 50%, transparent 60%, transparent 100%),
+            linear-gradient(270deg, transparent 0%, transparent 40%, #294a46 50%, transparent 60%, transparent 100%),
+            linear-gradient(0deg, transparent 0%, transparent 40%, #294a46 50%, transparent 60%, transparent 100%);
+          background-size: 100% 3px, 3px 100%, 100% 3px, 3px 100%;
+          background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+          background-repeat: no-repeat;
         }
 
         .location-input-container:focus-within::before {
           opacity: 1;
-          animation: snake-rotate 2s linear infinite;
+          animation: snake-around 2s linear infinite;
         }
 
         .location-input:focus {
@@ -774,12 +779,21 @@ export default function HomePage(): React.JSX.Element {
           border-color: transparent;
         }
 
-        @keyframes snake-rotate {
+        @keyframes snake-around {
           0% {
-            transform: rotate(0deg);
+            background-position: -100% 0, 100% -100%, 200% 100%, 0 200%;
+          }
+          25% {
+            background-position: 100% 0, 100% -100%, 200% 100%, 0 200%;
+          }
+          50% {
+            background-position: 100% 0, 100% 100%, 200% 100%, 0 200%;
+          }
+          75% {
+            background-position: 100% 0, 100% 100%, -100% 100%, 0 200%;
           }
           100% {
-            transform: rotate(360deg);
+            background-position: 100% 0, 100% 100%, -100% 100%, 0 -100%;
           }
         }
       `}</style>
