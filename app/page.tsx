@@ -373,8 +373,8 @@ export default function HomePage(): React.JSX.Element {
             {/* Location Input */}
             <div className="mb-3">
               <h2 className="text-lg font-medium mb-1">Enter your location</h2>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <div className="relative location-input-container">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
                   <MapPin className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -383,7 +383,7 @@ export default function HomePage(): React.JSX.Element {
                   value={formData.address}
                   onChange={handleChange}
                   placeholder="Enter complete address (123 Main St, City, State)"
-                  className={`block w-full p-4 pl-10 pr-16 text-sm text-gray-900 border ${errors.address ? "border-red-500" : "border-gray-300"} rounded-lg bg-white focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46]`}
+                  className={`location-input block w-full p-4 pl-10 pr-16 text-sm text-gray-900 border ${errors.address ? "border-red-500" : "border-gray-300"} rounded-lg bg-white relative z-10`}
                 />
               </div>
               {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
@@ -742,6 +742,55 @@ export default function HomePage(): React.JSX.Element {
         .date-input,
         .time-input {
           height: 24px;
+        }
+
+        /* Snake Light Animation for Location Input */
+        .location-input-container {
+          position: relative;
+        }
+
+        .location-input-container::before {
+          content: '';
+          position: absolute;
+          inset: -2px;
+          padding: 2px;
+          background: conic-gradient(from 0deg, #294a46, #1e3632, #294a46, #3a5954, #294a46);
+          border-radius: 10px;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: subtract;
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask-composite: subtract;
+          animation: snake-light 3s linear infinite;
+        }
+
+        .location-input:focus + .location-input-container::before,
+        .location-input-container:focus-within::before {
+          opacity: 1;
+        }
+
+        .location-input:focus {
+          outline: none;
+          border-color: #294a46;
+        }
+
+        @keyframes snake-light {
+          0% {
+            background: conic-gradient(from 0deg, #294a46, transparent, transparent, transparent, #294a46);
+          }
+          25% {
+            background: conic-gradient(from 90deg, #294a46, transparent, transparent, transparent, #294a46);
+          }
+          50% {
+            background: conic-gradient(from 180deg, #294a46, transparent, transparent, transparent, #294a46);
+          }
+          75% {
+            background: conic-gradient(from 270deg, #294a46, transparent, transparent, transparent, #294a46);
+          }
+          100% {
+            background: conic-gradient(from 360deg, #294a46, transparent, transparent, transparent, #294a46);
+          }
         }
       `}</style>
     </div>

@@ -288,18 +288,37 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
       isValid: validation.isValid
     });
 
-    // Get pending appointments that this mechanic hasn't quoted or skipped
-    const { data: appointments, error } = await supabase
+    // First, get the appointment IDs that this mechanic has already skipped
+    const { data: skippedAppointments, error: skippedError } = await supabase
+      .from('mechanic_skipped_appointments')
+      .select('appointment_id')
+      .eq('mechanic_id', mechanicId);
+
+    if (skippedError) {
+      console.error("❌ Error fetching skipped appointments:", skippedError);
+      return { success: false, error: skippedError.message };
+    }
+
+    const skippedAppointmentIds = skippedAppointments?.map((skip: { appointment_id: string }) => skip.appointment_id) || [];
+    console.log("🔍 Found skipped appointment IDs:", skippedAppointmentIds);
+
+    // Get pending appointments that this mechanic hasn't quoted
+    let query = supabase
       .from('appointments')
       .select(`
         *,
         vehicles!fk_appointment_id(*),
-        mechanic_quotes!appointment_id(*),
-        mechanic_skipped_appointments!appointment_id(*)
+        mechanic_quotes!appointment_id(*)
       `)
       .eq('status', 'pending')
-      .not('mechanic_quotes.mechanic_id', 'eq', mechanicId)
-      .not('mechanic_skipped_appointments.mechanic_id', 'eq', mechanicId);
+      .not('mechanic_quotes.mechanic_id', 'eq', mechanicId);
+
+    // Exclude skipped appointments if any exist
+    if (skippedAppointmentIds.length > 0) {
+      query = query.not('id', 'in', `(${skippedAppointmentIds.join(',')})`);
+    }
+
+    const { data: appointments, error } = await query;
 
     if (error) {
       console.error("❌ Error fetching appointments:", error);
