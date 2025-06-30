@@ -197,35 +197,41 @@ export default function HomePage(): React.JSX.Element {
         else if (appointmentDate.getTime() === today.getTime()) {
           console.log('🔄 validateForm: TODAY - checking time constraints')
           
-          // Now parse the full datetime to check time buffer
-          const [hours, minutes] = formData.appointmentTime.split(':').map(Number)
-          const appointmentDateTime = new Date(year, month - 1, day, hours, minutes)
-          
-          if (isNaN(appointmentDateTime.getTime())) {
-            console.log('❌ validateForm: Invalid time format')
-            newErrors.appointmentDate = "Invalid time format"
+          // Special case: "Now (ASAP)" appointments skip all time validation
+          if (formData.appointmentTime === "Now (ASAP)") {
+            console.log('⚡ validateForm: NOW (ASAP) appointment - skipping time validation')
+            // No validation needed for immediate ASAP appointments
           } else {
-            // Check if urgent appointment - skip 30-minute buffer
-            if (formData.isUrgent) {
-              console.log('⚡ validateForm: URGENT appointment - allowing immediate booking')
-              // For urgent appointments, just check it's not in the past
-              const now = new Date()
-              if (appointmentDateTime < now) {
-                console.log('❌ validateForm: Urgent appointment in the past')
-                newErrors.appointmentDate = "Appointment time cannot be in the past"
-              } else {
-                console.log('✅ validateForm: Urgent appointment valid')
-              }
+            // Parse regular time slots
+            const [hours, minutes] = formData.appointmentTime.split(':').map(Number)
+            const appointmentDateTime = new Date(year, month - 1, day, hours, minutes)
+            
+            if (isNaN(appointmentDateTime.getTime())) {
+              console.log('❌ validateForm: Invalid time format')
+              newErrors.appointmentDate = "Invalid time format"
             } else {
-              // Regular appointment - enforce 30-minute buffer
-              const now = new Date()
-              const bufferTime = new Date(now.getTime() + 30 * 60 * 1000) // Add 30 minutes
-              
-              if (appointmentDateTime <= bufferTime) {
-                console.log('❌ validateForm: Today appointment too soon (less than 30 min buffer)')
-                newErrors.appointmentDate = "Please select a time at least 30 minutes from now, or check 'I need service ASAP' for urgent appointments"
+              // Check if urgent appointment - skip 30-minute buffer for regular times
+              if (formData.isUrgent) {
+                console.log('⚡ validateForm: URGENT appointment with specific time - allowing immediate booking')
+                // For urgent appointments with specific times, just check it's not in the past
+                const now = new Date()
+                if (appointmentDateTime < now) {
+                  console.log('❌ validateForm: Urgent appointment in the past')
+                  newErrors.appointmentDate = "Appointment time cannot be in the past"
+                } else {
+                  console.log('✅ validateForm: Urgent appointment valid')
+                }
               } else {
-                console.log('✅ validateForm: Today appointment with sufficient buffer')
+                // Regular appointment - enforce 30-minute buffer
+                const now = new Date()
+                const bufferTime = new Date(now.getTime() + 30 * 60 * 1000) // Add 30 minutes
+                
+                if (appointmentDateTime <= bufferTime) {
+                  console.log('❌ validateForm: Today appointment too soon (less than 30 min buffer)')
+                  newErrors.appointmentDate = "Please select a time at least 30 minutes from now, or check 'I need service ASAP' for urgent appointments"
+                } else {
+                  console.log('✅ validateForm: Today appointment with sufficient buffer')
+                }
               }
             }
           }

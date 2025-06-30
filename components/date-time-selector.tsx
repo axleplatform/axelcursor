@@ -210,18 +210,12 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
   useEffect(() => {
     if (isToday(selectedDate)) {
       if (isUrgent) {
-        // For urgent appointments today, show all current and future time slots
-        const now = new Date()
-        const currentHour = now.getHours()
-        const currentMinute = now.getMinutes()
-        let currentIndex = currentHour * 2 + (currentMinute < 30 ? 0 : 1)
+        // For urgent appointments today, start with "Now (ASAP)" then regular slots with 30-min buffer
+        const { index } = getNextTimeSlot() // Get slots 30+ minutes from now
+        const futureTimeSlots = allTimeSlots.slice(index)
         
-        // If we're past the current 30-minute slot, start from next slot
-        if (currentMinute > 30) {
-          currentIndex = currentHour * 2 + 2
-        }
-        
-        const urgentTimeSlots = allTimeSlots.slice(currentIndex)
+        // Add "Now (ASAP)" as first option, then regular future slots
+        const urgentTimeSlots = ["Now (ASAP)", ...futureTimeSlots]
         setAvailableTimeSlots(urgentTimeSlots)
         
         // Clear invalid time selections for urgent mode
@@ -424,18 +418,41 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
               </div>
             )}
             {availableTimeSlots.length > 0 ? (
-              availableTimeSlots.map((time) => (
-                <button
-                  type="button"
-                  key={time}
-                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 text-sm ${
-                    time === selectedTime ? "bg-gray-100" : ""
-                  }`}
-                  onClick={() => handleTimeSelect(time)}
-                >
-                  {time}
-                </button>
-              ))
+              availableTimeSlots.map((time, index) => {
+                // Special handling for "Now (ASAP)" option
+                if (time === "Now (ASAP)") {
+                  return (
+                    <div key={time}>
+                      <button
+                        type="button"
+                        className={`w-full text-left px-4 py-3 hover:bg-orange-50 text-sm font-medium text-orange-600 border-b border-gray-100 ${
+                          time === selectedTime ? "bg-orange-100" : ""
+                        }`}
+                        onClick={() => handleTimeSelect(time)}
+                      >
+                        ⚡ {time}
+                      </button>
+                      <div className="px-4 py-2 text-xs text-gray-500 bg-orange-25 border-b border-gray-200">
+                        ℹ️ Mechanic arrival time may vary due to traffic
+                      </div>
+                    </div>
+                  )
+                }
+                
+                // Regular time slots
+                return (
+                  <button
+                    type="button"
+                    key={time}
+                    className={`w-full text-left px-4 py-2 hover:bg-gray-100 text-sm ${
+                      time === selectedTime ? "bg-gray-100" : ""
+                    }`}
+                    onClick={() => handleTimeSelect(time)}
+                  >
+                    {time}
+                  </button>
+                )
+              })
             ) : (
               <div className="px-4 py-2 text-sm text-gray-500">No available times today</div>
             )}
