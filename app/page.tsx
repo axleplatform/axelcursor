@@ -212,8 +212,6 @@ export default function HomePage(): React.JSX.Element {
         issue_description: formData.issueDescription,
         selected_services: formData.selectedServices,
         car_runs: formData.carRuns,
-        // Mark as guest appointment for easy identification
-        is_guest: true,
         source: 'web_guest_booking'
       }
 
@@ -225,7 +223,6 @@ export default function HomePage(): React.JSX.Element {
         issue_description: formData.issueDescription,
         selected_services: formData.selectedServices,
         car_runs: formData.carRuns,
-        is_guest: true,
         source: 'web_guest_booking'
       })
 
