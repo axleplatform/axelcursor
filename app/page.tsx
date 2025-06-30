@@ -172,16 +172,34 @@ export default function HomePage(): React.JSX.Element {
 
     // Validate appointment date is not in the past
     if (formData.appointmentDate && formData.appointmentTime) {
-      const appointmentDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`)
-      const now = new Date()
-      
-      if (appointmentDateTime <= now) {
-        newErrors.appointmentDate = "Appointment must be in the future"
+      try {
+        console.log('🔄 validateForm: Parsing date:', `${formData.appointmentDate}T${formData.appointmentTime}`)
+        const appointmentDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`)
+        console.log('🔄 validateForm: Parsed date:', appointmentDateTime)
+        
+        if (isNaN(appointmentDateTime.getTime())) {
+          console.log('❌ validateForm: Invalid date format')
+          newErrors.appointmentDate = "Invalid date or time format"
+        } else {
+          const now = new Date()
+          console.log('🔄 validateForm: Comparing dates - appointment:', appointmentDateTime, 'now:', now)
+          
+          if (appointmentDateTime <= now) {
+            console.log('❌ validateForm: Date is in the past')
+            newErrors.appointmentDate = "Appointment must be in the future"
+          }
+        }
+      } catch (error) {
+        console.log('❌ validateForm: Date parsing error:', error)
+        newErrors.appointmentDate = "Invalid date or time format"
       }
     }
 
+    console.log('🔄 validateForm: Setting errors:', newErrors)
     setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    const isValid = Object.keys(newErrors).length === 0
+    console.log('🔄 validateForm: Returning isValid:', isValid)
+    return isValid
   }, [formData])
 
   // Create a temporary user record immediately (no more NULL user_id!)
@@ -221,8 +239,22 @@ export default function HomePage(): React.JSX.Element {
     console.log('🔵 Continue button clicked - handleSubmit called')
     console.log('🔍 Form data:', formData)
     console.log('🔍 isFormComplete:', isFormComplete)
+    console.log('🔍 Supabase URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log('🔍 Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    console.log('🔍 Supabase client initialized:', !!supabase)
     
-    if (!validateForm()) {
+    console.log('🔄 About to call validateForm()')
+    let isValid = false
+    try {
+      isValid = validateForm()
+      console.log('✅ validateForm() completed, result:', isValid)
+    } catch (error) {
+      console.log('❌ validateForm() threw an error:', error)
+      setErrors({ general: 'Form validation error. Please check your inputs.' })
+      return
+    }
+    
+    if (!isValid) {
       console.log('❌ Form validation failed')
       return
     }
@@ -384,8 +416,8 @@ export default function HomePage(): React.JSX.Element {
             {/* Location Input */}
             <div className="mb-3">
               <h2 className="text-lg font-medium mb-1">Enter your location</h2>
-              <div className="relative location-input-container">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-20">
                   <MapPin className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -394,7 +426,7 @@ export default function HomePage(): React.JSX.Element {
                   value={formData.address}
                   onChange={handleChange}
                   placeholder="Enter complete address (123 Main St, City, State)"
-                  className={`location-input block w-full p-4 pl-10 pr-16 text-sm text-gray-900 border ${errors.address ? "border-red-500" : "border-gray-300"} rounded-lg bg-white relative z-10`}
+                  className={`block w-full p-4 pl-10 pr-16 text-sm text-gray-900 border ${errors.address ? "border-red-500" : "border-gray-300"} rounded-lg bg-white relative z-10`}
                 />
               </div>
               {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
