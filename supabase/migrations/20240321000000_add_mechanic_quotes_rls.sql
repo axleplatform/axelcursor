@@ -5,6 +5,7 @@ ALTER TABLE public.mechanic_quotes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Mechanics can insert their own quotes" ON public.mechanic_quotes;
 DROP POLICY IF EXISTS "Mechanics can view their own quotes" ON public.mechanic_quotes;
 DROP POLICY IF EXISTS "Customers can view quotes for their appointments" ON public.mechanic_quotes;
+DROP POLICY IF EXISTS "Anonymous can view quotes for appointments" ON public.mechanic_quotes;
 DROP POLICY IF EXISTS "Mechanics can update their own quotes" ON public.mechanic_quotes;
 
 -- Allow mechanics to insert their own quotes
@@ -33,7 +34,7 @@ USING (
     )
 );
 
--- Allow customers to view quotes for their appointments
+-- Allow authenticated customers to view quotes for their appointments
 CREATE POLICY "Customers can view quotes for their appointments" 
 ON public.mechanic_quotes 
 FOR SELECT 
@@ -43,6 +44,19 @@ USING (
         SELECT 1 FROM public.appointments 
         WHERE appointments.id = mechanic_quotes.appointment_id 
         AND appointments.user_id = auth.uid()
+    )
+);
+
+-- CRITICAL FIX: Allow anonymous users to view quotes for appointments
+-- This enables the guest booking flow where customers access pick-mechanic page via URL
+CREATE POLICY "Anonymous can view quotes for appointments" 
+ON public.mechanic_quotes 
+FOR SELECT 
+TO anon 
+USING (
+    EXISTS (
+        SELECT 1 FROM public.appointments 
+        WHERE appointments.id = mechanic_quotes.appointment_id
     )
 );
 
