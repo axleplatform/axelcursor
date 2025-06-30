@@ -69,7 +69,7 @@ export default function MechanicDashboard() {
 
   // Add new state variables after the existing ones
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editAppointment, setEditAppointment] = useState<Appointment | null>(null);
+  const [editAppointment, setEditAppointment] = useState<AppointmentWithRelations | null>(null);
   const [editPrice, setEditPrice] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editTime, setEditTime] = useState('');

@@ -744,106 +744,125 @@ export default function HomePage(): React.JSX.Element {
           height: 24px;
         }
 
-        /* Neon Snake Light Trail Animation for Location Input */
+        /* Outer Border Snake Light Trail Animation for Location Input */
         .location-input-container {
           position: relative;
-          overflow: hidden;
+          padding: 4px; /* Space for outer border animation */
         }
 
-        /* Main glowing trail effect */
+        /* Main outer border glowing trail */
         .location-input-container::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          border-radius: 12px;
+          opacity: 0;
+          transition: all 0.4s ease;
+          padding: 2px; /* Creates the border thickness */
+          background: conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            transparent 70deg,
+            rgba(41, 74, 70, 0.2) 80deg,
+            rgba(41, 74, 70, 0.5) 85deg,
+            rgba(41, 74, 70, 0.9) 90deg,
+            #294a46 95deg,
+            rgba(41, 74, 70, 0.9) 100deg,
+            rgba(41, 74, 70, 0.5) 105deg,
+            rgba(41, 74, 70, 0.2) 110deg,
+            transparent 120deg,
+            transparent 360deg
+          );
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: subtract;
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask-composite: subtract;
+          filter: blur(0.5px);
+          animation: outer-snake-trail 3s linear infinite;
+          z-index: 1;
+        }
+
+        /* Outer diffused glow effect */
+        .location-input-container::after {
           content: '';
           position: absolute;
           top: -2px;
           left: -2px;
           right: -2px;
           bottom: -2px;
-          border-radius: 12px;
-          opacity: 0;
-          transition: all 0.4s ease;
-          background: conic-gradient(
-            from 0deg,
-            transparent 0deg,
-            transparent 70deg,
-            rgba(41, 74, 70, 0.1) 80deg,
-            rgba(41, 74, 70, 0.3) 85deg,
-            rgba(41, 74, 70, 0.8) 90deg,
-            #294a46 95deg,
-            rgba(41, 74, 70, 0.8) 100deg,
-            rgba(41, 74, 70, 0.3) 105deg,
-            rgba(41, 74, 70, 0.1) 110deg,
-            transparent 120deg,
-            transparent 360deg
-          );
-          filter: blur(0.5px);
-          animation: snake-trail 3s linear infinite;
-        }
-
-        /* Secondary glow effect */
-        .location-input-container::after {
-          content: '';
-          position: absolute;
-          top: -4px;
-          left: -4px;
-          right: -4px;
-          bottom: -4px;
           border-radius: 14px;
           opacity: 0;
           transition: all 0.4s ease;
+          padding: 4px; /* Larger outer glow */
           background: conic-gradient(
             from 0deg,
             transparent 0deg,
-            transparent 80deg,
-            rgba(41, 74, 70, 0.05) 85deg,
-            rgba(41, 74, 70, 0.2) 90deg,
-            rgba(41, 74, 70, 0.4) 95deg,
-            rgba(41, 74, 70, 0.2) 100deg,
-            rgba(41, 74, 70, 0.05) 105deg,
-            transparent 110deg,
+            transparent 75deg,
+            rgba(41, 74, 70, 0.1) 82deg,
+            rgba(41, 74, 70, 0.3) 90deg,
+            rgba(41, 74, 70, 0.6) 95deg,
+            rgba(41, 74, 70, 0.3) 100deg,
+            rgba(41, 74, 70, 0.1) 108deg,
+            transparent 115deg,
             transparent 360deg
           );
-          filter: blur(2px);
-          animation: snake-trail 3s linear infinite;
-          z-index: -1;
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: subtract;
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask-composite: subtract;
+          filter: blur(3px);
+          animation: outer-snake-trail 3s linear infinite;
+          z-index: 0;
         }
 
-        /* Activate on focus */
+        /* Position input field correctly within the container */
+        .location-input {
+          position: relative;
+          z-index: 2;
+          margin: 0; /* Reset any margins */
+        }
+
+        /* Activate outer border animation on focus */
         .location-input-container:focus-within::before,
         .location-input-container:focus-within::after {
           opacity: 1;
         }
 
-        /* Hover enhancement */
+        /* Hover enhancement - subtle preview */
         .location-input-container:hover::before {
-          opacity: 0.7;
+          opacity: 0.6;
           filter: blur(0.5px) brightness(1.2);
           animation-duration: 2.5s;
         }
 
         .location-input-container:hover::after {
-          opacity: 0.8;
-          filter: blur(2px) brightness(1.2);
+          opacity: 0.7;
+          filter: blur(3px) brightness(1.2);
           animation-duration: 2.5s;
         }
 
-        /* Focus state intensification */
+        /* Focus + hover intensification */
         .location-input-container:focus-within:hover::before {
           opacity: 1;
-          filter: blur(0.5px) brightness(1.4) drop-shadow(0 0 8px rgba(41, 74, 70, 0.6));
+          filter: blur(0.5px) brightness(1.4) drop-shadow(0 0 6px rgba(41, 74, 70, 0.5));
           animation-duration: 2s;
         }
 
         .location-input-container:focus-within:hover::after {
           opacity: 1;
-          filter: blur(3px) brightness(1.4) drop-shadow(0 0 12px rgba(41, 74, 70, 0.4));
+          filter: blur(4px) brightness(1.4) drop-shadow(0 0 10px rgba(41, 74, 70, 0.3));
           animation-duration: 2s;
         }
 
+        /* Input field styling - clean and minimal */
         .location-input:focus {
           outline: none;
           border-color: rgba(41, 74, 70, 0.3);
           box-shadow: 
-            0 0 0 1px rgba(41, 74, 70, 0.2),
+            0 0 0 1px rgba(41, 74, 70, 0.1),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
           background-color: rgba(255, 255, 255, 0.98);
         }
@@ -853,8 +872,8 @@ export default function HomePage(): React.JSX.Element {
           background-color: rgba(255, 255, 255, 0.95);
         }
 
-        /* Optimized snake trail animation */
-        @keyframes snake-trail {
+        /* Outer border snake trail animation */
+        @keyframes outer-snake-trail {
           0% {
             transform: rotate(0deg);
           }
@@ -863,23 +882,25 @@ export default function HomePage(): React.JSX.Element {
           }
         }
 
-        /* Responsive adjustments */
+        /* Responsive adjustments for mobile */
         @media (max-width: 768px) {
+          .location-input-container {
+            padding: 3px; /* Smaller padding on mobile */
+          }
+          
           .location-input-container::before {
-            top: -1px;
-            left: -1px;
-            right: -1px;
-            bottom: -1px;
+            padding: 1.5px;
             border-radius: 10px;
           }
           
           .location-input-container::after {
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            padding: 3px;
             border-radius: 12px;
-            filter: blur(1px);
+            filter: blur(2px);
           }
         }
 
@@ -888,11 +909,17 @@ export default function HomePage(): React.JSX.Element {
           .location-input-container::before,
           .location-input-container::after {
             animation: none;
-            opacity: 0.3;
+            opacity: 0;
           }
           
           .location-input-container:focus-within::before {
-            opacity: 0.6;
+            opacity: 0.4;
+            animation: none;
+          }
+          
+          .location-input-container:focus-within::after {
+            opacity: 0.2;
+            animation: none;
           }
         }
       `}</style>
