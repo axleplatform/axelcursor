@@ -660,8 +660,8 @@ export default function BookAppointment() {
       const { data: finalUserId, error: mergeError } = await supabase.rpc(
         'merge_users_by_phone',
         {
-          phone_to_check: normalizedPhone,
-          current_user_id: currentUserId
+          p_phone: normalizedPhone,
+          p_current_user_id: currentUserId
         }
       )
       
