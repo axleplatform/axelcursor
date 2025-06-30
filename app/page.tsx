@@ -217,6 +217,18 @@ export default function HomePage(): React.JSX.Element {
         source: 'web_guest_booking'
       }
 
+      console.log('Creating appointment with data:', {
+        user_id: tempUserId,
+        status: 'pending',
+        appointment_date: formData.appointmentDate,
+        location: formData.address,
+        issue_description: formData.issueDescription,
+        selected_services: formData.selectedServices,
+        car_runs: formData.carRuns,
+        is_guest: true,
+        source: 'web_guest_booking'
+      })
+
       const { data: createdAppointment, error: appointmentError } = await supabase
         .from('appointments')
         .insert(initialAppointmentData)
@@ -224,6 +236,13 @@ export default function HomePage(): React.JSX.Element {
         .single()
 
       if (appointmentError) {
+        console.error('Appointment creation failed:', {
+          error: appointmentError,
+          code: appointmentError.code,
+          message: appointmentError.message,
+          details: appointmentError.details,
+          hint: appointmentError.hint
+        })
         throw appointmentError
       }
 

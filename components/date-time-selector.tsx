@@ -259,6 +259,7 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
       {/* Date Selector */}
       <div className="relative flex-1 date-selector">
         <button
+          type="button"
           className="flex items-center justify-center gap-2 p-3 border border-gray-200 rounded-md bg-gray-50 w-full"
           onClick={() => {
             setShowCalendar(!showCalendar)
@@ -274,6 +275,7 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
           <div className="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-md shadow-lg z-10 p-3">
             <div className="flex items-center justify-between mb-2">
               <button
+                type="button"
                 onClick={goToPreviousWeek}
                 className="p-1 rounded-full hover:bg-gray-100"
                 disabled={getWeekStart(today).getTime() === currentWeekStart.getTime()}
@@ -281,7 +283,11 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
                 <ChevronLeft />
               </button>
               <div className="text-center font-medium">{formatMonthYear(currentWeekStart)}</div>
-              <button onClick={goToNextWeek} className="p-1 rounded-full hover:bg-gray-100">
+              <button
+                type="button"
+                onClick={goToNextWeek}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
                 <ChevronRight />
               </button>
             </div>
@@ -304,6 +310,7 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
 
                 return (
                   <button
+                    type="button"
                     key={`day-${index}`}
                     className={`h-10 w-10 rounded-full flex items-center justify-center text-sm mx-auto ${
                       isDisabled
@@ -331,6 +338,7 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
       {/* Time Selector */}
       <div className="relative flex-1 time-selector">
         <button
+          type="button"
           className="flex items-center justify-center gap-2 p-3 border border-gray-200 rounded-md bg-gray-50 w-full"
           onClick={() => {
             setShowTimeSelector(!showTimeSelector)
@@ -347,6 +355,7 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
             {availableTimeSlots.length > 0 ? (
               availableTimeSlots.map((time) => (
                 <button
+                  type="button"
                   key={time}
                   className={`w-full text-left px-4 py-2 hover:bg-gray-100 text-sm ${
                     time === "Now" ? "font-medium text-[#294a46]" : ""
