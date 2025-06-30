@@ -155,19 +155,29 @@ export default function HomePage(): React.JSX.Element {
   const createTemporaryUser = async () => {
     try {
       // Call Supabase function to create a temporary user
-      const { data, error } = await supabase.rpc('create_temporary_user')
+      const { data: userId, error: userError } = await supabase.rpc('create_temporary_user')
 
-      if (error) {
-        throw error
+      if (userError) {
+        console.error('Error creating temporary user:', userError)
+        
+        // If RPC function doesn't exist yet (migration not run), provide helpful error
+        if (userError.message?.includes('function') || userError.code === '42883') {
+          throw new Error('Database migration required: create_temporary_user function not found. Please run the migration first.')
+        }
+        
+        throw new Error(`Database error: ${userError.message}`)
       }
 
-      if (!data) {
-        throw new Error("Failed to create temporary user")
+      if (!userId) {
+        throw new Error("No user ID returned from create_temporary_user function")
       }
 
-      return data as string
+      console.log('✅ Temporary user created successfully:', userId)
+      return userId as string
+      
     } catch (error) {
-      throw new Error(`Failed to create user: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('❌ Failed to create temporary user:', error)
+      throw error instanceof Error ? error : new Error('Unknown error creating user')
     }
   }
 
@@ -189,7 +199,9 @@ export default function HomePage(): React.JSX.Element {
       }
 
       // Create temporary user immediately (no more NULL user_id!)
+      console.log('🔄 Creating temporary user...')
       const tempUserId = await createTemporaryUser()
+      console.log('✅ Got user ID:', tempUserId)
       
       // Create appointment with real user_id (never NULL!)
       const initialAppointmentData = {
@@ -494,6 +506,24 @@ export default function HomePage(): React.JSX.Element {
                 <p className="text-sm text-gray-500">
                   Please fill in all required fields to continue
                 </p>
+              </div>
+            )}
+            
+            {/* Error Display */}
+            {errors.general && (
+              <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-4">
+                <h3 className="text-sm font-semibold mb-1">Error</h3>
+                <p className="text-sm">{errors.general}</p>
+                {errors.general.includes('migration') && (
+                  <div className="mt-2 text-xs text-red-600">
+                    <p>Please run the database migration first:</p>
+                    <ol className="list-decimal list-inside mt-1 space-y-1">
+                      <li>Go to Supabase Dashboard → SQL Editor</li>
+                      <li>Run migrations/implement_always_create_user_system.sql</li>
+                      <li>Try again</li>
+                    </ol>
+                  </div>
+                )}
               </div>
             )}
           </form>
