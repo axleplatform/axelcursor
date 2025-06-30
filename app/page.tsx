@@ -234,61 +234,69 @@ export default function HomePage(): React.JSX.Element {
 
   // Handle form submission
   const handleSubmit = React.useCallback(async (e: FormEvent<HTMLFormElement>): Promise<void> => {
-    e.preventDefault()
-    
-    console.log('🔵 Continue button clicked - handleSubmit called')
-    console.log('🔍 Form data:', formData)
-    console.log('🔍 isFormComplete:', isFormComplete)
-    console.log('🔍 Supabase URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
-    console.log('🔍 Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-    console.log('🔍 Supabase client initialized:', !!supabase)
-    
-    console.log('🔄 About to call validateForm()')
-    let isValid = false
     try {
-      isValid = validateForm()
-      console.log('✅ validateForm() completed, result:', isValid)
-    } catch (error) {
-      console.log('❌ validateForm() threw an error:', error)
-      setErrors({ general: 'Form validation error. Please check your inputs.' })
-      return
-    }
-    
-    if (!isValid) {
-      console.log('❌ Form validation failed')
-      return
-    }
-
-    console.log('✅ Form validation passed')
-    setIsSubmitting(true)
-
-    try {
-      const appointmentDate = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`)
+      console.log('🔵 Continue button clicked - handleSubmit called')
+      e.preventDefault()
+      console.log('✅ preventDefault() completed')
       
-      if (isNaN(appointmentDate.getTime())) {
-        throw new Error("Invalid appointment date")
-      }
-
-      // Create temporary user immediately (no more NULL user_id!)
-      console.log('🔄 Creating temporary user...')
-      const tempUserId = await createTemporaryUser()
-      console.log('✅ Got user ID:', tempUserId)
+      console.log('🔍 About to log Form data')
+      console.log('🔍 Form data:', formData)
+      console.log('✅ Form data logged')
       
-      // Create appointment with real user_id (never NULL!)
-      const initialAppointmentData = {
-        user_id: tempUserId, // ALWAYS has a user_id
-        status: "pending",
-        appointment_date: appointmentDate.toISOString(),
-        location: formData.address,
-        issue_description: formData.issueDescription,
-        selected_services: formData.selectedServices,
-        car_runs: formData.carRuns,
-        source: 'web_guest_booking'
+      console.log('🔍 About to log isFormComplete')
+      console.log('🔍 isFormComplete:', isFormComplete)
+      console.log('✅ isFormComplete logged')
+      
+      console.log('🔍 About to check Supabase URL')
+      console.log('🔍 Supabase URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
+      console.log('✅ Supabase URL checked')
+      
+      console.log('🔍 About to check Supabase Key')
+      console.log('🔍 Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+      console.log('✅ Supabase Key checked')
+      
+      console.log('🔍 About to check Supabase client')
+      console.log('🔍 Supabase client initialized:', !!supabase)
+      console.log('✅ Supabase client checked')
+      
+      console.log('🔄 About to call validateForm()')
+      let isValid = false
+      try {
+        console.log('🔄 Calling validateForm() now...')
+        isValid = validateForm()
+        console.log('✅ validateForm() completed, result:', isValid)
+      } catch (error) {
+        console.log('❌ validateForm() threw an error:', error)
+        setErrors({ general: 'Form validation error. Please check your inputs.' })
+        return
       }
+      
+      console.log('🔄 About to check isValid result')
+      if (!isValid) {
+        console.log('❌ Form validation failed')
+        return
+      }
+      console.log('✅ isValid check passed')
 
-      const { data: createdAppointment, error: appointmentError } = await supabase
-        .from('appointments')
-        .insert({
+      console.log('✅ Form validation passed')
+      console.log('🔄 About to call setIsSubmitting(true)')
+      setIsSubmitting(true)
+      console.log('✅ setIsSubmitting(true) completed')
+
+      try {
+        const appointmentDate = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`)
+        
+        if (isNaN(appointmentDate.getTime())) {
+          throw new Error("Invalid appointment date")
+        }
+
+        // Create temporary user immediately (no more NULL user_id!)
+        console.log('🔄 Creating temporary user...')
+        const tempUserId = await createTemporaryUser()
+        console.log('✅ Got user ID:', tempUserId)
+        
+        // Create appointment with real user_id (never NULL!)
+        const initialAppointmentData = {
           user_id: tempUserId, // ALWAYS has a user_id
           status: "pending",
           appointment_date: appointmentDate.toISOString(),
@@ -297,52 +305,71 @@ export default function HomePage(): React.JSX.Element {
           selected_services: formData.selectedServices,
           car_runs: formData.carRuns,
           source: 'web_guest_booking'
-        })
-        .select('id')
-        .single()
+        }
 
-      if (appointmentError) {
-        throw appointmentError
+        const { data: createdAppointment, error: appointmentError } = await supabase
+          .from('appointments')
+          .insert({
+            user_id: tempUserId, // ALWAYS has a user_id
+            status: "pending",
+            appointment_date: appointmentDate.toISOString(),
+            location: formData.address,
+            issue_description: formData.issueDescription,
+            selected_services: formData.selectedServices,
+            car_runs: formData.carRuns,
+            source: 'web_guest_booking'
+          })
+          .select('id')
+          .single()
+
+        if (appointmentError) {
+          throw appointmentError
+        }
+
+        if (!createdAppointment?.id) {
+          throw new Error("Failed to create appointment")
+        }
+
+        const appointmentId = createdAppointment.id
+
+        // Create vehicle with foreign key
+        const vehicleData = {
+          appointment_id: appointmentId, // Foreign key to appointment
+          year: formData.year,
+          make: formData.make,
+          model: formData.model,
+          mileage: parseInt(formData.mileage) || 0,
+          vin: formData.vin || null
+        }
+
+        const { error: vehicleError } = await supabase
+          .from('vehicles')
+          .insert(vehicleData)
+
+        if (vehicleError) {
+          // If vehicle creation fails, clean up the appointment
+          await supabase.from('appointments').delete().eq('id', appointmentId)
+          throw vehicleError
+        }
+
+        // Success - redirect to book appointment page
+        console.log('🚀 Navigation starting - appointmentId:', appointmentId)
+        console.log('🚀 Navigating to:', `/book-appointment?appointment_id=${appointmentId}`)
+        router.push(`/book-appointment?appointment_id=${appointmentId}`)
+        
+      } catch (error: unknown) {
+        console.log('❌ Error caught in handleSubmit:', error)
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+        console.log('❌ Error message:', errorMessage)
+        setErrors({ general: errorMessage })
+      } finally {
+        console.log('🔄 Finally block - setIsSubmitting(false)')
+        setIsSubmitting(false)
       }
-
-      if (!createdAppointment?.id) {
-        throw new Error("Failed to create appointment")
-      }
-
-      const appointmentId = createdAppointment.id
-
-      // Create vehicle with foreign key
-      const vehicleData = {
-        appointment_id: appointmentId, // Foreign key to appointment
-        year: formData.year,
-        make: formData.make,
-        model: formData.model,
-        mileage: parseInt(formData.mileage) || 0,
-        vin: formData.vin || null
-      }
-
-      const { error: vehicleError } = await supabase
-        .from('vehicles')
-        .insert(vehicleData)
-
-      if (vehicleError) {
-        // If vehicle creation fails, clean up the appointment
-        await supabase.from('appointments').delete().eq('id', appointmentId)
-        throw vehicleError
-      }
-
-      // Success - redirect to book appointment page
-      console.log('🚀 Navigation starting - appointmentId:', appointmentId)
-      console.log('🚀 Navigating to:', `/book-appointment?appointment_id=${appointmentId}`)
-      router.push(`/book-appointment?appointment_id=${appointmentId}`)
-      
-    } catch (error: unknown) {
-      console.log('❌ Error caught in handleSubmit:', error)
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
-      console.log('❌ Error message:', errorMessage)
-      setErrors({ general: errorMessage })
-    } finally {
-      console.log('🔄 Finally block - setIsSubmitting(false)')
+    } catch (outerError: unknown) {
+      console.error('❌ UNCAUGHT ERROR in handleSubmit:', outerError)
+      console.error('❌ Stack trace:', outerError instanceof Error ? outerError.stack : 'No stack trace')
+      setErrors({ general: 'An unexpected error occurred. Please try again.' })
       setIsSubmitting(false)
     }
   }, [formData, validateForm, router])
