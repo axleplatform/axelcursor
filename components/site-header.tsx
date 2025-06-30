@@ -44,7 +44,7 @@ export function SiteHeader() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-6">
-          <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-[#294a46]">
+          <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-transparent hover:border-gray-200 hover:bg-gray-50 transition-all duration-200">
             Log In
           </Link>
           <Button asChild className="rounded-full bg-[#294a46] hover:bg-[#1e3632] text-white">
@@ -92,7 +92,7 @@ export function SiteHeader() {
           <nav className="flex flex-col space-y-4">
             <Link
               href="/login"
-              className="text-sm font-medium text-gray-700 hover:text-[#294a46] py-2"
+              className="text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-transparent hover:border-gray-200 hover:bg-gray-50 transition-all duration-200"
             >
               Log In
             </Link>

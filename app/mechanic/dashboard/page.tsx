@@ -687,8 +687,8 @@ export default function MechanicDashboard() {
       }
 
       // Update local state - immediately remove the skipped appointment
-      setAvailableAppointments((prev: Appointment[]) => 
-        prev.filter((a: Appointment) => a.id !== appointment.id)
+      setAvailableAppointments((prev: AppointmentWithRelations[]) => 
+        prev.filter((a: AppointmentWithRelations) => a.id !== appointment.id)
       );
 
       // Show success message

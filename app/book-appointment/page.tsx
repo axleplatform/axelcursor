@@ -766,7 +766,7 @@ export default function BookAppointment() {
       {/* Main Content */}
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8 max-w-2xl">
-          <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Book An Appointment</h1>
+          <h1 className="text-3xl font-bold text-center text-[#294a46] mb-6">Book An Appointment</h1>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
               {/* Left half - Car issue description */}
@@ -787,7 +787,7 @@ or type Oil Change"
                 {/* Phone Number Input */}
                 <div className="space-y-0.5 w-full flex flex-col items-center">
                   <div className="flex items-center justify-center mb-1">
-                    <div className="h-4 w-4 text-gray-500 mr-2">📞</div>
+                    <div className="h-4 w-4 text-gray-500 mr-2 -translate-y-0.5">📞</div>
                     <p className="text-gray-600 text-sm">
                       Phone Number <span className="text-red-500">*</span>
                     </p>
@@ -838,7 +838,7 @@ or type Oil Change"
               <h4 className="text-sm font-medium text-gray-700 px-3 py-2 border-b border-gray-100 flex items-center justify-between">
                 Recommended Services
                 <div className="flex items-center text-[#294a46] text-[10px]">
-                  <div className="h-2 w-2 mr-1">💡</div>
+                  <div className="h-2 w-2 mr-1 -translate-y-0.5">💡</div>
                   <p className="font-medium">axle ai recommends</p>
                 </div>
               </h4>
