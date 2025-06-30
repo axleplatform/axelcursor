@@ -269,6 +269,7 @@ export async function getQuotesForAppointment(appointmentId: string): Promise<an
  */
 export async function getAvailableAppointmentsForMechanic(mechanicId: string): Promise<GetAppointmentsResponse> {
   try {
+    console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG START ===");
     console.log("🔍 getAvailableAppointmentsForMechanic called with:", {
       mechanicId,
       type: typeof mechanicId,
@@ -289,6 +290,7 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
     });
 
     // First, get the appointment IDs that this mechanic has already skipped
+    console.log("🔍 Step 1: Fetching skipped appointments...");
     const { data: skippedAppointments, error: skippedError } = await supabase
       .from('mechanic_skipped_appointments')
       .select('appointment_id')
@@ -300,9 +302,41 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
     }
 
     const skippedAppointmentIds = skippedAppointments?.map((skip: { appointment_id: string }) => skip.appointment_id) || [];
-    console.log("🔍 Found skipped appointment IDs:", skippedAppointmentIds);
+    console.log("🔍 Found skipped appointment IDs:", {
+      count: skippedAppointmentIds.length,
+      ids: skippedAppointmentIds
+    });
 
-    // Get pending appointments that this mechanic hasn't quoted
+    // Second, get the appointment IDs that this mechanic has already quoted
+    console.log("🔍 Step 2: Fetching quoted appointments...");
+    const { data: quotedAppointments, error: quotedError } = await supabase
+      .from('mechanic_quotes')
+      .select('appointment_id')
+      .eq('mechanic_id', mechanicId);
+
+    if (quotedError) {
+      console.error("❌ Error fetching quoted appointments:", quotedError);
+      return { success: false, error: quotedError.message };
+    }
+
+    const quotedAppointmentIds = quotedAppointments?.map((quote: { appointment_id: string }) => quote.appointment_id) || [];
+    console.log("🔍 Found quoted appointment IDs:", {
+      count: quotedAppointmentIds.length,
+      ids: quotedAppointmentIds,
+      rawData: quotedAppointments
+    });
+
+    // Combine both exclusion lists
+    const excludedAppointmentIds = [...skippedAppointmentIds, ...quotedAppointmentIds];
+    console.log("🔍 Step 3: Combined exclusion list:", {
+      totalExcluded: excludedAppointmentIds.length,
+      skippedCount: skippedAppointmentIds.length,
+      quotedCount: quotedAppointmentIds.length,
+      allExcludedIds: excludedAppointmentIds
+    });
+
+    // Get pending appointments, excluding both skipped and quoted appointments
+    console.log("🔍 Step 4: Building query for available appointments...");
     let query = supabase
       .from('appointments')
       .select(`
@@ -310,14 +344,19 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
         vehicles!fk_appointment_id(*),
         mechanic_quotes!appointment_id(*)
       `)
-      .eq('status', 'pending')
-      .not('mechanic_quotes.mechanic_id', 'eq', mechanicId);
+      .eq('status', 'pending');
 
-    // Exclude skipped appointments if any exist
-    if (skippedAppointmentIds.length > 0) {
-      query = query.not('id', 'in', `(${skippedAppointmentIds.join(',')})`);
+    console.log("🔍 Base query constructed for status = 'pending'");
+
+    // Exclude appointments that this mechanic has skipped or quoted
+    if (excludedAppointmentIds.length > 0) {
+      query = query.not('id', 'in', `(${excludedAppointmentIds.join(',')})`);
+      console.log("🔍 Applied exclusion filter for IDs:", excludedAppointmentIds);
+    } else {
+      console.log("🔍 No exclusions applied - no skipped or quoted appointments");
     }
 
+    console.log("🔍 Step 5: Executing query...");
     const { data: appointments, error } = await query;
 
     if (error) {
@@ -325,7 +364,14 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
       return { success: false, error: error.message };
     }
 
-    console.log("✅ Found available appointments:", { count: appointments?.length || 0 });
+    console.log("🔍 === QUERY RESULTS ===");
+    console.log("✅ Found available appointments:", { 
+      count: appointments?.length || 0,
+      appointmentIds: appointments?.map((apt: any) => apt.id) || [],
+      fullData: appointments
+    });
+
+    console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG END ===");
     return { success: true, appointments: appointments || [] };
 
   } catch (error: unknown) {
@@ -344,6 +390,7 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
  */
 export async function getQuotedAppointmentsForMechanic(mechanicId: string): Promise<GetAppointmentsResponse> {
   try {
+    console.log("🔍 === QUOTED APPOINTMENTS DEBUG START ===");
     console.log("🔍 getQuotedAppointmentsForMechanic called with:", {
       mechanicId,
       type: typeof mechanicId,
@@ -363,7 +410,33 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
       isValid: validation.isValid
     });
 
-    // Get appointments where this mechanic has submitted quotes
+    // First, get the appointment IDs that this mechanic has quoted
+    console.log("🔍 Step 1: Fetching appointment IDs that mechanic has quoted...");
+    const { data: quotedAppointments, error: quotedError } = await supabase
+      .from('mechanic_quotes')
+      .select('appointment_id')
+      .eq('mechanic_id', mechanicId);
+
+    if (quotedError) {
+      console.error("❌ Error fetching quoted appointment IDs:", quotedError);
+      return { success: false, error: quotedError.message };
+    }
+
+    const quotedAppointmentIds = quotedAppointments?.map((quote: { appointment_id: string }) => quote.appointment_id) || [];
+    console.log("🔍 Step 2: Found quoted appointment IDs:", {
+      count: quotedAppointmentIds.length,
+      ids: quotedAppointmentIds,
+      rawQuotes: quotedAppointments
+    });
+
+    // If no quoted appointments, return empty array
+    if (quotedAppointmentIds.length === 0) {
+      console.log("✅ No quoted appointments found - returning empty array");
+      return { success: true, appointments: [] };
+    }
+
+    // Get the appointments where this mechanic has submitted quotes
+    console.log("🔍 Step 3: Fetching full appointment details for quoted appointments...");
     const { data: appointments, error } = await supabase
       .from('appointments')
       .select(`
@@ -371,29 +444,57 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
         vehicles!fk_appointment_id(*),
         mechanic_quotes!appointment_id(*)
       `)
-      .eq('mechanic_quotes.mechanic_id', mechanicId)
-      .in('status', ['pending', 'quoted']);
+      .in('id', quotedAppointmentIds)
+      .in('status', ['pending', 'quoted', 'confirmed', 'in_progress']);
+
+    console.log("🔍 Step 4: Query executed with filters:", {
+      appointmentIds: quotedAppointmentIds,
+      statusFilters: ['pending', 'quoted', 'confirmed', 'in_progress']
+    });
 
     if (error) {
       console.error("❌ Error fetching quoted appointments:", error);
       return { success: false, error: error.message };
     }
 
-    // Transform the data to match expected format with proper typing
-    const transformedAppointments = appointments?.map((appointment: RawAppointment): AppointmentWithRelations => ({
-      ...appointment,
-      quote: appointment.mechanic_quotes.find(q => q.mechanic_id === mechanicId) ? {
-        id: appointment.mechanic_quotes.find(q => q.mechanic_id === mechanicId)!.id,
-        price: appointment.mechanic_quotes.find(q => q.mechanic_id === mechanicId)!.price,
-        created_at: appointment.mechanic_quotes.find(q => q.mechanic_id === mechanicId)!.created_at
-      } : undefined
-    })) || [];
-
-    console.log("✅ Found quoted appointments:", {
-      count: transformedAppointments.length,
-      mechanicId
+    console.log("🔍 Step 5: Raw appointment data retrieved:", {
+      count: appointments?.length || 0,
+      appointmentIds: appointments?.map((apt: any) => apt.id) || [],
+      appointmentStatuses: appointments?.map((apt: any) => ({ id: apt.id, status: apt.status })) || []
     });
 
+    // Transform the data to match expected format with proper typing
+    const transformedAppointments = appointments?.map((appointment: RawAppointment): AppointmentWithRelations => {
+      const myQuote = appointment.mechanic_quotes.find(q => q.mechanic_id === mechanicId);
+      console.log("🔍 Processing appointment:", {
+        appointmentId: appointment.id,
+        status: appointment.status,
+        hasMyQuote: !!myQuote,
+        myQuoteData: myQuote
+      });
+      
+      return {
+        ...appointment,
+        quote: myQuote ? {
+          id: myQuote.id,
+          price: myQuote.price,
+          created_at: myQuote.created_at
+        } : undefined
+      };
+    }) || [];
+
+    console.log("🔍 === TRANSFORMATION RESULTS ===");
+    console.log("✅ Transformed quoted appointments:", {
+      count: transformedAppointments.length,
+      appointmentDetails: transformedAppointments.map((apt: AppointmentWithRelations) => ({
+        id: apt.id,
+        status: apt.status,
+        hasQuote: !!apt.quote,
+        quotePrice: apt.quote?.price
+      }))
+    });
+
+    console.log("🔍 === QUOTED APPOINTMENTS DEBUG END ===");
     return { success: true, appointments: transformedAppointments };
 
   } catch (error: unknown) {

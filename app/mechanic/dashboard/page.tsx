@@ -537,7 +537,11 @@ export default function MechanicDashboard() {
       setShowETAError(false);
 
       // Refresh appointments after successful quote
+      console.log('🔄 === REFRESHING APPOINTMENTS AFTER QUOTE SUBMISSION ===');
+      console.log('6. About to call fetchInitialAppointments() to refresh lists...');
       await fetchInitialAppointments();
+      console.log('7. fetchInitialAppointments() completed - lists should be updated');
+      console.log('🔄 === QUOTE SUBMISSION REFRESH COMPLETE ===');
     } catch (error: unknown) {
       console.error("❌ Error submitting quote:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to submit quote. Please try again.";
