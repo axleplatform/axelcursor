@@ -408,10 +408,10 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
                         }`}
                         onClick={() => handleTimeSelect(time)}
                       >
-                        {time}
+                        ⚡ Now
                       </button>
                       <div className="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-200">
-                        ℹ️ Time may vary due to traffic
+                        ℹ️ Arrival time may vary due to traffic
                       </div>
                     </div>
                   )
