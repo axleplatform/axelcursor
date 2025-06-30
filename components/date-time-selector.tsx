@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react"
 
 // You can replace these with your preferred icon components
 const Calendar = () => (
@@ -71,13 +71,39 @@ const ChevronRight = () => (
   </svg>
 )
 
-export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date: Date, time: string) => void }) {
+interface DateTimeSelectorProps {
+  onDateTimeChange: (date: Date, time: string) => void
+  onTimeSelected?: () => void
+}
+
+interface DateTimeSelectorRef {
+  openDateDropdown: () => void
+  openTimeDropdown: () => void
+  isFormComplete: () => boolean
+}
+
+export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelectorProps>(({ onDateTimeChange, onTimeSelected }, ref) => {
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimeSelector, setShowTimeSelector] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [selectedTime, setSelectedTime] = useState("")
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()))
+
+  // Expose methods via ref for progressive navigation
+  useImperativeHandle(ref, () => ({
+    openDateDropdown: () => {
+      setShowCalendar(true)
+      setShowTimeSelector(false)
+    },
+    openTimeDropdown: () => {
+      setShowTimeSelector(true)
+      setShowCalendar(false)
+    },
+    isFormComplete: () => {
+      return !!(selectedTime && selectedTime !== "")
+    }
+  }))
 
   // Get the start date of the week (Sunday) for a given date
   function getWeekStart(date: Date): Date {
@@ -216,6 +242,11 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
     if (!isPastDate(date)) {
       setSelectedDate(date)
       setShowCalendar(false)
+      
+      // After selecting date, automatically open time selector for progressive navigation
+      setTimeout(() => {
+        setShowTimeSelector(true)
+      }, 150)
     }
   }
 
@@ -223,6 +254,13 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time)
     setShowTimeSelector(false)
+    
+    // Call the callback for progressive navigation
+    if (onTimeSelected) {
+      setTimeout(() => {
+        onTimeSelected()
+      }, 100)
+    }
   }
 
   // Format day number (1-31)
@@ -373,4 +411,4 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
       </div>
     </div>
   )
-}
+})

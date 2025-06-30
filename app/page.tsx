@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { useState, useCallback, useEffect } from "react"
-import type { FormEvent, ChangeEvent } from 'react'
+import { useState, useCallback, useEffect, useRef } from "react"
+import type { FormEvent, ChangeEvent, KeyboardEvent } from 'react'
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { MapPin, ChevronRight, User } from "lucide-react"
@@ -47,6 +47,13 @@ export default function HomePage(): React.JSX.Element {
     appointmentDate: "",
     appointmentTime: "",
   })
+
+  // Add refs for progressive navigation
+  const modelRef = useRef<HTMLInputElement>(null)
+  const vinRef = useRef<HTMLInputElement>(null)
+  const mileageRef = useRef<HTMLInputElement>(null)
+  const dateTimeSelectorRef = useRef<{ openDateDropdown: () => void; openTimeDropdown: () => void; isFormComplete: () => boolean } | null>(null)
+  const continueButtonRef = useRef<HTMLButtonElement>(null)
 
   // Add debug logging
   useEffect(() => {
@@ -108,6 +115,32 @@ export default function HomePage(): React.JSX.Element {
       setErrors((prev: typeof errors) => ({ ...prev, [name]: undefined }))
     }
   }, [errors])
+
+  // Progressive navigation with Enter key
+  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault() // Prevent form submission
+      
+      const currentField = e.currentTarget.name
+      
+      switch (currentField) {
+        case 'model':
+          vinRef.current?.focus()
+          break
+        case 'vin':
+          mileageRef.current?.focus()
+          break
+        case 'mileage':
+          // Open date dropdown
+          if (dateTimeSelectorRef.current?.openDateDropdown) {
+            dateTimeSelectorRef.current.openDateDropdown()
+          }
+          break
+        default:
+          break
+      }
+    }
+  }, [])
 
   // Validate form fields
   const validateForm = React.useCallback((): boolean => {
@@ -215,31 +248,22 @@ export default function HomePage(): React.JSX.Element {
         source: 'web_guest_booking'
       }
 
-      console.log('Creating appointment with data:', {
-        user_id: tempUserId,
-        status: 'pending',
-        appointment_date: formData.appointmentDate,
-        location: formData.address,
-        issue_description: formData.issueDescription,
-        selected_services: formData.selectedServices,
-        car_runs: formData.carRuns,
-        source: 'web_guest_booking'
-      })
-
       const { data: createdAppointment, error: appointmentError } = await supabase
         .from('appointments')
-        .insert(initialAppointmentData)
+        .insert({
+          user_id: tempUserId, // ALWAYS has a user_id
+          status: "pending",
+          appointment_date: appointmentDate.toISOString(),
+          location: formData.address,
+          issue_description: formData.issueDescription,
+          selected_services: formData.selectedServices,
+          car_runs: formData.carRuns,
+          source: 'web_guest_booking'
+        })
         .select('id')
         .single()
 
       if (appointmentError) {
-        console.error('Appointment creation failed:', {
-          error: appointmentError,
-          code: appointmentError.code,
-          message: appointmentError.message,
-          details: appointmentError.details,
-          hint: appointmentError.hint
-        })
         throw appointmentError
       }
 
@@ -454,10 +478,12 @@ export default function HomePage(): React.JSX.Element {
 
               <div className="relative w-[20%]">
                 <input
+                  ref={modelRef}
                   type="text"
                   name="model"
                   value={formData.model}
                   onChange={handleChange}
+                  onKeyDown={handleKeyDown}
                   placeholder="Model"
                   className={`w-full h-[46px] px-2 text-sm border ${errors.model ? "border-red-500" : "border-gray-200"} rounded-md bg-gray-50`}
                 />
@@ -466,10 +492,12 @@ export default function HomePage(): React.JSX.Element {
 
               <div className="relative w-[30%]">
                 <input
+                  ref={vinRef}
                   type="text"
                   name="vin"
                   value={formData.vin}
                   onChange={handleChange}
+                  onKeyDown={handleKeyDown}
                   placeholder="VIN (optional)"
                   className="w-full h-[46px] px-2 text-sm border border-gray-200 rounded-md bg-gray-50"
                 />
@@ -477,10 +505,12 @@ export default function HomePage(): React.JSX.Element {
 
               <div className="relative w-[15%]">
                 <input
+                  ref={mileageRef}
                   type="number"
                   name="mileage"
                   value={formData.mileage}
                   onChange={handleChange}
+                  onKeyDown={handleKeyDown}
                   placeholder="Mileage"
                   className="w-full h-[46px] px-2 text-sm border border-gray-200 rounded-md bg-gray-50"
                 />
@@ -490,13 +520,21 @@ export default function HomePage(): React.JSX.Element {
             {/* Date Time Selector */}
             <div className="mb-6">
               <DateTimeSelector
+                ref={dateTimeSelectorRef}
                 onDateTimeChange={handleDateTimeChange}
+                onTimeSelected={() => {
+                  // After time is selected, focus the continue button
+                  setTimeout(() => {
+                    continueButtonRef.current?.focus()
+                  }, 100)
+                }}
               />
             </div>
 
             {/* Continue Button */}
             <div className="flex justify-center mb-8">
               <Button
+                ref={continueButtonRef}
                 type="submit"
                 disabled={isSubmitting || !isFormComplete}
                 className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 ${
