@@ -218,10 +218,16 @@ export default function HomePage(): React.JSX.Element {
   const handleSubmit = React.useCallback(async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
     
+    console.log('🔵 Continue button clicked - handleSubmit called')
+    console.log('🔍 Form data:', formData)
+    console.log('🔍 isFormComplete:', isFormComplete)
+    
     if (!validateForm()) {
+      console.log('❌ Form validation failed')
       return
     }
 
+    console.log('✅ Form validation passed')
     setIsSubmitting(true)
 
     try {
@@ -294,12 +300,17 @@ export default function HomePage(): React.JSX.Element {
       }
 
       // Success - redirect to book appointment page
+      console.log('🚀 Navigation starting - appointmentId:', appointmentId)
+      console.log('🚀 Navigating to:', `/book-appointment?appointment_id=${appointmentId}`)
       router.push(`/book-appointment?appointment_id=${appointmentId}`)
       
     } catch (error: unknown) {
+      console.log('❌ Error caught in handleSubmit:', error)
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+      console.log('❌ Error message:', errorMessage)
       setErrors({ general: errorMessage })
     } finally {
+      console.log('🔄 Finally block - setIsSubmitting(false)')
       setIsSubmitting(false)
     }
   }, [formData, validateForm, router])
@@ -524,6 +535,7 @@ export default function HomePage(): React.JSX.Element {
                     ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] hover:shadow-md active:scale-[0.99]" 
                     : "bg-[#294a46]/40 text-white cursor-not-allowed"
                 }`}
+                onClick={() => console.log('🔘 Continue button onClick triggered - isSubmitting:', isSubmitting, 'isFormComplete:', isFormComplete)}
               >
                 {isSubmitting ? (
                   <div className="flex items-center">
@@ -744,184 +756,7 @@ export default function HomePage(): React.JSX.Element {
           height: 24px;
         }
 
-        /* Outer Border Snake Light Trail Animation for Location Input */
-        .location-input-container {
-          position: relative;
-          padding: 4px; /* Space for outer border animation */
-        }
 
-        /* Main outer border glowing trail */
-        .location-input-container::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          border-radius: 12px;
-          opacity: 0;
-          transition: all 0.4s ease;
-          padding: 2px; /* Creates the border thickness */
-          background: conic-gradient(
-            from 0deg,
-            transparent 0deg,
-            transparent 70deg,
-            rgba(59, 130, 246, 0.2) 80deg,
-            rgba(59, 130, 246, 0.5) 85deg,
-            rgba(59, 130, 246, 0.9) 90deg,
-            #3b82f6 95deg,
-            rgba(59, 130, 246, 0.9) 100deg,
-            rgba(59, 130, 246, 0.5) 105deg,
-            rgba(59, 130, 246, 0.2) 110deg,
-            transparent 120deg,
-            transparent 360deg
-          );
-          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          -webkit-mask-composite: subtract;
-          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          mask-composite: subtract;
-          filter: blur(0.5px);
-          animation: outer-snake-trail 3s linear infinite;
-          z-index: 1;
-        }
-
-        /* Outer diffused glow effect */
-        .location-input-container::after {
-          content: '';
-          position: absolute;
-          top: -2px;
-          left: -2px;
-          right: -2px;
-          bottom: -2px;
-          border-radius: 14px;
-          opacity: 0;
-          transition: all 0.4s ease;
-          padding: 4px; /* Larger outer glow */
-          background: conic-gradient(
-            from 0deg,
-            transparent 0deg,
-            transparent 75deg,
-            rgba(59, 130, 246, 0.1) 82deg,
-            rgba(59, 130, 246, 0.3) 90deg,
-            rgba(59, 130, 246, 0.6) 95deg,
-            rgba(59, 130, 246, 0.3) 100deg,
-            rgba(59, 130, 246, 0.1) 108deg,
-            transparent 115deg,
-            transparent 360deg
-          );
-          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          -webkit-mask-composite: subtract;
-          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          mask-composite: subtract;
-          filter: blur(3px);
-          animation: outer-snake-trail 3s linear infinite;
-          z-index: 0;
-        }
-
-        /* Position input field correctly within the container */
-        .location-input {
-          position: relative;
-          z-index: 2;
-          margin: 0; /* Reset any margins */
-        }
-
-        /* Activate outer border animation on focus */
-        .location-input-container:focus-within::before,
-        .location-input-container:focus-within::after {
-          opacity: 1;
-        }
-
-        /* Hover enhancement - subtle preview */
-        .location-input-container:hover::before {
-          opacity: 0.6;
-          filter: blur(0.5px) brightness(1.2);
-          animation-duration: 2.5s;
-        }
-
-        .location-input-container:hover::after {
-          opacity: 0.7;
-          filter: blur(3px) brightness(1.2);
-          animation-duration: 2.5s;
-        }
-
-        /* Focus + hover intensification */
-        .location-input-container:focus-within:hover::before {
-          opacity: 1;
-          filter: blur(0.5px) brightness(1.4) drop-shadow(0 0 6px rgba(59, 130, 246, 0.5));
-          animation-duration: 2s;
-        }
-
-        .location-input-container:focus-within:hover::after {
-          opacity: 1;
-          filter: blur(4px) brightness(1.4) drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));
-          animation-duration: 2s;
-        }
-
-        /* Input field styling - clean and minimal */
-        .location-input:focus {
-          outline: none;
-          border-color: rgba(59, 130, 246, 0.3);
-          box-shadow: 
-            0 0 0 1px rgba(59, 130, 246, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-          background-color: rgba(255, 255, 255, 0.98);
-        }
-
-        .location-input:hover {
-          border-color: rgba(59, 130, 246, 0.2);
-          background-color: rgba(255, 255, 255, 0.95);
-        }
-
-        /* Outer border snake trail animation */
-        @keyframes outer-snake-trail {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-
-        /* Responsive adjustments for mobile */
-        @media (max-width: 768px) {
-          .location-input-container {
-            padding: 3px; /* Smaller padding on mobile */
-          }
-          
-          .location-input-container::before {
-            padding: 1.5px;
-            border-radius: 10px;
-          }
-          
-          .location-input-container::after {
-            top: -1px;
-            left: -1px;
-            right: -1px;
-            bottom: -1px;
-            padding: 3px;
-            border-radius: 12px;
-            filter: blur(2px);
-          }
-        }
-
-        /* Performance optimization for low-end devices */
-        @media (prefers-reduced-motion: reduce) {
-          .location-input-container::before,
-          .location-input-container::after {
-            animation: none;
-            opacity: 0;
-          }
-          
-          .location-input-container:focus-within::before {
-            opacity: 0.4;
-            animation: none;
-          }
-          
-          .location-input-container:focus-within::after {
-            opacity: 0.2;
-            animation: none;
-          }
-        }
       `}</style>
     </div>
   )
