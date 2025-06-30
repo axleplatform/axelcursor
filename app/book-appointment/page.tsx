@@ -17,11 +17,13 @@ interface BookingFormData {
   carRuns: boolean | null
   selectedServices: string[]
   selectedCarIssues: string[]
+  location: string
   vin: string
   year: string
   make: string
   model: string
   mileage: string
+  licensePlate: string
 }
 // Define database schema types
 interface AppointmentData {
@@ -491,6 +493,7 @@ export default function BookAppointment() {
     make: "",
     model: "",
     mileage: "",
+    licensePlate: "",
   })
   const [aiSuggestions, setAiSuggestions] = useState<Array<{
     service: string
@@ -550,6 +553,7 @@ export default function BookAppointment() {
           // --- PRE-FILL FORM DATA ---
           setFormData(prev => ({
             ...prev,
+            location: data.location || "",
             issueDescription: data.issue_description || "",
             phoneNumber: data.phone_number || "",
             carRuns: data.car_runs,
@@ -560,6 +564,7 @@ export default function BookAppointment() {
             make: data.vehicles?.make || "",
             model: data.vehicles?.model || "",
             mileage: data.vehicles?.mileage?.toString() || "",
+            licensePlate: data.vehicles?.license_plate || "",
           }))
           console.log("Fetched and pre-filled appointment data:", data)
         }
