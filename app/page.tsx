@@ -603,7 +603,7 @@ export default function HomePage(): React.JSX.Element {
             {/* Feature 2 */}
             <div className="flex flex-col items-center text-center">
               <div className="w-28 h-28 flex items-center justify-center mb-2">
-                <div className="w-20 h-20 border-2 border-[#294a46] rounded flex items-center justify-center">
+                <div className="w-20 h-20 flex items-center justify-center">
                   <span className="text-xl sm:text-2xl lg:text-3xl leading-none text-gray-500 inline-flex items-center justify-center">📅</span>
                 </div>
               </div>
