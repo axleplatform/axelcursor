@@ -495,9 +495,35 @@ export default function MechanicDashboard() {
         notes
       );
 
+      console.log('4. Quote submission result:', {
+        success,
+        error,
+        mechanicId,
+        appointmentId
+      });
+
       if (!success) {
+        console.error('❌ Quote submission failed:', error);
         throw new Error(error);
       }
+
+      console.log('✅ Quote submitted successfully!');
+
+      // Verify the quote was actually created
+      const { data: verifyQuote, error: verifyError } = await supabase
+        .from('mechanic_quotes')
+        .select('*')
+        .eq('appointment_id', appointmentId)
+        .eq('mechanic_id', mechanicId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      console.log('5. Quote verification:', {
+        verifyQuote,
+        verifyError,
+        appointmentId,
+        mechanicId
+      });
 
       toast({
         title: "Success",

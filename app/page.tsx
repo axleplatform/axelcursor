@@ -766,13 +766,13 @@ export default function HomePage(): React.JSX.Element {
             from 0deg,
             transparent 0deg,
             transparent 70deg,
-            rgba(41, 74, 70, 0.2) 80deg,
-            rgba(41, 74, 70, 0.5) 85deg,
-            rgba(41, 74, 70, 0.9) 90deg,
-            #294a46 95deg,
-            rgba(41, 74, 70, 0.9) 100deg,
-            rgba(41, 74, 70, 0.5) 105deg,
-            rgba(41, 74, 70, 0.2) 110deg,
+            rgba(59, 130, 246, 0.2) 80deg,
+            rgba(59, 130, 246, 0.5) 85deg,
+            rgba(59, 130, 246, 0.9) 90deg,
+            #3b82f6 95deg,
+            rgba(59, 130, 246, 0.9) 100deg,
+            rgba(59, 130, 246, 0.5) 105deg,
+            rgba(59, 130, 246, 0.2) 110deg,
             transparent 120deg,
             transparent 360deg
           );
@@ -801,11 +801,11 @@ export default function HomePage(): React.JSX.Element {
             from 0deg,
             transparent 0deg,
             transparent 75deg,
-            rgba(41, 74, 70, 0.1) 82deg,
-            rgba(41, 74, 70, 0.3) 90deg,
-            rgba(41, 74, 70, 0.6) 95deg,
-            rgba(41, 74, 70, 0.3) 100deg,
-            rgba(41, 74, 70, 0.1) 108deg,
+            rgba(59, 130, 246, 0.1) 82deg,
+            rgba(59, 130, 246, 0.3) 90deg,
+            rgba(59, 130, 246, 0.6) 95deg,
+            rgba(59, 130, 246, 0.3) 100deg,
+            rgba(59, 130, 246, 0.1) 108deg,
             transparent 115deg,
             transparent 360deg
           );
@@ -847,28 +847,28 @@ export default function HomePage(): React.JSX.Element {
         /* Focus + hover intensification */
         .location-input-container:focus-within:hover::before {
           opacity: 1;
-          filter: blur(0.5px) brightness(1.4) drop-shadow(0 0 6px rgba(41, 74, 70, 0.5));
+          filter: blur(0.5px) brightness(1.4) drop-shadow(0 0 6px rgba(59, 130, 246, 0.5));
           animation-duration: 2s;
         }
 
         .location-input-container:focus-within:hover::after {
           opacity: 1;
-          filter: blur(4px) brightness(1.4) drop-shadow(0 0 10px rgba(41, 74, 70, 0.3));
+          filter: blur(4px) brightness(1.4) drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));
           animation-duration: 2s;
         }
 
         /* Input field styling - clean and minimal */
         .location-input:focus {
           outline: none;
-          border-color: rgba(41, 74, 70, 0.3);
+          border-color: rgba(59, 130, 246, 0.3);
           box-shadow: 
-            0 0 0 1px rgba(41, 74, 70, 0.1),
+            0 0 0 1px rgba(59, 130, 246, 0.1),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
           background-color: rgba(255, 255, 255, 0.98);
         }
 
         .location-input:hover {
-          border-color: rgba(41, 74, 70, 0.2);
+          border-color: rgba(59, 130, 246, 0.2);
           background-color: rgba(255, 255, 255, 0.95);
         }
 

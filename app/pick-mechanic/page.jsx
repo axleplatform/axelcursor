@@ -106,6 +106,7 @@ export default function PickMechanicPage() {
    }
    
    // Fetch quotes separately - NO .single()
+   console.log('🔍 Fetching quotes for appointment_id:', appointmentId)
    const { data: quotes, error: quotesError } = await supabase
     .from('mechanic_quotes')
     .select(`
@@ -120,7 +121,22 @@ export default function PickMechanicPage() {
     throw quotesError
    }
    
-   console.log('Quotes:', quotes)
+   console.log('🔍 Quotes query result:', {
+    appointmentId: appointmentId,
+    quotesCount: quotes?.length || 0,
+    quotes: quotes
+   })
+   
+   // Debug: Also check all quotes in the database
+   const { data: allQuotes, error: allQuotesError } = await supabase
+    .from('mechanic_quotes')
+    .select('id, appointment_id, mechanic_id, price, created_at')
+    .order('created_at', { ascending: false })
+   
+   console.log('🔍 All quotes in database:', {
+    totalQuotes: allQuotes?.length || 0,
+    quotes: allQuotes
+   })
    
    setAppointment(appointment)
    setMechanicQuotes(quotes || [])
