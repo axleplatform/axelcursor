@@ -177,9 +177,18 @@ export default function HomePage(): React.JSX.Element {
         // Split the date string and create Date with explicit local timezone
         const [year, month, day] = formData.appointmentDate.split('-').map(Number)
         const appointmentDate = new Date(year, month - 1, day) // month is 0-indexed
-        const today = new Date()
-        today.setHours(0, 0, 0, 0) // Set to midnight for date-only comparison
         
+        // Create today's date properly 
+        const realToday = new Date() // Get actual current date/time
+        const today = new Date(realToday.getFullYear(), realToday.getMonth(), realToday.getDate()) // Today at midnight
+        
+        console.log('🔍 DEBUG: Raw appointment date string:', formData.appointmentDate)
+        console.log('🔍 DEBUG: Parsed appointment [year, month, day]:', [year, month, day])
+        console.log('🔍 DEBUG: appointmentDate object:', appointmentDate)
+        console.log('🔍 DEBUG: appointmentDate.getTime():', appointmentDate.getTime())
+        console.log('🔍 DEBUG: realToday object:', realToday)
+        console.log('🔍 DEBUG: today object (midnight):', today)
+        console.log('🔍 DEBUG: today.getTime():', today.getTime())
         console.log('🔄 validateForm: Comparing DATES - appointment:', formData.appointmentDate, 'parsed as:', appointmentDate.toDateString(), 'today:', today.toDateString())
         
         if (isNaN(appointmentDate.getTime())) {
