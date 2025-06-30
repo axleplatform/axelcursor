@@ -553,7 +553,6 @@ export default function BookAppointment() {
           // --- PRE-FILL FORM DATA ---
           setFormData(prev => ({
             ...prev,
-            location: data.location || "",
             issueDescription: data.issue_description || "",
             phoneNumber: data.phone_number || "",
             carRuns: data.car_runs,
@@ -564,7 +563,6 @@ export default function BookAppointment() {
             make: data.vehicles?.make || "",
             model: data.vehicles?.model || "",
             mileage: data.vehicles?.mileage?.toString() || "",
-            licensePlate: data.vehicles?.license_plate || "",
           }))
           console.log("Fetched and pre-filled appointment data:", data)
         }
@@ -927,8 +925,11 @@ or type Oil Change"
               </a>
               <button
                 type="submit"
-                className={`px-8 py-3 bg-[#294a46] text-white rounded-full transform transition-all duration-200 
-                  ${isSubmitting || !isFormValid ? "opacity-70 cursor-not-allowed" : "hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"}`}
+                className={`px-8 py-3 text-white rounded-full transform transition-all duration-200 ${
+                  isSubmitting || !isFormValid 
+                    ? "bg-[#294a46]/40 cursor-not-allowed" 
+                    : "bg-[#294a46] hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
+                }`}
                 disabled={isSubmitting || !isFormValid}
               >
                 {isSubmitting ? (
