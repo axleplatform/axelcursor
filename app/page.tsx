@@ -173,15 +173,14 @@ export default function HomePage(): React.JSX.Element {
     // Validate appointment date: FUTURE DATES are always valid, only check time for TODAY
     if (formData.appointmentDate && formData.appointmentTime) {
       try {
-        // Parse appointment date (DATE ONLY - ignore time for now)
-        const appointmentDate = new Date(formData.appointmentDate)
+        // Parse appointment date using local timezone to avoid UTC issues
+        // Split the date string and create Date with explicit local timezone
+        const [year, month, day] = formData.appointmentDate.split('-').map(Number)
+        const appointmentDate = new Date(year, month - 1, day) // month is 0-indexed
         const today = new Date()
+        today.setHours(0, 0, 0, 0) // Set to midnight for date-only comparison
         
-        // Set both dates to midnight for date-only comparison
-        appointmentDate.setHours(0, 0, 0, 0)
-        today.setHours(0, 0, 0, 0)
-        
-        console.log('🔄 validateForm: Comparing DATES - appointment date:', formData.appointmentDate, 'today:', today.toISOString().split('T')[0])
+        console.log('🔄 validateForm: Comparing DATES - appointment:', formData.appointmentDate, 'parsed as:', appointmentDate.toDateString(), 'today:', today.toDateString())
         
         if (isNaN(appointmentDate.getTime())) {
           console.log('❌ validateForm: Invalid date format')
@@ -197,7 +196,8 @@ export default function HomePage(): React.JSX.Element {
           console.log('🔄 validateForm: TODAY - checking 30-minute buffer for time')
           
           // Now parse the full datetime to check time buffer
-          const appointmentDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`)
+          const [hours, minutes] = formData.appointmentTime.split(':').map(Number)
+          const appointmentDateTime = new Date(year, month - 1, day, hours, minutes)
           
           if (isNaN(appointmentDateTime.getTime())) {
             console.log('❌ validateForm: Invalid time format')
