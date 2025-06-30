@@ -181,10 +181,28 @@ export default function MechanicDashboard() {
   };
 
   // Generate time slots (8 AM to 6 PM, 15-minute increments)
-  const getTimeSlots = (): TimeSlot[] => {
+  // For TODAY: Only show times from current hour onwards (no past times)
+  // For FUTURE DATES: Show all times (full day available)
+  const getTimeSlots = (forDate?: string): TimeSlot[] => {
     const slots: TimeSlot[] = [];
+    const now = new Date();
+    const today = now.toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    // Determine if we're generating slots for today
+    const isToday = forDate === today;
+    
     for (let hour = 8; hour < 18; hour++) {
       for (let minute = 0; minute < 60; minute += 15) {
+        // For today: Skip times that have already passed
+        if (isToday) {
+          // Skip if hour has passed
+          if (hour < currentHour) continue;
+          // Skip if same hour but minute has passed
+          if (hour === currentHour && minute < currentMinute) continue;
+        }
+        
         const time = `${pad(hour)}:${pad(minute)}`;
         const displayTime = new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
           hour: 'numeric',
@@ -1858,7 +1876,7 @@ export default function MechanicDashboard() {
                             disabled={isProcessing || !selectedDate}
                           >
                             <option value="" className="bg-[#294a46]">Choose a time</option>
-                            {getTimeSlots().map((slot) => (
+                            {getTimeSlots(selectedDate).map((slot) => (
                               <option key={slot.value} value={slot.value} className="bg-[#294a46]">
                                 {slot.label}
                               </option>
@@ -2056,13 +2074,13 @@ export default function MechanicDashboard() {
                       onChange={(e) => setEditTime(e.target.value)}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#294a46]"
                       required
-                    >
-                      <option value="">Choose a time</option>
-                      {getTimeSlots().map((slot) => (
-                        <option key={slot.value} value={slot.value}>
-                          {slot.label}
-                        </option>
-                      ))}
+                                          >
+                        <option value="">Choose a time</option>
+                        {getTimeSlots(editDate).map((slot) => (
+                          <option key={slot.value} value={slot.value}>
+                            {slot.label}
+                          </option>
+                        ))}
                     </select>
             </div>
           </div>
