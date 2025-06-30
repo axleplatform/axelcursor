@@ -204,10 +204,15 @@ export default function HomePage(): React.JSX.Element {
         else if (appointmentDate.getTime() === today.getTime()) {
           console.log('🔄 validateForm: TODAY - checking time constraints')
           
-          // Special case: "ASAP" appointments skip all time validation
-          if (formData.appointmentTime === "ASAP") {
-            console.log('⚡ validateForm: ASAP appointment - skipping time validation')
-            // No validation needed for immediate ASAP appointments
+          // Special case: Immediate appointments skip all time validation
+          if (formData.appointmentTime === "ASAP" || formData.appointmentTime === "now" || formData.appointmentTime === "⚡ Now") {
+            console.log('⚡ validateForm: Immediate appointment detected - skipping time validation', {
+              timeValue: formData.appointmentTime,
+              isASAP: formData.appointmentTime === "ASAP",
+              isNow: formData.appointmentTime === "now",
+              isNowEmoji: formData.appointmentTime === "⚡ Now"
+            })
+            // No validation needed for immediate appointments
           } else {
             // Parse regular time slots
             const [hours, minutes] = formData.appointmentTime.split(':').map(Number)
@@ -288,6 +293,14 @@ export default function HomePage(): React.JSX.Element {
       
       console.log('🔍 About to log Form data')
       console.log('🔍 Form data:', formData)
+      console.log('🔍 DEBUG appointmentTime value:', {
+        appointmentTime: formData.appointmentTime,
+        type: typeof formData.appointmentTime,
+        length: formData.appointmentTime?.length,
+        isASAP: formData.appointmentTime === "ASAP",
+        isNow: formData.appointmentTime === "now",
+        isNowEmoji: formData.appointmentTime === "⚡ Now"
+      })
       console.log('✅ Form data logged')
       
       console.log('🔍 About to log isFormComplete')
@@ -331,7 +344,16 @@ export default function HomePage(): React.JSX.Element {
       console.log('✅ setIsSubmitting(true) completed')
 
       try {
-        const appointmentDate = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`)
+        let appointmentDate: Date
+        
+        // Handle ASAP appointments by using current time
+        if (formData.appointmentTime === "ASAP") {
+          // For ASAP appointments, use current date and time
+          appointmentDate = new Date()
+          console.log('⚡ Using current time for ASAP appointment:', appointmentDate.toISOString())
+        } else {
+          appointmentDate = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`)
+        }
         
         if (isNaN(appointmentDate.getTime())) {
           throw new Error("Invalid appointment date")
@@ -445,10 +467,8 @@ export default function HomePage(): React.JSX.Element {
     
     if (time && time !== "Select time" && time !== "") {
       if (time === "ASAP") {
-        const now = new Date()
-        const hours = now.getHours().toString().padStart(2, "0")
-        const minutes = now.getMinutes().toString().padStart(2, "0")
-        formattedTime = `${hours}:${minutes}`
+        // Keep "ASAP" as the value for validation and processing
+        formattedTime = "ASAP"
       } else {
         // Parse the time string (e.g., "9:30 AM") to 24-hour format
         const [timePart, ampm] = time.split(" ")
