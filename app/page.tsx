@@ -435,7 +435,7 @@ export default function HomePage(): React.JSX.Element {
     let formattedTime: string = ""
     
     if (time && time !== "Select time" && time !== "") {
-      if (time === "Now") {
+      if (time === "ASAP") {
         const now = new Date()
         const hours = now.getHours().toString().padStart(2, "0")
         const minutes = now.getMinutes().toString().padStart(2, "0")
