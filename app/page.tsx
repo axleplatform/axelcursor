@@ -170,46 +170,56 @@ export default function HomePage(): React.JSX.Element {
       newErrors.appointmentTime = "Time is required"
     }
 
-    // Validate appointment date with 30-minute buffer for better UX
+    // Validate appointment date: FUTURE DATES are always valid, only check time for TODAY
     if (formData.appointmentDate && formData.appointmentTime) {
       try {
-        console.log('🔄 validateForm: Parsing date:', `${formData.appointmentDate}T${formData.appointmentTime}`)
-        const appointmentDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`)
-        console.log('🔄 validateForm: Parsed date:', appointmentDateTime)
+        // Parse appointment date (DATE ONLY - ignore time for now)
+        const appointmentDate = new Date(formData.appointmentDate)
+        const today = new Date()
         
-        if (isNaN(appointmentDateTime.getTime())) {
+        // Set both dates to midnight for date-only comparison
+        appointmentDate.setHours(0, 0, 0, 0)
+        today.setHours(0, 0, 0, 0)
+        
+        console.log('🔄 validateForm: Comparing DATES - appointment date:', formData.appointmentDate, 'today:', today.toISOString().split('T')[0])
+        
+        if (isNaN(appointmentDate.getTime())) {
           console.log('❌ validateForm: Invalid date format')
-          newErrors.appointmentDate = "Invalid date or time format"
-        } else {
-          const now = new Date()
-          const appointmentDate = new Date(formData.appointmentDate)
-          const today = new Date()
-          today.setHours(0, 0, 0, 0)
-          appointmentDate.setHours(0, 0, 0, 0)
+          newErrors.appointmentDate = "Invalid date format"
+        }
+        // Step 1: If appointment DATE is in the future (tomorrow or later), ALWAYS ALLOW
+        else if (appointmentDate.getTime() > today.getTime()) {
+          console.log('✅ validateForm: FUTURE DATE - always valid regardless of time (June 30, 2025 at any time is OK)')
+          // No validation needed for future dates - any time is acceptable
+        }
+        // Step 2: If appointment DATE is today, check 30-minute buffer for TIME
+        else if (appointmentDate.getTime() === today.getTime()) {
+          console.log('🔄 validateForm: TODAY - checking 30-minute buffer for time')
           
-          console.log('🔄 validateForm: Comparing dates - appointment:', appointmentDateTime, 'now:', now)
+          // Now parse the full datetime to check time buffer
+          const appointmentDateTime = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`)
           
-          // If appointment is today, require 30-minute buffer
-          if (appointmentDate.getTime() === today.getTime()) {
+          if (isNaN(appointmentDateTime.getTime())) {
+            console.log('❌ validateForm: Invalid time format')
+            newErrors.appointmentDate = "Invalid time format"
+          } else {
+            const now = new Date()
             const bufferTime = new Date(now.getTime() + 30 * 60 * 1000) // Add 30 minutes
             
             if (appointmentDateTime <= bufferTime) {
-              console.log('❌ validateForm: Appointment too soon (less than 30 min buffer)')
+              console.log('❌ validateForm: Today appointment too soon (less than 30 min buffer)')
               newErrors.appointmentDate = "Please select a time at least 30 minutes from now"
             } else {
               console.log('✅ validateForm: Today appointment with sufficient buffer')
             }
           }
-          // If appointment is in the past (previous date), reject
-          else if (appointmentDate.getTime() < today.getTime()) {
-            console.log('❌ validateForm: Date is in the past')
-            newErrors.appointmentDate = "Appointment date cannot be in the past"
-          }
-          // If appointment is in the future (tomorrow or later), always allow
-          else {
-            console.log('✅ validateForm: Future date appointment - always allowed')
-          }
         }
+        // Step 3: If appointment DATE is in the past, reject
+        else {
+          console.log('❌ validateForm: PAST DATE - rejected')
+          newErrors.appointmentDate = "Appointment date cannot be in the past"
+        }
+        
       } catch (error) {
         console.log('❌ validateForm: Date parsing error:', error)
         newErrors.appointmentDate = "Invalid date or time format"
