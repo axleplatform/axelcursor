@@ -1,14 +1,57 @@
 "use client"
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import {
   Check,
+  ChevronRight,
 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
+import { cn } from "@/lib/utils"
+// Common car makes for the dropdown
+const CAR_MAKES = [
+  "Acura", "Alfa Romeo", "Aston Martin", "Audi", "Bentley", "BMW", "Buick", "Cadillac",
+  "Chevrolet", "Chrysler", "Dodge", "Ferrari", "Fiat", "Ford", "Genesis", "GMC",
+  "Honda", "Hyundai", "Infiniti", "Jaguar", "Jeep", "Kia", "Lamborghini", "Land Rover",
+  "Lexus", "Lincoln", "Maserati", "Mazda", "McLaren", "Mercedes-Benz", "Mini", "Mitsubishi",
+  "Nissan", "Porsche", "Ram", "Rolls-Royce", "Subaru", "Tesla", "Toyota", "Volkswagen", "Volvo"
+]
+// Car models by make (simplified for common makes)
+const CAR_MODELS: Record<string, string[]> = {
+  Toyota: ["Camry", "Corolla", "RAV4", "Highlander", "4Runner", "Tacoma", "Tundra", "Prius", "Sienna", "Avalon"],
+  Honda: ["Civic", "Accord", "CR-V", "Pilot", "Odyssey", "HR-V", "Ridgeline", "Fit", "Passport", "Insight"],
+  Ford: ["F-150", "Mustang", "Explorer", "Escape", "Edge", "Ranger", "Expedition", "Bronco", "Fusion", "Focus"],
+  Chevrolet: ["Silverado", "Equinox", "Tahoe", "Traverse", "Malibu", "Camaro", "Suburban", "Colorado", "Blazer", "Trax"],
+  BMW: ["3 Series", "5 Series", "X3", "X5", "7 Series", "X1", "X7", "4 Series", "2 Series", "i4"],
+  "Mercedes-Benz": ["C-Class", "E-Class", "GLC", "GLE", "S-Class", "A-Class", "GLA", "GLB", "CLA", "G-Class"],
+  Audi: ["A4", "Q5", "A6", "Q7", "A3", "Q3", "A5", "Q8", "e-tron", "A7"],
+  Nissan: ["Altima", "Rogue", "Sentra", "Pathfinder", "Murano", "Frontier", "Kicks", "Armada", "Maxima", "Titan"],
+  Hyundai: ["Elantra", "Tucson", "Santa Fe", "Sonata", "Kona", "Palisade", "Venue", "Accent", "Ioniq", "Veloster"],
+  Kia: ["Forte", "Sportage", "Sorento", "Soul", "Telluride", "Seltos", "Rio", "Niro", "Carnival", "K5"],
+  Subaru: ["Outback", "Forester", "Crosstrek", "Impreza", "Ascent", "Legacy", "WRX", "BRZ", "Solterra"],
+  Volkswagen: ["Jetta", "Tiguan", "Atlas", "Passat", "Golf", "Taos", "ID.4", "Arteon", "Atlas Cross Sport"],
+  Jeep: ["Grand Cherokee", "Wrangler", "Cherokee", "Compass", "Renegade", "Gladiator", "Wagoneer", "Grand Wagoneer"],
+  Lexus: ["RX", "NX", "ES", "GX", "IS", "UX", "LX", "LS", "RC", "LC"],
+  Mazda: ["CX-5", "Mazda3", "CX-9", "CX-30", "Mazda6", "MX-5 Miata", "CX-50"],
+  Tesla: ["Model 3", "Model Y", "Model S", "Model X", "Cybertruck"],
+  Acura: ["MDX", "RDX", "TLX", "ILX", "NSX", "Integra"],
+  Buick: ["Encore", "Enclave", "Envision", "Encore GX"],
+  Cadillac: ["XT5", "Escalade", "XT4", "CT5", "XT6", "CT4"],
+  Chrysler: ["Pacifica", "300"],
+  Dodge: ["Charger", "Challenger", "Durango", "Hornet"],
+  GMC: ["Sierra", "Terrain", "Acadia", "Yukon", "Canyon", "Hummer EV"],
+  Infiniti: ["QX60", "QX50", "QX80", "Q50", "QX55"],
+  Lincoln: ["Corsair", "Nautilus", "Aviator", "Navigator"],
+  Mitsubishi: ["Outlander", "Eclipse Cross", "Outlander Sport", "Mirage"],
+  Porsche: ["911", "Cayenne", "Macan", "Panamera", "Taycan", "718 Cayman", "718 Boxster"],
+  Ram: ["1500", "2500", "3500", "ProMaster"],
+  Volvo: ["XC90", "XC60", "XC40", "S60", "S90", "V60", "V90"],
+}
+// For makes not in our predefined list, provide some generic models
+const GENERIC_MODELS = ["Sedan", "SUV", "Coupe", "Truck", "Hatchback", "Convertible", "Wagon", "Van", "Crossover"]
 // Define types for form data
 interface BookingFormData {
   issueDescription: string
@@ -16,6 +59,7 @@ interface BookingFormData {
   carRuns: boolean | null
   selectedServices: string[]
   selectedCarIssues: string[]
+  location: string
   vin: string
   year: string
   make: string
@@ -484,6 +528,7 @@ export default function BookAppointment() {
     carRuns: null,
     selectedServices: [],
     selectedCarIssues: [],
+    location: "",
     vin: "",
     year: "",
     make: "",
@@ -500,6 +545,133 @@ export default function BookAppointment() {
   const [hasInteractedWithTextArea, setHasInteractedWithTextArea] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [appointmentData, setAppointmentData] = useState<AppointmentData | null>(null)
+  
+  // Form refs for progressive navigation
+  const locationRef = useRef<HTMLInputElement>(null)
+  const yearRef = useRef<HTMLSelectElement>(null)
+  const makeRef = useRef<HTMLInputElement>(null)
+  const modelRef = useRef<HTMLInputElement>(null)
+  const vinRef = useRef<HTMLInputElement>(null)
+  const mileageRef = useRef<HTMLInputElement>(null)
+  const descriptionRef = useRef<HTMLTextAreaElement>(null)
+  const phoneRef = useRef<HTMLInputElement>(null)
+  const continueButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Dropdown states for make/model selection
+  const [makeSearchTerm, setMakeSearchTerm] = useState("")
+  const [modelSearchTerm, setModelSearchTerm] = useState("")
+  const [showMakeDropdown, setShowMakeDropdown] = useState(false)
+  const [showModelDropdown, setShowModelDropdown] = useState(false)
+  const makeDropdownRef = useRef<HTMLDivElement>(null)
+  const modelDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Current year for dropdown
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
+
+  // Filter makes based on search term
+  const filteredMakes = CAR_MAKES.filter((make) => 
+    make.toLowerCase().includes(makeSearchTerm.toLowerCase())
+  )
+
+  // Get models for the selected make
+  const getModelsForMake = (make: string) => {
+    return CAR_MODELS[make] || GENERIC_MODELS
+  }
+
+  // Filter models based on search term
+  const filteredModels = formData.make
+    ? getModelsForMake(formData.make).filter((model) => 
+        model.toLowerCase().includes(modelSearchTerm.toLowerCase())
+      )
+    : []
+
+  // Progressive navigation with Enter key
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault() // Prevent form submission
+      
+      const currentElement = e.currentTarget
+      const currentName = currentElement.getAttribute('name') || currentElement.getAttribute('data-field')
+      
+      switch (currentName) {
+        case 'location':
+          yearRef.current?.focus()
+          break
+        case 'year':
+          makeRef.current?.focus()
+          break
+        case 'make':
+          if (formData.make) {
+            modelRef.current?.focus()
+          }
+          break
+        case 'model':
+          vinRef.current?.focus()
+          break
+        case 'vin':
+          mileageRef.current?.focus()
+          break
+        case 'mileage':
+          descriptionRef.current?.focus()
+          break
+        case 'issueDescription':
+          phoneRef.current?.focus()
+          break
+        case 'phoneNumber':
+          continueButtonRef.current?.focus()
+          break
+        default:
+          break
+      }
+    }
+  }, [formData.make])
+
+  // Handle make selection
+  const handleMakeSelect = (selectedMake: string) => {
+    setFormData((prev) => ({ ...prev, make: selectedMake, model: "" }))
+    setMakeSearchTerm(selectedMake)
+    setShowMakeDropdown(false)
+    setModelSearchTerm("")
+    // Automatically focus model field after selection
+    setTimeout(() => modelRef.current?.focus(), 100)
+  }
+
+  // Handle model selection
+  const handleModelSelect = (selectedModel: string) => {
+    setFormData((prev) => ({ ...prev, model: selectedModel }))
+    setModelSearchTerm(selectedModel)
+    setShowModelDropdown(false)
+    // Automatically focus next field after selection
+    setTimeout(() => vinRef.current?.focus(), 100)
+  }
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (makeDropdownRef.current && !makeDropdownRef.current.contains(event.target as Node)) {
+        setShowMakeDropdown(false)
+      }
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(event.target as Node)) {
+        setShowModelDropdown(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+
+  // Update search terms when form data changes (for pre-filled data)
+  useEffect(() => {
+    if (formData.make && formData.make !== makeSearchTerm) {
+      setMakeSearchTerm(formData.make)
+    }
+    if (formData.model && formData.model !== modelSearchTerm) {
+      setModelSearchTerm(formData.model)
+    }
+  }, [formData.make, formData.model, makeSearchTerm, modelSearchTerm])
   
   // Fetch existing appointment and vehicle data ONLY if we have a valid appointment ID
   useEffect(() => {
@@ -546,6 +718,7 @@ export default function BookAppointment() {
           // --- PRE-FILL FORM DATA ---
           setFormData(prev => ({
             ...prev,
+            location: data.location || "",
             issueDescription: data.issue_description || "",
             phoneNumber: data.phone_number || "",
             carRuns: data.car_runs,
@@ -681,11 +854,12 @@ export default function BookAppointment() {
         .from("appointments")
         .update({
           user_id: finalUserId, // Use final user ID (might be merged)
+          location: formData.location,
           car_runs: formData.carRuns,
           issue_description: formData.issueDescription,
           selected_services: formData.selectedServices,
           selected_car_issues: formData.selectedCarIssues,
-                     phone_number: formData.phoneNumber,
+          phone_number: formData.phoneNumber,
           updated_at: now
         })
         .eq('id', appointmentId)
@@ -734,7 +908,23 @@ export default function BookAppointment() {
         }
         console.log("Vehicle created successfully for appointment:", appointment.id);
       } else {
-        console.log("Vehicle already exists for appointment:", appointment.id);
+        // Update existing vehicle with new data
+        const { error: vehicleUpdateError } = await supabase
+          .from("vehicles")
+          .update({
+            vin: formData.vin,
+            year: parseInt(formData.year) || null,
+            make: formData.make,
+            model: formData.model,
+            mileage: parseInt(formData.mileage) || null,
+            updated_at: now
+          })
+          .eq("appointment_id", appointment.id);
+
+        if (vehicleUpdateError) {
+          throw new Error(`Failed to update vehicle: ${vehicleUpdateError.message}`);
+        }
+        console.log("Vehicle updated successfully for appointment:", appointment.id);
       }
       // --- FIX ENDS HERE ---
 
@@ -757,6 +947,10 @@ export default function BookAppointment() {
   }
   // Check if form is valid
   const isFormValid =
+    formData.location.trim() &&      // Location is required
+    formData.year.trim() &&          // Year is required  
+    formData.make.trim() &&          // Make is required
+    formData.model.trim() &&         // Model is required
     formData.phoneNumber && // Phone number is required
     (formData.issueDescription || formData.selectedServices.length > 0) // Either description OR service selection
   // Get all available services
@@ -801,14 +995,216 @@ export default function BookAppointment() {
         <div className="container mx-auto px-4 py-8 max-w-2xl">
           <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">Book An Appointment</h1>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Vehicle Information Section */}
+            <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
+              <h3 className="text-lg font-medium text-gray-900 px-4 py-3 border-b border-gray-100">
+                Vehicle Information
+              </h3>
+              <div className="p-4 space-y-4">
+                {/* Location */}
+                <div>
+                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                    Service Location <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    ref={locationRef}
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, location: e.target.value }))}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Enter address where service is needed"
+                    className="block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46]"
+                    required
+                  />
+                </div>
+
+                {/* Year Dropdown */}
+                <div>
+                  <label htmlFor="vehicle-year" className="block text-sm font-medium text-gray-700 mb-1">
+                    Year <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      ref={yearRef}
+                      id="vehicle-year"
+                      name="year"
+                      value={formData.year}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, year: e.target.value }))}
+                      onKeyDown={handleKeyDown}
+                      className="block w-full px-3 py-2 border border-gray-200 rounded-md appearance-none focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46]"
+                      required
+                    >
+                      <option value="">Select Year</option>
+                      {years.map((y) => (
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Make Dropdown */}
+                <div>
+                  <label htmlFor="vehicle-make" className="block text-sm font-medium text-gray-700 mb-1">
+                    Make <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative" ref={makeDropdownRef}>
+                    <input
+                      ref={makeRef}
+                      id="vehicle-make"
+                      type="text"
+                      name="make"
+                      value={makeSearchTerm}
+                      onChange={(e) => {
+                        setMakeSearchTerm(e.target.value)
+                        setShowMakeDropdown(true)
+                        if (e.target.value !== formData.make) {
+                          setFormData((prev) => ({ ...prev, make: "", model: "" }))
+                        }
+                      }}
+                      onFocus={() => setShowMakeDropdown(true)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Select or type a make"
+                      className="block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46]"
+                      required
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    </div>
+
+                    {showMakeDropdown && (
+                      <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                        {filteredMakes.length > 0 ? (
+                          filteredMakes.map((make) => (
+                            <div
+                              key={make}
+                              onClick={() => handleMakeSelect(make)}
+                              className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                            >
+                              {make}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-gray-500">No makes found</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Model Dropdown */}
+                <div>
+                  <label htmlFor="vehicle-model" className="block text-sm font-medium text-gray-700 mb-1">
+                    Model <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative" ref={modelDropdownRef}>
+                    <input
+                      ref={modelRef}
+                      id="vehicle-model"
+                      type="text"
+                      name="model"
+                      value={modelSearchTerm}
+                      onChange={(e) => {
+                        setModelSearchTerm(e.target.value)
+                        setShowModelDropdown(true)
+                        if (e.target.value !== formData.model) {
+                          setFormData((prev) => ({ ...prev, model: "" }))
+                        }
+                      }}
+                      onFocus={() => {
+                        if (formData.make) {
+                          setShowModelDropdown(true)
+                        }
+                      }}
+                      onKeyDown={handleKeyDown}
+                      placeholder={formData.make ? "Select or type a model" : "Select a make first"}
+                      disabled={!formData.make}
+                      className={cn(
+                        "block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46]",
+                        !formData.make && "bg-gray-50 cursor-not-allowed"
+                      )}
+                      required
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    </div>
+
+                    {showModelDropdown && formData.make && (
+                      <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                        {filteredModels.length > 0 ? (
+                          filteredModels.map((model) => (
+                            <div
+                              key={model}
+                              onClick={() => handleModelSelect(model)}
+                              className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                            >
+                              {model}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-gray-500">No models found</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  {/* VIN */}
+                  <div className="flex-1">
+                    <label htmlFor="vin" className="block text-sm font-medium text-gray-700 mb-1">
+                      VIN (optional)
+                    </label>
+                    <input
+                      ref={vinRef}
+                      id="vin"
+                      type="text"
+                      name="vin"
+                      value={formData.vin}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, vin: e.target.value.toUpperCase() }))}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Enter VIN"
+                      className="block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46]"
+                    />
+                  </div>
+
+                  {/* Mileage */}
+                  <div className="flex-1">
+                    <label htmlFor="mileage" className="block text-sm font-medium text-gray-700 mb-1">
+                      Mileage
+                    </label>
+                    <input
+                      ref={mileageRef}
+                      id="mileage"
+                      type="number"
+                      name="mileage"
+                      value={formData.mileage}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, mileage: e.target.value }))}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Enter mileage"
+                      className="block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
               {/* Left half - Car issue description */}
               <div className="space-y-2 md:w-1/2">
                 <p className="text-center md:text-left text-gray-600">Tell us what happened</p>
                 <textarea
+                  ref={descriptionRef}
+                  name="issueDescription"
                   value={formData.issueDescription}
                   onChange={handleDescriptionChange}
                   onFocus={handleTextAreaFocus}
+                  onKeyDown={handleKeyDown}
                   placeholder="Example: My car won't start. When I turn the key, I hear a clicking sound.
 or type Oil Change"
                   className="w-full px-4 py-3 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
@@ -827,9 +1223,12 @@ or type Oil Change"
                   </div>
                   <div className="relative max-w-[200px] w-full">
                     <input
+                      ref={phoneRef}
                       type="tel"
+                      name="phoneNumber"
                       value={formData.phoneNumber}
                       onChange={handlePhoneChange}
+                      onKeyDown={handleKeyDown}
                       placeholder="(###)-### ####"
                       className="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-center"
                       required
@@ -957,6 +1356,7 @@ or type Oil Change"
                 Back
               </a>
               <button
+                ref={continueButtonRef}
                 type="submit"
                 className={`px-8 py-3 bg-[#294a46] text-white rounded-full transform transition-all duration-200 
                   ${isSubmitting || !isFormValid ? "opacity-70 cursor-not-allowed" : "hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"}`}

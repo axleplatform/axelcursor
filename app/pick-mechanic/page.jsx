@@ -234,9 +234,11 @@ export default function PickMechanicPage() {
    const { error } = await supabase
     .from('appointments')
     .update({ 
+     mechanic_id: mechanicId,
      selected_mechanic_id: mechanicId,
      selected_quote_id: quoteId,
-     status: 'confirmed'
+     status: 'confirmed',
+     selected_at: new Date().toISOString()
     })
     .eq('id', appointment.id)
    
