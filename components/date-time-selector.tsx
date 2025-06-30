@@ -389,7 +389,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
           }}
         >
           <Clock />
-          <span>{selectedTime || "Select time"}</span>
+          <span>{selectedTime === "ASAP" ? "⚡ Now" : selectedTime || "Select time"}</span>
           <span className="ml-1">▼</span>
         </button>
 
