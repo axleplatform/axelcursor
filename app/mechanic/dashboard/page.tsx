@@ -698,7 +698,7 @@ export default function MechanicDashboard() {
       await fetchInitialAppointments();
 
       // Move to next appointment if available
-      const nextAppointment = availableAppointments.find((a: Appointment) => a.id !== appointment.id);
+      const nextAppointment = availableAppointments.find((a: AppointmentWithRelations) => a.id !== appointment.id);
       if (nextAppointment) {
         setCurrentAvailableIndex(availableAppointments.indexOf(nextAppointment));
       }
@@ -731,7 +731,7 @@ export default function MechanicDashboard() {
   const handleUpdateQuote = async (appointmentId: string) => {
     try {
       const myQuote = upcomingAppointments
-        .find((apt: Appointment) => apt.id === appointmentId)
+        .find((apt: AppointmentWithRelations) => apt.id === appointmentId)
         ?.mechanic_quotes
         ?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
       
@@ -784,7 +784,7 @@ export default function MechanicDashboard() {
 
     try {
       // Get the appointment and quote details
-      const appointment = upcomingAppointments.find((apt: Appointment) => apt.id === appointmentId);
+      const appointment = upcomingAppointments.find((apt: AppointmentWithRelations) => apt.id === appointmentId);
       const myQuote = appointment?.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
       
       console.log('2. Found appointment and quote:', {
