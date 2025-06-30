@@ -26,7 +26,6 @@ interface AppointmentFormData {
   issueDescription?: string
   selectedServices?: string[]
   carRuns?: boolean
-  isUrgent?: boolean
 }
 
 interface SupabaseQueryResult {
@@ -47,7 +46,6 @@ export default function HomePage(): React.JSX.Element {
     mileage: "",
     appointmentDate: "",
     appointmentTime: "",
-    isUrgent: false,
   })
 
   // Add refs for progressive navigation
@@ -197,9 +195,9 @@ export default function HomePage(): React.JSX.Element {
         else if (appointmentDate.getTime() === today.getTime()) {
           console.log('🔄 validateForm: TODAY - checking time constraints')
           
-          // Special case: "Now (ASAP)" appointments skip all time validation
-          if (formData.appointmentTime === "Now (ASAP)") {
-            console.log('⚡ validateForm: NOW (ASAP) appointment - skipping time validation')
+          // Special case: "ASAP" appointments skip all time validation
+          if (formData.appointmentTime === "ASAP") {
+            console.log('⚡ validateForm: ASAP appointment - skipping time validation')
             // No validation needed for immediate ASAP appointments
           } else {
             // Parse regular time slots
@@ -210,28 +208,15 @@ export default function HomePage(): React.JSX.Element {
               console.log('❌ validateForm: Invalid time format')
               newErrors.appointmentDate = "Invalid time format"
             } else {
-              // Check if urgent appointment - skip 30-minute buffer for regular times
-              if (formData.isUrgent) {
-                console.log('⚡ validateForm: URGENT appointment with specific time - allowing immediate booking')
-                // For urgent appointments with specific times, just check it's not in the past
-                const now = new Date()
-                if (appointmentDateTime < now) {
-                  console.log('❌ validateForm: Urgent appointment in the past')
-                  newErrors.appointmentDate = "Appointment time cannot be in the past"
-                } else {
-                  console.log('✅ validateForm: Urgent appointment valid')
-                }
+              // Regular appointment - enforce 30-minute buffer
+              const now = new Date()
+              const bufferTime = new Date(now.getTime() + 30 * 60 * 1000) // Add 30 minutes
+              
+              if (appointmentDateTime <= bufferTime) {
+                console.log('❌ validateForm: Today appointment too soon (less than 30 min buffer)')
+                newErrors.appointmentDate = "Please select a time at least 30 minutes from now, or select ASAP for immediate service"
               } else {
-                // Regular appointment - enforce 30-minute buffer
-                const now = new Date()
-                const bufferTime = new Date(now.getTime() + 30 * 60 * 1000) // Add 30 minutes
-                
-                if (appointmentDateTime <= bufferTime) {
-                  console.log('❌ validateForm: Today appointment too soon (less than 30 min buffer)')
-                  newErrors.appointmentDate = "Please select a time at least 30 minutes from now, or check 'I need service ASAP' for urgent appointments"
-                } else {
-                  console.log('✅ validateForm: Today appointment with sufficient buffer')
-                }
+                console.log('✅ validateForm: Today appointment with sufficient buffer')
               }
             }
           }
@@ -623,10 +608,9 @@ export default function HomePage(): React.JSX.Element {
             </div>
 
             {/* Date Time Selector */}
-            <div className="mb-4">
+            <div className="mb-6">
               <DateTimeSelector
                 ref={dateTimeSelectorRef}
-                isUrgent={formData.isUrgent || false}
                 onDateTimeChange={handleDateTimeChange}
                 onTimeSelected={() => {
                   // After time is selected, focus the continue button
@@ -635,31 +619,6 @@ export default function HomePage(): React.JSX.Element {
                   }, 100)
                 }}
               />
-            </div>
-
-            {/* Urgent Appointment Option */}
-            <div className="mb-6 px-1">
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="isUrgent"
-                  checked={formData.isUrgent || false}
-                  onChange={(e) => {
-                    setFormData(prev => ({ ...prev, isUrgent: e.target.checked }))
-                    // Clear any existing time validation errors when toggling urgent mode
-                    if (errors.appointmentDate) {
-                      setErrors(prev => ({ ...prev, appointmentDate: undefined }))
-                    }
-                  }}
-                  className="w-4 h-4 text-[#294a46] bg-gray-100 border-gray-300 rounded focus:ring-[#294a46] focus:ring-2"
-                />
-                <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-900">⚡ I need service ASAP</span>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Check this for urgent/emergency appointments that need immediate attention
-                  </p>
-                </div>
-              </label>
             </div>
 
             {/* Continue Button */}
