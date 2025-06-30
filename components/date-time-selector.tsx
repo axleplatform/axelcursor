@@ -74,6 +74,7 @@ const ChevronRight = () => (
 interface DateTimeSelectorProps {
   onDateTimeChange: (date: Date, time: string) => void
   onTimeSelected?: () => void
+  isUrgent?: boolean
 }
 
 interface DateTimeSelectorRef {
@@ -82,7 +83,7 @@ interface DateTimeSelectorRef {
   isFormComplete: () => boolean
 }
 
-export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelectorProps>(({ onDateTimeChange, onTimeSelected }, ref) => {
+export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelectorProps>(({ onDateTimeChange, onTimeSelected, isUrgent = false }, ref) => {
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimeSelector, setShowTimeSelector] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -205,21 +206,42 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     return date.toLocaleDateString("en-US", { month: "long", year: "numeric" })
   }
 
-  // Update available time slots based on selected date
+  // Update available time slots based on selected date and urgent mode
   useEffect(() => {
     if (isToday(selectedDate)) {
-      // For today, only show time slots that meet the 30-minute buffer requirement
-      const { index } = getNextTimeSlot()
-      const validTimeSlots = allTimeSlots.slice(index)
+      if (isUrgent) {
+        // For urgent appointments today, show all current and future time slots
+        const now = new Date()
+        const currentHour = now.getHours()
+        const currentMinute = now.getMinutes()
+        let currentIndex = currentHour * 2 + (currentMinute < 30 ? 0 : 1)
+        
+        // If we're past the current 30-minute slot, start from next slot
+        if (currentMinute > 30) {
+          currentIndex = currentHour * 2 + 2
+        }
+        
+        const urgentTimeSlots = allTimeSlots.slice(currentIndex)
+        setAvailableTimeSlots(urgentTimeSlots)
+        
+        // Clear invalid time selections for urgent mode
+        if (!selectedTime || !urgentTimeSlots.includes(selectedTime)) {
+          setSelectedTime("") // Force user to select a valid time
+        }
+      } else {
+        // For regular appointments today, use 30-minute buffer requirement
+        const { index } = getNextTimeSlot()
+        const validTimeSlots = allTimeSlots.slice(index)
 
-      setAvailableTimeSlots(validTimeSlots)
+        setAvailableTimeSlots(validTimeSlots)
 
-      // For today, clear invalid time selections
-      if (!selectedTime || !validTimeSlots.includes(selectedTime)) {
-        setSelectedTime("") // Force user to select a valid time
+        // For today, clear invalid time selections
+        if (!selectedTime || !validTimeSlots.includes(selectedTime)) {
+          setSelectedTime("") // Force user to select a valid time
+        }
       }
     } else {
-      // For future dates, show all time slots
+      // For future dates, show all time slots regardless of urgent mode
       setAvailableTimeSlots(allTimeSlots)
 
       // For future dates, clear time selection to force user to pick
@@ -227,7 +249,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
         setSelectedTime("") // Force user to select a time for future dates
       }
     }
-  }, [selectedDate])
+  }, [selectedDate, isUrgent])
 
   // Notify parent component when BOTH date AND time are properly selected
   // This prevents auto-submission by ensuring incomplete selections don't trigger updates
@@ -394,8 +416,11 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
         {showTimeSelector && (
           <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
             {isToday(selectedDate) && (
-              <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100 bg-blue-50">
-                ℹ️ Today's appointments require 30 minutes advance notice
+              <div className={`px-4 py-2 text-xs text-gray-500 border-b border-gray-100 ${isUrgent ? 'bg-orange-50' : 'bg-blue-50'}`}>
+                {isUrgent ? 
+                  "⚡ Urgent mode: Current and future times available for immediate service" :
+                  "ℹ️ Today's appointments require 30 minutes advance notice"
+                }
               </div>
             )}
             {availableTimeSlots.length > 0 ? (
