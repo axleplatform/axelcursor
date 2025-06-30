@@ -120,20 +120,48 @@ export default function MechanicDashboard() {
   // OPTIMIZED: Simplified fetch using database filters (performance fix applied to hook)
   const fetchInitialAppointments = async (): Promise<void> => {
     try {
-      console.log('🚀 DASHBOARD: Using optimized appointment fetching');
+      console.log('Fetching appointments for mechanic:', mechanicId);
       
       if (!mechanicId) {
         console.log('⏳ No mechanicId available, skipping appointments fetch');
         return;
       }
 
-      // Note: The heavy lifting is now done in the useMechanicAppointments hook
-      // with proper database filtering instead of fetching all appointments
-      console.log('✅ DASHBOARD: Appointments will be fetched via optimized hook');
+      setIsAppointmentsLoading(true);
+
+      // Fetch available appointments (pending appointments without quotes from this mechanic)
+      const availableResult = await getAvailableAppointmentsForMechanic(mechanicId);
+      console.log('Available appointments result:', availableResult);
+
+      if (availableResult.success && availableResult.appointments) {
+        setAvailableAppointments(availableResult.appointments);
+        console.log('Query results (available):', availableResult.appointments);
+      } else {
+        console.error('Error fetching available appointments:', availableResult.error);
+        setAvailableAppointments([]);
+      }
+
+      // Fetch upcoming appointments (confirmed/quoted appointments for this mechanic)  
+      const upcomingResult = await getQuotedAppointmentsForMechanic(mechanicId);
+      console.log('Upcoming appointments result:', upcomingResult);
+
+      if (upcomingResult.success && upcomingResult.appointments) {
+        // Filter to only show appointments with confirmed status or where mechanic has quotes
+        const filteredUpcoming = upcomingResult.appointments.filter(apt => 
+          apt.status === 'confirmed' || apt.status === 'in_progress' || apt.selected_mechanic_id === mechanicId
+        );
+        setUpcomingAppointments(filteredUpcoming);
+        console.log('Query results (upcoming):', filteredUpcoming);
+      } else {
+        console.error('Error fetching upcoming appointments:', upcomingResult.error);
+        setUpcomingAppointments([]);
+      }
       
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      console.error('❌ Error in appointment fetch setup:', errorMessage)
+      console.error('❌ Error fetching appointments:', errorMessage)
+      setAvailableAppointments([]);
+      setUpcomingAppointments([]);
     } finally {
       setIsAppointmentsLoading(false);
       console.log('✅ DASHBOARD: Loading state set to FALSE');
