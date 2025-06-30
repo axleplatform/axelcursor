@@ -752,44 +752,34 @@ export default function HomePage(): React.JSX.Element {
         .location-input-container::before {
           content: '';
           position: absolute;
-          inset: -2px;
-          padding: 2px;
-          background: conic-gradient(from 0deg, #294a46, #1e3632, #294a46, #3a5954, #294a46);
-          border-radius: 10px;
+          inset: -3px;
+          border-radius: 12px;
+          padding: 3px;
+          background: conic-gradient(from 0deg, #294a46, transparent, transparent, transparent, #294a46);
           opacity: 0;
           transition: opacity 0.3s ease;
           -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           -webkit-mask-composite: subtract;
           mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           mask-composite: subtract;
-          animation: snake-light 3s linear infinite;
         }
 
-        .location-input:focus + .location-input-container::before,
         .location-input-container:focus-within::before {
           opacity: 1;
+          animation: snake-rotate 2s linear infinite;
         }
 
         .location-input:focus {
           outline: none;
-          border-color: #294a46;
+          border-color: transparent;
         }
 
-        @keyframes snake-light {
+        @keyframes snake-rotate {
           0% {
-            background: conic-gradient(from 0deg, #294a46, transparent, transparent, transparent, #294a46);
-          }
-          25% {
-            background: conic-gradient(from 90deg, #294a46, transparent, transparent, transparent, #294a46);
-          }
-          50% {
-            background: conic-gradient(from 180deg, #294a46, transparent, transparent, transparent, #294a46);
-          }
-          75% {
-            background: conic-gradient(from 270deg, #294a46, transparent, transparent, transparent, #294a46);
+            transform: rotate(0deg);
           }
           100% {
-            background: conic-gradient(from 360deg, #294a46, transparent, transparent, transparent, #294a46);
+            transform: rotate(360deg);
           }
         }
       `}</style>

@@ -75,6 +75,13 @@ export default function MechanicDashboard() {
   const [editTime, setEditTime] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
+  // Ensure currentAvailableIndex is always valid when availableAppointments changes
+  useEffect(() => {
+    if (availableAppointments.length > 0 && currentAvailableIndex >= availableAppointments.length) {
+      setCurrentAvailableIndex(0);
+    }
+  }, [availableAppointments.length, currentAvailableIndex]);
+
   // Add showNotification function
   const showNotification = (message: string, type: NotificationState['type'] = 'error') => {
     setNotification({ message, type });
@@ -686,22 +693,27 @@ export default function MechanicDashboard() {
         console.log('✅ Appointment cancelled successfully');
       }
 
+      // Calculate the new index before updating state
+      const newAvailableAppointments = availableAppointments.filter((a: AppointmentWithRelations) => a.id !== appointment.id);
+      const newLength = newAvailableAppointments.length;
+      
+      // Reset index to 0 if current index would be out of bounds, otherwise keep current position
+      let newIndex = currentAvailableIndex;
+      if (currentAvailableIndex >= newLength && newLength > 0) {
+        newIndex = 0; // Reset to first appointment
+      } else if (newLength === 0) {
+        newIndex = 0; // No appointments left
+      }
+
       // Update local state - immediately remove the skipped appointment
-      setAvailableAppointments((prev: AppointmentWithRelations[]) => 
-        prev.filter((a: AppointmentWithRelations) => a.id !== appointment.id)
-      );
+      setAvailableAppointments(newAvailableAppointments);
+      setCurrentAvailableIndex(newIndex);
 
       // Show success message
       showNotification('Appointment skipped successfully', 'skip');
 
       // Refetch appointments to ensure UI is in sync
       await fetchInitialAppointments();
-
-      // Move to next appointment if available
-      const nextAppointment = availableAppointments.find((a: AppointmentWithRelations) => a.id !== appointment.id);
-      if (nextAppointment) {
-        setCurrentAvailableIndex(availableAppointments.indexOf(nextAppointment));
-      }
 
     } catch (error: unknown) {
       console.error('❌ Skip process failed:', error);
@@ -913,7 +925,7 @@ export default function MechanicDashboard() {
 
       console.log('21. Delete successful, updating UI...');
       // Update UI state
-      setUpcomingAppointments((prev: Appointment[]) => prev.filter((apt: Appointment) => apt.id !== appointmentId));
+      setUpcomingAppointments((prev: AppointmentWithRelations[]) => prev.filter((apt: AppointmentWithRelations) => apt.id !== appointmentId));
 
       // Reset form state
       setSelectedAppointment(null);
