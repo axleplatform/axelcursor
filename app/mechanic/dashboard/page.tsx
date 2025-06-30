@@ -127,6 +127,7 @@ export default function MechanicDashboard() {
   // OPTIMIZED: Simplified fetch using database filters (performance fix applied to hook)
   const fetchInitialAppointments = async (): Promise<void> => {
     try {
+      console.log('🔄 === FETCH INITIAL APPOINTMENTS START ===');
       console.log('Fetching appointments for mechanic:', mechanicId);
       
       if (!mechanicId) {
@@ -134,6 +135,7 @@ export default function MechanicDashboard() {
         return;
       }
 
+      console.log('🔄 Setting loading state to true...');
       setIsAppointmentsLoading(true);
 
       // Fetch available appointments (pending appointments without quotes from this mechanic)
@@ -170,8 +172,10 @@ export default function MechanicDashboard() {
       setAvailableAppointments([]);
       setUpcomingAppointments([]);
     } finally {
+      console.log('🔄 Setting loading state to false...');
       setIsAppointmentsLoading(false);
       console.log('✅ DASHBOARD: Loading state set to FALSE');
+      console.log('🔄 === FETCH INITIAL APPOINTMENTS COMPLETE ===');
     }
   }
 
