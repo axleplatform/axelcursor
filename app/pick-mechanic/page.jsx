@@ -32,14 +32,7 @@ export default function PickMechanicPage() {
  // Get appointmentId from searchParams
  const appointmentId = searchParams?.get("appointmentId")
  
- console.log("🔍 === URL & SEARCH PARAMS DEBUG ===")
- console.log("🔍 Full URL:", typeof window !== 'undefined' ? window.location.href : 'N/A (SSR)')
- console.log("🔍 Search params object:", searchParams)
- console.log("🔍 All search param entries:", searchParams ? Array.from(searchParams.entries()) : 'N/A')
  console.log("🔍 AppointmentId from searchParams:", appointmentId)
- console.log("🔍 Expected appointmentId: 5e6fcb65-f78b-4f6c-a114-e22098dc5b31")
- console.log("🔍 IDs match:", appointmentId === "5e6fcb65-f78b-4f6c-a114-e22098dc5b31")
- console.log("🔍 === URL DEBUG END ===")
 
  const fetchAppointmentData = async () => {
   try {
@@ -113,104 +106,14 @@ export default function PickMechanicPage() {
     console.log('✅ Authenticated user appointment access granted')
    }
    
-   // Fetch quotes separately - NO .single()
-   console.log('🔍 === QUOTES QUERY DEBUG START ===')
-   console.log('🔍 RAW appointmentId from searchParams:', appointmentId)
-   console.log('🔍 appointmentId type:', typeof appointmentId)
-   console.log('🔍 appointmentId length:', appointmentId?.length)
-   console.log('🔍 appointmentId === "5e6fcb65-f78b-4f6c-a114-e22098dc5b31":', appointmentId === "5e6fcb65-f78b-4f6c-a114-e22098dc5b31")
+   // Use standardized function to fetch quotes (RLS-compatible)
+   console.log('🔍 Fetching quotes using standardized function for appointment:', appointmentId)
+   const quotes = await getQuotesForAppointment(appointmentId)
    
-   // CRITICAL: Test query to see if the specific quote exists
-   console.log('🔍 STEP 1: Testing if specific quote exists...')
-   const { data: testQuote, error: testError } = await supabase
-    .from('mechanic_quotes')
-    .select('*')
-    .eq('appointment_id', '5e6fcb65-f78b-4f6c-a114-e22098dc5b31')
-   
-   console.log('🔍 Test query for specific appointment_id:', {
-    hardcodedAppointmentId: '5e6fcb65-f78b-4f6c-a114-e22098dc5b31',
-    testResult: testQuote,
-    testError: testError,
-    testCount: testQuote?.length || 0
-   })
-   
-   console.log('🔍 STEP 2: Regular query with dynamic appointmentId...')
-   const { data: quotes, error: quotesError } = await supabase
-    .from('mechanic_quotes')
-    .select(`
-     *,
-     mechanic_profiles(*)
-    `)
-    .eq('appointment_id', appointmentId)
-    .order('created_at', { ascending: false })
-   
-   if (quotesError) {
-    console.error('❌ Quotes fetch error:', quotesError)
-    throw quotesError
-   }
-   
-   console.log('🔍 Regular quotes query result:', {
+   console.log('🔍 Quotes retrieved successfully:', {
     appointmentId: appointmentId,
     quotesCount: quotes?.length || 0,
-    quotes: quotes,
-    isAppointmentIdCorrect: appointmentId === "5e6fcb65-f78b-4f6c-a114-e22098dc5b31"
-   })
-   
-   // CRITICAL: Compare appointmentId character by character
-   if (appointmentId) {
-    const expectedId = "5e6fcb65-f78b-4f6c-a114-e22098dc5b31"
-    console.log('🔍 CHARACTER BY CHARACTER COMPARISON:')
-    console.log('Expected:', expectedId)
-    console.log('Actual  :', appointmentId)
-    console.log('Equal   :', appointmentId === expectedId)
-    console.log('Length  :', expectedId.length, 'vs', appointmentId.length)
-    
-    if (appointmentId !== expectedId) {
-      console.log('🔍 MISMATCH ANALYSIS:')
-      for (let i = 0; i < Math.max(expectedId.length, appointmentId.length); i++) {
-        const expectedChar = expectedId[i] || '(missing)'
-        const actualChar = appointmentId[i] || '(missing)'
-        if (expectedChar !== actualChar) {
-          console.log(`Position ${i}: expected '${expectedChar}' got '${actualChar}'`)
-        }
-      }
-    }
-   }
-   
-       console.log('🔍 === QUOTES QUERY DEBUG END ===')
-    
-    // CRITICAL: Test the standardized function vs direct query
-    console.log('🔍 STEP 3: Testing standardized getQuotesForAppointment function...')
-    try {
-     const functionResult = await getQuotesForAppointment(appointmentId)
-     console.log('🔍 Standardized function result:', {
-      functionQuotes: functionResult,
-      functionCount: functionResult?.length || 0
-     })
-     
-     console.log('🔍 COMPARISON - Direct Query vs Function:')
-     console.log('Direct query count:', quotes?.length || 0)
-     console.log('Function count:', functionResult?.length || 0)
-     console.log('Results match:', (quotes?.length || 0) === (functionResult?.length || 0))
-     
-     if ((quotes?.length || 0) !== (functionResult?.length || 0)) {
-      console.log('❌ MISMATCH DETECTED between direct query and function!')
-      console.log('Direct query quotes:', quotes)
-      console.log('Function quotes:', functionResult)
-     }
-    } catch (funcError) {
-     console.error('❌ Error testing standardized function:', funcError)
-    }
-    
-    // Debug: Also check all quotes in the database
-   const { data: allQuotes, error: allQuotesError } = await supabase
-    .from('mechanic_quotes')
-    .select('id, appointment_id, mechanic_id, price, created_at')
-    .order('created_at', { ascending: false })
-   
-   console.log('🔍 All quotes in database:', {
-    totalQuotes: allQuotes?.length || 0,
-    quotes: allQuotes
+    quotes: quotes
    })
    
    setAppointment(appointment)
