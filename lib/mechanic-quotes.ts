@@ -126,7 +126,8 @@ interface RawAppointment {
 }
 
 /**
- * Creates or updates a quote from a mechanic for an appointment
+ * Creates or updates a quote for an appointment
+ * VERSION: 2.0.0 - Enhanced with extensive debugging and verification
  */
 export async function createOrUpdateQuote(
   mechanicId: string,
@@ -136,14 +137,16 @@ export async function createOrUpdateQuote(
   notes?: string
 ): Promise<QuoteResponse> {
   try {
-    console.log('=== CREATE/UPDATE QUOTE DEBUG ===');
+    console.log('🎯 === CREATE/UPDATE QUOTE EXTENSIVE DEBUG START (v2.0.0) ===');
+    console.log('🎯 CODE VERSION CHECK: This is the NEW enhanced quote creation code with extensive debugging');
     console.log('Received quote data:', {
       mechanicId,
       appointmentId,
       price,
       eta,
       notes,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      version: "2.0.0"
     });
 
     // Validate mechanic ID format and existence
@@ -153,6 +156,8 @@ export async function createOrUpdateQuote(
       return { success: false, error: mechanicValidation.error };
     }
 
+    console.log('✅ Step 1: Mechanic ID validation passed');
+
     // Verify mechanic profile exists
     const { data: mechanicProfile, error: mechanicError } = await supabase
       .from('mechanic_profiles')
@@ -160,7 +165,7 @@ export async function createOrUpdateQuote(
       .eq('id', mechanicId)
       .single();
 
-    console.log('Mechanic profile verification:', {
+    console.log('🔍 Step 2: Mechanic profile verification:', {
       mechanicId,
       profile: mechanicProfile,
       error: mechanicError
@@ -174,6 +179,8 @@ export async function createOrUpdateQuote(
       };
     }
 
+    console.log('✅ Step 2: Mechanic profile exists');
+
     // Verify appointment exists and is valid
     const { data: appointment, error: appointmentError } = await supabase
       .from('appointments')
@@ -181,7 +188,7 @@ export async function createOrUpdateQuote(
       .eq('id', appointmentId)
       .single();
 
-    console.log('Appointment verification:', {
+    console.log('🔍 Step 3: Appointment verification:', {
       appointmentId,
       appointment,
       error: appointmentError
@@ -197,6 +204,23 @@ export async function createOrUpdateQuote(
       return { success: false, error: `Appointment is ${appointment.status}` };
     }
 
+    console.log('✅ Step 3: Appointment exists and is pending');
+
+    // Check if quote already exists for this mechanic+appointment
+    console.log('🔍 Step 4: Checking for existing quote...');
+    const { data: existingQuote, error: existingError } = await supabase
+      .from('mechanic_quotes')
+      .select('*')
+      .eq('mechanic_id', mechanicId)
+      .eq('appointment_id', appointmentId)
+      .single();
+
+    console.log('🔍 Existing quote check result:', {
+      existingQuote,
+      existingError,
+      hasExistingQuote: !!existingQuote
+    });
+
     // Prepare quote data
     const quoteData: CreateQuoteParams = {
       mechanic_id: mechanicId,
@@ -206,7 +230,7 @@ export async function createOrUpdateQuote(
       notes: notes || ''
     };
 
-    console.log('Upserting quote with data:', quoteData);
+    console.log('🔍 Step 5: Prepared quote data for upsert:', quoteData);
 
     // Upsert the quote (insert or update if exists)
     const { data: result, error: upsertError } = await supabase
@@ -217,10 +241,12 @@ export async function createOrUpdateQuote(
       })
       .select();
 
-    console.log('Quote upsert result:', {
+    console.log('🔍 Step 6: Quote upsert result:', {
       result,
       error: upsertError,
-      resultCount: result?.length
+      resultCount: result?.length,
+      isInsert: !existingQuote,
+      isUpdate: !!existingQuote
     });
 
     if (upsertError) {
@@ -228,7 +254,33 @@ export async function createOrUpdateQuote(
       return { success: false, error: `Failed to create quote: ${upsertError.message}` };
     }
 
-    console.log('✅ Quote operation successful:', result);
+    console.log('✅ Step 6: Quote upsert successful');
+
+    // CRITICAL: Verify the quote was actually created/updated
+    console.log('🔍 Step 7: VERIFICATION - Checking if quote exists in database...');
+    const { data: verificationQuote, error: verificationError } = await supabase
+      .from('mechanic_quotes')
+      .select('*')
+      .eq('mechanic_id', mechanicId)
+      .eq('appointment_id', appointmentId)
+      .single();
+
+    console.log('🔍 VERIFICATION RESULT:', {
+      verificationQuote,
+      verificationError,
+      quoteExists: !!verificationQuote,
+      quoteId: verificationQuote?.id,
+      quotePrice: verificationQuote?.price,
+      quoteCreatedAt: verificationQuote?.created_at
+    });
+
+    if (!verificationQuote) {
+      console.error('❌ CRITICAL: Quote was not saved to database!');
+      return { success: false, error: 'Quote was not saved properly' };
+    }
+
+    console.log('✅ VERIFICATION PASSED: Quote exists in database');
+    console.log('🎯 === CREATE/UPDATE QUOTE EXTENSIVE DEBUG END ===');
     return { success: true, data: result };
 
   } catch (error: unknown) {
@@ -266,15 +318,18 @@ export async function getQuotesForAppointment(appointmentId: string): Promise<an
 
 /**
  * Gets all available appointments for a mechanic to quote
+ * VERSION: 2.0.0 - Enhanced filtering with extensive debugging
  */
 export async function getAvailableAppointmentsForMechanic(mechanicId: string): Promise<GetAppointmentsResponse> {
   try {
-    console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG START ===");
+    console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG START (v2.0.0) ===");
+    console.log("🔍 CODE VERSION CHECK: This is the NEW enhanced filtering code with extensive debugging");
     console.log("🔍 getAvailableAppointmentsForMechanic called with:", {
       mechanicId,
       type: typeof mechanicId,
       length: mechanicId?.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      version: "2.0.0"
     });
 
     // Validate mechanic ID
@@ -387,15 +442,18 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
 
 /**
  * Gets all appointments a mechanic has quoted
+ * VERSION: 2.0.0 - Enhanced querying with extensive debugging
  */
 export async function getQuotedAppointmentsForMechanic(mechanicId: string): Promise<GetAppointmentsResponse> {
   try {
-    console.log("🔍 === QUOTED APPOINTMENTS DEBUG START ===");
+    console.log("🔍 === QUOTED APPOINTMENTS DEBUG START (v2.0.0) ===");
+    console.log("🔍 CODE VERSION CHECK: This is the NEW enhanced querying code with extensive debugging");
     console.log("🔍 getQuotedAppointmentsForMechanic called with:", {
       mechanicId,
       type: typeof mechanicId,
       length: mechanicId?.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      version: "2.0.0"
     });
 
     // Validate mechanic ID

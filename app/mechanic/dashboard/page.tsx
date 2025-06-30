@@ -49,8 +49,31 @@ export default function MechanicDashboard() {
   const [isAppointmentsLoading, setIsAppointmentsLoading] = useState<boolean>(true)
   const [currentAvailableIndex, setCurrentAvailableIndex] = useState(0)
   const [priceInput, setPriceInput] = useState<string>("")
-  const [selectedDate, setSelectedDate] = useState('')
-  const [selectedTime, setSelectedTime] = useState('')
+  // Helper functions for default date/time
+  const getDefaultDate = (): string => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+  };
+
+  const getDefaultTime = (): string => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    // Round down to current hour (e.g., 2:37 PM → 2:00 PM)
+    // Ensure it's within business hours (8 AM - 6 PM)
+    let defaultHour = currentHour;
+    
+    if (currentHour < 8) {
+      defaultHour = 8; // If before 8 AM, default to 8 AM
+    } else if (currentHour >= 18) {
+      defaultHour = 8; // If after 6 PM, default to 8 AM next day
+    }
+    
+    return `${defaultHour.toString().padStart(2, '0')}:00`;
+  };
+
+  const [selectedDate, setSelectedDate] = useState(getDefaultDate())
+  const [selectedTime, setSelectedTime] = useState(getDefaultTime())
   const [showETAError, setShowETAError] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -125,9 +148,11 @@ export default function MechanicDashboard() {
   };
 
   // OPTIMIZED: Simplified fetch using database filters (performance fix applied to hook)
+  // VERSION: 2.0.0 - Enhanced with extensive debugging
   const fetchInitialAppointments = async (): Promise<void> => {
     try {
-      console.log('🔄 === FETCH INITIAL APPOINTMENTS START ===');
+      console.log('🔄 === FETCH INITIAL APPOINTMENTS START (v2.0.0) ===');
+      console.log('🔄 CODE VERSION CHECK: This is the NEW enhanced appointment fetching code');
       console.log('Fetching appointments for mechanic:', mechanicId);
       
       if (!mechanicId) {
@@ -534,10 +559,10 @@ export default function MechanicDashboard() {
         description: "Quote submitted successfully!",
       });
 
-      // Reset form
+      // Reset form to defaults
       setPriceInput("");
-      setSelectedDate("");
-      setSelectedTime("");
+      setSelectedDate(getDefaultDate());
+      setSelectedTime(getDefaultTime());
       setShowETAError(false);
 
       // Refresh appointments after successful quote
@@ -964,8 +989,8 @@ export default function MechanicDashboard() {
       // Reset form state
       setSelectedAppointment(null);
       setPrice('');
-      setSelectedDate('');
-      setSelectedTime('');
+      setSelectedDate(getDefaultDate());
+      setSelectedTime(getDefaultTime());
       setNotes('');
 
       showNotification('Quote cancelled successfully', 'success');
@@ -1500,8 +1525,8 @@ export default function MechanicDashboard() {
                                   onClick={() => {
                                     setSelectedAppointment(null);
                                     setPrice('');
-                                    setSelectedDate('');
-                                    setSelectedTime('');
+                                    setSelectedDate(getDefaultDate());
+                                    setSelectedTime(getDefaultTime());
                                     setNotes('');
                                   }}
                                   className="flex-1 bg-gray-200 text-gray-700 font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-gray-300 hover:shadow-md active:scale-[0.99]"
