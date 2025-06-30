@@ -55,21 +55,45 @@ export default function MechanicDashboard() {
     return today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
   };
 
-  const getDefaultTime = (): string => {
+  // Helper function to pad numbers
+  const pad = (num: number): string => {
+    return num < 10 ? `0${num}` : `${num}`;
+  };
+
+  const getDefaultTime = (appointment?: AppointmentWithRelations): string => {
+    // If we have an appointment, use the customer's actual requested time
+    if (appointment?.appointment_date) {
+      try {
+        const appointmentDate = new Date(appointment.appointment_date);
+        const hours = pad(appointmentDate.getHours());
+        const minutes = pad(appointmentDate.getMinutes());
+        console.log('🕒 Using customer requested time:', `${hours}:${minutes}`, 'from appointment_date:', appointment.appointment_date);
+        return `${hours}:${minutes}`;
+      } catch (error) {
+        console.warn('🕒 Error parsing appointment_date, falling back to current time:', error);
+      }
+    }
+
+    // Fallback to current time (not rounded down - exact current time)
     const now = new Date();
     const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
     
-    // Round down to current hour (e.g., 2:37 PM → 2:00 PM)
     // Ensure it's within business hours (8 AM - 6 PM)
     let defaultHour = currentHour;
+    let defaultMinute = currentMinute;
     
     if (currentHour < 8) {
-      defaultHour = 8; // If before 8 AM, default to 8 AM
+      defaultHour = 8; // If before 8 AM, default to 8:00 AM
+      defaultMinute = 0;
     } else if (currentHour >= 18) {
-      defaultHour = 8; // If after 6 PM, default to 8 AM next day
+      defaultHour = 8; // If after 6 PM, default to 8:00 AM next day
+      defaultMinute = 0;
     }
     
-    return `${defaultHour.toString().padStart(2, '0')}:00`;
+    const fallbackTime = `${pad(defaultHour)}:${pad(defaultMinute)}`;
+    console.log('🕒 Using fallback current time:', fallbackTime);
+    return fallbackTime;
   };
 
   const [selectedDate, setSelectedDate] = useState(getDefaultDate())
@@ -97,6 +121,31 @@ export default function MechanicDashboard() {
   const [editDate, setEditDate] = useState('');
   const [editTime, setEditTime] = useState('');
   const [editNotes, setEditNotes] = useState('');
+
+  // Update selectedDate and selectedTime when current available appointment changes
+  useEffect(() => {
+    if (availableAppointments.length > 0 && availableAppointments[currentAvailableIndex]) {
+      const currentAppointment = availableAppointments[currentAvailableIndex];
+      console.log('🕒 Current appointment changed, updating date/time to customer requested time');
+      console.log('🕒 Appointment:', currentAppointment.id, 'Date:', currentAppointment.appointment_date);
+      
+      // Update date to customer's requested date
+      if (currentAppointment.appointment_date) {
+        try {
+          const appointmentDate = new Date(currentAppointment.appointment_date);
+          const dateString = appointmentDate.toISOString().split('T')[0];
+          setSelectedDate(dateString);
+          console.log('🕒 Set selectedDate to customer requested:', dateString);
+        } catch (error) {
+          console.warn('🕒 Error parsing appointment date:', error);
+          setSelectedDate(getDefaultDate());
+        }
+      }
+      
+      // Update time to customer's requested time
+      setSelectedTime(getDefaultTime(currentAppointment));
+    }
+  }, [currentAvailableIndex, availableAppointments]);
 
   // Ensure currentAvailableIndex is always valid when availableAppointments changes
   useEffect(() => {
@@ -136,7 +185,7 @@ export default function MechanicDashboard() {
     const slots: TimeSlot[] = [];
     for (let hour = 8; hour < 18; hour++) {
       for (let minute = 0; minute < 60; minute += 15) {
-        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const time = `${pad(hour)}:${pad(minute)}`;
         const displayTime = new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
           hour: 'numeric',
           minute: '2-digit'
@@ -180,12 +229,9 @@ export default function MechanicDashboard() {
       console.log('Upcoming appointments result:', upcomingResult);
 
       if (upcomingResult.success && upcomingResult.appointments) {
-        // Filter to only show appointments with confirmed status or where mechanic has quotes
-        const filteredUpcoming = upcomingResult.appointments.filter(apt => 
-          apt.status === 'confirmed' || apt.status === 'in_progress' || apt.selected_mechanic_id === mechanicId
-        );
-        setUpcomingAppointments(filteredUpcoming);
-        console.log('Query results (upcoming):', filteredUpcoming);
+        // getQuotedAppointmentsForMechanic already filters correctly - no additional filtering needed
+        setUpcomingAppointments(upcomingResult.appointments);
+        console.log('Query results (upcoming):', upcomingResult.appointments);
       } else {
         console.error('Error fetching upcoming appointments:', upcomingResult.error);
         setUpcomingAppointments([]);
