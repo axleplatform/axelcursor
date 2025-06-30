@@ -43,8 +43,8 @@ export default function MechanicDashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   // Appointment states
-  const [availableAppointments, setAvailableAppointments] = useState<Appointment[]>([])
-  const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
+  const [availableAppointments, setAvailableAppointments] = useState<AppointmentWithRelations[]>([])
+  const [upcomingAppointments, setUpcomingAppointments] = useState<AppointmentWithRelations[]>([])
   const [skippedAppointments, setSkippedAppointments] = useState<MechanicSkip[]>([])
   const [isAppointmentsLoading, setIsAppointmentsLoading] = useState<boolean>(true)
   const [currentAvailableIndex, setCurrentAvailableIndex] = useState(0)

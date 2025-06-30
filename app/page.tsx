@@ -540,7 +540,7 @@ export default function HomePage(): React.JSX.Element {
                 className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 ${
                   isFormComplete && !isSubmitting 
                     ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] hover:shadow-md active:scale-[0.99]" 
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-[#294a46]/40 text-white cursor-not-allowed"
                 }`}
               >
                 {isSubmitting ? (
@@ -553,15 +553,7 @@ export default function HomePage(): React.JSX.Element {
                 )}
               </Button>
             </div>
-            
-            {/* Form Progress Indicator */}
-            {!isFormComplete && (
-              <div className="text-center mb-4">
-                <p className="text-sm text-gray-500">
-                  Please fill in all required fields to continue
-                </p>
-              </div>
-            )}
+
             
             {/* Error Display */}
             {errors.general && (
