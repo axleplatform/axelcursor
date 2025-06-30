@@ -153,15 +153,19 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     return `${hour12}:${minute.toString().padStart(2, "0")} ${ampm}`
   })
 
-  // Get the next available 30-minute interval from current time
+  // Get the next available 30-minute interval from current time + 30-minute buffer
   const getNextTimeSlot = () => {
     const now = new Date()
-    const hour = now.getHours()
-    const minute = now.getMinutes()
+    // Add 30-minute buffer for same-day appointments
+    const bufferTime = new Date(now.getTime() + 30 * 60 * 1000)
+    const hour = bufferTime.getHours()
+    const minute = bufferTime.getMinutes()
 
-    // Calculate the index in the time slots array
-    // Always round up to the next slot
-    let index = hour * 2 + (minute >= 0 && minute < 30 ? 1 : 2)
+    // Calculate the index in the time slots array, rounding UP to next slot
+    let index = hour * 2 + (minute > 0 ? 1 : 0)
+    if (minute > 30) {
+      index = hour * 2 + 2
+    }
 
     // Make sure we don't go beyond the available slots
     if (index >= allTimeSlots.length) {
@@ -204,23 +208,22 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
   // Update available time slots based on selected date
   useEffect(() => {
     if (isToday(selectedDate)) {
-      // For today, only show future time slots
-      const { index, timeSlot } = getNextTimeSlot()
-      const futureTimeSlots = allTimeSlots.slice(index)
+      // For today, only show time slots that meet the 30-minute buffer requirement
+      const { index } = getNextTimeSlot()
+      const validTimeSlots = allTimeSlots.slice(index)
 
-      // Add "Now" option at the top of the list for today
-      setAvailableTimeSlots(["Now", ...futureTimeSlots])
+      setAvailableTimeSlots(validTimeSlots)
 
-      // For today, default to "Now" if no time is selected
-      if (!selectedTime || !["Now", ...futureTimeSlots].includes(selectedTime)) {
-        setSelectedTime("Now")
+      // For today, clear invalid time selections
+      if (!selectedTime || !validTimeSlots.includes(selectedTime)) {
+        setSelectedTime("") // Force user to select a valid time
       }
     } else {
-      // For future dates, show all time slots without "Now" option
+      // For future dates, show all time slots
       setAvailableTimeSlots(allTimeSlots)
 
       // For future dates, clear time selection to force user to pick
-      if (selectedTime === "Now" || !allTimeSlots.includes(selectedTime)) {
+      if (!allTimeSlots.includes(selectedTime)) {
         setSelectedTime("") // Force user to select a time for future dates
       }
     }
@@ -390,21 +393,26 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
 
         {showTimeSelector && (
           <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+            {isToday(selectedDate) && (
+              <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100 bg-blue-50">
+                ℹ️ Today's appointments require 30 minutes advance notice
+              </div>
+            )}
             {availableTimeSlots.length > 0 ? (
               availableTimeSlots.map((time) => (
                 <button
                   type="button"
                   key={time}
                   className={`w-full text-left px-4 py-2 hover:bg-gray-100 text-sm ${
-                    time === "Now" ? "font-medium text-[#294a46]" : ""
-                  } ${time === selectedTime ? "bg-gray-100" : ""}`}
+                    time === selectedTime ? "bg-gray-100" : ""
+                  }`}
                   onClick={() => handleTimeSelect(time)}
                 >
                   {time}
                 </button>
               ))
             ) : (
-              <div className="px-4 py-2 text-sm text-gray-500">No available times</div>
+              <div className="px-4 py-2 text-sm text-gray-500">No available times today</div>
             )}
           </div>
         )}
