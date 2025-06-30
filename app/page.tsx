@@ -744,56 +744,155 @@ export default function HomePage(): React.JSX.Element {
           height: 24px;
         }
 
-        /* Snake Light Trail Animation for Location Input */
+        /* Neon Snake Light Trail Animation for Location Input */
         .location-input-container {
           position: relative;
+          overflow: hidden;
         }
 
+        /* Main glowing trail effect */
         .location-input-container::before {
           content: '';
           position: absolute;
-          top: -3px;
-          left: -3px;
-          right: -3px;
-          bottom: -3px;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
           border-radius: 12px;
           opacity: 0;
-          transition: opacity 0.3s ease;
-          background: 
-            linear-gradient(90deg, transparent 0%, transparent 40%, #294a46 50%, transparent 60%, transparent 100%),
-            linear-gradient(180deg, transparent 0%, transparent 40%, #294a46 50%, transparent 60%, transparent 100%),
-            linear-gradient(270deg, transparent 0%, transparent 40%, #294a46 50%, transparent 60%, transparent 100%),
-            linear-gradient(0deg, transparent 0%, transparent 40%, #294a46 50%, transparent 60%, transparent 100%);
-          background-size: 100% 3px, 3px 100%, 100% 3px, 3px 100%;
-          background-position: 0 0, 100% 0, 100% 100%, 0 100%;
-          background-repeat: no-repeat;
+          transition: all 0.4s ease;
+          background: conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            transparent 70deg,
+            rgba(41, 74, 70, 0.1) 80deg,
+            rgba(41, 74, 70, 0.3) 85deg,
+            rgba(41, 74, 70, 0.8) 90deg,
+            #294a46 95deg,
+            rgba(41, 74, 70, 0.8) 100deg,
+            rgba(41, 74, 70, 0.3) 105deg,
+            rgba(41, 74, 70, 0.1) 110deg,
+            transparent 120deg,
+            transparent 360deg
+          );
+          filter: blur(0.5px);
+          animation: snake-trail 3s linear infinite;
         }
 
-        .location-input-container:focus-within::before {
+        /* Secondary glow effect */
+        .location-input-container::after {
+          content: '';
+          position: absolute;
+          top: -4px;
+          left: -4px;
+          right: -4px;
+          bottom: -4px;
+          border-radius: 14px;
+          opacity: 0;
+          transition: all 0.4s ease;
+          background: conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            transparent 80deg,
+            rgba(41, 74, 70, 0.05) 85deg,
+            rgba(41, 74, 70, 0.2) 90deg,
+            rgba(41, 74, 70, 0.4) 95deg,
+            rgba(41, 74, 70, 0.2) 100deg,
+            rgba(41, 74, 70, 0.05) 105deg,
+            transparent 110deg,
+            transparent 360deg
+          );
+          filter: blur(2px);
+          animation: snake-trail 3s linear infinite;
+          z-index: -1;
+        }
+
+        /* Activate on focus */
+        .location-input-container:focus-within::before,
+        .location-input-container:focus-within::after {
           opacity: 1;
-          animation: snake-around 2s linear infinite;
+        }
+
+        /* Hover enhancement */
+        .location-input-container:hover::before {
+          opacity: 0.7;
+          filter: blur(0.5px) brightness(1.2);
+          animation-duration: 2.5s;
+        }
+
+        .location-input-container:hover::after {
+          opacity: 0.8;
+          filter: blur(2px) brightness(1.2);
+          animation-duration: 2.5s;
+        }
+
+        /* Focus state intensification */
+        .location-input-container:focus-within:hover::before {
+          opacity: 1;
+          filter: blur(0.5px) brightness(1.4) drop-shadow(0 0 8px rgba(41, 74, 70, 0.6));
+          animation-duration: 2s;
+        }
+
+        .location-input-container:focus-within:hover::after {
+          opacity: 1;
+          filter: blur(3px) brightness(1.4) drop-shadow(0 0 12px rgba(41, 74, 70, 0.4));
+          animation-duration: 2s;
         }
 
         .location-input:focus {
           outline: none;
-          border-color: transparent;
+          border-color: rgba(41, 74, 70, 0.3);
+          box-shadow: 
+            0 0 0 1px rgba(41, 74, 70, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          background-color: rgba(255, 255, 255, 0.98);
         }
 
-        @keyframes snake-around {
+        .location-input:hover {
+          border-color: rgba(41, 74, 70, 0.2);
+          background-color: rgba(255, 255, 255, 0.95);
+        }
+
+        /* Optimized snake trail animation */
+        @keyframes snake-trail {
           0% {
-            background-position: -100% 0, 100% -100%, 200% 100%, 0 200%;
-          }
-          25% {
-            background-position: 100% 0, 100% -100%, 200% 100%, 0 200%;
-          }
-          50% {
-            background-position: 100% 0, 100% 100%, 200% 100%, 0 200%;
-          }
-          75% {
-            background-position: 100% 0, 100% 100%, -100% 100%, 0 200%;
+            transform: rotate(0deg);
           }
           100% {
-            background-position: 100% 0, 100% 100%, -100% 100%, 0 -100%;
+            transform: rotate(360deg);
+          }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+          .location-input-container::before {
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            border-radius: 10px;
+          }
+          
+          .location-input-container::after {
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 12px;
+            filter: blur(1px);
+          }
+        }
+
+        /* Performance optimization for low-end devices */
+        @media (prefers-reduced-motion: reduce) {
+          .location-input-container::before,
+          .location-input-container::after {
+            animation: none;
+            opacity: 0.3;
+          }
+          
+          .location-input-container:focus-within::before {
+            opacity: 0.6;
           }
         }
       `}</style>

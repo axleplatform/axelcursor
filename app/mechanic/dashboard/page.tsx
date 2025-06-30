@@ -63,7 +63,7 @@ export default function MechanicDashboard() {
   const [notes, setNotes] = useState<string>('');
 
   // Add new state variables after the existing ones
-  const [startingAppointment, setStartingAppointment] = useState<Appointment | null>(null);
+  const [startingAppointment, setStartingAppointment] = useState<AppointmentWithRelations | null>(null);
   const [etaMinutes, setEtaMinutes] = useState('30');
   const [isStarting, setIsStarting] = useState(false);
 
