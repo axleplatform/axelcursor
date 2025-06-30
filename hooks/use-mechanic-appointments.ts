@@ -94,7 +94,7 @@ export function useMechanicAppointments(mechanicId: string) {
         const quotedAppointmentIds = quotedData?.map((quote: any) => quote.appointment_id) || []
         console.log("🚀 OPTIMIZED: Found quoted appointments:", quotedAppointmentIds.length)
 
-        // PERFORMANCE FIX 3: Fetch ONLY relevant upcoming appointments with database filters
+        // PERFORMANCE FIX 3: Fetch upcoming appointments - both assigned and unassigned
         let upcomingQuery = supabase
           .from("appointments")
           .select(`
@@ -102,8 +102,8 @@ export function useMechanicAppointments(mechanicId: string) {
             vehicles!fk_appointment_id(*),
             mechanic_quotes!appointment_id(*)
           `)
-          .eq("mechanic_id", mechanicId)
-          .in("status", ["confirmed", "in_progress"])
+          .or(`mechanic_id.eq.${mechanicId},mechanic_id.is.null`)
+          .in("status", ["confirmed", "in_progress", "pending"])
           .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Last 30 days for upcoming
           .order("appointment_date", { ascending: true })
           .limit(20)
