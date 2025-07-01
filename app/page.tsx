@@ -567,10 +567,11 @@ export default function HomePage(): React.JSX.Element {
     if (!isFormComplete && !isSubmitting) {
       setShowMissingFields(true)
       
-      // Enhanced visual feedback for all missing fields
+      // Enhanced visual feedback for all missing fields with improved targeting
       missingFields.forEach((fieldName, index) => {
         setTimeout(() => {
           let targetElement: HTMLElement | null = null
+          let parentContainer: HTMLElement | null = null
           
           switch (fieldName) {
             case 'address':
@@ -586,84 +587,182 @@ export default function HomePage(): React.JSX.Element {
               targetElement = document.querySelector('input[name="model"]')
               break
             case 'appointmentDate':
+              // Target the date selector specifically
+              targetElement = document.querySelector('input[type="date"]') || 
+                             document.querySelector('[data-testid="date-selector"]') ||
+                             document.querySelector('.date-selector')
+              // Also target the parent container for better visibility
+              parentContainer = document.querySelector('.date-time-selector') ||
+                               document.querySelector('[class*="DateTimeSelector"]')
+              break
             case 'appointmentTime':
-              // Find the DateTimeSelector container
-              targetElement = document.querySelector('[class*="DateTimeSelector"], .date-time-selector') || 
-                             document.querySelector('input[type="date"], select[aria-label*="date"], select[aria-label*="Date"]')
+              // Target the time selector specifically
+              targetElement = document.querySelector('[data-testid="time-selector"]') ||
+                             document.querySelector('.time-selector') ||
+                             document.querySelector('select[aria-label*="time"], select[aria-label*="Time"]')
+              // Also target the parent container for better visibility
+              parentContainer = document.querySelector('.date-time-selector') ||
+                               document.querySelector('[class*="DateTimeSelector"]')
               break
           }
           
-          if (targetElement) {
-            // Add enhanced highlighting animation
-            targetElement.style.transition = 'all 0.3s ease-in-out'
-            targetElement.style.transform = 'scale(1.02)'
-            targetElement.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.5)'
-            targetElement.style.borderColor = '#3b82f6'
+          if (targetElement || parentContainer) {
+            const elementToHighlight = targetElement || parentContainer
             
-            // Add a gentle pulse effect
-            targetElement.style.animation = 'pulse 1s ease-in-out 2'
-            
-            // Reset styles after animation
-            setTimeout(() => {
-              if (targetElement) {
-                targetElement.style.transform = ''
-                targetElement.style.boxShadow = ''
-                targetElement.style.animation = ''
-                targetElement.style.borderColor = ''
-              }
-            }, 2000)
+            if (elementToHighlight) {
+              // Enhanced highlighting animation with more visual impact
+              elementToHighlight.style.transition = 'all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1)'
+              elementToHighlight.style.transform = 'scale(1.03)'
+              elementToHighlight.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.6), 0 0 20px rgba(59, 130, 246, 0.3)'
+              elementToHighlight.style.borderColor = '#3b82f6'
+              elementToHighlight.style.backgroundColor = 'rgba(59, 130, 246, 0.05)'
+              elementToHighlight.style.zIndex = '10'
+              
+              // Add ARIA live region announcement for screen readers
+              const announcement = document.createElement('div')
+              announcement.setAttribute('aria-live', 'polite')
+              announcement.setAttribute('aria-atomic', 'true')
+              announcement.className = 'sr-only'
+              announcement.textContent = `Required field missing: ${fieldName.replace(/([A-Z])/g, ' $1').toLowerCase()}`
+              document.body.appendChild(announcement)
+              
+              // Add a shake animation for extra attention
+              elementToHighlight.style.animation = 'shake 0.5s ease-in-out, pulse 2s ease-in-out infinite'
+              
+              // Reset styles after animation
+              setTimeout(() => {
+                if (elementToHighlight) {
+                  elementToHighlight.style.transform = ''
+                  elementToHighlight.style.boxShadow = ''
+                  elementToHighlight.style.animation = ''
+                  elementToHighlight.style.borderColor = ''
+                  elementToHighlight.style.backgroundColor = ''
+                  elementToHighlight.style.zIndex = ''
+                  elementToHighlight.style.transition = ''
+                }
+                // Remove the announcement element
+                if (announcement && announcement.parentNode) {
+                  announcement.parentNode.removeChild(announcement)
+                }
+              }, 3000)
+            }
           }
-        }, index * 150) // Stagger the animations
+        }, index * 200) // Slightly increased stagger for better effect
       })
       
-      // Find the first missing field and scroll to it
+      // Enhanced scrolling and focusing to the first missing field
       const firstMissingField = missingFields[0]
       if (firstMissingField) {
-        let targetElement: HTMLElement | null = null
-        
-        switch (firstMissingField) {
-          case 'address':
-            targetElement = document.querySelector('input[name="address"]')
-            break
-          case 'year':
-            targetElement = document.querySelector('select[name="year"]')
-            break
-          case 'make':
-            targetElement = document.querySelector('select[name="make"]')
-            break
-          case 'model':
-            targetElement = document.querySelector('input[name="model"]')
-            break
-          case 'appointmentDate':
-          case 'appointmentTime':
-            // Find the DateTimeSelector container
-            targetElement = document.querySelector('[class*="DateTimeSelector"], .date-time-selector') || 
-                           document.querySelector('input[type="date"], select[aria-label*="date"], select[aria-label*="Date"]')
-            break
-        }
-        
-        if (targetElement) {
-          // Smooth scroll to the element with some offset
-          const elementRect = targetElement.getBoundingClientRect()
-          const offset = 100 // Offset from top
-          const targetPosition = window.pageYOffset + elementRect.top - offset
+        setTimeout(() => {
+          let targetElement: HTMLElement | null = null
+          let shouldScroll = true
           
-          window.scrollTo({
-            top: targetPosition,
-            behavior: 'smooth'
-          })
+          switch (firstMissingField) {
+            case 'address':
+              targetElement = document.querySelector('input[name="address"]')
+              break
+            case 'year':
+              targetElement = document.querySelector('select[name="year"]')
+              break
+            case 'make':
+              targetElement = document.querySelector('select[name="make"]')
+              break
+            case 'model':
+              targetElement = document.querySelector('input[name="model"]')
+              break
+            case 'appointmentDate':
+              targetElement = document.querySelector('input[type="date"]') || 
+                             document.querySelector('[data-testid="date-selector"]') ||
+                             document.querySelector('.date-selector') ||
+                             document.querySelector('.date-time-selector')
+              break
+            case 'appointmentTime':
+              targetElement = document.querySelector('[data-testid="time-selector"]') ||
+                             document.querySelector('.time-selector') ||
+                             document.querySelector('select[aria-label*="time"], select[aria-label*="Time"]') ||
+                             document.querySelector('.date-time-selector')
+              break
+          }
           
-          // Focus the element after scrolling (with a small delay)
-          setTimeout(() => {
-            if (targetElement && 'focus' in targetElement) {
-              (targetElement as HTMLInputElement | HTMLSelectElement).focus()
-            }
-          }, 500)
-        }
+          if (targetElement && shouldScroll) {
+            // Enhanced smooth scroll with better positioning
+            const elementRect = targetElement.getBoundingClientRect()
+            const offset = 120 // Increased offset for better visibility
+            const targetPosition = window.pageYOffset + elementRect.top - offset
+            
+            // Ensure we don't scroll past the top of the page
+            const finalPosition = Math.max(0, targetPosition)
+            
+            window.scrollTo({
+              top: finalPosition,
+              behavior: 'smooth'
+            })
+            
+            // Enhanced focus logic with better element detection
+            setTimeout(() => {
+              if (targetElement) {
+                // Check if element is focusable
+                if ('focus' in targetElement && typeof targetElement.focus === 'function') {
+                  try {
+                    (targetElement as HTMLInputElement | HTMLSelectElement).focus()
+                    
+                    // Add a subtle focus ring for extra visibility
+                    targetElement.style.outline = '2px solid #3b82f6'
+                    targetElement.style.outlineOffset = '2px'
+                    
+                    // Remove focus ring after a delay
+                    setTimeout(() => {
+                      if (targetElement) {
+                        targetElement.style.outline = ''
+                        targetElement.style.outlineOffset = ''
+                      }
+                    }, 2000)
+                  } catch (focusError) {
+                    console.warn('Focus failed:', focusError)
+                  }
+                }
+                
+                // For non-focusable elements, ensure they're visible
+                const isInViewport = elementRect.top >= 0 && elementRect.bottom <= window.innerHeight
+                if (!isInViewport) {
+                  targetElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center',
+                    inline: 'nearest'
+                  })
+                }
+              }
+            }, 600)
+          }
+        }, 300) // Small delay to let the highlighting animation start first
       }
       
-      // Auto-hide after 6 seconds (increased for better UX)
-      setTimeout(() => setShowMissingFields(false), 6000)
+      // Enhanced auto-hide with user interaction detection
+      const hideTimeout = setTimeout(() => setShowMissingFields(false), 8000) // Increased to 8 seconds
+      
+      // Clear timeout if user starts interacting with form
+      const clearTimeoutOnInteraction = () => {
+        clearTimeout(hideTimeout)
+        document.removeEventListener('keydown', clearTimeoutOnInteraction)
+        document.removeEventListener('click', clearTimeoutOnInteraction)
+      }
+      
+      document.addEventListener('keydown', clearTimeoutOnInteraction, { once: true })
+      document.addEventListener('click', clearTimeoutOnInteraction, { once: true })
+      
+      // Announce to screen readers
+      const globalAnnouncement = document.createElement('div')
+      globalAnnouncement.setAttribute('aria-live', 'assertive')
+      globalAnnouncement.setAttribute('aria-atomic', 'true')
+      globalAnnouncement.className = 'sr-only'
+      globalAnnouncement.textContent = `Please complete ${missingFields.length} required field${missingFields.length > 1 ? 's' : ''} to continue. Highlighted fields need your attention.`
+      document.body.appendChild(globalAnnouncement)
+      
+      setTimeout(() => {
+        if (globalAnnouncement && globalAnnouncement.parentNode) {
+          globalAnnouncement.parentNode.removeChild(globalAnnouncement)
+        }
+      }, 5000)
     }
   }, [isFormComplete, isSubmitting, missingFields])
 
@@ -911,38 +1010,65 @@ export default function HomePage(): React.JSX.Element {
 
             {/* Continue Button */}
             <div className="flex justify-center mb-8">
-              <Button
-                ref={continueButtonRef}
-                type="submit"
-                disabled={isSubmitting || !isFormComplete}
-                className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 relative ${
-                  isFormComplete && !isSubmitting 
-                    ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] hover:shadow-md active:scale-[0.99]" 
-                    : "bg-[#294a46]/40 text-white cursor-pointer hover:bg-[#294a46]/60 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-                }`}
-                onClick={(e) => {
-                  if (!isFormComplete && !isSubmitting) {
-                    e.preventDefault()
-                    handleDisabledContinueInteraction()
-                  }
-                  console.log('🔘 Continue button onClick triggered - isSubmitting:', isSubmitting, 'isFormComplete:', isFormComplete)
-                }}
-                onMouseEnter={() => {
-                  if (!isFormComplete && !isSubmitting) {
-                    handleDisabledContinueInteraction()
-                  }
-                }}
-                title={!isFormComplete ? "Click to see which fields need to be filled" : ""}
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
-                    Processing...
+              <div className="relative">
+                <Button
+                  ref={continueButtonRef}
+                  type="submit"
+                  disabled={isSubmitting || !isFormComplete}
+                  className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 relative ${
+                    isFormComplete && !isSubmitting 
+                      ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] hover:shadow-md active:scale-[0.99]" 
+                      : "bg-[#294a46]/40 text-white cursor-pointer hover:bg-[#294a46]/60 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                  }`}
+                  onClick={(e) => {
+                    if (!isFormComplete && !isSubmitting) {
+                      e.preventDefault()
+                      handleDisabledContinueInteraction()
+                    }
+                    console.log('🔘 Continue button onClick triggered - isSubmitting:', isSubmitting, 'isFormComplete:', isFormComplete)
+                  }}
+                  onMouseEnter={() => {
+                    if (!isFormComplete && !isSubmitting) {
+                      handleDisabledContinueInteraction()
+                    }
+                  }}
+                  // Enhanced accessibility attributes
+                  aria-label={!isFormComplete ? `Continue button - ${missingFields.length} required field${missingFields.length > 1 ? 's' : ''} missing` : "Continue to next step"}
+                  aria-describedby={!isFormComplete ? "missing-fields-help" : undefined}
+                  aria-disabled={!isFormComplete || isSubmitting}
+                  title={!isFormComplete ? `Complete ${missingFields.length} required field${missingFields.length > 1 ? 's' : ''} to continue` : "Continue to book your appointment"}
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </div>
+                  ) : (
+                    <span>Continue</span>
+                  )}
+                </Button>
+                
+                {/* Enhanced Tooltip for Disabled State */}
+                {!isFormComplete && !isSubmitting && showMissingFields && (
+                  <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 z-20 animate-slideIn">
+                    <div className="bg-gray-900 text-white text-sm py-2 px-4 rounded-lg shadow-lg whitespace-nowrap">
+                      <div className="flex items-center">
+                        <svg className="w-4 h-4 mr-2 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+                        </svg>
+                        Complete {missingFields.length} required field{missingFields.length > 1 ? 's' : ''}
+                      </div>
+                      {/* Tooltip Arrow */}
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                    </div>
                   </div>
-                ) : (
-                  <span>Continue</span>
                 )}
-              </Button>
+              </div>
+            </div>
+
+            {/* Hidden accessibility helper */}
+            <div id="missing-fields-help" className="sr-only" aria-live="polite">
+              {!isFormComplete && `Required fields: ${missingFields.map(field => field.replace(/([A-Z])/g, ' $1').toLowerCase()).join(', ')}`}
             </div>
 
             {/* Enhanced Missing Fields Indicator */}
@@ -1154,12 +1280,80 @@ export default function HomePage(): React.JSX.Element {
         
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+          20%, 40%, 60%, 80% { transform: translateX(3px); }
+        }
+        
+        @keyframes gentleGlow {
+          0%, 100% { 
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.6), 0 0 20px rgba(59, 130, 246, 0.3);
+          }
+          50% { 
+            box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.8), 0 0 25px rgba(59, 130, 246, 0.5);
+          }
+        }
+        
+        @keyframes focusRing {
+          0% { 
+            outline-offset: 2px;
+            outline-color: rgba(59, 130, 246, 0.8);
+          }
+          50% { 
+            outline-offset: 4px;
+            outline-color: rgba(59, 130, 246, 0.6);
+          }
+          100% { 
+            outline-offset: 2px;
+            outline-color: rgba(59, 130, 246, 0.8);
+          }
         }
         
         .animate-slideIn {
           animation: slideIn 0.3s ease-out;
+        }
+        
+        .animate-shake {
+          animation: shake 0.5s ease-in-out;
+        }
+        
+        .animate-gentleGlow {
+          animation: gentleGlow 2s ease-in-out infinite;
+        }
+        
+        .animate-focusRing {
+          animation: focusRing 2s ease-in-out infinite;
+        }
+        
+        /* Screen reader only class */
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+        }
+        
+        /* Enhanced accessibility for focus states */
+        .enhanced-focus:focus {
+          outline: 2px solid #3b82f6;
+          outline-offset: 2px;
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        }
+        
+        /* Custom tooltip animations */
+        .tooltip-enter {
+          opacity: 0;
+          transform: translateY(-5px) translateX(-50%);
+        }
+        
+        .tooltip-enter-active {
+          opacity: 1;
+          transform: translateY(0) translateX(-50%);
+          transition: all 0.2s ease-out;
         }
       `}</style>
     </div>
