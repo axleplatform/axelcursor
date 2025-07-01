@@ -270,4 +270,4 @@ BEGIN
 END $$;
 
 -- Final success message
-SELECT 'Always-Create-User system successfully implemented!' AS migration_status; 
+SELECT 'Always-Create-User system successfully implemented!' AS migration_status;

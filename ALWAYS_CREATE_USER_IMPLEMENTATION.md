@@ -23,24 +23,24 @@ This implementation eliminates NULL user_id values and simplifies the entire use
 ## 🔄 **How It Works**
 
 ### **1. Landing Page (`app/page.tsx`)**
-```javascript
+\`\`\`javascript
 // OLD: Create shadow user UUID
 const shadowUserId = crypto.randomUUID()
 
 // NEW: Create actual user record immediately  
 const tempUserId = await createTemporaryUser()
-```
+\`\`\`
 
 **Result**: Every appointment gets a **real user_id** from the start.
 
 ### **2. Book-Appointment Page (`app/book-appointment/page.tsx`)**
-```javascript
+\`\`\`javascript
 // NEW: Automatic phone-based merging
 const finalUserId = await supabase.rpc('merge_users_by_phone', {
   phone_to_check: normalizedPhone,
   current_user_id: currentUserId
 })
-```
+\`\`\`
 
 **Result**: If phone exists on another user, appointments are automatically merged.
 
@@ -93,14 +93,14 @@ const finalUserId = await supabase.rpc('merge_users_by_phone', {
 
 Copy and paste this SQL in your **Supabase Dashboard → SQL Editor**:
 
-```sql
+\`\`\`sql
 -- Execute the complete migration
 \i migrations/implement_always_create_user_system.sql
-```
+\`\`\`
 
 ### **2. Verify Migration Success**
 
-```sql
+\`\`\`sql
 -- Check that no NULL user_id appointments remain
 SELECT COUNT(*) FROM appointments WHERE user_id IS NULL;
 -- Should return 0
@@ -108,7 +108,7 @@ SELECT COUNT(*) FROM appointments WHERE user_id IS NULL;
 -- Check new user accounts created  
 SELECT account_type, COUNT(*) FROM users GROUP BY account_type;
 -- Should show temporary users created
-```
+\`\`\`
 
 ### **3. Deploy Code Changes**
 
@@ -148,4 +148,4 @@ The following files have been updated:
 
 This rewrite transforms the architecture from a complex NULL-handling system to a clean, industry-standard approach where every interaction starts with a user record.
 
-**Result**: Simpler code, better performance, cleaner data, and improved user experience! 
+**Result**: Simpler code, better performance, cleaner data, and improved user experience!

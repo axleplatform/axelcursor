@@ -1,12 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-<<<<<<< HEAD
-import { createClient } from "@/lib/supabase/client"
-=======
 import { supabase } from "@/lib/supabase"
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js"
->>>>>>> main
 
 export type AppointmentStatus = "pending" | "quoted" | "confirmed" | "in_progress" | "completed" | "cancelled"
 
@@ -47,7 +43,6 @@ export function useAppointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
-  const supabase = createClient()
 
   useEffect(() => {
     const fetchAppointments = async () => {

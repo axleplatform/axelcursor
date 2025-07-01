@@ -11,7 +11,7 @@ import OnboardingHeader from "@/components/onboarding-header"
 import CarMakeModelSelector from "@/components/car-make-model-selector"
 import PreferenceTagInput from "@/components/preference-tag-input"
 import SearchableMultiSelect from "@/components/searchable-multi-select"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
 
 // List of car brands/makes
@@ -104,7 +104,6 @@ const AUTOMOTIVE_SERVICES = [
 
 export default function MechanicOnboardingStep4Page() {
   const router = useRouter()
-  const supabase = createClient()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)

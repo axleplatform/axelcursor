@@ -400,4 +400,4 @@ export default function AppointmentCard({
       </div>
     </div>
   )
-} 
+}

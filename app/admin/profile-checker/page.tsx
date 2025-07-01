@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
-import { createClient } from '@/lib/supabase/client'
-const supabase = createClient()
+import { supabase } from "@/lib/supabase"
 
 interface MechanicProfile {
   id: string

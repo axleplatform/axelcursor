@@ -7,11 +7,7 @@ import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
-<<<<<<< HEAD
-import { createClient } from "@/lib/supabase/client"
-=======
 import { createBrowserClient } from '@supabase/ssr'
->>>>>>> main
 
 export default function LoginPage() {
   const router = useRouter()
@@ -23,14 +19,7 @@ export default function LoginPage() {
   const [isResendingEmail, setIsResendingEmail] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
 
-<<<<<<< HEAD
-  // Create Supabase client
-  const supabase = createClient()
-
-  const handleLogin = async (e: React.FormEvent) => {
-=======
   const handleLogin = async (e: React.FormEvent): Promise<void> => {
->>>>>>> main
     e.preventDefault()
     setIsLoading(true)
     setError("")
@@ -59,16 +48,6 @@ export default function LoginPage() {
         throw new Error("Login failed - no user data received")
       }
 
-<<<<<<< HEAD
-      console.log("✅ Login successful, user:", user.id)
-
-      // Check if user has a mechanic profile
-      const { data: mechanicProfile, error: profileError } = await supabase
-        .from("mechanic_profiles")
-        .select("id, onboarding_completed, onboarding_step")
-        .eq("user_id", user.id)
-        .maybeSingle()
-=======
       console.log("✅ Login successful, user:", data.user.id)
       
       // Check if this is a mechanic
@@ -79,28 +58,11 @@ export default function LoginPage() {
         .select('id')
         .eq('user_id', data.user.id)
         .single()
->>>>>>> main
 
       if (profile) {
         router.push('/mechanic/dashboard')
       } else {
-<<<<<<< HEAD
-        // Check if this is a customer account
-        const { data: customerProfile } = await supabase
-          .from("customer_profiles")
-          .select("id")
-          .eq("user_id", user.id)
-          .maybeSingle()
-
-        if (customerProfile) {
-          console.log("✅ Customer profile found:", customerProfile.id)
-          router.replace("/dashboard")
-        } else {
-          throw new Error("No profile found. Please complete registration.")
-        }
-=======
         router.push('/')
->>>>>>> main
       }
     } catch (error: unknown) {
       console.error("❌ Error:", error)
@@ -111,22 +73,7 @@ export default function LoginPage() {
     }
   }
 
-<<<<<<< HEAD
-  const getStepNumber = (step: string) => {
-    switch (step) {
-      case "personal_info": return "1"
-      case "professional_info": return "2"
-      case "certifications": return "3"
-      case "rates": return "4"
-      case "profile": return "5"
-      default: return "1"
-    }
-  }
-
-  const handleResendConfirmationEmail = async () => {
-=======
   const handleResendConfirmationEmail = async (): Promise<void> => {
->>>>>>> main
     if (!email) {
       setError("Please enter your email address first")
       return

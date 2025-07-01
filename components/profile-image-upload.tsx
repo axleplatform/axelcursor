@@ -5,11 +5,7 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { Loader2,  X, User } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { createClient } from "@/lib/supabase/client"
-import { useToast } from "@/components/ui/use-toast"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Camera } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 interface ProfileImageUploadProps {
   initialImageUrl?: string | null
@@ -22,8 +18,6 @@ export default function ProfileImageUpload({ initialImageUrl, onImageChange, use
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { toast } = useToast()
-  const supabase = createClient()
 
   // Update local state when initialImageUrl prop changes
   useEffect(() => {

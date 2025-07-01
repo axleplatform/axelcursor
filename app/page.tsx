@@ -763,10 +763,10 @@ export default function HomePage(): React.JSX.Element {
                 ref={continueButtonRef}
                 type="submit"
                 disabled={isSubmitting || !isFormComplete}
-                className={`font-medium py-6 px-10 rounded-full transform transition-all duration-300 relative ${
+                className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 relative ${
                   isFormComplete && !isSubmitting 
-                    ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] shadow-md" 
-                    : "bg-gray-400 text-white cursor-pointer hover:bg-blue-500 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+                    ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] hover:shadow-md active:scale-[0.99]" 
+                    : "bg-[#294a46]/40 text-white cursor-help hover:bg-[#294a46]/60 hover:shadow-lg"
                 }`}
                 onClick={(e) => {
                   if (!isFormComplete && !isSubmitting) {
@@ -780,7 +780,7 @@ export default function HomePage(): React.JSX.Element {
                     handleDisabledContinueInteraction()
                   }
                 }}
-                title={!isFormComplete ? "Please fill out all required fields to continue" : ""}
+                title={!isFormComplete ? "Click to see which fields need to be filled" : ""}
               >
                 {isSubmitting ? (
                   <div className="flex items-center">
@@ -788,75 +788,74 @@ export default function HomePage(): React.JSX.Element {
                     Processing...
                   </div>
                 ) : (
-                  "Continue"
+                  <div className="flex items-center">
+                    <span>Continue</span>
+                    {!isFormComplete && !isSubmitting && (
+                      <svg className="w-4 h-4 ml-2 opacity-75" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/>
+                      </svg>
+                    )}
+                  </div>
                 )}
               </Button>
             </div>
 
             {/* Enhanced Missing Fields Indicator */}
             {showMissingFields && !isFormComplete && (
-              <div className="mb-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl shadow-xl animate-slideIn">
-                <div className="flex items-start mb-4">
-                  <div className="flex-shrink-0 mr-4 mt-1">
-                    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              <div className="mb-6 p-5 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl shadow-lg animate-slideIn">
+                <div className="flex items-start mb-3">
+                  <div className="flex-shrink-0 mr-3 mt-0.5">
+                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
                       </svg>
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-blue-900 font-bold text-lg mb-2">Please fill out all required fields to continue</h3>
-                    <p className="text-blue-700 text-base mb-4">Complete the following fields to proceed with your appointment:</p>
-                    <div className="space-y-3">
+                    <h3 className="text-amber-900 font-semibold text-base mb-1">Complete Required Fields</h3>
+                    <p className="text-amber-700 text-sm mb-3">Please fill out the following information to continue:</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {missingFields.includes('address') && (
-                        <div className="flex items-center text-base text-blue-800 bg-white/70 px-4 py-3 rounded-lg border border-blue-200 hover:bg-white/90 transition-colors">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full mr-3 animate-pulse shadow-md"></div>
-                          <span className="mr-3">📍</span>
-                          <span className="font-medium">Enter your complete address</span>
+                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                          📍 Enter your location
                         </div>
                       )}
                       {missingFields.includes('year') && (
-                        <div className="flex items-center text-base text-blue-800 bg-white/70 px-4 py-3 rounded-lg border border-blue-200 hover:bg-white/90 transition-colors">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full mr-3 animate-pulse shadow-md"></div>
-                          <span className="mr-3">🗓️</span>
-                          <span className="font-medium">Select your vehicle's year</span>
+                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                          🗓️ Select vehicle year
                         </div>
                       )}
                       {missingFields.includes('make') && (
-                        <div className="flex items-center text-base text-blue-800 bg-white/70 px-4 py-3 rounded-lg border border-blue-200 hover:bg-white/90 transition-colors">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full mr-3 animate-pulse shadow-md"></div>
-                          <span className="mr-3">🚗</span>
-                          <span className="font-medium">Select your vehicle's make</span>
+                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                          🚗 Select vehicle make
                         </div>
                       )}
                       {missingFields.includes('model') && (
-                        <div className="flex items-center text-base text-blue-800 bg-white/70 px-4 py-3 rounded-lg border border-blue-200 hover:bg-white/90 transition-colors">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full mr-3 animate-pulse shadow-md"></div>
-                          <span className="mr-3">🔧</span>
-                          <span className="font-medium">Enter your vehicle's model</span>
+                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                          🔧 Enter vehicle model
                         </div>
                       )}
                       {missingFields.includes('appointmentDate') && (
-                        <div className="flex items-center text-base text-blue-800 bg-white/70 px-4 py-3 rounded-lg border border-blue-200 hover:bg-white/90 transition-colors">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full mr-3 animate-pulse shadow-md"></div>
-                          <span className="mr-3">📅</span>
-                          <span className="font-medium">Choose your preferred appointment date</span>
+                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                          📅 Choose appointment date
                         </div>
                       )}
                       {missingFields.includes('appointmentTime') && (
-                        <div className="flex items-center text-base text-blue-800 bg-white/70 px-4 py-3 rounded-lg border border-blue-200 hover:bg-white/90 transition-colors">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full mr-3 animate-pulse shadow-md"></div>
-                          <span className="mr-3">⏰</span>
-                          <span className="font-medium">Select your preferred appointment time</span>
+                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                          ⏰ Select appointment time
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="text-center mt-4 pt-4 border-t border-blue-200">
-                  <p className="text-sm text-blue-600 font-medium">
-                    ✨ Fill out these fields and the Continue button will become active
-                  </p>
+                <div className="text-xs text-amber-600 text-center mt-3 font-medium">
+                  💡 This guide will automatically disappear in a few seconds
                 </div>
               </div>
             )}

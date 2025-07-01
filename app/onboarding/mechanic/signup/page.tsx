@@ -9,11 +9,10 @@ import Link from "next/link"
 import { Loader2, X, Clock } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase"
 
 export default function MechanicSignupPage() {
   const router = useRouter()
-  const supabase = createClient()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)

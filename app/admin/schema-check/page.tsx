@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { examineSchema } from "@/lib/examine-schema"
-import { createClient } from '@/lib/supabase/client'
-const supabase = createClient()
+import { supabase } from "@/lib/supabase"
 
 export default function SchemaCheckPage() {
   const [schemaInfo, setSchemaInfo] = useState<any>(null)

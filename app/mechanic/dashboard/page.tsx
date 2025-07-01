@@ -1,14 +1,5 @@
 "use client"
 
-<<<<<<< HEAD
-import React, { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { SiteHeader } from "@/components/site-header"
-import Footer from "@/components/footer"
-import { createClient } from "@/lib/supabase/client"
-import AppointmentCard from "@/components/appointment-card"
-import { useToast } from "@/components/ui/use-toast"
-=======
 import React from "react"
 import { useState, useEffect } from "react"
 import type { ChangeEvent } from 'react'
@@ -39,42 +30,11 @@ import type {
   AppointmentWithRelations,
   MechanicSkip
 } from "@/types/index"
->>>>>>> main
 
 export default function MechanicDashboard() {
-  const router = useRouter()
   const { toast } = useToast()
+  const router = useRouter()
   const [mechanicId, setMechanicId] = useState<string | null>(null)
-<<<<<<< HEAD
-  const [availableAppointments, setAvailableAppointments] = useState<any[]>([])
-  const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([])
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
-  const [price, setPrice] = useState("")
-  const [selectedDate, setSelectedDate] = useState("")
-  const [selectedTime, setSelectedTime] = useState("")
-  const [notes, setNotes] = useState("")
-  const [isLoading, setIsLoading] = useState(true)
-
-  // Create Supabase client
-  const supabase = createClient()
-
-  useEffect(() => {
-    const fetchMechanicId = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push("/login")
-        return
-      }
-
-      const { data: mechanicProfile } = await supabase
-        .from("mechanic_profiles")
-        .select("id")
-        .eq("user_id", user.id)
-        .single()
-
-      if (mechanicProfile) {
-        setMechanicId(mechanicProfile.id)
-=======
   const [mechanicProfile, setMechanicProfile] = useState<MechanicProfile | null>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [isMechanicLoading, setIsMechanicLoading] = useState(true)
@@ -329,162 +289,23 @@ export default function MechanicDashboard() {
       } finally {
         // Set auth loading to false after auth check completes
         setIsAuthLoading(false)
->>>>>>> main
       }
     }
 
-    fetchMechanicId()
+    checkAuth()
   }, [router])
 
+  // Add debug logging for state changes
   useEffect(() => {
-    if (!mechanicId) return
+    console.log("🔍 mechanicId state changed:", { 
+      mechanicId, 
+      type: typeof mechanicId,
+      isString: typeof mechanicId === 'string',
+      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
+      isZero: mechanicId === '0'
+    })
+  }, [mechanicId])
 
-<<<<<<< HEAD
-    const fetchAppointments = async () => {
-      try {
-        setIsLoading(true)
-
-        // Get quoted appointment IDs
-        const { data: quotedData, error: quotedError } = await supabase
-          .from("mechanic_quotes")
-          .select("appointment_id")
-          .eq("mechanic_id", mechanicId)
-        
-        if (quotedError) throw quotedError
-        
-        const quotedIds = (quotedData || []).map((q: { appointment_id: string }) => String(q.appointment_id))
-        console.log('Quoted appointment IDs:', quotedIds)
-
-        // Get skipped appointment IDs
-        const { data: skippedData, error: skippedError } = await supabase
-          .from("mechanic_skipped_appointments")
-          .select("appointment_id")
-          .eq("mechanic_id", mechanicId)
-        
-        if (skippedError) throw skippedError
-        
-        const skippedIds = (skippedData || []).map((s: { appointment_id: string }) => String(s.appointment_id))
-        console.log('Skipped appointment IDs:', skippedIds)
-
-        // Fetch available appointments (not quoted or skipped)
-        let availableQuery = supabase
-          .from("appointments")
-          .select("*")
-          .eq("status", "pending")
-
-        // Only add filters if there are IDs to exclude
-        if (quotedIds.length > 0) {
-          availableQuery = availableQuery.not('id', 'in', `(${quotedIds.join(',')})`)
-        }
-        if (skippedIds.length > 0) {
-          availableQuery = availableQuery.not('id', 'in', `(${skippedIds.join(',')})`)
-        }
-
-        const { data: available, error: availableError } = await availableQuery
-
-        if (availableError) {
-          console.error('Available appointments error:', availableError)
-          throw availableError
-        }
-
-        // Fetch quotes for available appointments
-        if (available && available.length > 0) {
-          const availableIds = available.map(apt => apt.id)
-          
-          // Get quotes
-          const { data: availableQuotes, error: quotesError } = await supabase
-            .from('mechanic_quotes')
-            .select('*')
-            .in('appointment_id', availableIds)
-
-          if (quotesError) {
-            console.error('Error fetching quotes:', quotesError)
-            throw quotesError
-          }
-
-          // Get vehicles
-          const { data: availableVehicles, error: vehiclesError } = await supabase
-            .from('vehicles')
-            .select('*')
-            .in('appointment_id', availableIds)
-
-          if (vehiclesError) {
-            console.error('Error fetching vehicles:', vehiclesError)
-            throw vehiclesError
-          }
-
-          // Map quotes and vehicles to appointments
-          const availableWithData = available.map(apt => ({
-            ...apt,
-            mechanic_quotes: availableQuotes?.filter(q => q.appointment_id === apt.id) || [],
-            vehicles: availableVehicles?.find(v => v.appointment_id === apt.id) || null
-          }))
-
-          setAvailableAppointments(availableWithData)
-        } else {
-          setAvailableAppointments([])
-        }
-
-        // Fetch upcoming appointments (quoted)
-        const { data: upcomingData, error: upcomingError } = await supabase
-          .from('appointments')
-          .select("*")
-          .eq('mechanic_id', mechanicId)
-          .neq('status', 'cancelled')
-          .order('appointment_date', { ascending: true })
-
-        if (upcomingError) {
-          console.error('Upcoming appointments error:', upcomingError)
-          throw upcomingError
-        }
-
-        // Fetch quotes and vehicles for upcoming appointments
-        if (upcomingData && upcomingData.length > 0) {
-          const upcomingIds = upcomingData.map(apt => apt.id)
-          
-          // Get quotes with mechanic profiles
-          const { data: upcomingQuotes, error: quotesError } = await supabase
-            .from('mechanic_quotes')
-            .select(`
-              *,
-              mechanic:mechanic_id (
-                *,
-                profile:mechanic_profiles (*)
-              )
-            `)
-            .in('appointment_id', upcomingIds)
-
-          if (quotesError) {
-            console.error('Error fetching quotes:', quotesError)
-            throw quotesError
-          }
-
-          // Get vehicles
-          const { data: upcomingVehicles, error: vehiclesError } = await supabase
-            .from('vehicles')
-            .select('*')
-            .in('appointment_id', upcomingIds)
-
-          if (vehiclesError) {
-            console.error('Error fetching vehicles:', vehiclesError)
-            throw vehiclesError
-          }
-
-          // Map quotes and vehicles to appointments
-          const upcomingWithData = upcomingData.map(apt => ({
-            ...apt,
-            mechanic_quotes: upcomingQuotes?.filter(q => q.appointment_id === apt.id) || [],
-            vehicles: upcomingVehicles?.find(v => v.appointment_id === apt.id) || null
-          }))
-
-          setUpcomingAppointments(upcomingWithData)
-        } else {
-          setUpcomingAppointments([])
-        }
-
-      } catch (error) {
-        console.error("Error fetching appointments:", error)
-=======
   // NEW: Add debug tracking for mechanicId changes
   useEffect(() => {
     console.log("🎯 MECHANIC ID STATE CHANGE DETECTED:", {
@@ -720,68 +541,14 @@ export default function MechanicDashboard() {
       // Validate ETA selection
       if (!selectedDate || !selectedTime) {
         setShowETAError(true);
->>>>>>> main
         toast({
           title: "Error",
-          description: "Failed to load appointments. Please try again.",
+          description: "Please select both date and time for when you can show up.",
           variant: "destructive",
-        })
-        // Set empty arrays on error
-        setAvailableAppointments([])
-        setUpcomingAppointments([])
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchAppointments()
-
-    // Subscribe to changes
-    const subscription = supabase
-      .channel("appointments-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "appointments",
-        },
-        () => {
-          fetchAppointments()
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(subscription)
-    }
-  }, [mechanicId, toast])
-
-  const handleSubmitQuote = async (appointmentId: string) => {
-    try {
-      if (!price || !selectedDate || !selectedTime) {
-        toast({
-          title: "Error",
-          description: "Please fill in all required fields.",
-          variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
-<<<<<<< HEAD
-      const eta = new Date(`${selectedDate}T${selectedTime}`)
-
-      const { error } = await supabase.from("mechanic_quotes").insert({
-        mechanic_id: mechanicId,
-        appointment_id: appointmentId,
-        price: parseFloat(price),
-        eta: eta.toISOString(),
-        notes,
-        status: "pending",
-      })
-
-      if (error) throw error
-=======
       // Combine date and time
       const [year, month, day] = selectedDate.split('-');
       const [hour, minute] = selectedTime.split(':');
@@ -832,7 +599,6 @@ export default function MechanicDashboard() {
         console.error('❌ Quote submission failed:', error);
         throw new Error(error);
       }
->>>>>>> main
 
       console.log('✅ Quote submitted successfully!');
 
@@ -854,35 +620,9 @@ export default function MechanicDashboard() {
 
       toast({
         title: "Success",
-        description: "Quote submitted successfully.",
-      })
+        description: "Quote submitted successfully!",
+      });
 
-<<<<<<< HEAD
-      // Reset form
-      setPrice("")
-      setSelectedDate("")
-      setSelectedTime("")
-      setNotes("")
-    } catch (error) {
-      console.error("Error submitting quote:", error)
-      toast({
-        title: "Error",
-        description: "Failed to submit quote. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleUpdateQuote = async (appointmentId: string) => {
-    try {
-      if (!price || !selectedDate || !selectedTime) {
-        toast({
-          title: "Error",
-          description: "Please fill in all required fields.",
-          variant: "destructive",
-        })
-        return
-=======
       // Reset form to defaults
       setPriceInput("");
       setSelectedDate(getDefaultDate());
@@ -1133,44 +873,39 @@ export default function MechanicDashboard() {
       if (!myQuote) {
         showNotification('Quote not found', 'error');
         return;
->>>>>>> main
       }
-
-      const eta = new Date(`${selectedDate}T${selectedTime}`)
-
+      
+      // Combine date and time
+      const [year, month, day] = selectedDate.split('-');
+      const [hour, minute] = selectedTime.split(':');
+      const etaDateTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)).toISOString();
+      
       const { error } = await supabase
-        .from("mechanic_quotes")
+        .from('mechanic_quotes')
         .update({
           price: parseFloat(price),
-          eta: eta.toISOString(),
-          notes,
+          eta: etaDateTime,
+          notes: notes || '',
+          updated_at: new Date().toISOString()
         })
-        .eq("appointment_id", appointmentId)
-        .eq("mechanic_id", mechanicId)
+        .eq('id', myQuote.id);
+      
+      if (error) {
+        throw error;
+      }
 
-      if (error) throw error
-
-      toast({
-        title: "Success",
-        description: "Quote updated successfully.",
-      })
-
+      showNotification('Quote updated successfully', 'info');
+      await fetchInitialAppointments();
+      setSelectedAppointment(null);
       // Reset form
-      setSelectedAppointment(null)
-      setPrice("")
-      setSelectedDate("")
-      setSelectedTime("")
-      setNotes("")
+      setPrice('');
+      setSelectedDate('');
+      setSelectedTime('');
+      setNotes('');
     } catch (error) {
-      console.error("Error updating quote:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update quote. Please try again.",
-        variant: "destructive",
-      })
+      console.error('Error updating quote:', error);
+      showNotification('Failed to update quote', 'error');
     }
-<<<<<<< HEAD
-=======
   };
 
   // Add handleCancelQuote function after handleUpdateQuote
@@ -1595,51 +1330,73 @@ export default function MechanicDashboard() {
         <Footer />
       </div>
     )
->>>>>>> main
   }
 
-  const handleSkipAppointment = async (appointmentId: string) => {
-    try {
-      const { error } = await supabase.from("mechanic_skipped_appointments").insert({
-        mechanic_id: mechanicId,
-        appointment_id: appointmentId,
-      })
-
-      if (error) throw error
-
-      toast({
-        title: "Success",
-        description: "Appointment skipped successfully.",
-      })
-    } catch (error) {
-      console.error("Error skipping appointment:", error)
-      toast({
-        title: "Error",
-        description: "Failed to skip appointment. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  if (isLoading) {
+  // Error state
+  if (error) {
     return (
-      <div className="flex flex-col min-h-screen">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
         <SiteHeader />
-        <main className="flex-grow bg-[#f5f5f5]">
-          <div className="container mx-auto py-8 px-4">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-[#294a46]">Mechanic Dashboard</h1>
-              <p className="text-lg text-gray-600 mt-1">Manage your appointments</p>
+        <div className="flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <X className="h-12 w-12 mx-auto" />
             </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Authentication Error</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={() => router.push("/login")}
+              className="bg-[#294a46] text-white px-4 py-2 rounded-md hover:bg-[#1e3632] transition-colors"
+            >
+              Return to Login
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
 
-<<<<<<< HEAD
-            <div className="animate-pulse space-y-8">
-              <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-48 bg-gray-200 rounded"></div>
-                ))}
-=======
+  // Main dashboard content
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <SiteHeader />
+
+      {/* Notification Component */}
+      {notification && (
+        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-50 ${
+          notification.type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
+          notification.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' :
+          notification.type === 'skip' ? 'bg-gray-50 text-gray-700 border border-gray-200' :
+          'bg-gray-50 text-gray-800 border border-gray-200'
+        }`}>
+          {notification.message}
+        </div>
+      )}
+
+      {/* Dashboard Title and Actions */}
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <h1 className="text-3xl font-bold text-gray-900">Mechanic Dashboard</h1>
+          {mechanicProfile && <p className="text-lg text-gray-600 mt-1">Welcome back, {mechanicProfile.first_name}!</p>}
+
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Find appointments"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-full w-64 focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            </div>
+            <button className="bg-[#294a46] text-white px-4 py-2 rounded-full hover:bg-[#1e3632] transition-colors flex items-center gap-2">
+              Refer a friend
+            </button>
+            <ProfileDropdown />
+          </div>
+        </div>
+      </div>
+
       {/* Dashboard Content */}
       <div className="container mx-auto px-4 pb-12 flex-grow">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1865,68 +1622,23 @@ export default function MechanicDashboard() {
                     </div>
                   );
                 })}
->>>>>>> main
               </div>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex flex-col min-h-screen">
-      <SiteHeader />
-      <main className="flex-grow bg-[#f5f5f5]">
-        <div className="container mx-auto py-8 px-4">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-[#294a46]">Mechanic Dashboard</h1>
-            <p className="text-lg text-gray-600 mt-1">Manage your appointments</p>
+            )}
           </div>
 
-          <div className="space-y-12">
-            {/* Available Appointments */}
-            <div>
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-[#294a46]">Available Appointments</h2>
-                <p className="text-sm text-gray-500 mt-1">New appointments to quote</p>
-              </div>
+          {/* Column 2: Schedule */}
+          <MechanicSchedule />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {availableAppointments.map((appointment) => (
-                  <AppointmentCard
-                    key={appointment.id}
-                    appointment={appointment}
-                    isUpcoming={false}
-                    isSelected={selectedAppointment?.id === appointment.id}
-                    mechanicId={mechanicId || undefined}
-                    selectedAppointment={selectedAppointment}
-                    onEdit={setSelectedAppointment}
-                    onUpdate={handleUpdateQuote}
-                    onCancel={() => setSelectedAppointment(null)}
-                    onSkip={handleSkipAppointment}
-                    onSubmit={handleSubmitQuote}
-                    price={price}
-                    setPrice={setPrice}
-                    selectedDate={selectedDate}
-                    setSelectedDate={setSelectedDate}
-                    selectedTime={selectedTime}
-                    setSelectedTime={setSelectedTime}
-                    notes={notes}
-                    setNotes={setNotes}
-                  />
-                ))}
-              </div>
+          {/* Column 3: Available Appointments */}
+          <div className="bg-[#294a46] rounded-lg shadow-sm p-6 text-white">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold">
+                Available Appointments
+              </h2>
+              <p className="text-sm text-white/70 mt-1">
+                New appointments to quote
+              </p>
             </div>
-<<<<<<< HEAD
-
-            {/* Upcoming Appointments */}
-            <div>
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-[#294a46]">Upcoming Appointments</h2>
-                <p className="text-sm text-gray-500 mt-1">Your quoted & confirmed jobs</p>
-=======
             {(() => {
               console.log('🎯 AVAILABLE APPOINTMENTS RENDER DEBUG:', {
                 isAppointmentsLoading,
@@ -1939,38 +1651,21 @@ export default function MechanicDashboard() {
             {isAppointmentsLoading ? (
               <div className="flex items-center justify-center h-[400px]">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
->>>>>>> main
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {upcomingAppointments.map((appointment) => (
-                  <AppointmentCard
-                    key={appointment.id}
-                    appointment={appointment}
-                    isUpcoming={true}
-                    isSelected={selectedAppointment?.id === appointment.id}
-                    mechanicId={mechanicId || undefined}
-                    selectedAppointment={selectedAppointment}
-                    onEdit={setSelectedAppointment}
-                    onUpdate={handleUpdateQuote}
-                    onCancel={() => setSelectedAppointment(null)}
-                    price={price}
-                    setPrice={setPrice}
-                    selectedDate={selectedDate}
-                    setSelectedDate={setSelectedDate}
-                    selectedTime={selectedTime}
-                    setSelectedTime={setSelectedTime}
-                    notes={notes}
-                    setNotes={setNotes}
-                  />
-                ))}
+            ) : availableAppointments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[400px] text-center">
+                <Clock className="h-16 w-16 mb-4 text-white/70" />
+                <h3 className="text-xl font-medium mb-2">No Available Appointments</h3>
+                <p className="text-white/70">
+                  There are no pending appointments at this time. Check back later for new requests.
+                </p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="mt-4 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full transition-colors"
+                >
+                  Refresh
+                </button>
               </div>
-<<<<<<< HEAD
-            </div>
-          </div>
-        </div>
-      </main>
-=======
             ) : (
               <div className="relative">
                 {(() => {
@@ -2414,7 +2109,6 @@ export default function MechanicDashboard() {
         </div>
       )}
 
->>>>>>> main
       <Footer />
     </div>
   )

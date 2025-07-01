@@ -8,11 +8,10 @@ import { Loader2, ChevronLeft } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import OnboardingHeader from "@/components/onboarding-header"
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase"
 
 export default function MechanicPersonalInfoPage() {
   const router = useRouter()
-  const supabase = createClient()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)

@@ -28,4 +28,4 @@ USING (
 SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual 
 FROM pg_policies 
 WHERE tablename = 'mechanic_quotes' 
-AND policyname = 'Anonymous can view quotes for appointments'; 
+AND policyname = 'Anonymous can view quotes for appointments';

@@ -52,4 +52,4 @@ BEGIN
         RAISE EXCEPTION 'mechanic_profiles table does not exist. Cannot create foreign key constraint.';
     END IF;
 
-END $$; 
+END $$;

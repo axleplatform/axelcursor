@@ -141,4 +141,4 @@ export interface AppointmentWithRelations {
     price: number
     created_at: string
   }
-} 
+}

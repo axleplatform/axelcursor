@@ -43,14 +43,14 @@
 **Status**: PARTIALLY FIXED
 
 **Remaining Issues**:
-```typescript
+\`\`\`typescript
 // lib/mechanic-quotes.ts:276 - ✅ FIXED
 // app/admin/profile-checker/page.tsx:183 - ✅ FIXED 
 // app/mechanic/dashboard/page.tsx - NEEDS FIXING
 const upcomingAppointments = allAppointments?.filter((apt: any) => {
   return apt.mechanic_quotes?.some((q: any) => q.mechanic_id === mechanicId)
 })
-```
+\`\`\`
 
 ### 5. **Error Handling Types** - PRIORITY 2
 **Impact**: TypeScript strict mode violations  
@@ -72,14 +72,14 @@ const upcomingAppointments = allAppointments?.filter((apt: any) => {
 **Status**: PARTIALLY FIXED
 
 **Critical Functions Needing Types**:
-```typescript
+\`\`\`typescript
 // Examples that need fixing:
 const fetchAppointments = async () => {           // → Promise<void>
 const validateForm = () => {                      // → boolean
 const handleSubmit = async () => {                // → Promise<void>
 const goToNextWeek = () => {                      // → void
 const toggleVisibility = () => {                  // → void
-```
+\`\`\`
 
 ### 7. **Console Statements** - PRIORITY 4
 **Impact**: ESLint warnings in production  
@@ -99,10 +99,10 @@ const toggleVisibility = () => {                  // → void
 
 ### 9. **Middleware Type Issues**
 **File**: `middleware.ts:25,32`  
-```typescript
+\`\`\`typescript
 set(name: string, value: string, options: any)  // Should be typed
 remove(name: string, options: any)              // Should be typed
-```
+\`\`\`
 
 ---
 
@@ -110,10 +110,10 @@ remove(name: string, options: any)              // Should be typed
 
 ### 10. **Global Type Definitions**
 **File**: `types/global.d.ts:42-43`  
-```typescript
+\`\`\`typescript
 getSession(): Promise<{ data: { session: any } | null }>  // Should be typed
 signOut(): Promise<{ error: any }>                        // Should be typed
-```
+\`\`\`
 
 ### 11. **Unused Variables in Map Iterations**
 **Pattern**: Variables created but not fully utilized  
@@ -165,4 +165,4 @@ signOut(): Promise<{ error: any }>                        // Should be typed
 - Most critical database operations are typed ✅
 - Main remaining issues are function signatures and error handling
 
-**Status**: READY FOR FINAL PUSH TO DEPLOYMENT SUCCESS 🚀 
+**Status**: READY FOR FINAL PUSH TO DEPLOYMENT SUCCESS 🚀

@@ -2,32 +2,14 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
-<<<<<<< HEAD
-import { User, LogOut, Settings, ChevronDown } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
-import { useToast } from "@/components/ui/use-toast"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-=======
 import { User, ChevronRight } from "lucide-react"
 import { supabase } from "@/lib/supabase"
->>>>>>> main
 
-export function ProfileDropdown({ user }: { user: any }) {
+export function ProfileDropdown() {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
-  const { toast } = useToast()
-  const supabase = createClient()
 
   // Close dropdown when clicking outside
   useEffect(() => {

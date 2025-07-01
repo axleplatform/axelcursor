@@ -126,4 +126,4 @@ CREATE TRIGGER update_appointments_updated_at
     EXECUTE FUNCTION public.update_appointments_updated_at();
 
 -- Refresh the schema cache
-SELECT public.refresh_schema_cache(); 
+SELECT public.refresh_schema_cache();

@@ -86,4 +86,4 @@ WITH CHECK (true);
 -- Grant permissions
 GRANT ALL ON guest_profiles TO anon;
 GRANT ALL ON guest_profiles TO authenticated;
-GRANT ALL ON guest_profiles TO service_role; 
+GRANT ALL ON guest_profiles TO service_role;

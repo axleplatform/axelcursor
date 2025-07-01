@@ -13,10 +13,10 @@
 ### **1. Import/Export Errors**
 
 #### **app/page.tsx - Line 8**
-```typescript
+\`\`\`typescript
 import { MapPin, ChevronRight, User,  } from "lucide-react"
 //                                ^^^^ TRAILING COMMA + EXTRA SPACES
-```
+\`\`\`
 **Issue**: Trailing comma with extra spaces causing potential parsing issues
 **Impact**: Could cause build errors in strict environments
 **Fix**: Remove trailing comma and spaces
@@ -207,4 +207,4 @@ The project has a **strong foundation** with only **minor issues** to resolve. T
 **Areas for Improvement:**
 - Minor syntax cleanup
 - Duplicate file resolution
-- Enhanced linting setup 
+- Enhanced linting setup
