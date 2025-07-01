@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useState, useCallback, useEffect, useRef } from "react"
 import type { FormEvent, ChangeEvent, KeyboardEvent } from 'react'
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { MapPin, ChevronRight, User } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
@@ -35,7 +35,9 @@ interface SupabaseQueryResult {
 
 export default function HomePage(): React.JSX.Element {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [isLoadingExistingData, setIsLoadingExistingData] = useState<boolean>(false)
   const [errors, setErrors] = useState<Partial<AppointmentFormData & { general?: string }>>({})
   const [formData, setFormData] = useState<AppointmentFormData>({
     address: "",
@@ -57,6 +59,92 @@ export default function HomePage(): React.JSX.Element {
   const mileageRef = useRef<HTMLInputElement>(null)
   const dateTimeSelectorRef = useRef<{ openDateDropdown: () => void; openTimeDropdown: () => void; isFormComplete: () => boolean } | null>(null)
   const continueButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Get appointment ID from URL parameters for restoring state
+  const appointmentId = searchParams?.get("appointment_id") || null
+
+  // Add function to load existing appointment data
+  const loadExistingAppointment = useCallback(async () => {
+    if (!appointmentId) return
+
+    setIsLoadingExistingData(true)
+    try {
+      console.log("🔄 Loading existing appointment data for:", appointmentId)
+      
+      const { data, error } = await supabase
+        .from("appointments")
+        .select(`
+          *,
+          vehicles!fk_appointment_id(*)
+        `)
+        .eq("id", appointmentId)
+        .single()
+
+      if (error) {
+        console.error("Error loading appointment:", error)
+        return
+      }
+
+      if (data) {
+        console.log("✅ Loaded appointment data:", data)
+        
+        // Restore form data from existing appointment
+        setFormData(prev => ({
+          ...prev,
+          address: data.location || "",
+          vin: data.vehicles?.vin || "",
+          year: data.vehicles?.year?.toString() || "",
+          make: data.vehicles?.make || "",
+          model: data.vehicles?.model || "",
+          mileage: data.vehicles?.mileage?.toString() || "",
+          appointmentDate: data.appointment_date ? data.appointment_date.split('T')[0] : "",
+          appointmentTime: data.appointment_date ? data.appointment_date.split('T')[1]?.substring(0, 5) : "",
+          issueDescription: data.issue_description || "",
+          selectedServices: data.selected_services || [],
+          carRuns: data.car_runs
+        }))
+
+        toast({
+          title: "Form Restored",
+          description: "Your previous information has been loaded.",
+        })
+      }
+    } catch (error) {
+      console.error("Error loading appointment data:", error)
+    } finally {
+      setIsLoadingExistingData(false)
+    }
+  }, [appointmentId])
+
+  // Load existing data on mount if appointment ID is present
+  useEffect(() => {
+    if (appointmentId) {
+      loadExistingAppointment()
+    } else {
+      // Try to restore from sessionStorage as fallback
+      const savedFormData = sessionStorage.getItem('axle-landing-form-data')
+      if (savedFormData) {
+        try {
+          const parsedData = JSON.parse(savedFormData)
+          console.log("🔄 Restoring form data from sessionStorage:", parsedData)
+          setFormData(prev => ({ ...prev, ...parsedData }))
+          toast({
+            title: "Form Restored",
+            description: "Your previous information has been restored.",
+          })
+        } catch (error) {
+          console.error("Error parsing saved form data:", error)
+        }
+      }
+    }
+  }, [appointmentId, loadExistingAppointment])
+
+  // Save form data to sessionStorage whenever it changes
+  useEffect(() => {
+    if (formData.address || formData.year || formData.make || formData.model) {
+      sessionStorage.setItem('axle-landing-form-data', JSON.stringify(formData))
+    }
+  }, [formData])
 
   // Add debug logging
   useEffect(() => {
@@ -427,6 +515,10 @@ export default function HomePage(): React.JSX.Element {
         // Success - redirect to book appointment page
         console.log('🚀 Navigation starting - appointmentId:', appointmentId)
         console.log('🚀 Navigating to:', `/book-appointment?appointment_id=${appointmentId}`)
+        
+        // Clear sessionStorage since we're moving to the next step
+        sessionStorage.removeItem('axle-landing-form-data')
+        
         router.push(`/book-appointment?appointment_id=${appointmentId}`)
         
       } catch (error: unknown) {
@@ -475,6 +567,55 @@ export default function HomePage(): React.JSX.Element {
     if (!isFormComplete && !isSubmitting) {
       setShowMissingFields(true)
       
+      // Enhanced visual feedback for all missing fields
+      missingFields.forEach((fieldName, index) => {
+        setTimeout(() => {
+          let targetElement: HTMLElement | null = null
+          
+          switch (fieldName) {
+            case 'address':
+              targetElement = document.querySelector('input[name="address"]')
+              break
+            case 'year':
+              targetElement = document.querySelector('select[name="year"]')
+              break
+            case 'make':
+              targetElement = document.querySelector('select[name="make"]')
+              break
+            case 'model':
+              targetElement = document.querySelector('input[name="model"]')
+              break
+            case 'appointmentDate':
+            case 'appointmentTime':
+              // Find the DateTimeSelector container
+              targetElement = document.querySelector('[class*="DateTimeSelector"], .date-time-selector') || 
+                             document.querySelector('input[type="date"], select[aria-label*="date"], select[aria-label*="Date"]')
+              break
+          }
+          
+          if (targetElement) {
+            // Add enhanced highlighting animation
+            targetElement.style.transition = 'all 0.3s ease-in-out'
+            targetElement.style.transform = 'scale(1.02)'
+            targetElement.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.5)'
+            targetElement.style.borderColor = '#3b82f6'
+            
+            // Add a gentle pulse effect
+            targetElement.style.animation = 'pulse 1s ease-in-out 2'
+            
+            // Reset styles after animation
+            setTimeout(() => {
+              if (targetElement) {
+                targetElement.style.transform = ''
+                targetElement.style.boxShadow = ''
+                targetElement.style.animation = ''
+                targetElement.style.borderColor = ''
+              }
+            }, 2000)
+          }
+        }, index * 150) // Stagger the animations
+      })
+      
       // Find the first missing field and scroll to it
       const firstMissingField = missingFields[0]
       if (firstMissingField) {
@@ -512,25 +653,17 @@ export default function HomePage(): React.JSX.Element {
             behavior: 'smooth'
           })
           
-          // Add a subtle shake animation to draw attention
-          targetElement.style.animation = 'shake 0.5s ease-in-out'
-          setTimeout(() => {
-            if (targetElement) {
-              targetElement.style.animation = ''
-            }
-          }, 500)
-          
           // Focus the element after scrolling (with a small delay)
           setTimeout(() => {
             if (targetElement && 'focus' in targetElement) {
               (targetElement as HTMLInputElement | HTMLSelectElement).focus()
             }
-          }, 300)
+          }, 500)
         }
       }
       
-      // Auto-hide after 5 seconds (increased for better UX)
-      setTimeout(() => setShowMissingFields(false), 5000)
+      // Auto-hide after 6 seconds (increased for better UX)
+      setTimeout(() => setShowMissingFields(false), 6000)
     }
   }, [isFormComplete, isSubmitting, missingFields])
 
@@ -568,12 +701,26 @@ export default function HomePage(): React.JSX.Element {
     }))
   }, [])
 
+  // Show loading state while restoring data
+  if (isLoadingExistingData) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <SiteHeader />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#294a46] mx-auto mb-4"></div>
+            <p className="text-gray-600">Restoring your information...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Header */}
       <SiteHeader />
-
-
 
       {/* Main Content */}
       <main className="flex-1">
@@ -583,6 +730,11 @@ export default function HomePage(): React.JSX.Element {
           <div className="text-center mb-6">
             <p className="text-gray-600">Bring a Mechanic to your Location</p>
             <p className="text-gray-600">Order a Service</p>
+            {appointmentId && (
+              <div className="mt-2 text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full inline-block">
+                ✨ Editing existing appointment
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -766,7 +918,7 @@ export default function HomePage(): React.JSX.Element {
                 className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 relative ${
                   isFormComplete && !isSubmitting 
                     ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] hover:shadow-md active:scale-[0.99]" 
-                    : "bg-[#294a46]/40 text-white cursor-help hover:bg-[#294a46]/60 hover:shadow-lg"
+                    : "bg-[#294a46]/40 text-white cursor-pointer hover:bg-[#294a46]/60 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
                 }`}
                 onClick={(e) => {
                   if (!isFormComplete && !isSubmitting) {
@@ -788,14 +940,7 @@ export default function HomePage(): React.JSX.Element {
                     Processing...
                   </div>
                 ) : (
-                  <div className="flex items-center">
-                    <span>Continue</span>
-                    {!isFormComplete && !isSubmitting && (
-                      <svg className="w-4 h-4 ml-2 opacity-75" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/>
-                      </svg>
-                    )}
-                  </div>
+                  <span>Continue</span>
                 )}
               </Button>
             </div>
@@ -989,118 +1134,33 @@ export default function HomePage(): React.JSX.Element {
       {/* Footer */}
       <Footer />
 
-      {/* Custom styles for date and time inputs */}
-      <style jsx global>{`
-        /* Date input styling */
-        input[type="date"]::-webkit-calendar-picker-indicator,
-        input[type="time"]::-webkit-calendar-picker-indicator {
-          filter: invert(15%) sepia(19%) saturate(755%) hue-rotate(118deg) brightness(95%) contrast(91%);
-          cursor: pointer;
-          opacity: 0.8;
-          transition: opacity 0.2s;
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
         }
-
-        input[type="date"]::-webkit-calendar-picker-indicator:hover,
-        input[type="time"]::-webkit-calendar-picker-indicator:hover {
-          opacity: 1;
-        }
-
-        input[type="date"],
-        input[type="time"] {
-          font-family: inherit;
-          color: #333;
-        }
-
-        input[type="date"]:focus,
-        input[type="time"]:focus {
-          color: #294a46;
-          outline: none;
-        }
-
-        /* Remove default styling for Firefox */
-        input[type="date"]::-moz-calendar-picker-indicator,
-        input[type="time"]::-moz-calendar-picker-indicator {
-          background: transparent;
-        }
-
-        /* Custom styling for the calendar popup */
-        ::-webkit-datetime-edit {
-          padding: 0;
-        }
-
-        ::-webkit-datetime-edit-fields-wrapper {
-          background: transparent;
-        }
-
-        ::-webkit-datetime-edit-text {
-          color: #294a46;
-          padding: 0 0.2em;
-        }
-
-        ::-webkit-datetime-edit-month-field,
-        ::-webkit-datetime-edit-day-field,
-        ::-webkit-datetime-edit-year-field,
-        ::-webkit-datetime-edit-hour-field,
-        ::-webkit-datetime-edit-minute-field,
-        ::-webkit-datetime-edit-ampm-field {
-          color: #333;
-        }
-
-        ::-webkit-datetime-edit-month-field:focus,
-        ::-webkit-datetime-edit-day-field:focus,
-        ::-webkit-datetime-edit-year-field:focus,
-        ::-webkit-datetime-edit-hour-field:focus,
-        ::-webkit-datetime-edit-minute-field:focus,
-        ::-webkit-datetime-edit-ampm-field:focus {
-          color: #294a46;
-          background-color: rgba(41, 74, 70, 0.05);
-        }
-
-        /* Improve the appearance on focus */
-        .date-input:focus,
-        .time-input:focus {
-          color: #294a46;
-        }
-
-        /* Ensure consistent height */
-        .date-input,
-        .time-input {
-          height: 24px;
-        }
-
-        /* Custom animations for enhanced UX */
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
-          20%, 40%, 60%, 80% { transform: translateX(3px); }
-        }
-
+        
         @keyframes slideIn {
-          0% {
+          from {
             opacity: 0;
             transform: translateY(-10px);
           }
-          100% {
+          to {
             opacity: 1;
             transform: translateY(0);
           }
         }
-
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+        
         .animate-slideIn {
           animation: slideIn 0.3s ease-out;
         }
-
-        /* Enhanced focus styles for better accessibility */
-        input:focus, select:focus {
-          outline: 2px solid #294a46;
-          outline-offset: 2px;
-        }
-
-        /* Smooth transitions for all form elements */
-        input, select {
-          transition: all 0.2s ease-in-out;
-        }
-
       `}</style>
     </div>
   )

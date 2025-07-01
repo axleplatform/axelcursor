@@ -647,6 +647,13 @@ export default function BookAppointment() {
       }
     }
   }, [formData.issueDescription, hasInteractedWithTextArea, aiSuggestions])
+  // Save form data to sessionStorage whenever it changes
+  useEffect(() => {
+    if (formData.issueDescription || formData.selectedServices.length > 0 || formData.selectedCarIssues.length > 0) {
+      sessionStorage.setItem('axle-book-appointment-form-data', JSON.stringify(formData))
+    }
+  }, [formData])
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -688,11 +695,16 @@ export default function BookAppointment() {
         .from("appointments")
         .update({
           user_id: finalUserId, // Use final user ID (might be merged)
+          status: 'pending', // Explicitly set to pending to ensure it appears in Available Appointments
           car_runs: formData.carRuns,
           issue_description: formData.issueDescription,
           selected_services: formData.selectedServices,
           selected_car_issues: formData.selectedCarIssues,
           phone_number: formData.phoneNumber,
+          // Clear any previous selections to ensure fresh start
+          selected_quote_id: null,
+          mechanic_id: null,
+          price: null,
           updated_at: now
         })
         .eq('id', appointmentId)
@@ -703,12 +715,46 @@ export default function BookAppointment() {
         throw new Error("Failed to create appointment")
       }
 
+      // Trigger real-time updates for mechanics to see the appointment immediately
+      try {
+        console.log('🔄 Triggering real-time updates for appointment:', appointment.id)
+        
+        // Insert and immediately delete a dummy quote to trigger real-time subscriptions
+        const dummyRecord = {
+          appointment_id: appointment.id,
+          mechanic_id: 'refresh-trigger-' + Date.now(),
+          price: 0,
+          eta: new Date().toISOString(),
+          notes: 'REFRESH_TRIGGER',
+          status: 'pending'
+        }
+        
+        const { data: triggerQuote, error: triggerError } = await supabase
+          .from('mechanic_quotes')
+          .insert(dummyRecord)
+          .select()
+          .single()
 
+        if (!triggerError && triggerQuote) {
+          // Immediately delete the dummy record
+          await supabase
+            .from('mechanic_quotes')
+            .delete()
+            .eq('id', triggerQuote.id)
+          
+          console.log('✅ Real-time update triggered for mechanics')
+        }
+      } catch (triggerError) {
+        console.log('⚠️ Real-time trigger failed (non-critical):', triggerError)
+      }
 
       toast({
         title: "Success!",
         description: "Your appointment has been saved.",
       })
+      // Clear sessionStorage since we're moving to the next step
+      sessionStorage.removeItem('axle-book-appointment-form-data')
+      
       router.push(`/pick-mechanic?appointmentId=${appointment.id}`)
     } catch (err) {
       console.error("Error creating/updating appointment:", err)
@@ -917,12 +963,13 @@ or type Oil Change"
             </div>
             {validationError && <div className="text-red-500 text-center font-medium mb-2">{validationError}</div>}
             <div className="flex justify-center gap-4 pt-4">
-              <a
-                href="/"
+              <button
+                type="button"
+                onClick={() => router.push(appointmentId ? `/?appointment_id=${appointmentId}` : '/')}
                 className="px-8 py-3 border border-[#294a46] text-[#294a46] rounded-full hover:bg-gray-50 transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
               >
                 Back
-              </a>
+              </button>
               <button
                 type="submit"
                 className={`px-8 py-3 text-white rounded-full transform transition-all duration-200 ${

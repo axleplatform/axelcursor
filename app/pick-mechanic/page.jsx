@@ -278,24 +278,21 @@ export default function PickMechanicPage() {
  }
 
  const handleCancelAppointment = async () => {
+  setIsCanceling(true)
+  
   try {
-   setIsCanceling(true)
-   console.log('🔄 Starting appointment cancellation process...')
-   
-   if (!appointmentId) {
-    throw new Error('No appointment ID provided')
-   }
+   console.log('🔄 === APPOINTMENT RESET PROCESS START ===')
+   console.log('🔄 Resetting appointment and clearing all mechanic data for appointment:', appointmentId)
 
-   // Start atomic transaction for database operations
-   console.log('🔄 Step 1: Resetting appointment status to pending...')
+   // Step 1: Reset appointment status to 'pending' and clear selected data
+   console.log('🔄 Step 1: Resetting appointment status and clearing selections...')
    const { error: statusError } = await supabase
     .from('appointments')
-    .update({ 
-     status: 'pending',
-     mechanic_id: null,
-     selected_mechanic_id: null,
-     selected_quote_id: null,
-     selected_at: null,
+    .update({
+     status: 'pending', // Reset to pending so it appears in Available Appointments
+     selected_quote_id: null, // Clear selected quote
+     mechanic_id: null, // Clear assigned mechanic
+     price: null, // Clear price
      updated_at: new Date().toISOString()
     })
     .eq('id', appointmentId)
@@ -307,7 +304,7 @@ export default function PickMechanicPage() {
 
    console.log('✅ Step 1 complete: Appointment status reset to pending')
 
-   // Clear all mechanic quotes for this appointment
+   // Step 2: Clear all mechanic quotes for this appointment
    console.log('🔄 Step 2: Clearing all mechanic quotes...')
    const { error: quotesError } = await supabase
     .from('mechanic_quotes')
@@ -321,7 +318,7 @@ export default function PickMechanicPage() {
 
    console.log('✅ Step 2 complete: All mechanic quotes cleared')
 
-   // Clear any skipped appointments for this appointment (fresh start)
+   // Step 3: Clear any skipped appointments for this appointment (fresh start)
    console.log('🔄 Step 3: Clearing mechanic skips for fresh start...')
    const { error: skipsError } = await supabase
     .from('mechanic_skipped_appointments')
@@ -333,6 +330,38 @@ export default function PickMechanicPage() {
     // Don't throw error for this - it's not critical
    } else {
     console.log('✅ Step 3 complete: Mechanic skips cleared')
+   }
+
+   // Step 4: Force refresh of real-time subscriptions by triggering a notification
+   console.log('🔄 Step 4: Triggering real-time updates...')
+   try {
+    // Insert and immediately delete a dummy record to trigger real-time updates
+    const dummyRecord = {
+     appointment_id: appointmentId,
+     mechanic_id: 'trigger-update-' + Date.now(),
+     price: 0,
+     eta: new Date().toISOString(),
+     notes: 'TRIGGER_UPDATE_ONLY',
+     status: 'pending'
+    }
+    
+    const { data: triggerQuote, error: triggerError } = await supabase
+     .from('mechanic_quotes')
+     .insert(dummyRecord)
+     .select()
+     .single()
+
+    if (!triggerError && triggerQuote) {
+     // Immediately delete the dummy record
+     await supabase
+      .from('mechanic_quotes')
+      .delete()
+      .eq('id', triggerQuote.id)
+     
+     console.log('✅ Step 4 complete: Real-time update triggered')
+    }
+   } catch (triggerError) {
+    console.log('⚠️ Real-time trigger failed (non-critical):', triggerError)
    }
 
    console.log('✅ All database operations completed successfully')
@@ -381,7 +410,7 @@ export default function PickMechanicPage() {
       {/* Centered Page Title */}
       <div className="absolute left-1/2 transform -translate-x-1/2">
        <div className="text-center">
-        <h1 className="text-3xl font-bold text-[#294a46] page-title">Pick Your Mechanic</h1>
+        <h1 className="text-3xl font-bold text-center text-[#294a46] mb-6">Pick Your Mechanic</h1>
         <p className="text-lg text-gray-600 mt-1">Pick & Pay</p>
        </div>
       </div>
@@ -720,12 +749,6 @@ export default function PickMechanicPage() {
      0%, 100% { transform: translateX(0); }
      25% { transform: translateX(-5px); }
      75% { transform: translateX(5px); }
-    }
-    
-    .page-title {
-     text-align: center;
-     font-size: 2em;
-     margin-bottom: 20px;
     }
    `}</style>
   </div>

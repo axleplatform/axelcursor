@@ -367,6 +367,76 @@ export default function MechanicDashboard() {
     }
   }, [mechanicId])
 
+  // Real-time subscription for instant updates
+  useEffect(() => {
+   if (!mechanicId) return
+
+   console.log('🔄 Setting up real-time subscriptions for mechanic:', mechanicId)
+   
+   // Subscribe to appointments table changes
+   const appointmentsSubscription = supabase
+    .channel('appointments-changes')
+    .on(
+     'postgres_changes',
+     {
+      event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+      schema: 'public',
+      table: 'appointments'
+     },
+     (payload) => {
+      console.log('📡 Appointment change detected:', payload)
+      // Refresh appointments when any appointment changes
+      fetchInitialAppointments()
+     }
+    )
+    .subscribe()
+
+   // Subscribe to mechanic quotes changes
+   const quotesSubscription = supabase
+    .channel('quotes-changes')
+    .on(
+     'postgres_changes',
+     {
+      event: '*', // Listen to all events
+      schema: 'public',
+      table: 'mechanic_quotes'
+     },
+     (payload) => {
+      console.log('📡 Quote change detected:', payload)
+      // Refresh appointments when quotes change
+      fetchInitialAppointments()
+     }
+    )
+    .subscribe()
+
+   // Subscribe to mechanic skipped appointments changes
+   const skipsSubscription = supabase
+    .channel('skips-changes')
+    .on(
+     'postgres_changes',
+     {
+      event: '*',
+      schema: 'public',
+      table: 'mechanic_skipped_appointments'
+     },
+     (payload) => {
+      console.log('📡 Skip change detected:', payload)
+      // Refresh appointments when skips change
+      fetchInitialAppointments()
+     }
+    )
+    .subscribe()
+
+   console.log('✅ Real-time subscriptions established')
+
+   return () => {
+    console.log('🔄 Cleaning up real-time subscriptions')
+    appointmentsSubscription.unsubscribe()
+    quotesSubscription.unsubscribe()
+    skipsSubscription.unsubscribe()
+   }
+  }, [mechanicId])
+
   // Add useEffect to load mechanic profile ONLY after auth is complete
   useEffect(() => {
     // Only run after auth is complete and user is authenticated
