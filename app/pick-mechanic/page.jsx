@@ -376,11 +376,17 @@ export default function PickMechanicPage() {
         <ArrowLeft className="h-4 w-4" />
         Back
        </Button>
-       <div className="text-left">
-        <h1 className="text-3xl font-bold text-[#294a46]">Pick Your Mechanic</h1>
+      </div>
+      
+      {/* Centered Page Title */}
+      <div className="absolute left-1/2 transform -translate-x-1/2">
+       <div className="text-center">
+        <h1 className="text-3xl font-bold text-[#294a46] page-title">Pick Your Mechanic</h1>
         <p className="text-lg text-gray-600 mt-1">Pick & Pay</p>
        </div>
       </div>
+      
+      <div></div> {/* Spacer for flex layout balance */}
      </div>
 
      {/* Split-Screen Layout */}
@@ -455,19 +461,50 @@ export default function PickMechanicPage() {
              
              {/* Mechanic details */}
              <div className="space-y-3 mb-4">
-              {/* Bio */}
-              {quote.mechanic_profiles?.bio && (
-               <div>
-                <p className="text-sm font-medium text-gray-700">About:</p>
-                <p className="text-sm text-gray-600">{quote.mechanic_profiles.bio}</p>
+              {/* Profile descriptions - enhanced display */}
+              {(quote.mechanic_profiles?.bio || quote.mechanic_profiles?.business_description) && (
+               <div className="bg-white rounded-lg p-4 border border-gray-200">
+                <p className="text-sm font-semibold text-[#294a46] mb-3 flex items-center">
+                 <User className="h-4 w-4 mr-2" />
+                 About This Mechanic
+                </p>
+                
+                {/* Bio */}
+                {quote.mechanic_profiles?.bio && (
+                 <div className="mb-3">
+                  <p className="text-sm text-gray-700 leading-relaxed">{quote.mechanic_profiles.bio}</p>
+                 </div>
+                )}
+                
+                {/* Business Description */}
+                {quote.mechanic_profiles?.business_description && (
+                 <div className="mb-2">
+                  <p className="text-xs font-medium text-gray-600 mb-1">Business Type:</p>
+                  <p className="text-sm text-gray-700">{quote.mechanic_profiles.business_description}</p>
+                 </div>
+                )}
+                
+                {/* Specialties if available */}
+                {quote.mechanic_profiles?.specialties && quote.mechanic_profiles.specialties.length > 0 && (
+                 <div>
+                  <p className="text-xs font-medium text-gray-600 mb-2">Specialties:</p>
+                  <div className="flex flex-wrap gap-1">
+                   {quote.mechanic_profiles.specialties.map((specialty, index) => (
+                    <span key={index} className="bg-[#e6eeec] text-[#294a46] text-xs px-2 py-1 rounded-full">
+                     {specialty}
+                    </span>
+                   ))}
+                  </div>
+                 </div>
+                )}
                </div>
               )}
               
               {/* Quote notes */}
               {quote.notes && (
-               <div>
-                <p className="text-sm font-medium text-gray-700">Additional notes:</p>
-                <p className="text-sm text-gray-600">{quote.notes}</p>
+               <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <p className="text-sm font-medium text-blue-800 mb-1">Quote Details:</p>
+                <p className="text-sm text-blue-700">{quote.notes}</p>
                </div>
               )}
              </div>
@@ -683,6 +720,12 @@ export default function PickMechanicPage() {
      0%, 100% { transform: translateX(0); }
      25% { transform: translateX(-5px); }
      75% { transform: translateX(5px); }
+    }
+    
+    .page-title {
+     text-align: center;
+     font-size: 2em;
+     margin-bottom: 20px;
     }
    `}</style>
   </div>
