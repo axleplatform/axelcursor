@@ -2,10 +2,14 @@
   "version": 2,
   "devCommand": "next dev",
   "framework": "nextjs",
-  "installCommand": "echo 'Starting clean install' && rm -rf node_modules package-lock.json pnpm-lock.yaml yarn.lock .npm .pnpm-store 2>/dev/null || true && npm cache clean --force && npm install --verbose",
-  "buildCommand": "npm run build",
+  "installCommand": "echo 'FORCE REBUILD v2.0 - Cache Invalidation' && rm -rf node_modules package-lock.json pnpm-lock.yaml yarn.lock .npm .pnpm-store .next 2>/dev/null || true && npm cache clean --force && npm install --verbose",
+  "buildCommand": "echo 'Building with fresh cache invalidation' && npm run build",
   "outputDirectory": ".next",
   "regions": ["iad1"],
+  "env": {
+    "NEXT_PUBLIC_BUILD_TIMESTAMP": "2024-12-31T19:30:00Z",
+    "FORCE_REBUILD": "true"
+  },
   "rewrites": [
     {
       "source": "/(.*)",
@@ -19,6 +23,10 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "X-Build-Version",
+          "value": "2.0-cache-invalidation"
         }
       ]
     }

@@ -15,6 +15,9 @@ export const metadata: Metadata = {
     generator: 'Next.js'
 }
 
+// FORCE REBUILD: Cache invalidation to resolve @v0/lib/supabase errors
+// This comment forces chunk regeneration - Deploy timestamp: 2024-12-31
+
 export default function RootLayout({
   children,
 }: Readonly<{
