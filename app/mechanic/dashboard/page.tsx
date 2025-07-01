@@ -1644,6 +1644,28 @@ export default function MechanicDashboard() {
                         </div>
                       )}
 
+                      {/* Car Issues */}
+                      {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 ? (
+                        <div className="mb-6">
+                          <h4 className="text-sm font-medium mb-2 text-gray-900">Car Issues</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {appointment.selected_car_issues.map((issue: string, index: number) => (
+                              <span
+                                key={index}
+                                className="bg-orange-100 text-orange-700 text-xs px-3 py-1 rounded-full"
+                              >
+                                {issue}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mb-6">
+                          <h4 className="text-sm font-medium mb-2 text-gray-900">Car Issues</h4>
+                          <p className="text-sm text-gray-500 italic">No car issues selected</p>
+                        </div>
+                      )}
+
                       {/* Car Status */}
                       {appointment.car_runs !== null && (
                         <div className="mb-6">
@@ -1883,11 +1905,33 @@ export default function MechanicDashboard() {
                                 className="bg-white/20 text-xs px-3 py-1 rounded-full"
                               >
                                 {service}
-                        </span>
+                              </span>
                             ))}
-                      </div>
                           </div>
-                        )}
+                        </div>
+                      )}
+
+                      {/* Car Issues */}
+                      {availableAppointments[currentAvailableIndex].selected_car_issues && availableAppointments[currentAvailableIndex].selected_car_issues.length > 0 ? (
+                        <div className="flex-1">
+                          <h4 className="text-sm font-medium mb-2">Car Issues</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {availableAppointments[currentAvailableIndex].selected_car_issues.map((issue: string, index: number) => (
+                              <span
+                                key={index}
+                                className="bg-orange-200/30 text-orange-100 text-xs px-3 py-1 rounded-full"
+                              >
+                                {issue}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex-1">
+                          <h4 className="text-sm font-medium mb-2">Car Issues</h4>
+                          <p className="text-sm text-white/50 italic">No car issues selected</p>
+                        </div>
+                      )}
 
                       {/* Car Status */}
                       {availableAppointments[currentAvailableIndex].car_runs !== null && (

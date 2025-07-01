@@ -567,13 +567,106 @@ export default function HomePage(): React.JSX.Element {
     if (!isFormComplete && !isSubmitting) {
       setShowMissingFields(true)
       
+      // Clear any existing animations first
+      const existingHighlights = document.querySelectorAll('.missing-field-highlight')
+      existingHighlights.forEach(el => {
+        el.classList.remove('missing-field-highlight')
+      })
+      
       // Enhanced visual feedback for all missing fields with improved targeting
       missingFields.forEach((fieldName, index) => {
         setTimeout(() => {
           let targetElement: HTMLElement | null = null
-          let parentContainer: HTMLElement | null = null
           
+          // More specific selectors for better targeting
           switch (fieldName) {
+            case 'address':
+              targetElement = document.querySelector('input[name="address"]') ||
+                             document.querySelector('input[placeholder*="address"], input[placeholder*="Address"]') ||
+                             document.querySelector('input[placeholder*="location"], input[placeholder*="Location"]')
+              break
+            case 'year':
+              targetElement = document.querySelector('select[name="year"]') ||
+                             document.querySelector('select[aria-label*="year"], select[aria-label*="Year"]') ||
+                             document.querySelector('select[data-field="year"]')
+              break
+            case 'make':
+              targetElement = document.querySelector('select[name="make"]') ||
+                             document.querySelector('select[aria-label*="make"], select[aria-label*="Make"]') ||
+                             document.querySelector('select[data-field="make"]')
+              break
+            case 'model':
+              targetElement = document.querySelector('input[name="model"]') ||
+                             document.querySelector('input[placeholder*="model"], input[placeholder*="Model"]') ||
+                             document.querySelector('input[data-field="model"]')
+              break
+            case 'appointmentDate':
+              targetElement = document.querySelector('input[type="date"]') || 
+                             document.querySelector('[data-testid="date-selector"]') ||
+                             document.querySelector('.date-selector') ||
+                             document.querySelector('input[aria-label*="date"], input[aria-label*="Date"]') ||
+                             document.querySelector('[data-field="appointmentDate"]')
+              break
+            case 'appointmentTime':
+              targetElement = document.querySelector('[data-testid="time-selector"]') ||
+                             document.querySelector('.time-selector') ||
+                             document.querySelector('select[aria-label*="time"], select[aria-label*="Time"]') ||
+                             document.querySelector('input[type="time"]') ||
+                             document.querySelector('[data-field="appointmentTime"]')
+              break
+          }
+          
+          if (targetElement) {
+            // Add CSS class for consistent styling
+            targetElement.classList.add('missing-field-highlight')
+            
+            // Enhanced highlighting animation with more visual impact
+            targetElement.style.transition = 'all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1)'
+            targetElement.style.transform = 'scale(1.02)'
+            targetElement.style.boxShadow = '0 0 0 4px rgba(239, 68, 68, 0.6), 0 0 20px rgba(239, 68, 68, 0.3)'
+            targetElement.style.borderColor = '#ef4444'
+            targetElement.style.backgroundColor = 'rgba(239, 68, 68, 0.05)'
+            targetElement.style.zIndex = '10'
+            
+            // Add ARIA live region announcement for screen readers
+            const announcement = document.createElement('div')
+            announcement.setAttribute('aria-live', 'polite')
+            announcement.setAttribute('aria-atomic', 'true')
+            announcement.className = 'sr-only'
+            announcement.textContent = `Required field missing: ${fieldName.replace(/([A-Z])/g, ' $1').toLowerCase()}`
+            document.body.appendChild(announcement)
+            
+            // Add shake and glow animations
+            targetElement.style.animation = 'shake 0.5s ease-in-out, glow 0.5s ease-in-out'
+            
+            // Reset styles after animation
+            setTimeout(() => {
+              if (targetElement) {
+                targetElement.style.transform = ''
+                targetElement.style.boxShadow = ''
+                targetElement.style.animation = ''
+                targetElement.style.borderColor = ''
+                targetElement.style.backgroundColor = ''
+                targetElement.style.zIndex = ''
+                targetElement.style.transition = ''
+                targetElement.classList.remove('missing-field-highlight')
+              }
+              // Remove the announcement element
+              if (announcement && announcement.parentNode) {
+                announcement.parentNode.removeChild(announcement)
+              }
+            }, 3000)
+          }
+        }, index * 150) // Reduced stagger for faster feedback
+      })
+      
+      // Enhanced scrolling and focusing to the first missing field
+      const firstMissingField = missingFields[0]
+      if (firstMissingField) {
+        setTimeout(() => {
+          let targetElement: HTMLElement | null = null
+          
+          switch (firstMissingField) {
             case 'address':
               targetElement = document.querySelector('input[name="address"]') ||
                              document.querySelector('input[placeholder*="address"], input[placeholder*="Address"]')
@@ -591,94 +684,6 @@ export default function HomePage(): React.JSX.Element {
                              document.querySelector('input[placeholder*="model"], input[placeholder*="Model"]')
               break
             case 'appointmentDate':
-              // Target the date selector specifically with multiple fallbacks
-              targetElement = document.querySelector('input[type="date"]') || 
-                             document.querySelector('[data-testid="date-selector"]') ||
-                             document.querySelector('.date-selector') ||
-                             document.querySelector('input[aria-label*="date"], input[aria-label*="Date"]')
-              // Also target the parent container for better visibility
-              parentContainer = document.querySelector('.date-time-selector') ||
-                               document.querySelector('[class*="DateTimeSelector"]') ||
-                               document.querySelector('[class*="date-time"]')
-              break
-            case 'appointmentTime':
-              // Target the time selector specifically with multiple fallbacks
-              targetElement = document.querySelector('[data-testid="time-selector"]') ||
-                             document.querySelector('.time-selector') ||
-                             document.querySelector('select[aria-label*="time"], select[aria-label*="Time"]') ||
-                             document.querySelector('input[type="time"]')
-              // Also target the parent container for better visibility
-              parentContainer = document.querySelector('.date-time-selector') ||
-                               document.querySelector('[class*="DateTimeSelector"]') ||
-                               document.querySelector('[class*="date-time"]')
-              break
-          }
-          
-          if (targetElement || parentContainer) {
-            const elementToHighlight = targetElement || parentContainer
-            
-            if (elementToHighlight) {
-              // Enhanced highlighting animation with more visual impact
-              elementToHighlight.style.transition = 'all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1)'
-              elementToHighlight.style.transform = 'scale(1.05)'
-              elementToHighlight.style.boxShadow = '0 0 0 6px rgba(239, 68, 68, 0.8), 0 0 25px rgba(239, 68, 68, 0.4)'
-              elementToHighlight.style.borderColor = '#ef4444'
-              elementToHighlight.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'
-              elementToHighlight.style.zIndex = '10'
-              
-              // Add ARIA live region announcement for screen readers
-              const announcement = document.createElement('div')
-              announcement.setAttribute('aria-live', 'polite')
-              announcement.setAttribute('aria-atomic', 'true')
-              announcement.className = 'sr-only'
-              announcement.textContent = `Required field missing: ${fieldName.replace(/([A-Z])/g, ' $1').toLowerCase()}`
-              document.body.appendChild(announcement)
-              
-              // Add a shake animation for extra attention
-              elementToHighlight.style.animation = 'shake 0.5s ease-in-out, pulse 2s ease-in-out infinite'
-              
-              // Reset styles after animation
-              setTimeout(() => {
-                if (elementToHighlight) {
-                  elementToHighlight.style.transform = ''
-                  elementToHighlight.style.boxShadow = ''
-                  elementToHighlight.style.animation = ''
-                  elementToHighlight.style.borderColor = ''
-                  elementToHighlight.style.backgroundColor = ''
-                  elementToHighlight.style.zIndex = ''
-                  elementToHighlight.style.transition = ''
-                }
-                // Remove the announcement element
-                if (announcement && announcement.parentNode) {
-                  announcement.parentNode.removeChild(announcement)
-                }
-              }, 3000)
-            }
-          }
-        }, index * 200) // Slightly increased stagger for better effect
-      })
-      
-      // Enhanced scrolling and focusing to the first missing field
-      const firstMissingField = missingFields[0]
-      if (firstMissingField) {
-        setTimeout(() => {
-          let targetElement: HTMLElement | null = null
-          let shouldScroll = true
-          
-          switch (firstMissingField) {
-            case 'address':
-              targetElement = document.querySelector('input[name="address"]')
-              break
-            case 'year':
-              targetElement = document.querySelector('select[name="year"]')
-              break
-            case 'make':
-              targetElement = document.querySelector('select[name="make"]')
-              break
-            case 'model':
-              targetElement = document.querySelector('input[name="model"]')
-              break
-            case 'appointmentDate':
               targetElement = document.querySelector('input[type="date"]') || 
                              document.querySelector('[data-testid="date-selector"]') ||
                              document.querySelector('.date-selector') ||
@@ -692,10 +697,10 @@ export default function HomePage(): React.JSX.Element {
               break
           }
           
-          if (targetElement && shouldScroll) {
+          if (targetElement) {
             // Enhanced smooth scroll with better positioning
             const elementRect = targetElement.getBoundingClientRect()
-            const offset = 120 // Increased offset for better visibility
+            const offset = 100 // Adjusted offset for better visibility
             const targetPosition = window.pageYOffset + elementRect.top - offset
             
             // Ensure we don't scroll past the top of the page
@@ -740,13 +745,13 @@ export default function HomePage(): React.JSX.Element {
                   })
                 }
               }
-            }, 600)
+            }, 500)
           }
-        }, 300) // Small delay to let the highlighting animation start first
+        }, 200) // Reduced delay for faster response
       }
       
       // Enhanced auto-hide with user interaction detection
-      const hideTimeout = setTimeout(() => setShowMissingFields(false), 8000) // Increased to 8 seconds
+      const hideTimeout = setTimeout(() => setShowMissingFields(false), 6000) // Reduced to 6 seconds
       
       // Clear timeout if user starts interacting with form
       const clearTimeoutOnInteraction = () => {
@@ -1026,7 +1031,7 @@ export default function HomePage(): React.JSX.Element {
                   className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 relative ${
                     isFormComplete && !isSubmitting 
                       ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] hover:shadow-md active:scale-[0.99]" 
-                      : "bg-[#294a46]/40 text-white cursor-pointer hover:bg-[#294a46]/60 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                      : "bg-[#294a46]/40 text-white cursor-pointer hover:bg-[#294a46]/60 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled-button-feedback"
                   }`}
                   onClick={(e) => {
                     if (!isFormComplete && !isSubmitting) {
@@ -1347,6 +1352,37 @@ export default function HomePage(): React.JSX.Element {
           animation: shake 0.5s, glow 0.5s;
           border: 2px solid #ff4d4f !important;
           box-shadow: 0 0 8px #ff4d4f !important;
+        }
+        
+        .missing-field-highlight {
+          animation: shake 0.5s ease-in-out, glow 0.5s ease-in-out;
+          border: 2px solid #ef4444 !important;
+          box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.6), 0 0 20px rgba(239, 68, 68, 0.3) !important;
+          background-color: rgba(239, 68, 68, 0.05) !important;
+          transform: scale(1.02);
+          transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+          z-index: 10;
+        }
+        
+        .disabled-button-feedback:hover {
+          animation: gentlePulse 0.6s ease-in-out;
+          box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3), 0 0 15px rgba(239, 68, 68, 0.2) !important;
+        }
+        
+        .disabled-button-feedback:active {
+          animation: shake 0.3s ease-in-out;
+          transform: scale(0.98) !important;
+        }
+        
+        @keyframes gentlePulse {
+          0%, 100% { 
+            transform: scale(1.02);
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3), 0 0 15px rgba(239, 68, 68, 0.2);
+          }
+          50% { 
+            transform: scale(1.05);
+            box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.5), 0 0 20px rgba(239, 68, 68, 0.3);
+          }
         }
         
         /* Screen reader only class */
