@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin } from "lucide-react"
 import { AppointmentWithRelations } from "@/types"
 
 interface MechanicScheduleProps {
@@ -143,11 +143,11 @@ export default function MechanicSchedule({
 
       <div className="flex items-center gap-4 mb-4">
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-[#294a46]"></div>
+          <div className="w-3 h-3 rounded-full bg-green-500"></div>
           <span className="text-sm">Confirmed</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
           <span className="text-sm">Pending</span>
         </div>
       </div>
@@ -202,30 +202,52 @@ export default function MechanicSchedule({
                 <div className="text-sm text-gray-500">No appointments</div>
               ) : (
                 <div className="space-y-2">
-                  {appointments.map(({ appointment, status, time }, appointmentIndex) => (
-                    <div
-                      key={`appointment-${appointment.id}-${appointmentIndex}`}
-                      className={`p-2 rounded-md cursor-pointer transition-colors hover:bg-gray-50 ${
-                        status === 'confirmed' 
-                          ? 'bg-[#294a46]/10 border border-[#294a46]/20' 
-                          : 'bg-yellow-400/10 border border-yellow-400/20'
-                      }`}
-                      onClick={() => handleAppointmentClick(appointment)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{time}</span>
-                        <div className={`w-2 h-2 rounded-full ${
-                          status === 'confirmed' ? 'bg-[#294a46]' : 'bg-yellow-400'
-                        }`}></div>
+                  {appointments.map(({ appointment, status, time }, appointmentIndex) => {
+                    const myQuote = appointment.mechanic_quotes?.[0]
+                    return (
+                      <div
+                        key={`appointment-${appointment.id}-${appointmentIndex}`}
+                        className={`p-2 rounded-md cursor-pointer transition-colors hover:bg-gray-50 ${
+                          status === 'confirmed' 
+                            ? 'bg-[#294a46]/10 border border-[#294a46]/20' 
+                            : 'bg-yellow-400/10 border border-yellow-400/20'
+                        }`}
+                        onClick={() => handleAppointmentClick(appointment)}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium">{time}</span>
+                          <div className="flex items-center gap-2">
+                            {/* Location Pin */}
+                            <button 
+                              className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                // Future: Handle location click
+                              }}
+                            >
+                              <MapPin className="h-3 w-3 text-gray-500" />
+                            </button>
+                            {/* Quote */}
+                            {myQuote && (
+                              <span className="text-xs font-medium text-gray-700">
+                                ${myQuote.price.toFixed(2)}
+                              </span>
+                            )}
+                            {/* Status Dot */}
+                            <div className={`w-2 h-2 rounded-full ${
+                              status === 'confirmed' ? 'bg-green-500' : 'bg-yellow-500'
+                            }`}></div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-600 truncate">
+                          {appointment.vehicles ? 
+                            `${appointment.vehicles.year} ${appointment.vehicles.make} ${appointment.vehicles.model}` :
+                            'Vehicle info unavailable'
+                          }
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-600 mt-1 truncate">
-                        {appointment.vehicles ? 
-                          `${appointment.vehicles.year} ${appointment.vehicles.make} ${appointment.vehicles.model}` :
-                          'Vehicle info unavailable'
-                        }
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>

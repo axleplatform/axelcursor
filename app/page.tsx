@@ -1023,7 +1023,42 @@ export default function HomePage(): React.JSX.Element {
 
             {/* Continue Button */}
             <div className="flex justify-center mb-8">
-              <div className="relative">
+              <div 
+                className="relative inline-block"
+                onMouseEnter={() => {
+                  if (!isFormComplete && !isSubmitting) {
+                    handleDisabledContinueInteraction()
+                  }
+                }}
+                onMouseDown={() => {
+                  if (!isFormComplete && !isSubmitting) {
+                    handleDisabledContinueInteraction()
+                  }
+                }}
+                onClick={(e) => {
+                  if (!isFormComplete && !isSubmitting) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleDisabledContinueInteraction()
+                  }
+                }}
+                onTouchStart={() => {
+                  if (!isFormComplete && !isSubmitting) {
+                    handleDisabledContinueInteraction()
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={!isFormComplete ? `Continue button wrapper - ${missingFields.length} required field${missingFields.length > 1 ? 's' : ''} missing` : "Continue to next step"}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    if (!isFormComplete && !isSubmitting) {
+                      handleDisabledContinueInteraction()
+                    }
+                  }
+                }}
+              >
                 <Button
                   ref={continueButtonRef}
                   type="submit"
@@ -1036,19 +1071,10 @@ export default function HomePage(): React.JSX.Element {
                   onClick={(e) => {
                     if (!isFormComplete && !isSubmitting) {
                       e.preventDefault()
+                      e.stopPropagation()
                       handleDisabledContinueInteraction()
                     }
                     console.log('🔘 Continue button onClick triggered - isSubmitting:', isSubmitting, 'isFormComplete:', isFormComplete)
-                  }}
-                  onMouseEnter={() => {
-                    if (!isFormComplete && !isSubmitting) {
-                      handleDisabledContinueInteraction()
-                    }
-                  }}
-                  onMouseDown={() => {
-                    if (!isFormComplete && !isSubmitting) {
-                      handleDisabledContinueInteraction()
-                    }
                   }}
                   // Enhanced accessibility attributes
                   aria-label={!isFormComplete ? `Continue button - ${missingFields.length} required field${missingFields.length > 1 ? 's' : ''} missing` : "Continue to next step"}
@@ -1382,6 +1408,33 @@ export default function HomePage(): React.JSX.Element {
           50% { 
             transform: scale(1.05);
             box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.5), 0 0 20px rgba(239, 68, 68, 0.3);
+          }
+        }
+        
+        /* Button wrapper styling for disabled state */
+        .relative.inline-block:has(button[disabled]) {
+          cursor: pointer;
+        }
+        
+        .relative.inline-block:has(button[disabled]):hover {
+          animation: gentlePulse 0.6s ease-in-out;
+        }
+        
+        .relative.inline-block:has(button[disabled]):active {
+          animation: shake 0.3s ease-in-out;
+        }
+        
+        /* Ensure wrapper is focusable and has proper outline */
+        .relative.inline-block[tabindex="0"]:focus {
+          outline: 2px solid #3b82f6;
+          outline-offset: 2px;
+          border-radius: 9999px;
+        }
+        
+        /* Mobile touch feedback */
+        @media (hover: none) and (pointer: coarse) {
+          .relative.inline-block:has(button[disabled]):active {
+            animation: gentlePulse 0.4s ease-in-out;
           }
         }
         

@@ -48,6 +48,7 @@ export default function MechanicDashboard() {
   const [skippedAppointments, setSkippedAppointments] = useState<MechanicSkip[]>([])
   const [isAppointmentsLoading, setIsAppointmentsLoading] = useState<boolean>(true)
   const [currentAvailableIndex, setCurrentAvailableIndex] = useState(0)
+  const [currentUpcomingIndex, setCurrentUpcomingIndex] = useState(0)
   const [priceInput, setPriceInput] = useState<string>("")
   // Helper functions for default date/time
   const getDefaultDate = (): string => {
@@ -162,6 +163,13 @@ export default function MechanicDashboard() {
       setCurrentAvailableIndex(0);
     }
   }, [availableAppointments.length, currentAvailableIndex]);
+
+  // Ensure currentUpcomingIndex is always valid when upcomingAppointments changes
+  useEffect(() => {
+    if (upcomingAppointments.length > 0 && currentUpcomingIndex >= upcomingAppointments.length) {
+      setCurrentUpcomingIndex(0);
+    }
+  }, [upcomingAppointments.length, currentUpcomingIndex]);
 
   // Add showNotification function
   const showNotification = (message: string, type: NotificationState['type'] = 'error') => {
@@ -941,6 +949,19 @@ export default function MechanicDashboard() {
     }
   }
 
+  // Navigate through upcoming appointments
+  const goToNextUpcoming = (): void => {
+    if (upcomingAppointments.length > 1) {
+      setCurrentUpcomingIndex((prev: number) => (prev + 1) % upcomingAppointments.length)
+    }
+  }
+
+  const goToPrevUpcoming = (): void => {
+    if (upcomingAppointments.length > 1) {
+      setCurrentUpcomingIndex((prev: number) => (prev === 0 ? upcomingAppointments.length - 1 : prev - 1))
+    }
+  }
+
   // Handle appointment click from schedule
   const handleScheduleAppointmentClick = (appointment: AppointmentWithRelations) => {
     // Find the appointment in available appointments
@@ -1532,218 +1553,266 @@ export default function MechanicDashboard() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="relative">
                 {(() => {
                   console.log('🎯 RENDERING UPCOMING APPOINTMENT CARDS:', upcomingAppointments.length);
                   return null;
                 })()}
-                                    {upcomingAppointments.map((appointment) => {
-                  const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
-                  const isSelected = appointment.selected_mechanic_id === mechanicId;
-                  const isEditing = selectedAppointment?.id === appointment.id;
-                  const isConfirmed = appointment.payment_status === 'paid' || appointment.status === 'confirmed';
-                  
-                  return (
-                    <div key={`${appointment.id}-${Date.now()}`} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                      {/* Card Header with Price and Status */}
-                      <div className="flex justify-between items-start mb-6">
-                        {/* Price Quote */}
-                        {myQuote && (
-                          <div className="text-4xl font-bold text-[#294a46]">
-                            ${myQuote.price.toFixed(2)}
-                          </div>
-                        )}
-                        
-                        {/* Status and ETA */}
-                        <div className="text-right">
-                          {isConfirmed ? (
-                            <div className="flex flex-col items-end">
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2" style={{ backgroundColor: '#294A46', color: 'white' }}>
-                                ✓ Confirmed
-                              </span>
-                              <div className="text-sm text-gray-600">
-                                <div className="flex items-center gap-2">
-                                  <Clock className="h-4 w-4" />
-                                  <span>ETA: {new Date(myQuote?.eta || '').toLocaleString()}</span>
+                {/* Navigation buttons for multiple appointments */}
+                {upcomingAppointments.length > 1 && (
+                  <>
+                    <div className="absolute top-1/2 -left-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
+                      <button
+                        onClick={goToPrevUpcoming}
+                        className="bg-gray-200 hover:bg-gray-300 rounded-full p-1"
+                        aria-label="Previous appointment"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                    </div>
+                    <div className="absolute top-1/2 -right-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
+                      <button
+                        onClick={goToNextUpcoming}
+                        className="bg-gray-200 hover:bg-gray-300 rounded-full p-1"
+                        aria-label="Next appointment"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Current appointment details */}
+                {upcomingAppointments[currentUpcomingIndex] && (
+                  <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                    {(() => {
+                      const appointment = upcomingAppointments[currentUpcomingIndex];
+                      const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
+                      const isSelected = appointment.selected_mechanic_id === mechanicId;
+                      const isEditing = selectedAppointment?.id === appointment.id;
+                      const isConfirmed = appointment.payment_status === 'paid' || appointment.status === 'confirmed';
+                      
+                      return (
+                        <>
+                          {/* Card Header with Price and Status */}
+                          <div className="flex justify-between items-start mb-6">
+                            {/* Price Quote */}
+                            {myQuote && (
+                              <div className="text-4xl font-bold text-[#294a46]">
+                                ${myQuote.price.toFixed(2)}
+                              </div>
+                            )}
+                            
+                            {/* Status and ETA */}
+                            <div className="text-right">
+                              {isConfirmed ? (
+                                <div className="flex flex-col items-end">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2" style={{ backgroundColor: '#294A46', color: 'white' }}>
+                                    ✓ Confirmed
+                                  </span>
+                                  <div className="text-sm text-gray-600">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-4 w-4" />
+                                      <span>ETA: {new Date(myQuote?.eta || '').toLocaleString()}</span>
+                                    </div>
+                                  </div>
                                 </div>
+                              ) : isSelected ? (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                                  ✓ Customer selected you
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+                                  ⏳ Pending
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Vehicle Details */}
+                          <div className="mb-6">
+                            <div className="flex flex-col gap-2">
+                              {/* Year, Make, Model Row */}
+                              <div className="flex items-center gap-2 text-gray-900">
+                                {appointment.vehicles?.year && (
+                                  <span className="font-medium">{appointment.vehicles.year}</span>
+                                )}
+                                {appointment.vehicles?.make && (
+                                  <span className="font-medium">{appointment.vehicles.make}</span>
+                                )}
+                                {appointment.vehicles?.model && (
+                                  <span className="font-medium">{appointment.vehicles.model}</span>
+                                )}
+                              </div>
+                              {/* VIN and Mileage Row */}
+                              <div className="flex items-center gap-4 text-gray-600 text-sm">
+                                {appointment.vehicles?.vin && (
+                                  <span>VIN: {appointment.vehicles.vin}</span>
+                                )}
+                                {appointment.vehicles?.mileage && (
+                                  <span>{appointment.vehicles.mileage.toLocaleString()} miles</span>
+                                )}
                               </div>
                             </div>
-                          ) : isSelected ? (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                              ✓ Customer selected you
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
-                              ⏳ Pending
-                            </span>
+                          </div>
+
+                          {/* Location and Date */}
+                          <div className="flex items-center gap-4 mb-6">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm text-gray-600">{appointment.location}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm text-gray-600">{formatDate(appointment.appointment_date)}</span>
+                            </div>
+                          </div>
+
+                          {/* Issue Description */}
+                          <div className="mb-6">
+                            <h4 className="text-sm font-medium mb-2 text-gray-900">Issue Description</h4>
+                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+                              {appointment.issue_description || "No description provided"}
+                            </p>
+                          </div>
+
+                          {/* Selected Services */}
+                          {appointment.selected_services && (
+                            <div className="mb-6">
+                              <h4 className="text-sm font-medium mb-2 text-gray-900">Selected Services</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {appointment.selected_services.map((service: string, index: number) => (
+                                  <span
+                                    key={index}
+                                    className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full"
+                                  >
+                                    {service}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
                           )}
-                        </div>
-                      </div>
 
-                      {/* Vehicle Details */}
-                      <div className="mb-6">
-                        <div className="flex flex-col gap-2">
-                          {/* Year, Make, Model Row */}
-                          <div className="flex items-center gap-2 text-gray-900">
-                            {appointment.vehicles?.year && (
-                              <span className="font-medium">{appointment.vehicles.year}</span>
-                            )}
-                            {appointment.vehicles?.make && (
-                              <span className="font-medium">{appointment.vehicles.make}</span>
-                            )}
-                            {appointment.vehicles?.model && (
-                              <span className="font-medium">{appointment.vehicles.model}</span>
-                            )}
-                          </div>
-                          {/* VIN and Mileage Row */}
-                          <div className="flex items-center gap-4 text-gray-600 text-sm">
-                            {appointment.vehicles?.vin && (
-                              <span>VIN: {appointment.vehicles.vin}</span>
-                            )}
-                            {appointment.vehicles?.mileage && (
-                              <span>{appointment.vehicles.mileage.toLocaleString()} miles</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                          {/* Car Issues */}
+                          {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 ? (
+                            <div className="mb-6">
+                              <h4 className="text-sm font-medium mb-2 text-gray-900">Car Issues</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {appointment.selected_car_issues.map((issue: string, index: number) => (
+                                  <span
+                                    key={index}
+                                    className="bg-orange-100 text-orange-700 text-xs px-3 py-1 rounded-full"
+                                  >
+                                    {issue}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="mb-6">
+                              <h4 className="text-sm font-medium mb-2 text-gray-900">Car Issues</h4>
+                              <p className="text-sm text-gray-500 italic">No car issues selected</p>
+                            </div>
+                          )}
 
-                      {/* Location and Date */}
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm text-gray-600">{appointment.location}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm text-gray-600">{formatDate(appointment.appointment_date)}</span>
-                        </div>
-                      </div>
+                          {/* Car Status */}
+                          {appointment.car_runs !== null && (
+                            <div className="mb-6">
+                              <h4 className="text-sm font-medium mb-2 text-gray-900">Car Status</h4>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-3 h-3 rounded-full ${appointment.car_runs ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                                <span className="text-sm text-gray-600">
+                                  {appointment.car_runs ? "Car is running" : "Car is not running"}
+                                </span>
+                              </div>
+                            </div>
+                          )}
 
-                      {/* Issue Description */}
-                      <div className="mb-6">
-                        <h4 className="text-sm font-medium mb-2 text-gray-900">Issue Description</h4>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-                          {appointment.issue_description || "No description provided"}
-                        </p>
-                      </div>
-
-                      {/* Selected Services */}
-                      {appointment.selected_services && (
-                        <div className="mb-6">
-                          <h4 className="text-sm font-medium mb-2 text-gray-900">Selected Services</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {appointment.selected_services.map((service: string, index: number) => (
-                              <span
-                                key={index}
-                                className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full"
-                              >
-                                {service}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Car Issues */}
-                      {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 ? (
-                        <div className="mb-6">
-                          <h4 className="text-sm font-medium mb-2 text-gray-900">Car Issues</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {appointment.selected_car_issues.map((issue: string, index: number) => (
-                              <span
-                                key={index}
-                                className="bg-orange-100 text-orange-700 text-xs px-3 py-1 rounded-full"
-                              >
-                                {issue}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mb-6">
-                          <h4 className="text-sm font-medium mb-2 text-gray-900">Car Issues</h4>
-                          <p className="text-sm text-gray-500 italic">No car issues selected</p>
-                        </div>
-                      )}
-
-                      {/* Car Status */}
-                      {appointment.car_runs !== null && (
-                        <div className="mb-6">
-                          <h4 className="text-sm font-medium mb-2 text-gray-900">Car Status</h4>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-3 h-3 rounded-full ${appointment.car_runs ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                            <span className="text-sm text-gray-600">
-                              {appointment.car_runs ? "Car is running" : "Car is not running"}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Action buttons */}
-                      <div className="flex gap-3">
-                        {isConfirmed ? (
-                          <>
-                            <button
-                              onClick={() => handleStartAppointment(appointment)}
-                              className="flex-1 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
-                              style={{ backgroundColor: '#294A46' }}
-                            >
-                              Start
-                            </button>
-                            <button
-                              onClick={() => handleCancelConfirmedAppointment(appointment, myQuote?.price || 0)}
-                              className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
-                            >
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            {isEditing ? (
+                          {/* Action buttons */}
+                          <div className="flex gap-3">
+                            {isConfirmed ? (
                               <>
                                 <button
-                                  onClick={() => handleUpdateQuote(appointment.id)}
-                                  className="flex-1 bg-[#294a46] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
+                                  onClick={() => handleStartAppointment(appointment)}
+                                  className="flex-1 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
+                                  style={{ backgroundColor: '#294A46' }}
                                 >
-                                  Update Quote
+                                  Start
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    setSelectedAppointment(null);
-                                    setPrice('');
-                                    setSelectedDate(getDefaultDate());
-                                    setSelectedTime(getDefaultTime());
-                                    setNotes('');
-                                  }}
-                                  className="flex-1 bg-gray-200 text-gray-700 font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-gray-300 hover:shadow-md active:scale-[0.99]"
+                                  onClick={() => handleCancelConfirmedAppointment(appointment, myQuote?.price || 0)}
+                                  className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
                                 >
                                   Cancel
                                 </button>
                               </>
                             ) : (
-                              <div className="flex gap-3 w-full">
-                                <button
-                                  onClick={() => handleEditAppointment(appointment)}
-                                  className="flex-1 bg-[#294a46] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
-                                >
-                                  Edit
-                                </button>
-                                {appointment.payment_status !== 'paid' && (
-                                  <button
-                                    onClick={() => handleCancelQuote(appointment.id)}
-                                    className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
-                                  >
-                                    Cancel
-                                  </button>
+                              <>
+                                {isEditing ? (
+                                  <>
+                                    <button
+                                      onClick={() => handleUpdateQuote(appointment.id)}
+                                      className="flex-1 bg-[#294a46] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
+                                    >
+                                      Update Quote
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setSelectedAppointment(null);
+                                        setPrice('');
+                                        setSelectedDate(getDefaultDate());
+                                        setSelectedTime(getDefaultTime());
+                                        setNotes('');
+                                      }}
+                                      className="flex-1 bg-gray-200 text-gray-700 font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-gray-300 hover:shadow-md active:scale-[0.99]"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </>
+                                ) : (
+                                  <div className="flex gap-3 w-full">
+                                    <button
+                                      onClick={() => handleEditAppointment(appointment)}
+                                      className="flex-1 bg-[#294a46] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
+                                    >
+                                      Edit
+                                    </button>
+                                    {appointment.payment_status !== 'paid' && (
+                                      <button
+                                        onClick={() => handleCancelQuote(appointment.id)}
+                                        className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
+                                      >
+                                        Cancel
+                                      </button>
+                                    )}
+                                  </div>
                                 )}
-                              </div>
+                              </>
                             )}
-                          </>
-                        )}
-                      </div>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* Pagination Dots */}
+                {upcomingAppointments.length > 1 && (
+                  <div className="flex justify-center mt-4">
+                    <div className="flex space-x-2">
+                      {upcomingAppointments.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentUpcomingIndex(index)}
+                          className={`w-2 h-2 rounded-full transition-colors ${
+                            index === currentUpcomingIndex ? 'bg-[#294a46]' : 'bg-gray-300'
+                          }`}
+                          aria-label={`Go to appointment ${index + 1}`}
+                        />
+                      ))}
                     </div>
-                  );
-                })}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1892,7 +1961,7 @@ export default function MechanicDashboard() {
                       </div>
                       </div>
 
-                    {/* Services and Car Status Row */}
+                    {/* Selected Services and Car Status Row */}
                     <div className="flex justify-between items-start mb-6">
                       {/* Selected Services */}
                       {availableAppointments[currentAvailableIndex].selected_services && (
@@ -1911,28 +1980,6 @@ export default function MechanicDashboard() {
                         </div>
                       )}
 
-                      {/* Car Issues */}
-                      {availableAppointments[currentAvailableIndex].selected_car_issues && availableAppointments[currentAvailableIndex].selected_car_issues.length > 0 ? (
-                        <div className="flex-1">
-                          <h4 className="text-sm font-medium mb-2">Car Issues</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {availableAppointments[currentAvailableIndex].selected_car_issues.map((issue: string, index: number) => (
-                              <span
-                                key={index}
-                                className="bg-orange-200/30 text-orange-100 text-xs px-3 py-1 rounded-full"
-                              >
-                                {issue}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex-1">
-                          <h4 className="text-sm font-medium mb-2">Car Issues</h4>
-                          <p className="text-sm text-white/50 italic">No car issues selected</p>
-                        </div>
-                      )}
-
                       {/* Car Status */}
                       {availableAppointments[currentAvailableIndex].car_runs !== null && (
                         <div className="flex-1 text-right">
@@ -1945,9 +1992,31 @@ export default function MechanicDashboard() {
                                 : "Car is not running"}
                             </span>
                           </div>
-                          </div>
-                        )}
+                        </div>
+                      )}
                     </div>
+
+                    {/* Car Issues Section */}
+                    {availableAppointments[currentAvailableIndex].selected_car_issues && availableAppointments[currentAvailableIndex].selected_car_issues.length > 0 ? (
+                      <div className="mb-6">
+                        <h4 className="text-sm font-medium mb-2">Car Issues</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {availableAppointments[currentAvailableIndex].selected_car_issues.map((issue: string, index: number) => (
+                            <span
+                              key={index}
+                              className="bg-orange-200/30 text-orange-100 text-xs px-3 py-1 rounded-full"
+                            >
+                              {issue}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mb-6">
+                        <h4 className="text-sm font-medium mb-2">Car Issues</h4>
+                        <p className="text-sm text-white/50 italic">No car issues selected</p>
+                      </div>
+                    )}
 
                     {/* Issue Description */}
                     <div className="mb-6">
