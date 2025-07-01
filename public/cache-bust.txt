@@ -1,0 +1,15 @@
+CACHE INVALIDATION v2.0
+Build Timestamp: 2024-12-31T19:30:00Z
+Purpose: Force complete rebuild to resolve @v0/lib/supabase errors
+Deployment ID: nuclear-cache-invalidation-v2
+
+This file forces Vercel to recognize this as a completely new deployment.
+All JavaScript chunks will be regenerated with new hashes.
+Old cached bundles containing @v0/lib/supabase imports will be discarded.
+
+Target chunks requiring regeneration:
+- 3162-da867eb6d202f7e7.js 
+- 7054-81544818be4ce974.js
+- 796-d5f5ddbfe88782cc.js
+
+Status: ACTIVE CACHE INVALIDATION 
