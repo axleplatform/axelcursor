@@ -273,32 +273,36 @@ export default function PickMechanicPage() {
     )
   }
 
-  return (
-    <div className="flex flex-col min-h-screen">
-      <SiteHeader />
-      <main className="flex-grow bg-[#f5f5f5]">
-        <div className="container mx-auto py-8 px-4">
-          <div className="text-center mb-8">
+       return (
+      <div className="flex flex-col min-h-screen">
+        <SiteHeader />
+        
+        {/* Page Title */}
+        <div className="bg-white border-b border-gray-200 py-6">
+          <div className="text-center">
             <h1 className="text-3xl font-bold text-[#294a46]">Pick Your Mechanic</h1>
             <p className="text-lg text-gray-600 mt-1">Pick & Pay</p>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 max-w-5xl mx-auto">
-            <div className="md:col-span-3">
-              <Card className="overflow-hidden h-full bg-white">
-                <div className="p-4 border-b">
-                  <h2 className="text-xl font-semibold text-[#294a46]">Available Mechanics</h2>
+        {/* Split Screen Layout - 50/50 Split */}
+        <main className="flex-1 flex flex-col lg:flex-row min-h-screen">
+          {/* Left Side - Available Mechanics (50% width) */}
+          <div className="w-full lg:w-1/2 bg-white border-r border-gray-200 flex flex-col">
+            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-[#294a46] to-[#1e3632]">
+              <h2 className="text-2xl font-semibold text-white">Available Mechanics</h2>
+              <p className="text-sm text-gray-200 mt-1">Choose your preferred mechanic from the options below</p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+                                {isLoadingQuotes ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#294a46]"></div>
                 </div>
-
-                <div className="space-y-4">
-                  {isLoadingQuotes ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#294a46]"></div>
-                    </div>
-                  ) : mechanicQuotes && mechanicQuotes.length > 0 ? (
-                    <div className="space-y-4">
-                      {mechanicQuotes.map((quote) => (
-                        <div key={quote.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+              ) : mechanicQuotes && mechanicQuotes.length > 0 ? (
+                <div className="space-y-6">
+                  {mechanicQuotes.map((quote) => (
+                    <div key={quote.id} className="bg-gray-50 rounded-lg p-6 hover:bg-gray-100 transition-colors border border-gray-200">
                           {/* Mechanic profile header */}
                           <div className="flex items-start gap-4 mb-4">
                             {/* Profile image */}
@@ -375,139 +379,139 @@ export default function PickMechanicPage() {
                             {isProcessing ? 'Selecting...' : 'Select This Mechanic'}
                           </button>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 bg-gray-50 rounded-lg">
-                      <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Quotes Yet</h3>
-                      <p className="text-gray-500">
-                        Mechanics are reviewing your request. This page refreshes automatically.
-                      </p>
-                    </div>
-                  )}
+                                        ))}
                 </div>
-              </Card>
-            </div>
-
-            <div className="md:col-span-2">
-              <Card className="p-0 sticky top-8 h-full bg-white">
-                <div className="p-4 border-b">
-                  <h2 className="text-xl font-semibold text-[#294a46]">Order Summary</h2>
+              ) : (
+                <div className="text-center py-16 bg-gray-50 rounded-lg border border-gray-200">
+                  <Clock className="h-16 w-16 text-gray-400 mx-auto mb-6" />
+                  <h3 className="text-xl font-medium text-gray-900 mb-3">No Quotes Yet</h3>
+                  <p className="text-gray-500 text-lg">
+                    Mechanics are reviewing your request. This page refreshes automatically.
+                  </p>
                 </div>
-
-                <div className="p-4">
-                  <div className="space-y-4">
-                    <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                      <Calendar className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h3 className="font-medium text-gray-700 text-sm">Appointment Details</h3>
-                        <p className="text-xs text-gray-600">{formatDate(appointment.appointment_date)}</p>
-                        <div className="flex items-start mt-1">
-                          <MapPin className="h-3 w-3 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
-                          <p className="text-xs text-gray-500">{appointment.location}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {appointment.vehicles && (
-                      <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                        <Car className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h3 className="font-medium text-gray-700 text-sm">Vehicle</h3>
-                          <p className="text-xs text-gray-600">
-                            {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
-                          </p>
-                          {appointment.vehicles.color && (
-                            <p className="text-xs text-gray-500">Color: {appointment.vehicles.color}</p>
-                          )}
-                          {appointment.vehicles.vin && (
-                            <p className="text-xs text-gray-500">VIN: {appointment.vehicles.vin}</p>
-                          )}
-                          {appointment.vehicles.mileage && (
-                            <p className="text-xs text-gray-500">Mileage: {appointment.vehicles.mileage}</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {appointment.selected_services && appointment.selected_services.length > 0 && (
-                      <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                        <Wrench className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h3 className="font-medium text-gray-700 text-sm">Requested Services</h3>
-                          <ul className="mt-1 space-y-1">
-                            {appointment.selected_services.map((service, index) => (
-                              <li key={index} className="flex items-center">
-                                <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
-                                <span className="text-xs text-gray-600">{service}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-
-                    {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
-                      <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                        <AlertCircle className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h3 className="font-medium text-gray-700 text-sm">Reported Issues</h3>
-                          <ul className="mt-1 space-y-1">
-                            {appointment.selected_car_issues.map((issue, index) => (
-                              <li key={index} className="flex items-center">
-                                <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
-                                <span className="text-xs text-gray-600">{issue}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-
-                    {appointment.issue_description && (
-                      <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                        <FileText className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h3 className="font-medium text-gray-700 text-sm">Description</h3>
-                          <p className="text-xs text-gray-600 mt-1">{appointment.issue_description}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-                      <Car className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h3 className="font-medium text-gray-700 text-sm">Car Status</h3>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {appointment.car_runs !== null
-                            ? appointment.car_runs
-                              ? "Car is running"
-                              : "Car is not running"
-                            : "Car status not specified"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 p-3 border border-dashed border-gray-300 rounded-md bg-gray-50">
-                    <div className="flex items-center justify-center mb-2">
-                      <CreditCard className="h-4 w-4 text-[#294a46] mr-2" />
-                      <h3 className="font-medium text-gray-700 text-sm">Stripe Card Payment Integration Coming Soon</h3>
-                    </div>
-                    <div className="h-9 bg-white rounded border border-gray-200 mb-2"></div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="h-9 bg-white rounded border border-gray-200"></div>
-                      <div className="h-9 bg-white rounded border border-gray-200"></div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+              )}
             </div>
           </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
-  )
-} 
+
+          {/* Right Side - Order Summary (50% width) */}
+          <div className="w-full lg:w-1/2 bg-white flex flex-col">
+            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-[#1e3632] to-[#294a46]">
+              <h2 className="text-2xl font-semibold text-white">Order Summary</h2>
+              <p className="text-gray-200 mt-1">Review your appointment details</p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+                                <div className="space-y-6">
+                <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+                  <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-800 text-base">Appointment Details</h3>
+                    <p className="text-sm text-gray-600 mt-1">{formatDate(appointment.appointment_date)}</p>
+                    <div className="flex items-start mt-2">
+                      <MapPin className="h-4 w-4 text-gray-400 mt-0.5 mr-2 flex-shrink-0" />
+                      <p className="text-sm text-gray-500">{appointment.location}</p>
+                    </div>
+                  </div>
+                </div>
+
+                                    {appointment.vehicles && (
+                  <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+                    <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-800 text-base">Vehicle</h3>
+                      <p className="text-sm text-gray-600 mt-1 font-medium">
+                        {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
+                      </p>
+                      {appointment.vehicles.color && (
+                        <p className="text-sm text-gray-500 mt-1">Color: {appointment.vehicles.color}</p>
+                      )}
+                      {appointment.vehicles.vin && (
+                        <p className="text-sm text-gray-500">VIN: {appointment.vehicles.vin}</p>
+                      )}
+                      {appointment.vehicles.mileage && (
+                        <p className="text-sm text-gray-500">Mileage: {appointment.vehicles.mileage}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                                    {appointment.selected_services && appointment.selected_services.length > 0 && (
+                  <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+                    <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-800 text-base">Requested Services</h3>
+                      <ul className="mt-2 space-y-2">
+                        {appointment.selected_services.map((service, index) => (
+                          <li key={index} className="flex items-center">
+                            <div className="h-2 w-2 rounded-full bg-[#294a46] mr-3"></div>
+                            <span className="text-sm text-gray-600">{service}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                                    {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
+                  <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+                    <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">⚠️</span>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-800 text-base">Reported Issues</h3>
+                      <ul className="mt-2 space-y-2">
+                        {appointment.selected_car_issues.map((issue, index) => (
+                          <li key={index} className="flex items-center">
+                            <div className="h-2 w-2 rounded-full bg-red-500 mr-3"></div>
+                            <span className="text-sm text-gray-600">{issue}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                                    {appointment.issue_description && (
+                  <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+                    <FileText className="h-5 w-5 text-[#294a46] mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-800 text-base">Description</h3>
+                      <p className="text-sm text-gray-600 mt-2 leading-relaxed">{appointment.issue_description}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+                  <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔋</span>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-800 text-base">Car Status</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {appointment.car_runs !== null
+                        ? appointment.car_runs
+                          ? "✅ Car is running"
+                          : "❌ Car is not running"
+                        : "❓ Car status not specified"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 p-6 border border-dashed border-gray-300 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
+                <div className="flex items-center justify-center mb-4">
+                  <CreditCard className="h-6 w-6 text-[#294a46] mr-3" />
+                  <h3 className="font-semibold text-gray-700 text-base">Payment Integration Coming Soon</h3>
+                </div>
+                <div className="space-y-3">
+                  <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+                    <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 text-center mt-4">Secure payment processing with Stripe</p>
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  } 
