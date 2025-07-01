@@ -7,11 +7,7 @@ import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
-<<<<<<< HEAD
 import { createClient } from "@/lib/supabase/client"
-=======
-import { createBrowserClient } from '@supabase/ssr'
->>>>>>> main
 
 export default function LoginPage() {
   const router = useRouter()
@@ -23,14 +19,10 @@ export default function LoginPage() {
   const [isResendingEmail, setIsResendingEmail] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
 
-<<<<<<< HEAD
   // Create Supabase client
   const supabase = createClient()
 
-  const handleLogin = async (e: React.FormEvent) => {
-=======
   const handleLogin = async (e: React.FormEvent): Promise<void> => {
->>>>>>> main
     e.preventDefault()
     setIsLoading(true)
     setError("")
@@ -42,10 +34,7 @@ export default function LoginPage() {
         throw new Error("Please enter both email and password")
       }
 
-      const { data, error: signInError } = await createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      ).auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password,
       })
@@ -59,48 +48,38 @@ export default function LoginPage() {
         throw new Error("Login failed - no user data received")
       }
 
-<<<<<<< HEAD
-      console.log("✅ Login successful, user:", user.id)
-
-      // Check if user has a mechanic profile
-      const { data: mechanicProfile, error: profileError } = await supabase
-        .from("mechanic_profiles")
-        .select("id, onboarding_completed, onboarding_step")
-        .eq("user_id", user.id)
-        .maybeSingle()
-=======
       console.log("✅ Login successful, user:", data.user.id)
       
       // Check if this is a mechanic
-      const { data: profile } = await createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      ).from('mechanic_profiles')
-        .select('id')
+      const { data: profile } = await supabase
+        .from('mechanic_profiles')
+        .select('id, onboarding_completed, onboarding_step')
         .eq('user_id', data.user.id)
-        .single()
->>>>>>> main
+        .maybeSingle()
 
       if (profile) {
-        router.push('/mechanic/dashboard')
+        if (profile.onboarding_completed) {
+          router.push('/mechanic/dashboard')
+        } else {
+          // Redirect to the appropriate onboarding step
+          const stepNumber = getStepNumber(profile.onboarding_step || "personal_info")
+          router.push(`/onboarding-mechanic-${stepNumber}`)
+        }
       } else {
-<<<<<<< HEAD
         // Check if this is a customer account
         const { data: customerProfile } = await supabase
           .from("customer_profiles")
           .select("id")
-          .eq("user_id", user.id)
+          .eq("user_id", data.user.id)
           .maybeSingle()
 
         if (customerProfile) {
           console.log("✅ Customer profile found:", customerProfile.id)
           router.replace("/dashboard")
         } else {
-          throw new Error("No profile found. Please complete registration.")
+          // Regular user, redirect to home
+          router.push('/')
         }
-=======
-        router.push('/')
->>>>>>> main
       }
     } catch (error: unknown) {
       console.error("❌ Error:", error)
@@ -111,7 +90,6 @@ export default function LoginPage() {
     }
   }
 
-<<<<<<< HEAD
   const getStepNumber = (step: string) => {
     switch (step) {
       case "personal_info": return "1"
@@ -123,10 +101,7 @@ export default function LoginPage() {
     }
   }
 
-  const handleResendConfirmationEmail = async () => {
-=======
   const handleResendConfirmationEmail = async (): Promise<void> => {
->>>>>>> main
     if (!email) {
       setError("Please enter your email address first")
       return
@@ -134,10 +109,7 @@ export default function LoginPage() {
 
     setIsResendingEmail(true)
     try {
-      const { error } = await createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      ).auth.resend({
+      const { error } = await supabase.auth.resend({
         type: 'signup',
         email: email.trim(),
       })
@@ -211,10 +183,10 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
+                className="block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-transparent text-lg"
+                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full rounded-md border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#294a46] sm:text-sm sm:leading-6"
-                placeholder="Enter your email"
               />
             </div>
 
@@ -228,10 +200,10 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
+                className="block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-transparent text-lg"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full rounded-md border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#294a46] sm:text-sm sm:leading-6"
-                placeholder="Enter your password"
               />
             </div>
 
@@ -241,20 +213,17 @@ export default function LoginPage() {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
+                  className="h-4 w-4 text-[#294a46] focus:ring-[#294a46] border-gray-300 rounded"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-[#294a46] focus:ring-[#294a46]"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                   Remember me
                 </label>
               </div>
 
               <div className="text-sm">
-                <Link
-                  href="/forgot-password"
-                  className="text-[#294a46] font-medium hover:text-[#1a2f2c] transition-colors"
-                >
+                <Link href="/forgot-password" className="text-[#294a46] hover:text-[#1e3632] font-medium">
                   Forgot your password?
                 </Link>
               </div>
@@ -264,11 +233,11 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative flex w-full justify-center rounded-md bg-[#294a46] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1a2f2c] focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-lg font-medium rounded-md text-white bg-[#294a46] hover:bg-[#1e3632] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294a46] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
+                    <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" />
                     Signing in...
                   </>
                 ) : (
