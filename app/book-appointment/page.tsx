@@ -1,31 +1,3 @@
-<<<<<<< HEAD
-'use client'
-
-import { useRouter, useSearchParams } from 'next/navigation'
-
-export default function BookAppointment() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  
-  const address = searchParams.get('address')
-  const year = searchParams.get('year')
-  const make = searchParams.get('make')
-  const model = searchParams.get('model')
-  const appointmentId = searchParams.get("appointmentId")
-  
-  const handleContinue = () => {
-    router.push('/pick-mechanic?appointmentId=test123')
-  }
-  
-  return (
-    <div style={{ padding: '20px' }}>
-      <h1>Book Appointment</h1>
-      <p>Address: {address || 'Not provided'}</p>
-      <p>Vehicle: {year} {make} {model}</p>
-      <button onClick={handleContinue}>
-        Continue to Pick Mechanic
-      </button>
-=======
 "use client"
 import type React from "react"
 import { useState, useEffect, useRef, useCallback } from "react"
@@ -35,8 +7,8 @@ import {
 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
-import { supabase } from "@/lib/supabase"
-import { toast } from "@/components/ui/use-toast"
+import { createClient } from "@/lib/supabase/client"
+import { useToast } from "@/components/ui/use-toast"
 
 // Define types for form data
 interface BookingFormData {
@@ -53,6 +25,7 @@ interface BookingFormData {
   mileage: string
   licensePlate: string
 }
+
 // Define database schema types
 interface AppointmentData {
   id: string
@@ -77,7 +50,7 @@ interface AppointmentData {
     mileage: string
   } | null
 }
-// Define database schema types
+
 // Default recommended services to show before user input
 const defaultRecommendedServices = [
   {
@@ -96,6 +69,7 @@ const defaultRecommendedServices = [
     confidence: 0.7,
   }
 ]
+
 // Define car issue options
 const carIssueOptions = [
   {
@@ -159,6 +133,7 @@ const carIssueOptions = [
     description: "Shaking or vibration when driving",
   },
 ]
+
 // Enhanced diagnostic system with more comprehensive categories and responses
 const diagnosticSystem = {
   categories: [
@@ -198,53 +173,53 @@ const diagnosticSystem = {
       name: "Transmission",
       keywords: [
         "transmission",
-        "gear",
         "shifting",
+        "slipping",
+        "grinding",
+        "hard shift",
+        "delayed shift",
+        "gear",
         "clutch",
         "automatic",
         "manual",
-        "slipping",
-        "grinding",
-        "delayed",
-        "jerking",
       ],
       responses: [
         {
-          conditions: ["slipping", "delayed"],
-          service: "Transmission Diagnostic",
-          description: "Checks fluid levels and clutch plates.",
+          conditions: ["slipping", "hard shift"],
+          service: "Transmission Inspection",
+          description: "Checks fluid levels and internal components.",
         },
         {
-          conditions: ["grinding", "jerking"],
-          service: "Transmission Inspection",
-          description: "Examines transmission mounts and gears.",
+          conditions: ["grinding", "clutch"],
+          service: "Clutch System Check",
+          description: "Manual transmission clutch assessment.",
         },
       ],
     },
     {
       name: "Brakes",
       keywords: [
-        "brake",
         "brakes",
-        "stopping",
         "squealing",
-        "squeaking",
         "grinding",
-        "soft",
+        "brake",
+        "stopping",
         "pedal",
-        "abs",
-        "pulsating",
+        "soft pedal",
+        "hard pedal",
+        "brake fluid",
+        "brake light",
       ],
       responses: [
         {
-          conditions: ["squealing", "squeaking"],
-          service: "Brake Inspection",
-          description: "Checks brake pads and rotors for wear.",
+          conditions: ["squealing", "grinding"],
+          service: "Brake Pad & Rotor Inspection",
+          description: "Checks brake pad thickness and rotor condition.",
         },
         {
-          conditions: ["soft", "pedal"],
-          service: "Brake System Diagnostic",
-          description: "Examines brake lines and checks for leaks.",
+          conditions: ["soft pedal", "brake fluid"],
+          service: "Brake System Fluid Check",
+          description: "Inspects brake fluid levels and lines.",
         },
       ],
     },
@@ -252,730 +227,689 @@ const diagnosticSystem = {
       name: "Electrical",
       keywords: [
         "battery",
-        "electrical",
-        "starting",
         "alternator",
         "lights",
-        "dimming",
-        "starter",
-        "dead",
+        "electrical",
+        "power",
         "charging",
-        "fuse",
+        "starter",
+        "fuses",
+        "wiring",
+        "dead battery",
       ],
       responses: [
         {
-          conditions: ["battery", "dead", "starting"],
+          conditions: ["battery", "dead battery"],
+          service: "Battery & Charging System Test",
+          description: "Tests battery health and charging system.",
+        },
+        {
+          conditions: ["alternator", "charging"],
+          service: "Alternator Diagnostic",
+          description: "Checks alternator output and belt condition.",
+        },
+        {
+          conditions: ["lights", "electrical"],
           service: "Electrical System Diagnostic",
-          description: "Tests battery and starter function.",
-        },
-        {
-          conditions: ["alternator", "dimming"],
-          service: "Charging System Diagnostic",
-          description: "Checks alternator output and charging.",
-        },
-      ],
-    },
-    {
-      name: "Suspension",
-      keywords: [
-        "suspension",
-        "steering",
-        "bouncing",
-        "shocks",
-        "struts",
-        "alignment",
-        "pulling",
-        "vibration",
-        "bumpy",
-        "handling",
-      ],
-      responses: [
-        {
-          conditions: ["bouncing", "bumpy"],
-          service: "Suspension Inspection",
-          description: "Examines shocks and struts condition.",
-        },
-        {
-          conditions: ["pulling", "alignment"],
-          service: "Alignment Check",
-          description: "Measures and adjusts wheel alignment.",
+          description: "Troubleshoots electrical issues and connections.",
         },
       ],
     },
     {
       name: "Cooling",
       keywords: [
-        "cooling",
         "overheating",
-        "temperature",
         "coolant",
         "radiator",
         "thermostat",
-        "leak",
-        "steam",
+        "temperature",
+        "cooling",
         "fan",
-        "heat",
+        "steam",
+        "hot",
+        "leak",
       ],
       responses: [
         {
           conditions: ["overheating", "temperature"],
-          service: "Cooling System Diagnostic",
-          description: "Checks thermostat and radiator function.",
+          service: "Cooling System Inspection",
+          description: "Checks coolant levels, radiator, and thermostat.",
         },
         {
           conditions: ["leak", "coolant"],
-          service: "Cooling System Inspection",
-          description: "Pressure tests system and inspects for leaks.",
+          service: "Coolant Leak Detection",
+          description: "Identifies and repairs coolant leaks.",
         },
       ],
     },
   ],
 }
-// Define database schema types
-interface AppointmentData {
-  id: string
-  user_id: string
-  location: string
-  appointment_date: string
-  status: string
-  source: string
-  is_guest: boolean
-  created_at: string
-  updated_at: string
-  car_runs: boolean | null
-  issue_description: string
-  selected_services: string[]
-  selected_car_issues: string[]
-  phone_number: string
-  vehicles: {
-    vin: string
-    year: string
-    make: string
-    model: string
-    mileage: string
-  } | null
-}
-// Define database schema types
-// Enhance the getAIDiagnostics function to return at least 3 relevant services
+
+// Function to get AI-powered service recommendations
 function getAIDiagnostics(carIssue: string): Array<{ service: string; description: string; confidence: number }> | null {
-  if (!carIssue.trim()) {
-    return null
-  }
-  const issue = carIssue.toLowerCase()
-  let possibleServices: { service: string; description: string; confidence: number }[] = []
-  // Default services if no specific matches are found
-  const defaultServices = [
-    {
-      service: "General Inspection",
-      description: "Identify specific issues with your vehicle.",
-      confidence: 0.5,
-    },
-    {
-      service: "Diagnostic Scan",
-      description: "Computer scan to identify error codes and electronic issues.",
-      confidence: 0.45,
-    },
-    {
-      service: "Maintenance Check",
-      description: "Review of vehicle's maintenance needs and requirements.",
-      confidence: 0.4,
-    },
-  ]
-  // Analyze each category
-  for (const category of diagnosticSystem.categories) {
-    // Check how many keywords match
-    const matchingKeywords = category.keywords.filter((keyword) => issue.includes(keyword))
-    if (matchingKeywords.length > 0) {
-      // Calculate match confidence based on keyword matches
-      const keywordConfidence = matchingKeywords.length / category.keywords.length
-      // Check specific conditions within the category
-      for (const response of category.responses) {
-        const matchingConditions = response.conditions.filter((condition) => issue.includes(condition))
-        if (matchingConditions.length > 0) {
-          const conditionConfidence = matchingConditions.length / response.conditions.length
-          const totalConfidence = (keywordConfidence + conditionConfidence) / 2
-          possibleServices.push({
-            service: response.service,
-            description: response.description,
-            confidence: totalConfidence,
-          })
-        }
-      }
-      // If no specific conditions matched but we matched keywords, add a general category service
-      if (
-        possibleServices.filter((s) => s.service.includes(category.name)).length === 0 &&
-        matchingKeywords.length > 1
-      ) {
-        possibleServices.push({
-          service: `${category.name} System Inspection`,
-          description: `Complete inspection of your vehicle's ${category.name.toLowerCase()} system.`,
-          confidence: keywordConfidence * 0.8,
+  const lowerCaseIssue = carIssue.toLowerCase()
+  const words = lowerCaseIssue.split(/\s+/)
+  const matches: Array<{ service: string; description: string; confidence: number }> = []
+
+  // Check each category for keyword matches
+  diagnosticSystem.categories.forEach((category) => {
+    category.keywords.forEach((keyword) => {
+      const keywordRegex = new RegExp(`\\b${keyword}\\b`, "i")
+      if (keywordRegex.test(lowerCaseIssue)) {
+        // Find relevant responses for this keyword
+        category.responses.forEach((response) => {
+          const conditionMatches = response.conditions.some((condition) =>
+            lowerCaseIssue.includes(condition.toLowerCase()),
+          )
+          if (conditionMatches) {
+            // Calculate confidence based on keyword relevance
+            const confidence = Math.min(0.9, 0.6 + words.filter((word) => word.includes(keyword)).length * 0.1)
+            matches.push({
+              service: response.service,
+              description: response.description,
+              confidence,
+            })
+          }
         })
       }
-    }
-  }
-  // Sort by confidence
-  possibleServices.sort((a, b) => b.confidence - a.confidence)
-  // If we don't have enough services, add some defaults
-  if (possibleServices.length === 0) {
-    possibleServices = [...defaultServices]
-  } else if (possibleServices.length < 3) {
-    // Add related services based on the matched category
-    const highestConfidenceService = possibleServices[0]
-    // Find which category the highest confidence service belongs to
-    let relatedCategory = null
-    for (const category of diagnosticSystem.categories) {
-      if (highestConfidenceService.service.includes(category.name)) {
-        relatedCategory = category.name
-        break
-      }
-    }
-    // Add related services from default list
-    let remainingDefaultsToAdd = 3 - possibleServices.length
-    for (const defaultService of defaultServices) {
-      // Skip if already have a similar service
-      if (possibleServices.some((s) => s.service === defaultService.service)) {
-        continue
-      }
-      possibleServices.push({
-        ...defaultService,
-        description: relatedCategory
-          ? defaultService.description + ` Focus on ${relatedCategory.toLowerCase()} components.`
-          : defaultService.description,
-      })
-      remainingDefaultsToAdd--
-      if (remainingDefaultsToAdd <= 0) break
-    }
-  }
-  // Return top 3 services instead of 2
-  return possibleServices.slice(0, 3)
+    })
+  })
+
+  // Remove duplicates and sort by confidence
+  const uniqueMatches = matches.filter(
+    (match, index, self) => index === self.findIndex((m) => m.service === match.service),
+  )
+  uniqueMatches.sort((a, b) => b.confidence - a.confidence)
+
+  return uniqueMatches.length > 0 ? uniqueMatches.slice(0, 3) : null
 }
-// Define database schema types
-interface AppointmentData {
-  id: string
-  user_id: string
-  location: string
-  appointment_date: string
-  status: string
-  source: string
-  is_guest: boolean
-  created_at: string
-  updated_at: string
-  car_runs: boolean | null
-  issue_description: string
-  selected_services: string[]
-  selected_car_issues: string[]
-  phone_number: string
-  vehicles: {
-    vin: string
-    year: string
-    make: string
-    model: string
-    mileage: string
-  } | null
-}
-// Define database schema types
-// Define database schema types
-interface AppointmentData {
-  id: string
-  user_id: string
-  location: string
-  appointment_date: string
-  status: string
-  source: string
-  is_guest: boolean
-  created_at: string
-  updated_at: string
-  car_runs: boolean | null
-  issue_description: string
-  selected_services: string[]
-  selected_car_issues: string[]
-  phone_number: string
-  vehicles: {
-    vin: string
-    year: string
-    make: string
-    model: string
-    mileage: string
-  } | null
-}
-// Define database schema types
+
 export default function BookAppointment() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
-  
-  // Fix the appointment ID extraction - check for both parameter names
-  // but don't fall back to pathname for route-based IDs
-  const appointmentId = searchParams.get("appointment_id") || searchParams.get("appointmentId") || null
-  
+  const { toast } = useToast()
+  const supabase = createClient()
+
+  // Get data from URL params (from home page form)
+  const address = searchParams.get("address") || ""
+  const year = searchParams.get("year") || ""
+  const make = searchParams.get("make") || ""
+  const model = searchParams.get("model") || ""
+  const appointmentId = searchParams.get("appointmentId")
+
+  // State for form data
   const [formData, setFormData] = useState<BookingFormData>({
     issueDescription: "",
     phoneNumber: "",
     carRuns: null,
     selectedServices: [],
     selectedCarIssues: [],
-    location: "",
+    location: address,
     vin: "",
-    year: "",
-    make: "",
-    model: "",
+    year: year,
+    make: make,
+    model: model,
     mileage: "",
     licensePlate: "",
   })
-  const [aiSuggestions, setAiSuggestions] = useState<Array<{
-    service: string
-    description: string
-    confidence: number
-  }> | null>(defaultRecommendedServices)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [hasInteractedWithTextArea, setHasInteractedWithTextArea] = useState(false)
-  const [validationError, setValidationError] = useState<string | null>(null)
-  const [appointmentData, setAppointmentData] = useState<AppointmentData | null>(null)
-  
 
-  
-  // Fetch existing appointment and vehicle data ONLY if we have a valid appointment ID
+  // State for dynamic recommendations
+  const [recommendedServices, setRecommendedServices] = useState(defaultRecommendedServices)
+  const [appointment, setAppointment] = useState<AppointmentData | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showTextarea, setShowTextarea] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Fetch existing appointment data if appointmentId is provided
   useEffect(() => {
     const fetchAppointmentData = async () => {
-      // Only fetch if we have a valid UUID-format appointment ID
-      if (!appointmentId) {
-        console.log("No appointment ID provided - this is a new appointment creation")
-        setIsLoading(false)
-        return
-      }
-      
-      // Validate that the appointmentId looks like a UUID (basic check)
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-      if (!uuidRegex.test(appointmentId)) {
-        console.log("Invalid appointment ID format, treating as new appointment:", appointmentId)
-        setIsLoading(false)
-        return
-      }
-      
-      setIsLoading(true)
+      if (!appointmentId) return
+
       try {
-        console.log("Fetching appointment data for ID:", appointmentId)
-        const { data, error } = await supabase
+        console.log("🔍 Fetching appointment data for ID:", appointmentId)
+        const { data: appointments, error } = await supabase
           .from("appointments")
           .select(`
             *,
             vehicles!fk_appointment_id(*)
           `)
           .eq("id", appointmentId)
-          .single()
 
-        if (error) {
-          if (error.code === 'PGRST116') {
-            console.log("Appointment not found, treating as new appointment")
-          } else {
-            console.error("Error fetching appointment data:", error)
+        if (error) throw error
+
+        if (appointments && appointments.length > 0) {
+          const appointmentData = appointments[0]
+          console.log("✅ Appointment data loaded:", appointmentData)
+
+          setAppointment(appointmentData)
+          setFormData({
+            issueDescription: appointmentData.issue_description || "",
+            phoneNumber: appointmentData.phone_number || "",
+            carRuns: appointmentData.car_runs,
+            selectedServices: appointmentData.selected_services || [],
+            selectedCarIssues: appointmentData.selected_car_issues || [],
+            location: appointmentData.location || address,
+            vin: appointmentData.vehicles?.vin || "",
+            year: appointmentData.vehicles?.year || year,
+            make: appointmentData.vehicles?.make || make,
+            model: appointmentData.vehicles?.model || model,
+            mileage: appointmentData.vehicles?.mileage || "",
+            licensePlate: "", // Not stored in current schema
+          })
+
+          // Set AI recommendations based on existing description
+          if (appointmentData.issue_description) {
+            const aiRecommendations = getAIDiagnostics(appointmentData.issue_description)
+            if (aiRecommendations) {
+              setRecommendedServices(aiRecommendations)
+            }
           }
-          setIsLoading(false)
-          return
         }
-
-        if (data) {
-          setAppointmentData(data)
-          // --- PRE-FILL FORM DATA ---
-          setFormData(prev => ({
-            ...prev,
-            issueDescription: data.issue_description || "",
-            phoneNumber: data.phone_number || "",
-            carRuns: data.car_runs,
-            selectedServices: data.selected_services || [],
-            selectedCarIssues: data.selected_car_issues || [],
-            vin: data.vehicles?.vin || "",
-            year: data.vehicles?.year?.toString() || "",
-            make: data.vehicles?.make || "",
-            model: data.vehicles?.model || "",
-            mileage: data.vehicles?.mileage?.toString() || "",
-          }))
-          console.log("Fetched and pre-filled appointment data:", data)
-        }
-      } catch (error: unknown) {
-        console.error("Error fetching appointment data:", error)
-      } finally {
-        setIsLoading(false)
+      } catch (error) {
+        console.error("❌ Error fetching appointment:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load appointment data",
+          variant: "destructive",
+        })
       }
     }
 
     fetchAppointmentData()
   }, [appointmentId])
-  // Format phone number as user types
+
+  // Phone number formatting
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Remove all non-numeric characters
-    const cleaned = e.target.value.replace(/\D/g, "")
-    // Format the phone number
-    let formatted = ""
-    if (cleaned.length <= 3) {
-      formatted = cleaned
-    } else if (cleaned.length <= 6) {
-      formatted = `(${cleaned.slice(0, 3)})-${cleaned.slice(3)}`
-    } else {
-      formatted = `(${cleaned.slice(0, 3)})-${cleaned.slice(3, 6)} ${cleaned.slice(6, 10)}`
+    const value = e.target.value.replace(/\D/g, "")
+    let formatted = value
+    if (value.length >= 6) {
+      formatted = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6, 10)}`
+    } else if (value.length >= 3) {
+      formatted = `(${value.slice(0, 3)}) ${value.slice(3)}`
     }
-    setFormData((prev) => ({ ...prev, phoneNumber: formatted }))
+    setFormData({ ...formData, phoneNumber: formatted })
   }
-  // Toggle service selection
+
+  // Service selection
   const toggleService = (service: string) => {
-    setFormData((prev) => {
-      const newSelectedServices = prev.selectedServices.includes(service)
-        ? prev.selectedServices.filter((s) => s !== service)
-        : [...prev.selectedServices, service]
-      return { ...prev, selectedServices: newSelectedServices }
+    const isSelected = formData.selectedServices.includes(service)
+    setFormData({
+      ...formData,
+      selectedServices: isSelected
+        ? formData.selectedServices.filter((s) => s !== service)
+        : [...formData.selectedServices, service],
     })
   }
-  // Toggle car issue selection
+
+  // Car issue selection
   const toggleCarIssue = (issueId: string) => {
-    setFormData((prev) => {
-      const newSelectedCarIssues = prev.selectedCarIssues.includes(issueId)
-        ? prev.selectedCarIssues.filter((id) => id !== issueId)
-        : [...prev.selectedCarIssues, issueId]
-      return { ...prev, selectedCarIssues: newSelectedCarIssues }
+    const isSelected = formData.selectedCarIssues.includes(issueId)
+    setFormData({
+      ...formData,
+      selectedCarIssues: isSelected
+        ? formData.selectedCarIssues.filter((issue) => issue !== issueId)
+        : [...formData.selectedCarIssues, issueId],
     })
   }
-  // Handle text area focus and input
+
+  // Show textarea when user clicks to describe issue
   const handleTextAreaFocus = () => {
-    setHasInteractedWithTextArea(true)
-    // Show default recommendations when user focuses on the text area
-    if (!aiSuggestions && !formData.issueDescription.trim()) {
-      setAiSuggestions(defaultRecommendedServices)
-    }
+    setShowTextarea(true)
+    setTimeout(() => {
+      textareaRef.current?.focus()
+    }, 100)
   }
-  // Handle car issue description changes
+
+  // Update recommendations based on user input
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
-    setFormData((prev) => ({ ...prev, issueDescription: value }))
+    setFormData({ ...formData, issueDescription: value })
   }
-  // Handle car runs selection - now using boolean values
+
+  // Car runs selection
   const handleCarRunsChange = (value: boolean) => {
-    setFormData((prev) => ({ ...prev, carRuns: value }))
+    setFormData({ ...formData, carRuns: value })
   }
-  // Update AI suggestions based on issue description
-  useEffect(() => {
-    // Skip this effect if we're still loading initial data
-    if (!hasInteractedWithTextArea && !formData.issueDescription) {
-      return
-    }
-    // Update AI suggestions if there's text in the description
-    if (formData.issueDescription.trim().length > 0) {
-      const result = getAIDiagnostics(formData.issueDescription)
-      if (result) {
-        // Only update if different from current suggestions
-        if (!aiSuggestions || JSON.stringify(result) !== JSON.stringify(aiSuggestions)) {
-          setAiSuggestions(result)
+
+  // Create a temporary user record immediately (no more NULL user_id!)
+  const createTemporaryUser = async () => {
+    try {
+      // Call Supabase function to create a temporary user
+      const { data: userId, error: userError } = await supabase.rpc("create_temporary_user")
+
+      if (userError) {
+        console.error("Error creating temporary user:", userError)
+
+        // If RPC function doesn't exist yet (migration not run), provide helpful error
+        if (userError.message?.includes("function") || userError.code === "42883") {
+          throw new Error(
+            "Database migration required: create_temporary_user function not found. Please run the migration first.",
+          )
         }
+
+        throw new Error(`Database error: ${userError.message}`)
       }
-    } else if (hasInteractedWithTextArea) {
-      // Show default recommendations if text area is empty and user has interacted
-      if (JSON.stringify(aiSuggestions) !== JSON.stringify(defaultRecommendedServices)) {
-        setAiSuggestions(defaultRecommendedServices)
+
+      if (!userId) {
+        throw new Error("No user ID returned from create_temporary_user function")
       }
+
+      console.log("✅ Temporary user created successfully:", userId)
+      return userId as string
+    } catch (error) {
+      console.error("❌ Failed to create temporary user:", error)
+      throw error instanceof Error ? error : new Error("Unknown error creating user")
     }
-  }, [formData.issueDescription, hasInteractedWithTextArea, aiSuggestions])
-  // Handle form submission
+  }
+
+  // Form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    setValidationError(null)
+
     try {
-      // Always-Create-User System: Handle phone number merging
-      const currentUserId = appointmentData?.user_id
-      
-      if (!currentUserId) {
-        throw new Error("Invalid appointment - no user ID found")
+      console.log("📤 Starting appointment submission...")
+
+      // Validate required fields
+      if (!formData.issueDescription?.trim()) {
+        throw new Error("Please describe what's wrong with your car")
       }
-      
-      // Normalize phone number for matching
-      const normalizedPhone = formData.phoneNumber.replace(/\D/g, '')
-      
-      // Use Supabase function to merge users by phone number
-      const { data: finalUserId, error: mergeError } = await supabase.rpc(
-        'merge_users_by_phone',
-        {
-          p_phone: normalizedPhone,
-          p_current_user_id: currentUserId
+
+      if (!formData.phoneNumber) {
+        throw new Error("Please provide a phone number")
+      }
+
+      if (formData.carRuns === null) {
+        throw new Error("Please indicate if your car is running")
+      }
+
+      // Get the current authenticated user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      console.log("🔍 Current user:", user?.id || "No authenticated user")
+
+      let finalUserId: string
+
+      if (user?.id) {
+        // Use authenticated user's ID
+        finalUserId = user.id
+        console.log("✅ Using authenticated user ID:", finalUserId)
+      } else {
+        // Create temporary user for guest bookings
+        console.log("🔄 Creating temporary user for guest booking...")
+        finalUserId = await createTemporaryUser()
+      }
+
+      const appointmentData = {
+        user_id: finalUserId,
+        location: formData.location,
+        appointment_date: new Date().toISOString(),
+        status: "pending",
+        source: "web_form",
+        car_runs: formData.carRuns,
+        issue_description: formData.issueDescription,
+        selected_services: formData.selectedServices,
+        selected_car_issues: formData.selectedCarIssues,
+        phone_number: formData.phoneNumber,
+      }
+
+      let finalAppointmentId: string
+
+      if (appointmentId && appointment) {
+        // Update existing appointment
+        console.log("🔄 Updating existing appointment:", appointmentId)
+        const { error: updateError } = await supabase
+          .from("appointments")
+          .update(appointmentData)
+          .eq("id", appointmentId)
+
+        if (updateError) throw updateError
+
+        finalAppointmentId = appointmentId
+        console.log("✅ Appointment updated successfully")
+      } else {
+        // Create new appointment
+        console.log("🔄 Creating new appointment...")
+        const { data: newAppointment, error: appointmentError } = await supabase
+          .from("appointments")
+          .insert([appointmentData])
+          .select("id")
+          .single()
+
+        if (appointmentError) throw appointmentError
+
+        if (!newAppointment?.id) {
+          throw new Error("No appointment ID returned from database")
         }
-      )
-      
-      if (mergeError) {
-        throw new Error(`Failed to process phone number: ${mergeError.message}`)
-      }
-      
-      if (!finalUserId) {
-        throw new Error("Failed to get final user ID")
-      }
-      
-      // Update appointment with phone number and final user ID
-      const now = new Date().toISOString()
-      
-      // Update appointment data (never upsert - appointment already exists from landing page)
-      const { data: appointment, error: appointmentError } = await supabase
-        .from("appointments")
-        .update({
-          user_id: finalUserId, // Use final user ID (might be merged)
-          car_runs: formData.carRuns,
-          issue_description: formData.issueDescription,
-          selected_services: formData.selectedServices,
-          selected_car_issues: formData.selectedCarIssues,
-          phone_number: formData.phoneNumber,
-          updated_at: now
-        })
-        .eq('id', appointmentId)
-        .select()
-        .single();
-      if (appointmentError) throw appointmentError;
-      if (!appointment) {
-        throw new Error("Failed to create appointment")
+
+        finalAppointmentId = newAppointment.id
+        console.log("✅ Appointment created successfully:", finalAppointmentId)
       }
 
+      // Create or update vehicle information
+      const vehicleData = {
+        appointment_id: finalAppointmentId,
+        vin: formData.vin || null,
+        year: formData.year ? parseInt(formData.year) : null,
+        make: formData.make || null,
+        model: formData.model || null,
+        mileage: formData.mileage ? parseInt(formData.mileage) : null,
+      }
 
+      // Check if vehicle already exists for this appointment
+      const { data: existingVehicle, error: vehicleCheckError } = await supabase
+        .from("vehicles")
+        .select("id")
+        .eq("appointment_id", finalAppointmentId)
+        .maybeSingle()
 
+      if (vehicleCheckError) {
+        console.warn("Error checking existing vehicle:", vehicleCheckError)
+      }
+
+      if (existingVehicle) {
+        // Update existing vehicle
+        const { error: vehicleUpdateError } = await supabase
+          .from("vehicles")
+          .update(vehicleData)
+          .eq("appointment_id", finalAppointmentId)
+
+        if (vehicleUpdateError) {
+          console.error("Error updating vehicle:", vehicleUpdateError)
+        } else {
+          console.log("✅ Vehicle updated successfully")
+        }
+      } else {
+        // Create new vehicle record
+        const { error: vehicleError } = await supabase.from("vehicles").insert([vehicleData])
+
+        if (vehicleError) {
+          console.error("Error creating vehicle:", vehicleError)
+        } else {
+          console.log("✅ Vehicle created successfully")
+        }
+      }
+
+      // Show success and navigate
       toast({
-        title: "Success!",
-        description: "Your appointment has been saved.",
+        title: "Appointment Request Submitted!",
+        description: "Mechanics in your area will review and provide quotes.",
       })
-      router.push(`/pick-mechanic?appointmentId=${appointment.id}`)
-    } catch (err) {
-      console.error("Error creating/updating appointment:", err)
-      setValidationError(err instanceof Error ? err.message : "Failed to save appointment")
+
+      // Navigate to mechanic selection page
+      router.push(`/pick-mechanic?appointmentId=${finalAppointmentId}`)
+    } catch (error) {
+      console.error("❌ Error submitting appointment:", error)
+
+      let errorMessage = "Failed to submit appointment"
+      if (error instanceof Error) {
+        errorMessage = error.message
+      }
+
       toast({
         title: "Error",
-        description: "Failed to save appointment. Please try again.",
-        variant: "destructive"
+        description: errorMessage,
+        variant: "destructive",
       })
     } finally {
       setIsSubmitting(false)
     }
   }
-  // Check if form is valid
-  const isFormValid =
-    formData.phoneNumber && // Phone number is required
-    (formData.issueDescription || formData.selectedServices.length > 0) // Either description OR service selection
-  // Get all available services
-  if (isLoading) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <SiteHeader />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#294a46]"></div>
-        </main>
-        <Footer />
-      </div>
-    )
-  }
-  if (!appointmentId || !appointmentData) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <SiteHeader />
-        <main className="flex-1">
-          <div className="container mx-auto px-4 py-8 max-w-2xl">
-            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
-              <h2 className="text-lg font-semibold mb-2">Error</h2>
-              <p>We couldn't find your appointment information. Please return to the home page and try again.</p>
-              <div className="mt-4">
-                <a href="/" className="text-[#294a46] font-medium hover:underline">
-                  Return to Home
-                </a>
-              </div>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    )
-  }
+
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header */}
       <SiteHeader />
-      {/* Main Content */}
-      <main className="flex-1">
-        <div className="container mx-auto px-4 py-8 max-w-2xl">
-          <h1 className="text-3xl font-bold text-center text-[#294a46] mb-6">Book An Appointment</h1>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
-              {/* Left half - Car issue description */}
-              <div className="space-y-2 md:w-1/2">
-                <p className="text-center md:text-left text-gray-600">Tell us what happened</p>
-                <textarea
-                  value={formData.issueDescription}
-                  onChange={handleDescriptionChange}
-                  onFocus={handleTextAreaFocus}
-                  placeholder="Example: My car won't start. When I turn the key, I hear a clicking sound.
-or type Oil Change"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
-                  style={{ lineHeight: 1.5 }}
+      <div className="flex-1 bg-gray-50">
+        <div className="max-w-2xl mx-auto py-8 px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Booking</h1>
+            <p className="text-gray-600">
+              Provide details about your car issue so mechanics can give you accurate quotes
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 space-y-6">
+            {/* Location Display */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Service Location</label>
+              <div className="p-3 bg-gray-50 rounded-md border">
+                <p className="text-gray-900">{formData.location || "Location not specified"}</p>
+              </div>
+            </div>
+
+            {/* Vehicle Information */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Information</label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input
+                  type="text"
+                  placeholder="Year"
+                  value={formData.year}
+                  onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                  className="p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
+                <input
+                  type="text"
+                  placeholder="Make"
+                  value={formData.make}
+                  onChange={(e) => setFormData({ ...formData, make: e.target.value })}
+                  className="p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
+                <input
+                  type="text"
+                  placeholder="Model"
+                  value={formData.model}
+                  onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                  className="p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
                 />
               </div>
-              {/* Right half - Phone Number and Car Runs */}
-              <div className="space-y-3 md:w-1/2 flex flex-col items-center justify-center">
-                {/* Phone Number Input */}
-                <div className="space-y-0.5 w-full flex flex-col items-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <div className="h-4 w-4 text-gray-500 mr-2 -translate-y-0.5">📞</div>
-                    <p className="text-gray-600 text-sm">
-                      Phone Number <span className="text-red-500">*</span>
-                    </p>
-                  </div>
-                  <div className="relative max-w-[200px] w-full">
-                    <input
-                      type="tel"
-                      value={formData.phoneNumber}
-                      onChange={handlePhoneChange}
-                      placeholder="(###)-### ####"
-                      className="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-center"
-                      required
-                    />
-                  </div>
-                </div>
-                {/* Does your car run? - Updated to use boolean values */}
-                <div className="space-y-1 w-full flex flex-col items-center">
-                  <p className="text-center text-gray-600 text-sm">Does your car run?</p>
-                  <div className="flex justify-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleCarRunsChange(true)}
-                      className={`px-8 py-2 rounded-full border transition-colors ${
-                        formData.carRuns === true
-                          ? "bg-[#294a46] text-white border-[#294a46]"
-                          : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
-                      }`}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCarRunsChange(false)}
-                      className={`px-8 py-2 rounded-full border transition-colors ${
-                        formData.carRuns === false
-                          ? "bg-[#294a46] text-white border-[#294a46]"
-                          : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
-                      }`}
-                    >
-                      No
-                    </button>
-                  </div>
-                </div>
+            </div>
+
+            {/* Additional Vehicle Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mileage (optional)</label>
+                <input
+                  type="number"
+                  placeholder="e.g., 50000"
+                  value={formData.mileage}
+                  onChange={(e) => setFormData({ ...formData, mileage: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">VIN (optional)</label>
+                <input
+                  type="text"
+                  placeholder="17-character VIN"
+                  value={formData.vin}
+                  onChange={(e) => setFormData({ ...formData, vin: e.target.value.toUpperCase() })}
+                  maxLength={17}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
               </div>
             </div>
-            {/* AI Recommendations - Now full width */}
-            <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden mb-4">
-              <h4 className="text-sm font-medium text-gray-700 px-3 py-2 border-b border-gray-100 flex items-center justify-between">
-                Recommended Services
-                <div className="flex items-center text-[#294a46] text-[10px]">
-                  <div className="h-2 w-2 mr-1 -translate-y-0.5">💡</div>
-                  <p className="font-medium">axle ai recommends</p>
-                </div>
-              </h4>
-              <div className="p-4">
-                {aiSuggestions && aiSuggestions.length > 0 ? (
-                  <div className="flex flex-row space-x-4">
-                    {aiSuggestions.map((suggestion, index) => (
-                      <div
-                        key={`ai-${index}`}
-                        onClick={() => toggleService(suggestion.service)}
-                        className={`flex-1 p-2 rounded-md border cursor-pointer transition-colors ${
-                          formData.selectedServices.includes(suggestion.service)
-                            ? "bg-[#e6eeec] border-[#294a46]/20"
-                            : "bg-gray-50 border-gray-100 hover:bg-gray-100"
-                        }`}
-                      >
-                        <div className="flex flex-col h-full">
-                          <div className="flex items-start justify-between mb-1">
-                            <h4 className="font-medium text-[#294a46] text-sm">{suggestion.service}</h4>
-                            <div
-                              className={`w-4 h-4 ml-1 rounded-full flex items-center justify-center ${
-                                formData.selectedServices.includes(suggestion.service)
-                                  ? "bg-[#294a46] text-white"
-                                  : "border border-gray-300"
-                              }`}
-                            >
-                              {formData.selectedServices.includes(suggestion.service) && <Check className="h-2 w-2" />}
-                            </div>
-                          </div>
-                          <p className="text-xs text-gray-600 line-clamp-2">{suggestion.description}</p>
-                        </div>
+
+            {/* Phone Number */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                placeholder="(555) 123-4567"
+                value={formData.phoneNumber}
+                onChange={handlePhoneChange}
+                maxLength={14}
+                required
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+              />
+            </div>
+
+            {/* Car Running Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Is your car currently running? <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => handleCarRunsChange(true)}
+                  className={`p-4 rounded-lg border-2 text-left transition-all ${
+                    formData.carRuns === true
+                      ? "border-green-500 bg-green-50 text-green-700"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">✅ Yes, it runs</div>
+                      <div className="text-sm text-gray-600">Car starts and drives</div>
+                    </div>
+                    {formData.carRuns === true && <Check className="h-5 w-5 text-green-600" />}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCarRunsChange(false)}
+                  className={`p-4 rounded-lg border-2 text-left transition-all ${
+                    formData.carRuns === false
+                      ? "border-red-500 bg-red-50 text-red-700"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">❌ No, it doesn't run</div>
+                      <div className="text-sm text-gray-600">Car won't start or drive</div>
+                    </div>
+                    {formData.carRuns === false && <Check className="h-5 w-5 text-red-600" />}
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Car Issues Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                What issues are you experiencing? (Select all that apply)
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {carIssueOptions.map((issue) => (
+                  <button
+                    key={issue.id}
+                    type="button"
+                    onClick={() => toggleCarIssue(issue.id)}
+                    className={`p-4 rounded-lg border-2 text-left transition-all ${
+                      formData.selectedCarIssues.includes(issue.id)
+                        ? "border-[#294a46] bg-[#294a46]/5 text-[#294a46]"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">{issue.icon()}</div>
+                      <div className="flex-1">
+                        <div className="font-medium">{issue.label}</div>
+                        <div className="text-sm text-gray-600">{issue.description}</div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-gray-500 text-center py-6">No recommendations available</div>
-                )}
+                      {formData.selectedCarIssues.includes(issue.id) && (
+                        <Check className="h-5 w-5 text-[#294a46] flex-shrink-0" />
+                      )}
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
-            {/* Car Issues Section with Multiple Selection - Now Optional */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-center gap-2">
-                <p className="text-center text-gray-600">Select Car Issues</p>
-                {formData.selectedCarIssues.length > 0 && (
-                  <div className="bg-[#e6eeec] text-[#294a46] text-xs px-2 py-1 rounded-full">
-                    {formData.selectedCarIssues.length} selected
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 w-full">
-                {[...carIssueOptions]
-                  .sort((a, b) => {
-                    // Sort by label length to put shorter labels (one line) first
-                    return a.label.length - b.label.length
-                  })
-                  .map((option) => (
+
+            {/* Issue Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Describe the issue in detail <span className="text-red-500">*</span>
+              </label>
+              {!showTextarea ? (
+                <button
+                  type="button"
+                  onClick={handleTextAreaFocus}
+                  className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-left text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  Click here to describe what's wrong with your car...
+                </button>
+              ) : (
+                <textarea
+                  ref={textareaRef}
+                  value={formData.issueDescription}
+                  onChange={handleDescriptionChange}
+                  placeholder="Describe the symptoms, when they occur, any sounds you hear, etc. The more detail you provide, the better mechanics can help you."
+                  rows={4}
+                  required
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
+              )}
+            </div>
+
+            {/* AI-Recommended Services */}
+            {recommendedServices.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Recommended Services (Optional)
+                  <span className="text-sm font-normal text-gray-600 ml-2">
+                    Based on your description
+                  </span>
+                </label>
+                <div className="space-y-3">
+                  {recommendedServices.map((rec, index) => (
                     <button
-                      key={option.id}
+                      key={`${rec.service}-${index}`}
                       type="button"
-                      onClick={() => toggleCarIssue(option.id)}
-                      className={`px-2 py-3 rounded-lg border text-center transition-colors ${
-                        formData.selectedCarIssues.includes(option.id)
-                          ? "bg-[#294a46] text-white border-[#294a46]"
-                          : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
+                      onClick={() => toggleService(rec.service)}
+                      className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
+                        formData.selectedServices.includes(rec.service)
+                          ? "border-[#294a46] bg-[#294a46]/5 text-[#294a46]"
+                          : "border-gray-300 hover:border-gray-400"
                       }`}
                     >
-                      <div className="flex flex-col items-center justify-center">
-                        <span className="h-5 w-5 mb-1">
-                          <option.icon />
-                        </span>
-                        <span className="text-sm">{option.label}</span>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{rec.service}</div>
+                          <div className="text-sm text-gray-600">{rec.description}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Confidence: {Math.round((rec.confidence || 0) * 100)}%
+                          </div>
+                        </div>
+                        {formData.selectedServices.includes(rec.service) && (
+                          <Check className="h-5 w-5 text-[#294a46]" />
+                        )}
                       </div>
                     </button>
                   ))}
+                </div>
               </div>
-            </div>
-            {validationError && <div className="text-red-500 text-center font-medium mb-2">{validationError}</div>}
-            <div className="flex justify-center gap-4 pt-4">
-              <a
-                href="/"
-                className="px-8 py-3 border border-[#294a46] text-[#294a46] rounded-full hover:bg-gray-50 transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
-              >
-                Back
-              </a>
+            )}
+
+            {/* Submit Button */}
+            <div className="pt-6">
               <button
                 type="submit"
-                className={`px-8 py-3 text-white rounded-full transform transition-all duration-200 ${
-                  isSubmitting || !isFormValid 
-                    ? "bg-[#294a46]/40 cursor-not-allowed" 
-                    : "bg-[#294a46] hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
-                }`}
-                disabled={isSubmitting || !isFormValid}
+                disabled={isSubmitting}
+                className="w-full bg-[#294a46] text-white py-4 px-6 rounded-lg font-medium hover:bg-[#1e3632] focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isSubmitting ? (
-                  <span className="flex items-center">
-                    <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></span>
-                    Processing...
-                  </span>
-                ) : (
-                  "Continue"
-                )}
+                {isSubmitting ? "Submitting..." : "Submit Appointment Request"}
               </button>
+            </div>
+
+            {/* Footer note */}
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
+                After submitting, mechanics in your area will review your request and provide quotes.
+              </p>
             </div>
           </form>
         </div>
-      </main>
-      {/* Footer */}
+      </div>
       <Footer />
->>>>>>> main
     </div>
   )
 }

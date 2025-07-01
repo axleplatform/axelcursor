@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
-<<<<<<< HEAD
 import { User, LogOut, Settings, ChevronDown } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
@@ -16,10 +15,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-=======
-import { User, ChevronRight } from "lucide-react"
-import { supabase } from "@/lib/supabase"
->>>>>>> main
 
 export function ProfileDropdown({ user }: { user: any }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -46,49 +41,60 @@ export function ProfileDropdown({ user }: { user: any }) {
       setIsLoggingOut(true)
       await supabase.auth.signOut()
       router.replace("/login")
+      toast({
+        title: "Logged out successfully",
+        description: "You have been signed out of your account.",
+      })
     } catch (error) {
       console.error("Error logging out:", error)
+      toast({
+        title: "Error",
+        description: "There was a problem logging out. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsLoggingOut(false)
     }
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-10 h-10 rounded-full bg-[#294a46] flex items-center justify-center text-white hover:bg-[#1e3632] transition-colors group"
-        aria-label="Profile menu"
-      >
-        <User className="h-5 w-5" />
-        <ChevronRight className="h-4 w-4 ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-          <div className="py-1" role="menu" aria-orientation="vertical">
-            <button
-              onClick={() => {
-                setIsOpen(false)
-                router.push("/mechanic/profile")
-              }}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-              role="menuitem"
-            >
-              <div className="h-4 w-4">⚙️</div>
-              Profile Settings
-            </button>
-            <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              role="menuitem"
-            >
-              {isLoggingOut ? "Logging out..." : "Logout"}
-            </button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.email} />
+            <AvatarFallback>
+              {user?.email?.[0]?.toUpperCase() || 'U'}
+            </AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56" align="end" forceMount>
+        <DropdownMenuLabel className="font-normal">
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">
+              {user?.user_metadata?.full_name || 'User'}
+            </p>
+            <p className="text-xs leading-none text-muted-foreground">
+              {user?.email}
+            </p>
           </div>
-        </div>
-      )}
-    </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push("/mechanic/profile")}>
+          <Settings className="mr-2 h-4 w-4" />
+          <span>Profile Settings</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem 
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="text-red-600 focus:text-red-600"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>{isLoggingOut ? "Logging out..." : "Log out"}</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
