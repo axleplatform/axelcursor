@@ -182,15 +182,10 @@ export async function createOrUpdateQuote(
       };
     }
 
-<<<<<<< HEAD
-    // Verify appointment exists and is in a valid state
-    const { data: appointment, error: appointmentError } = await createClient()
-=======
     console.log('✅ Step 2: Mechanic profile exists');
 
     // Verify appointment exists and is valid
-    const { data: appointment, error: appointmentError } = await supabase
->>>>>>> main
+    const { data: appointment, error: appointmentError } = await createClient()
       .from('appointments')
       .select('id, status')
       .eq('id', appointmentId)
@@ -204,95 +199,156 @@ export async function createOrUpdateQuote(
 
     if (appointmentError) {
       console.error('❌ Appointment verification failed:', appointmentError);
-      return { success: false, error: 'Appointment not found' };
+      return { 
+        success: false, 
+        error: `Appointment not found: ${appointmentError.message}` 
+      };
     }
 
-    if (appointment.status !== 'pending') {
-      console.error('❌ Invalid appointment status:', appointment.status);
-      return { success: false, error: `Appointment is ${appointment.status}` };
+    // Check if appointment is in a valid state for quoting
+    const validQuoteStatuses = ['pending', 'quoted'];
+    if (validQuoteStatuses.indexOf(appointment.status) === -1) {
+      console.error('❌ Invalid appointment status for quoting:', appointment.status);
+      return { 
+        success: false, 
+        error: `Cannot quote appointment with status: ${appointment.status}` 
+      };
     }
 
-    console.log('✅ Step 3: Appointment exists and is pending');
+    console.log('✅ Step 3: Appointment exists and is valid for quoting');
 
-    // Check if quote already exists for this mechanic+appointment
-    console.log('🔍 Step 4: Checking for existing quote...');
-    const { data: existingQuote, error: existingError } = await supabase
+    // Check if quote already exists for this mechanic-appointment pair
+    console.log('🔍 Step 4: Checking for existing quotes...');
+    const { data: existingQuotes, error: existingQuotesError } = await createClient()
       .from('mechanic_quotes')
-      .select('*')
+      .select('id, price, eta, notes, created_at')
       .eq('mechanic_id', mechanicId)
-      .eq('appointment_id', appointmentId)
-      .single();
+      .eq('appointment_id', appointmentId);
 
-    console.log('🔍 Existing quote check result:', {
-      existingQuote,
-      existingError,
-      hasExistingQuote: !!existingQuote
+    console.log('🔍 Existing quotes check result:', {
+      existingQuotes,
+      error: existingQuotesError,
+      count: existingQuotes?.length || 0
     });
 
-    // Prepare quote data
-    const quoteData: CreateQuoteParams = {
-      mechanic_id: mechanicId,
-      appointment_id: appointmentId,
-      price,
-      eta: new Date(eta).toISOString(),
-      notes: notes || ''
-    };
-
-    console.log('🔍 Step 5: Prepared quote data for upsert:', quoteData);
-
-<<<<<<< HEAD
-    const { data: result, error: upsertError } = await createClient()
-=======
-    // Upsert the quote (insert or update if exists)
-    const { data: result, error: upsertError } = await supabase
->>>>>>> main
-      .from('mechanic_quotes')
-      .upsert(quoteData, { 
-        onConflict: 'mechanic_id,appointment_id',
-        ignoreDuplicates: false 
-      })
-      .select();
-
-    console.log('🔍 Step 6: Quote upsert result:', {
-      result,
-      error: upsertError,
-      resultCount: result?.length,
-      isInsert: !existingQuote,
-      isUpdate: !!existingQuote
-    });
-
-    if (upsertError) {
-      console.error('❌ Quote upsert failed:', upsertError);
-      return { success: false, error: `Failed to create quote: ${upsertError.message}` };
+    if (existingQuotesError) {
+      console.error('❌ Error checking existing quotes:', existingQuotesError);
+      return { 
+        success: false, 
+        error: `Error checking existing quotes: ${existingQuotesError.message}` 
+      };
     }
 
-    console.log('✅ Step 6: Quote upsert successful');
+    const now = new Date().toISOString();
+    let result;
 
-    // CRITICAL: Verify the quote was actually created/updated
-    console.log('🔍 Step 7: VERIFICATION - Checking if quote exists in database...');
-    const { data: verificationQuote, error: verificationError } = await supabase
-      .from('mechanic_quotes')
-      .select('*')
-      .eq('mechanic_id', mechanicId)
-      .eq('appointment_id', appointmentId)
-      .single();
+    if (existingQuotes && existingQuotes.length > 0) {
+      // Update existing quote
+      console.log('🔄 Step 5a: Updating existing quote...');
+      const existingQuote = existingQuotes[0];
+      
+      console.log('🔄 Updating quote with data:', {
+        existingQuoteId: existingQuote.id,
+        newPrice: price,
+        newEta: eta,
+        newNotes: notes
+      });
 
-    console.log('🔍 VERIFICATION RESULT:', {
-      verificationQuote,
-      verificationError,
-      quoteExists: !!verificationQuote,
-      quoteId: verificationQuote?.id,
-      quotePrice: verificationQuote?.price,
-      quoteCreatedAt: verificationQuote?.created_at
-    });
+      const { data: updatedQuote, error: updateError } = await createClient()
+        .from('mechanic_quotes')
+        .update({
+          price,
+          eta,
+          notes,
+          updated_at: now
+        })
+        .eq('id', existingQuote.id)
+        .select()
+        .single();
 
-    if (!verificationQuote) {
-      console.error('❌ CRITICAL: Quote was not saved to database!');
-      return { success: false, error: 'Quote was not saved properly' };
+      console.log('🔄 Update result:', {
+        updatedQuote,
+        error: updateError
+      });
+
+      if (updateError) {
+        console.error('❌ Error updating quote:', updateError);
+        return { 
+          success: false, 
+          error: `Failed to update quote: ${updateError.message}` 
+        };
+      }
+
+      result = updatedQuote;
+      console.log('✅ Successfully updated existing quote');
+    } else {
+      // Create new quote
+      console.log('➕ Step 5b: Creating new quote...');
+      
+      console.log('➕ Creating quote with data:', {
+        mechanicId,
+        appointmentId,
+        price,
+        eta,
+        notes
+      });
+
+      const { data: newQuote, error: createError } = await createClient()
+        .from('mechanic_quotes')
+        .insert({
+          mechanic_id: mechanicId,
+          appointment_id: appointmentId,
+          price,
+          eta,
+          notes,
+          status: 'pending',
+          created_at: now,
+          updated_at: now
+        })
+        .select()
+        .single();
+
+      console.log('➕ Create result:', {
+        newQuote,
+        error: createError
+      });
+
+      if (createError) {
+        console.error('❌ Error creating quote:', createError);
+        return { 
+          success: false, 
+          error: `Failed to create quote: ${createError.message}` 
+        };
+      }
+
+      result = newQuote;
+      console.log('✅ Successfully created new quote');
     }
 
-    console.log('✅ VERIFICATION PASSED: Quote exists in database');
+    // Update appointment status to 'quoted' if it's currently 'pending'
+    if (appointment.status === 'pending') {
+      console.log('🔄 Step 6: Updating appointment status to quoted...');
+      
+      const { error: statusUpdateError } = await createClient()
+        .from('appointments')
+        .update({ 
+          status: 'quoted',
+          updated_at: now 
+        })
+        .eq('id', appointmentId);
+
+      if (statusUpdateError) {
+        console.error('⚠️ Warning: Failed to update appointment status:', statusUpdateError);
+        // Don't fail the entire operation for this
+      } else {
+        console.log('✅ Step 6: Appointment status updated to quoted');
+      }
+    }
+
+    console.log('🎯 === CREATE/UPDATE QUOTE SUCCESS ===');
+    console.log('Final result:', result);
     console.log('🎯 === CREATE/UPDATE QUOTE EXTENSIVE DEBUG END ===');
+
     return { success: true, data: result };
 
   } catch (error: unknown) {
@@ -303,43 +359,13 @@ export async function createOrUpdateQuote(
 }
 
 /**
- * Gets all quotes for an appointment with real-time updates
- */
-export async function getQuotesForAppointment(appointmentId: string): Promise<any[]> {
-  try {
-<<<<<<< HEAD
-    const { data, error } = await createClient()
-=======
-    const { data: quotes, error } = await supabase
->>>>>>> main
-      .from("mechanic_quotes")
-      .select(`
-        *,
-        mechanic_profiles(first_name, last_name)
-      `)
-      .eq("appointment_id", appointmentId)
-      .order("created_at", { ascending: true })
-
-    if (error) {
-      console.error("Error getting quotes for appointment:", error)
-      return []
-    }
-
-    return quotes || []
-  } catch (err: unknown) {
-    console.error("Exception in getQuotesForAppointment:", err)
-    return []
-  }
-}
-
-/**
- * Gets all available appointments for a mechanic to quote
- * VERSION: 2.0.0 - Enhanced filtering with extensive debugging
+ * Gets available appointments for a mechanic (not quoted or skipped by this mechanic)
+ * VERSION: 2.0.0 - Enhanced querying with extensive debugging
  */
 export async function getAvailableAppointmentsForMechanic(mechanicId: string): Promise<GetAppointmentsResponse> {
   try {
     console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG START (v2.0.0) ===");
-    console.log("🔍 CODE VERSION CHECK: This is the NEW enhanced filtering code with extensive debugging");
+    console.log("🔍 CODE VERSION CHECK: This is the NEW enhanced querying code with extensive debugging");
     console.log("🔍 getAvailableAppointmentsForMechanic called with:", {
       mechanicId,
       type: typeof mechanicId,
@@ -362,7 +388,7 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
 
     // First, get the appointment IDs that this mechanic has already skipped
     console.log("🔍 Step 1: Fetching skipped appointments...");
-    const { data: skippedAppointments, error: skippedError } = await supabase
+    const { data: skippedAppointments, error: skippedError } = await createClient()
       .from('mechanic_skipped_appointments')
       .select('appointment_id')
       .eq('mechanic_id', mechanicId);
@@ -380,7 +406,7 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
 
     // Second, get the appointment IDs that this mechanic has already quoted
     console.log("🔍 Step 2: Fetching quoted appointments...");
-    const { data: quotedAppointments, error: quotedError } = await supabase
+    const { data: quotedAppointments, error: quotedError } = await createClient()
       .from('mechanic_quotes')
       .select('appointment_id')
       .eq('mechanic_id', mechanicId);
@@ -408,7 +434,7 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
 
     // Get pending appointments, excluding both skipped and quoted appointments
     console.log("🔍 Step 4: Building query for available appointments...");
-    let query = supabase
+    let query = createClient()
       .from('appointments')
       .select(`
         *,
@@ -486,7 +512,7 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
 
     // First, get the appointment IDs that this mechanic has quoted
     console.log("🔍 Step 1: Fetching appointment IDs that mechanic has quoted...");
-    const { data: quotedAppointments, error: quotedError } = await supabase
+    const { data: quotedAppointments, error: quotedError } = await createClient()
       .from('mechanic_quotes')
       .select('appointment_id')
       .eq('mechanic_id', mechanicId);
@@ -511,7 +537,7 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
 
     // Get the appointments where this mechanic has submitted quotes
     console.log("🔍 Step 3: Fetching full appointment details for quoted appointments...");
-    const { data: appointments, error } = await supabase
+    const { data: appointments, error } = await createClient()
       .from('appointments')
       .select(`
         *,
@@ -734,10 +760,10 @@ export async function acceptQuote(
     if (commitError) throw commitError
 
     return { success: true }
-  } catch (error) {
+  } catch (err) {
     // Rollback on error
     await createClient().rpc("rollback_transaction")
-    console.error("Error in acceptQuote:", error)
-    return { success: false, error: error instanceof Error ? error.message : "An unexpected error occurred" }
+    console.error("Exception in acceptQuote:", err)
+    return { success: false, error: "An unexpected error occurred" }
   }
 }

@@ -1,14 +1,5 @@
 "use client"
 
-<<<<<<< HEAD
-import React, { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { SiteHeader } from "@/components/site-header"
-import Footer from "@/components/footer"
-import { createClient } from "@/lib/supabase/client"
-import AppointmentCard from "@/components/appointment-card"
-import { useToast } from "@/components/ui/use-toast"
-=======
 import React from "react"
 import { useState, useEffect } from "react"
 import type { ChangeEvent } from 'react'
@@ -17,7 +8,7 @@ import { Search, Loader2, Clock, MapPin, X, ChevronLeft, ChevronRight } from "lu
 import { SiteHeader } from "@/components/site-header"
 import { useToast } from "@/components/ui/use-toast"
 import Footer from "@/components/footer"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/client"
 import MechanicSchedule from "@/components/mechanic-schedule"
 import {
   getAvailableAppointmentsForMechanic,
@@ -39,7 +30,6 @@ import type {
   AppointmentWithRelations,
   MechanicSkip
 } from "@/types/index"
->>>>>>> main
 
 export default function MechanicDashboard() {
   const router = useRouter()
