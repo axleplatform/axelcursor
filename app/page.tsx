@@ -13,6 +13,9 @@ import { supabase } from "@/lib/supabase"
 import { DateTimeSelector } from "@/components/date-time-selector"
 import { toast } from "@/components/ui/use-toast"
 
+// FORCE REBUILD: Cache invalidation v2.0 - Deploy: 2024-12-31T19:30:00Z
+// This ensures the main page chunk is regenerated without @v0/lib/supabase references
+
 // Define types for form data
 interface AppointmentFormData {
   address: string
@@ -572,8 +575,6 @@ export default function HomePage(): React.JSX.Element {
     <div className="min-h-screen flex flex-col bg-white">
       {/* Header */}
       <SiteHeader />
-
-
 
       {/* Main Content */}
       <main className="flex-1">
