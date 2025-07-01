@@ -384,9 +384,9 @@ export default function PickMechanicPage() {
      </div>
 
      {/* Split-Screen Layout */}
-     <div className="flex flex-col lg:flex-row gap-6 h-full">
-      {/* Left Side - Available Mechanics */}
-      <div className="flex-1 lg:w-1/2">
+     <div className="flex flex-col md:flex-row gap-6 h-full">
+      {/* Left Side - Available Mechanics (50% width) */}
+      <div className="w-full md:w-1/2">
        <Card className="overflow-hidden h-full bg-white">
         <div className="p-6 border-b">
          <h2 className="text-2xl font-semibold text-[#294a46]">Available Mechanics</h2>
@@ -496,8 +496,8 @@ export default function PickMechanicPage() {
        </Card>
       </div>
 
-      {/* Right Side - Order Summary */}
-      <div className="flex-1 lg:w-1/2">
+      {/* Right Side - Order Summary (50% width) */}
+      <div className="w-full md:w-1/2">
        <Card className="p-0 sticky top-8 h-fit bg-white shadow-lg">
         <div className="p-6 border-b bg-gradient-to-r from-[#294a46] to-[#1e3632]">
          <h2 className="text-2xl font-semibold text-white">Order Summary</h2>
