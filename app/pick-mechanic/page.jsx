@@ -185,6 +185,107 @@ export default function PickMechanicPage() {
   }
  }, [appointmentId])
 
+ const handleSelectMechanic = async (mechanicId, quoteId) => {
+  try {
+   setIsProcessing(true)
+   
+   // Update appointment with selected mechanic
+   const { error } = await supabase
+    .from('appointments')
+    .update({ 
+     selected_mechanic_id: mechanicId,
+     selected_quote_id: quoteId,
+     status: 'confirmed'
+    })
+    .eq('id', appointment.id)
+   
+   if (error) throw error
+   
+   toast({
+    title: "Success",
+    description: "Mechanic selected successfully.",
+   })
+
+   // Navigate to confirmation page
+   router.push(`/appointment-confirmation?appointmentId=${appointment.id}`)
+   
+  } catch (error) {
+   console.error('Error selecting mechanic:', error)
+   toast({
+    title: "Error",
+    description: "Failed to select mechanic. Please try again.",
+    variant: "destructive",
+   })
+  } finally {
+   setIsProcessing(false)
+  }
+ }
+
+ const handleBack = () => {
+  setShowCancelModal(true)
+ }
+
+ const handleCancelAppointment = async () => {
+  try {
+   setIsCanceling(true)
+   
+   // Reset appointment status and clear selected mechanic
+   const { error: updateError } = await supabase
+    .from('appointments')
+    .update({ 
+     status: 'pending',
+     selected_mechanic_id: null,
+     selected_quote_id: null
+    })
+    .eq('id', appointment.id)
+   
+   if (updateError) throw updateError
+   
+   // Delete all quotes for this appointment
+   const { error: deleteError } = await supabase
+    .from('mechanic_quotes')
+    .delete()
+    .eq('appointment_id', appointment.id)
+   
+   if (deleteError) {
+    console.warn('Error deleting quotes:', deleteError)
+   }
+   
+   toast({
+    title: "Appointment Reset",
+    description: "Your appointment has been reset. Redirecting to booking page...",
+   })
+   
+   // Redirect back to booking with the appointment details preserved
+   setTimeout(() => {
+    router.push(`/book-appointment?appointmentId=${appointment.id}`)
+   }, 1500)
+   
+  } catch (error) {
+   console.error('Error canceling appointment:', error)
+   toast({
+    title: "Error",
+    description: "Failed to reset appointment. Please try again.",
+    variant: "destructive",
+   })
+  } finally {
+   setIsCanceling(false)
+   setShowCancelModal(false)
+  }
+ }
+
+ const formatDate = (dateString) => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString("en-US", {
+   weekday: "long",
+   year: "numeric",
+   month: "long",
+   day: "numeric",
+   hour: "numeric",
+   minute: "numeric",
+  })
+ }
+
  // Show loading state
  if (isLoading) {
   console.log("🔍 Showing loading state...")
@@ -558,4 +659,4 @@ export default function PickMechanicPage() {
    `}</style>
   </div>
  )
-}
+} 
