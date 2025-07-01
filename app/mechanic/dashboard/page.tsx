@@ -1474,7 +1474,7 @@ export default function MechanicDashboard() {
                             </span>
                           ) : (
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
-                              ⏳ Awaiting customer selection
+                              ⏳ Pending
                             </span>
                           )}
                         </div>

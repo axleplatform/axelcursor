@@ -145,6 +145,64 @@ export default function AppointmentCard({
         {appointment.vehicles?.year} {appointment.vehicles?.make} {appointment.vehicles?.model}
       </p>
       <p className={`mb-4 ${isUpcoming ? 'text-gray-600' : 'text-white/70'}`}>{appointment.location}</p>
+
+      {/* Car Issues and Description */}
+      <div className={`p-4 rounded-md mb-4 ${isUpcoming ? 'bg-gray-50' : 'bg-white/10'}`}>
+        {/* Car Running Status */}
+        <div className="flex items-center justify-center mb-3">
+          <span className={`mr-2 ${isUpcoming ? 'text-gray-700' : 'text-white/90'}`}>Does car run?</span>
+          <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+            {appointment.car_runs ? (
+              <Check className="h-3 w-3 text-white" />
+            ) : (
+              <X className="h-3 w-3 text-white" />
+            )}
+          </div>
+          <span className={`ml-1 ${isUpcoming ? 'text-gray-700' : 'text-white/90'}`}>
+            {appointment.car_runs ? "Yes" : "No"}
+          </span>
+        </div>
+
+        {/* Selected Services */}
+        {appointment.selected_services && appointment.selected_services.length > 0 && (
+          <div className="mb-3">
+            <div className={`font-semibold mb-1 ${isUpcoming ? 'text-gray-700' : 'text-white/90'}`}>
+              Recommended Services:
+            </div>
+            <ul className={`list-disc pl-5 space-y-1 ${isUpcoming ? 'text-gray-600' : 'text-white/80'}`}>
+              {appointment.selected_services.map((service, index) => (
+                <li key={index}>{service}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Reported Car Issues */}
+        {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
+          <div className="mb-3">
+            <div className={`font-semibold mb-1 ${isUpcoming ? 'text-gray-700' : 'text-white/90'}`}>
+              🚗 Reported Issues:
+            </div>
+            <ul className={`list-disc pl-5 space-y-1 ${isUpcoming ? 'text-gray-600' : 'text-white/80'}`}>
+              {appointment.selected_car_issues.map((issue, index) => (
+                <li key={index}>{issue}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Customer Description */}
+        {appointment.issue_description && (
+          <div>
+            <div className={`font-semibold mb-1 ${isUpcoming ? 'text-gray-700' : 'text-white/90'}`}>
+              Customer Description:
+            </div>
+            <p className={`italic ${isUpcoming ? 'text-gray-600' : 'text-white/80'}`}>
+              "{appointment.issue_description}"
+            </p>
+          </div>
+        )}
+      </div>
       
       {/* Status indicator */}
       {isUpcoming && (
@@ -157,7 +215,7 @@ export default function AppointmentCard({
           ) : (
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
               <Clock className="h-4 w-4 mr-1" />
-              Awaiting customer selection
+              ⏳ Pending
             </span>
           )}
         </div>

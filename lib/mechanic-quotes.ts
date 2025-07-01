@@ -7,6 +7,7 @@ interface Appointment {
   appointment_date: string
   location: string
   issue_description?: string
+  selected_car_issues?: string[]
   car_runs?: boolean
   selected_services?: string[]
   vehicles?: {
@@ -65,6 +66,7 @@ interface AppointmentWithRelations {
   appointment_date: string
   location: string
   issue_description?: string
+  selected_car_issues?: string[]
   selected_services?: string[]
   car_runs?: boolean
   payment_status?: string
@@ -104,6 +106,7 @@ interface RawAppointment {
   appointment_date: string
   location: string
   issue_description?: string
+  selected_car_issues?: string[]
   selected_services?: string[]
   car_runs?: boolean
   payment_status?: string

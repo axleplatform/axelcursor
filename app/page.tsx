@@ -48,6 +48,9 @@ export default function HomePage(): React.JSX.Element {
     appointmentTime: "",
   })
 
+  // State for highlighting missing fields when Continue button is disabled
+  const [showMissingFields, setShowMissingFields] = useState<boolean>(false)
+
   // Add refs for progressive navigation
   const modelRef = useRef<HTMLInputElement>(null)
   const vinRef = useRef<HTMLInputElement>(null)
@@ -455,6 +458,82 @@ export default function HomePage(): React.JSX.Element {
     )
   }, [formData])
 
+  // Get missing required fields for UX guidance
+  const missingFields = React.useMemo((): string[] => {
+    const missing: string[] = []
+    if (!formData.address.trim()) missing.push('address')
+    if (!formData.year.trim()) missing.push('year')
+    if (!formData.make.trim()) missing.push('make')
+    if (!formData.model.trim()) missing.push('model')
+    if (!formData.appointmentDate.trim()) missing.push('appointmentDate')
+    if (!formData.appointmentTime.trim()) missing.push('appointmentTime')
+    return missing
+  }, [formData])
+
+  // Handle Continue button hover/click when disabled
+  const handleDisabledContinueInteraction = React.useCallback(() => {
+    if (!isFormComplete && !isSubmitting) {
+      setShowMissingFields(true)
+      
+      // Find the first missing field and scroll to it
+      const firstMissingField = missingFields[0]
+      if (firstMissingField) {
+        let targetElement: HTMLElement | null = null
+        
+        switch (firstMissingField) {
+          case 'address':
+            targetElement = document.querySelector('input[name="address"]')
+            break
+          case 'year':
+            targetElement = document.querySelector('select[name="year"]')
+            break
+          case 'make':
+            targetElement = document.querySelector('select[name="make"]')
+            break
+          case 'model':
+            targetElement = document.querySelector('input[name="model"]')
+            break
+          case 'appointmentDate':
+          case 'appointmentTime':
+            // Find the DateTimeSelector container
+            targetElement = document.querySelector('[class*="DateTimeSelector"], .date-time-selector') || 
+                           document.querySelector('input[type="date"], select[aria-label*="date"], select[aria-label*="Date"]')
+            break
+        }
+        
+        if (targetElement) {
+          // Smooth scroll to the element with some offset
+          const elementRect = targetElement.getBoundingClientRect()
+          const offset = 100 // Offset from top
+          const targetPosition = window.pageYOffset + elementRect.top - offset
+          
+          window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+          })
+          
+          // Add a subtle shake animation to draw attention
+          targetElement.style.animation = 'shake 0.5s ease-in-out'
+          setTimeout(() => {
+            if (targetElement) {
+              targetElement.style.animation = ''
+            }
+          }, 500)
+          
+          // Focus the element after scrolling (with a small delay)
+          setTimeout(() => {
+            if (targetElement && 'focus' in targetElement) {
+              (targetElement as HTMLInputElement | HTMLSelectElement).focus()
+            }
+          }, 300)
+        }
+      }
+      
+      // Auto-hide after 5 seconds (increased for better UX)
+      setTimeout(() => setShowMissingFields(false), 5000)
+    }
+  }, [isFormComplete, isSubmitting, missingFields])
+
   const handleDateTimeChange = React.useCallback((date: Date, time: string): void => {
     // This function is only called when BOTH date AND time are properly selected
     // (thanks to our DateTimeSelector improvement)
@@ -520,7 +599,13 @@ export default function HomePage(): React.JSX.Element {
                   value={formData.address}
                   onChange={handleChange}
                   placeholder="Enter complete address (123 Main St, City, State)"
-                  className={`block w-full p-4 pl-10 pr-16 text-sm text-gray-900 border ${errors.address ? "border-red-500" : "border-gray-300"} rounded-lg bg-white relative z-10`}
+                  className={`block w-full p-4 pl-10 pr-16 text-sm text-gray-900 border rounded-lg bg-white relative z-10 transition-all duration-300 ${
+                    errors.address 
+                      ? "border-red-500" 
+                      : showMissingFields && missingFields.includes('address')
+                        ? "border-amber-400 bg-amber-50 animate-pulse"
+                        : "border-gray-300"
+                  }`}
                 />
               </div>
               {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
@@ -544,7 +629,13 @@ export default function HomePage(): React.JSX.Element {
                   name="year"
                   value={formData.year}
                   onChange={handleChange}
-                  className={`w-full h-[46px] px-2 pr-6 text-sm border ${errors.year ? "border-red-500" : "border-gray-200"} rounded-md bg-gray-50 appearance-none`}
+                  className={`w-full h-[46px] px-2 pr-6 text-sm border rounded-md bg-gray-50 appearance-none transition-all duration-300 ${
+                    errors.year 
+                      ? "border-red-500" 
+                      : showMissingFields && missingFields.includes('year')
+                        ? "border-amber-400 bg-amber-50 animate-pulse"
+                        : "border-gray-200"
+                  }`}
                 >
                   <option value="">Year</option>
                   {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map((year) => (
@@ -572,7 +663,13 @@ export default function HomePage(): React.JSX.Element {
                   name="make"
                   value={formData.make}
                   onChange={handleChange}
-                  className={`w-full h-[46px] px-2 pr-6 text-sm border ${errors.make ? "border-red-500" : "border-gray-200"} rounded-md bg-gray-50 appearance-none`}
+                  className={`w-full h-[46px] px-2 pr-6 text-sm border rounded-md bg-gray-50 appearance-none transition-all duration-300 ${
+                    errors.make 
+                      ? "border-red-500" 
+                      : showMissingFields && missingFields.includes('make')
+                        ? "border-amber-400 bg-amber-50 animate-pulse"
+                        : "border-gray-200"
+                  }`}
                 >
                   <option value="">Make</option>
                   {makes.map((make) => (
@@ -596,7 +693,7 @@ export default function HomePage(): React.JSX.Element {
               </div>
 
               <div className="relative w-[20%]">
-                <input
+                                  <input
                   ref={modelRef}
                   type="text"
                   name="model"
@@ -604,7 +701,13 @@ export default function HomePage(): React.JSX.Element {
                   onChange={handleChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Model"
-                  className={`w-full h-[46px] px-2 text-sm border ${errors.model ? "border-red-500" : "border-gray-200"} rounded-md bg-gray-50`}
+                  className={`w-full h-[46px] px-2 text-sm border rounded-md bg-gray-50 transition-all duration-300 ${
+                    errors.model 
+                      ? "border-red-500" 
+                      : showMissingFields && missingFields.includes('model')
+                        ? "border-amber-400 bg-amber-50 animate-pulse"
+                        : "border-gray-200"
+                  }`}
                 />
                 {errors.model && <p className="text-red-500 text-xs absolute -bottom-5">{errors.model}</p>}
               </div>
@@ -637,7 +740,11 @@ export default function HomePage(): React.JSX.Element {
             </div>
 
             {/* Date Time Selector */}
-            <div className="mb-6">
+            <div className={`mb-6 rounded-lg transition-all duration-300 ${
+              showMissingFields && (missingFields.includes('appointmentDate') || missingFields.includes('appointmentTime'))
+                ? 'border-2 border-amber-400 bg-amber-50 p-3 animate-pulse'
+                : ''
+            }`}>
               <DateTimeSelector
                 ref={dateTimeSelectorRef}
                 onDateTimeChange={handleDateTimeChange}
@@ -656,12 +763,24 @@ export default function HomePage(): React.JSX.Element {
                 ref={continueButtonRef}
                 type="submit"
                 disabled={isSubmitting || !isFormComplete}
-                className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 ${
+                className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 relative ${
                   isFormComplete && !isSubmitting 
                     ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] hover:shadow-md active:scale-[0.99]" 
-                    : "bg-[#294a46]/40 text-white cursor-not-allowed"
+                    : "bg-[#294a46]/40 text-white cursor-help hover:bg-[#294a46]/60 hover:shadow-lg"
                 }`}
-                onClick={() => console.log('🔘 Continue button onClick triggered - isSubmitting:', isSubmitting, 'isFormComplete:', isFormComplete)}
+                onClick={(e) => {
+                  if (!isFormComplete && !isSubmitting) {
+                    e.preventDefault()
+                    handleDisabledContinueInteraction()
+                  }
+                  console.log('🔘 Continue button onClick triggered - isSubmitting:', isSubmitting, 'isFormComplete:', isFormComplete)
+                }}
+                onMouseEnter={() => {
+                  if (!isFormComplete && !isSubmitting) {
+                    handleDisabledContinueInteraction()
+                  }
+                }}
+                title={!isFormComplete ? "Click to see which fields need to be filled" : ""}
               >
                 {isSubmitting ? (
                   <div className="flex items-center">
@@ -669,10 +788,77 @@ export default function HomePage(): React.JSX.Element {
                     Processing...
                   </div>
                 ) : (
-                  "Continue"
+                  <div className="flex items-center">
+                    <span>Continue</span>
+                    {!isFormComplete && !isSubmitting && (
+                      <svg className="w-4 h-4 ml-2 opacity-75" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/>
+                      </svg>
+                    )}
+                  </div>
                 )}
               </Button>
             </div>
+
+            {/* Enhanced Missing Fields Indicator */}
+            {showMissingFields && !isFormComplete && (
+              <div className="mb-6 p-5 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl shadow-lg animate-slideIn">
+                <div className="flex items-start mb-3">
+                  <div className="flex-shrink-0 mr-3 mt-0.5">
+                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-amber-900 font-semibold text-base mb-1">Complete Required Fields</h3>
+                    <p className="text-amber-700 text-sm mb-3">Please fill out the following information to continue:</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {missingFields.includes('address') && (
+                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                          📍 Enter your location
+                        </div>
+                      )}
+                      {missingFields.includes('year') && (
+                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                          🗓️ Select vehicle year
+                        </div>
+                      )}
+                      {missingFields.includes('make') && (
+                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                          🚗 Select vehicle make
+                        </div>
+                      )}
+                      {missingFields.includes('model') && (
+                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                          🔧 Enter vehicle model
+                        </div>
+                      )}
+                      {missingFields.includes('appointmentDate') && (
+                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                          📅 Choose appointment date
+                        </div>
+                      )}
+                      {missingFields.includes('appointmentTime') && (
+                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                          ⏰ Select appointment time
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs text-amber-600 text-center mt-3 font-medium">
+                  💡 This guide will automatically disappear in a few seconds
+                </div>
+              </div>
+            )}
 
             
             {/* Error Display */}
@@ -882,6 +1068,38 @@ export default function HomePage(): React.JSX.Element {
           height: 24px;
         }
 
+        /* Custom animations for enhanced UX */
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+          20%, 40%, 60%, 80% { transform: translateX(3px); }
+        }
+
+        @keyframes slideIn {
+          0% {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out;
+        }
+
+        /* Enhanced focus styles for better accessibility */
+        input:focus, select:focus {
+          outline: 2px solid #294a46;
+          outline-offset: 2px;
+        }
+
+        /* Smooth transitions for all form elements */
+        input, select {
+          transition: all 0.2s ease-in-out;
+        }
 
       `}</style>
     </div>

@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Star, Clock, MapPin, X, FileText, CreditCard, User } from "lucide-react"
+import { Star, Clock, MapPin, X, FileText, CreditCard, User, ArrowLeft, AlertTriangle } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -28,6 +28,8 @@ export default function PickMechanicPage() {
  const [isProcessing, setIsProcessing] = useState(false)
  const [error, setError] = useState(null)
  const [mechanicQuotes, setMechanicQuotes] = useState([])
+ const [showCancelModal, setShowCancelModal] = useState(false)
+ const [isCanceling, setIsCanceling] = useState(false)
 
  // Get appointmentId from searchParams
  const appointmentId = searchParams?.get("appointmentId")
@@ -270,32 +272,136 @@ export default function PickMechanicPage() {
   })
  }
 
+ // Handle back button - comprehensive workflow management
+ const handleBack = () => {
+  setShowCancelModal(true)
+ }
+
+ const handleCancelAppointment = async () => {
+  try {
+   setIsCanceling(true)
+   console.log('🔄 Starting appointment cancellation process...')
+   
+   if (!appointmentId) {
+    throw new Error('No appointment ID provided')
+   }
+
+   // Start atomic transaction for database operations
+   console.log('🔄 Step 1: Resetting appointment status to pending...')
+   const { error: statusError } = await supabase
+    .from('appointments')
+    .update({ 
+     status: 'pending',
+     mechanic_id: null,
+     selected_mechanic_id: null,
+     selected_quote_id: null,
+     selected_at: null,
+     updated_at: new Date().toISOString()
+    })
+    .eq('id', appointmentId)
+
+   if (statusError) {
+    console.error('❌ Failed to reset appointment status:', statusError)
+    throw new Error(`Failed to reset appointment: ${statusError.message}`)
+   }
+
+   console.log('✅ Step 1 complete: Appointment status reset to pending')
+
+   // Clear all mechanic quotes for this appointment
+   console.log('🔄 Step 2: Clearing all mechanic quotes...')
+   const { error: quotesError } = await supabase
+    .from('mechanic_quotes')
+    .delete()
+    .eq('appointment_id', appointmentId)
+
+   if (quotesError) {
+    console.error('❌ Failed to clear mechanic quotes:', quotesError)
+    throw new Error(`Failed to clear quotes: ${quotesError.message}`)
+   }
+
+   console.log('✅ Step 2 complete: All mechanic quotes cleared')
+
+   // Clear any skipped appointments for this appointment (fresh start)
+   console.log('🔄 Step 3: Clearing mechanic skips for fresh start...')
+   const { error: skipsError } = await supabase
+    .from('mechanic_skipped_appointments')
+    .delete()
+    .eq('appointment_id', appointmentId)
+
+   if (skipsError) {
+    console.error('⚠️ Warning: Could not clear skipped appointments:', skipsError)
+    // Don't throw error for this - it's not critical
+   } else {
+    console.log('✅ Step 3 complete: Mechanic skips cleared')
+   }
+
+   console.log('✅ All database operations completed successfully')
+
+   toast({
+    title: "Success",
+    description: "Appointment reset successfully. Returning to booking page...",
+   })
+
+   // Navigate back to book-appointment with preserved data
+   console.log('🔄 Redirecting to book-appointment page with preserved data...')
+   router.push(`/book-appointment?appointment_id=${appointmentId}`)
+   
+  } catch (error) {
+   console.error('❌ Error during appointment cancellation:', error)
+   toast({
+    title: "Error",
+    description: error.message || "Failed to cancel appointment. Please try again.",
+    variant: "destructive",
+   })
+  } finally {
+   setIsCanceling(false)
+   setShowCancelModal(false)
+  }
+ }
+
  return (
   <div className="flex flex-col min-h-screen">
    <SiteHeader />
    <main className="flex-grow bg-[#f5f5f5]">
-    <div className="container mx-auto py-8 px-4">
-     <div className="text-center mb-8">
-      <h1 className="text-3xl font-bold text-[#294a46]">Pick Your Mechanic</h1>
-      <p className="text-lg text-gray-600 mt-1">Pick & Pay</p>
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
+     {/* Header with Back Button */}
+     <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center gap-4">
+       <Button
+        onClick={handleBack}
+        variant="outline"
+        size="sm"
+        className="flex items-center gap-2 hover:bg-gray-100 border-gray-300"
+       >
+        <ArrowLeft className="h-4 w-4" />
+        Back
+       </Button>
+       <div className="text-left">
+        <h1 className="text-3xl font-bold text-[#294a46]">Pick Your Mechanic</h1>
+        <p className="text-lg text-gray-600 mt-1">Pick & Pay</p>
+       </div>
+      </div>
      </div>
 
-     <div className="grid grid-cols-1 md:grid-cols-5 gap-6 max-w-5xl mx-auto">
-      <div className="md:col-span-3">
+     {/* Split-Screen Layout */}
+     <div className="flex flex-col lg:flex-row gap-6 h-full">
+      {/* Left Side - Available Mechanics */}
+      <div className="flex-1 lg:w-1/2">
        <Card className="overflow-hidden h-full bg-white">
-        <div className="p-4 border-b">
-         <h2 className="text-xl font-semibold text-[#294a46]">Available Mechanics</h2>
+        <div className="p-6 border-b">
+         <h2 className="text-2xl font-semibold text-[#294a46]">Available Mechanics</h2>
+         <p className="text-sm text-gray-600 mt-1">Choose your preferred mechanic from the options below</p>
         </div>
 
-        <div className="space-y-4">
+        <div className="p-6">
          {isLoadingQuotes ? (
-          <div className="flex items-center justify-center py-8">
+          <div className="flex items-center justify-center py-12">
            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#294a46]"></div>
           </div>
          ) : mechanicQuotes && mechanicQuotes.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
            {mechanicQuotes.map((quote) => (
-            <div key={quote.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+            <div key={quote.id} className="bg-gray-50 rounded-lg p-6 hover:bg-gray-100 transition-colors border border-gray-200">
              {/* Mechanic profile header */}
              <div className="flex items-start gap-4 mb-4">
               {/* Profile image */}
@@ -320,7 +426,7 @@ export default function PickMechanicPage() {
                </h3>
                <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
                 <span className="flex items-center">
-                  <span className="text-base sm:text-lg lg:text-xl leading-none inline-flex items-center justify-center mr-1">⭐</span>
+                  <span className="text-base sm:text-lg lg:text-xl leading-none inline-flex items-center justify-center mr-2">⭐</span>
                   {quote.mechanic_profiles?.rating || 'N/A'}
                 </span>
                 <span>• {quote.mechanic_profiles?.review_count || 0} reviews</span>
@@ -378,10 +484,10 @@ export default function PickMechanicPage() {
            ))}
           </div>
          ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
-           <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-           <h3 className="text-lg font-medium text-gray-900 mb-2">No Quotes Yet</h3>
-           <p className="text-gray-500">
+          <div className="text-center py-16 bg-gray-50 rounded-lg border border-gray-200">
+           <Clock className="h-16 w-16 text-gray-400 mx-auto mb-6" />
+           <h3 className="text-xl font-medium text-gray-900 mb-3">No Quotes Yet</h3>
+           <p className="text-gray-500 text-lg">
             Mechanics are reviewing your request. This page refreshes automatically.
            </p>
           </div>
@@ -390,57 +496,59 @@ export default function PickMechanicPage() {
        </Card>
       </div>
 
-      <div className="md:col-span-2">
-       <Card className="p-0 sticky top-8 h-full bg-white">
-        <div className="p-4 border-b">
-         <h2 className="text-xl font-semibold text-[#294a46]">Order Summary</h2>
+      {/* Right Side - Order Summary */}
+      <div className="flex-1 lg:w-1/2">
+       <Card className="p-0 sticky top-8 h-fit bg-white shadow-lg">
+        <div className="p-6 border-b bg-gradient-to-r from-[#294a46] to-[#1e3632]">
+         <h2 className="text-2xl font-semibold text-white">Order Summary</h2>
+         <p className="text-gray-200 mt-1">Review your appointment details</p>
         </div>
 
-        <div className="p-4">
-         <div className="space-y-4">
-          <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-           <span className="text-sm sm:text-base lg:text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
-           <div>
-            <h3 className="font-medium text-gray-700 text-sm">Appointment Details</h3>
-            <p className="text-xs text-gray-600">{formatDate(appointment.appointment_date)}</p>
-            <div className="flex items-start mt-1">
-             <MapPin className="h-3 w-3 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
-             <p className="text-xs text-gray-500">{appointment.location}</p>
+        <div className="p-6">
+         <div className="space-y-6">
+          <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+           <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
+           <div className="flex-1">
+            <h3 className="font-semibold text-gray-800 text-base">Appointment Details</h3>
+            <p className="text-sm text-gray-600 mt-1">{formatDate(appointment.appointment_date)}</p>
+            <div className="flex items-start mt-2">
+             <MapPin className="h-4 w-4 text-gray-400 mt-0.5 mr-2 flex-shrink-0" />
+             <p className="text-sm text-gray-500">{appointment.location}</p>
             </div>
            </div>
           </div>
 
           {appointment.vehicles && (
-           <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-            <span className="text-sm sm:text-base lg:text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
-            <div>
-             <h3 className="font-medium text-gray-700 text-sm">Vehicle</h3>
-             <p className="text-xs text-gray-600">
+           <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+            <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
+            <div className="flex-1">
+             <h3 className="font-semibold text-gray-800 text-base">Vehicle</h3>
+             <p className="text-sm text-gray-600 mt-1 font-medium">
               {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
              </p>
              {appointment.vehicles.color && (
-              <p className="text-xs text-gray-500">Color: {appointment.vehicles.color}</p>
+              <p className="text-sm text-gray-500 mt-1">Color: {appointment.vehicles.color}</p>
              )}
              {appointment.vehicles.vin && (
-              <p className="text-xs text-gray-500">VIN: {appointment.vehicles.vin}</p>
+              <p className="text-sm text-gray-500">VIN: {appointment.vehicles.vin}</p>
              )}
              {appointment.vehicles.mileage && (
-              <p className="text-xs text-gray-500">Mileage: {appointment.vehicles.mileage}</p>
+              <p className="text-sm text-gray-500">Mileage: {appointment.vehicles.mileage}</p>
              )}
             </div>
            </div>
           )}
 
           {appointment.selected_services && appointment.selected_services.length > 0 && (
-           <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-            <span className="text-sm sm:text-base lg:text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
-            <div>
-             <h3 className="font-medium text-gray-700 text-sm">Requested Services</h3>
-             <ul className="mt-1 space-y-1">
+           <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+            <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
+            <div className="flex-1">
+             <h3 className="font-semibold text-gray-800 text-base">Requested Services</h3>
+             <ul className="mt-2 space-y-2">
               {appointment.selected_services.map((service, index) => (
                <li key={index} className="flex items-center">
-                <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
-                <span className="text-xs text-gray-600">{service}</span>
+                <div className="h-2 w-2 rounded-full bg-[#294a46] mr-3"></div>
+                <span className="text-sm text-gray-600">{service}</span>
                </li>
               ))}
              </ul>
@@ -449,15 +557,15 @@ export default function PickMechanicPage() {
           )}
 
           {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
-           <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-            <span className="text-sm sm:text-base lg:text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
-            <div>
-             <h3 className="font-medium text-gray-700 text-sm">Reported Issues</h3>
-             <ul className="mt-1 space-y-1">
+           <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+            <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">⚠️</span>
+            <div className="flex-1">
+             <h3 className="font-semibold text-gray-800 text-base">Reported Issues</h3>
+             <ul className="mt-2 space-y-2">
               {appointment.selected_car_issues.map((issue, index) => (
                <li key={index} className="flex items-center">
-                <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
-                <span className="text-xs text-gray-600">{issue}</span>
+                <div className="h-2 w-2 rounded-full bg-red-500 mr-3"></div>
+                <span className="text-sm text-gray-600">{issue}</span>
                </li>
               ))}
              </ul>
@@ -466,40 +574,43 @@ export default function PickMechanicPage() {
           )}
 
           {appointment.issue_description && (
-           <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-            <FileText className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
-            <div>
-             <h3 className="font-medium text-gray-700 text-sm">Description</h3>
-             <p className="text-xs text-gray-600 mt-1">{appointment.issue_description}</p>
+           <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+            <FileText className="h-5 w-5 text-[#294a46] mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+             <h3 className="font-semibold text-gray-800 text-base">Description</h3>
+             <p className="text-sm text-gray-600 mt-2 leading-relaxed">{appointment.issue_description}</p>
             </div>
            </div>
           )}
 
-          <div className="flex items-start space-x-3 pb-3 border-b border-gray-100">
-           <span className="text-sm sm:text-base lg:text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
-           <div>
-            <h3 className="font-medium text-gray-700 text-sm">Car Status</h3>
-            <p className="text-xs text-gray-600 mt-1">
+          <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+           <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔋</span>
+           <div className="flex-1">
+            <h3 className="font-semibold text-gray-800 text-base">Car Status</h3>
+            <p className="text-sm text-gray-600 mt-1">
              {appointment.car_runs !== null
               ? appointment.car_runs
-               ? "Car is running"
-               : "Car is not running"
-              : "Car status not specified"}
+               ? "✅ Car is running"
+               : "❌ Car is not running"
+              : "❓ Car status not specified"}
             </p>
            </div>
           </div>
          </div>
 
-         <div className="mt-4 p-3 border border-dashed border-gray-300 rounded-md bg-gray-50">
-          <div className="flex items-center justify-center mb-2">
-           <CreditCard className="h-4 w-4 text-[#294a46] mr-2" />
-           <h3 className="font-medium text-gray-700 text-sm">Stripe Card Payment Integration Coming Soon</h3>
+         <div className="mt-6 p-6 border border-dashed border-gray-300 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="flex items-center justify-center mb-4">
+           <CreditCard className="h-6 w-6 text-[#294a46] mr-3" />
+           <h3 className="font-semibold text-gray-700 text-base">Payment Integration Coming Soon</h3>
           </div>
-          <div className="h-9 bg-white rounded border border-gray-200 mb-2"></div>
-          <div className="grid grid-cols-2 gap-2">
-           <div className="h-9 bg-white rounded border border-gray-200"></div>
-           <div className="h-9 bg-white rounded border border-gray-200"></div>
+          <div className="space-y-3">
+           <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+           <div className="grid grid-cols-2 gap-3">
+            <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+            <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+           </div>
           </div>
+          <p className="text-xs text-gray-500 text-center mt-4">Secure payment processing with Stripe</p>
          </div>
         </div>
        </Card>
@@ -508,6 +619,72 @@ export default function PickMechanicPage() {
     </div>
    </main>
    <Footer />
+
+   {/* Confirmation Modal */}
+   {showCancelModal && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+     <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div className="flex items-center gap-3 p-6 border-b">
+       <AlertTriangle className="h-6 w-6 text-amber-500" />
+       <h3 className="text-lg font-semibold text-gray-900">Cancel Appointment Request?</h3>
+      </div>
+      
+      <div className="p-6">
+       <p className="text-gray-600 mb-4">
+        This will reset your appointment and clear all mechanic quotes. You'll be redirected back to the booking page where you can modify your request.
+       </p>
+       
+       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+        <div className="flex items-start gap-2">
+         <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+         <div className="text-sm text-amber-800">
+          <p className="font-medium mb-1">What happens when you go back:</p>
+          <ul className="list-disc list-inside space-y-1 text-xs">
+           <li>Appointment status resets to "pending"</li>
+           <li>All mechanic quotes are removed</li>
+           <li>Your original booking information is preserved</li>
+           <li>You can modify and resubmit your request</li>
+          </ul>
+         </div>
+        </div>
+       </div>
+       
+       <div className="flex gap-3 justify-end">
+        <Button
+         onClick={() => setShowCancelModal(false)}
+         variant="outline"
+         disabled={isCanceling}
+        >
+         Stay Here
+        </Button>
+        <Button
+         onClick={handleCancelAppointment}
+         disabled={isCanceling}
+         className="bg-red-600 hover:bg-red-700 text-white"
+        >
+         {isCanceling ? (
+          <div className="flex items-center gap-2">
+           <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+           Processing...
+          </div>
+         ) : (
+          'Yes, Go Back'
+         )}
+        </Button>
+       </div>
+      </div>
+     </div>
+    </div>
+   )}
+
+   {/* Add shake animation styles */}
+   <style jsx>{`
+    @keyframes shake {
+     0%, 100% { transform: translateX(0); }
+     25% { transform: translateX(-5px); }
+     75% { transform: translateX(5px); }
+    }
+   `}</style>
   </div>
  )
 }
