@@ -292,7 +292,6 @@ export default function PickMechanicPage() {
      status: 'pending', // Reset to pending so it appears in Available Appointments
      selected_quote_id: null, // Clear selected quote
      mechanic_id: null, // Clear assigned mechanic
-     price: null, // Clear price
      updated_at: new Date().toISOString()
     })
     .eq('id', appointmentId)

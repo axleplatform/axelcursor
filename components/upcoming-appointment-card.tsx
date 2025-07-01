@@ -26,7 +26,9 @@ export default function UpcomingAppointmentCard({
 }: UpcomingAppointmentCardProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [isEditingPrice, setIsEditingPrice] = useState(false)
-  const [price, setPrice] = useState(appointment.price || 0)
+  // Price is now stored in mechanic_quotes table, not in appointment directly
+  // For this component, we'll start with 0 and let the user set it
+  const [price, setPrice] = useState(0)
 
   const handleStart = async () => {
     setIsProcessing(true)
@@ -123,7 +125,7 @@ export default function UpcomingAppointmentCard({
             className="bg-[#294a46] text-white text-2xl font-bold py-2 px-4 rounded-md cursor-pointer"
             onClick={() => setIsEditingPrice(true)}
           >
-            {appointment.price ? `$${appointment.price}` : "Set Price"}
+            {price > 0 ? `$${price}` : "Set Price"}
           </div>
         )}
       </div>

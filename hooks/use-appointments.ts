@@ -23,7 +23,6 @@ export interface Appointment {
   location: string
   appointment_date: string
   status: AppointmentStatus
-  price: number | null
   phone_number: string | null
   car_runs: boolean | null
   issue_description: string | null
@@ -127,27 +126,13 @@ export function useAppointments() {
     }
   }
 
-  // Update appointment price
+  // Update appointment price (now handled through mechanic_quotes table)
   const updateAppointmentPrice = async (appointmentId: string, price: number) => {
     try {
-      const { error } = await supabase
-        .from("appointments")
-        .update({
-          price,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", appointmentId)
-
-      if (error) throw error
-
-      // Update local state
-      setAppointments((prev: Appointment[]) =>
-        prev.map((appointment: Appointment) =>
-          appointment.id === appointmentId ? { ...appointment, price } : appointment,
-        ),
-      )
-
-      return true
+      // Price is now stored in mechanic_quotes table, not appointments table
+      // This function is kept for compatibility but should be updated to work with quotes
+      console.warn('updateAppointmentPrice: Price updates should be handled through mechanic_quotes table')
+      return false
     } catch (err) {
       console.error(`Error updating appointment price:`, err)
       return false

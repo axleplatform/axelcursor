@@ -2,8 +2,19 @@
 
 import { useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { AppointmentWithRelations } from "@/types"
 
-export default function MechanicSchedule() {
+interface MechanicScheduleProps {
+  upcomingAppointments: AppointmentWithRelations[]
+  availableAppointments: AppointmentWithRelations[]
+  onAppointmentClick?: (appointment: AppointmentWithRelations) => void
+}
+
+export default function MechanicSchedule({ 
+  upcomingAppointments, 
+  availableAppointments, 
+  onAppointmentClick 
+}: MechanicScheduleProps) {
   const [currentWeek, setCurrentWeek] = useState<Date>(new Date())
 
   // Get the start of the week (Monday)
@@ -64,6 +75,68 @@ export default function MechanicSchedule() {
     )
   }
 
+  // Get appointments for a specific date
+  const getAppointmentsForDate = (date: Date) => {
+    const dateString = date.toISOString().split('T')[0] // YYYY-MM-DD format
+    
+    const appointments: Array<{
+      appointment: AppointmentWithRelations
+      status: 'pending' | 'confirmed'
+      time: string
+    }> = []
+
+    // Check upcoming appointments (confirmed)
+    upcomingAppointments.forEach(appointment => {
+      const myQuote = appointment.mechanic_quotes?.[0]
+      if (myQuote?.eta) {
+        const etaDate = new Date(myQuote.eta)
+        const etaDateString = etaDate.toISOString().split('T')[0]
+        
+        if (etaDateString === dateString) {
+          appointments.push({
+            appointment,
+            status: 'confirmed',
+            time: etaDate.toLocaleTimeString('en-US', { 
+              hour: 'numeric', 
+              minute: '2-digit',
+              hour12: true 
+            })
+          })
+        }
+      }
+    })
+
+    // Check available appointments (pending)
+    availableAppointments.forEach(appointment => {
+      const myQuote = appointment.mechanic_quotes?.[0]
+      if (myQuote?.eta) {
+        const etaDate = new Date(myQuote.eta)
+        const etaDateString = etaDate.toISOString().split('T')[0]
+        
+        if (etaDateString === dateString) {
+          appointments.push({
+            appointment,
+            status: 'pending',
+            time: etaDate.toLocaleTimeString('en-US', { 
+              hour: 'numeric', 
+              minute: '2-digit',
+              hour12: true 
+            })
+          })
+        }
+      }
+    })
+
+    return appointments.sort((a, b) => a.time.localeCompare(b.time))
+  }
+
+  // Handle appointment click
+  const handleAppointmentClick = (appointment: AppointmentWithRelations) => {
+    if (onAppointmentClick) {
+      onAppointmentClick(appointment)
+    }
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-6">Schedule</h2>
@@ -98,23 +171,66 @@ export default function MechanicSchedule() {
           </div>
         ))}
 
-        {weekDays.map((day, index) => (
-          <div key={`day-${index}`} className={`text-sm font-medium ${isToday(day) ? "text-[#294a46]" : ""}`}>
-            {day.getDate()}
-          </div>
-        ))}
+        {weekDays.map((day, index) => {
+          const appointments = getAppointmentsForDate(day)
+          return (
+            <div key={`day-${index}`} className="relative">
+              <div className={`text-sm font-medium ${isToday(day) ? "text-[#294a46]" : ""}`}>
+                {day.getDate()}
+              </div>
+              {appointments.length > 0 && (
+                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {appointments.length}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       <div className="space-y-4">
-        {weekDays.map((day, index) => (
-          <div
-            key={`details-${index}`}
-            className={`border border-gray-100 rounded-md p-3 ${isToday(day) ? "bg-green-50" : ""}`}
-          >
-            <div className="font-medium mb-1">{day.toLocaleDateString("en-US", { weekday: "long" })}</div>
-            <div className="text-sm text-gray-500">No appointments</div>
-          </div>
-        ))}
+        {weekDays.map((day, index) => {
+          const appointments = getAppointmentsForDate(day)
+          return (
+            <div
+              key={`details-${index}`}
+              className={`border border-gray-100 rounded-md p-3 ${isToday(day) ? "bg-green-50" : ""}`}
+            >
+              <div className="font-medium mb-2">{day.toLocaleDateString("en-US", { weekday: "long" })}</div>
+              
+              {appointments.length === 0 ? (
+                <div className="text-sm text-gray-500">No appointments</div>
+              ) : (
+                <div className="space-y-2">
+                  {appointments.map(({ appointment, status, time }, appointmentIndex) => (
+                    <div
+                      key={`appointment-${appointment.id}-${appointmentIndex}`}
+                      className={`p-2 rounded-md cursor-pointer transition-colors hover:bg-gray-50 ${
+                        status === 'confirmed' 
+                          ? 'bg-[#294a46]/10 border border-[#294a46]/20' 
+                          : 'bg-yellow-400/10 border border-yellow-400/20'
+                      }`}
+                      onClick={() => handleAppointmentClick(appointment)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{time}</span>
+                        <div className={`w-2 h-2 rounded-full ${
+                          status === 'confirmed' ? 'bg-[#294a46]' : 'bg-yellow-400'
+                        }`}></div>
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1 truncate">
+                        {appointment.vehicles ? 
+                          `${appointment.vehicles.year} ${appointment.vehicles.make} ${appointment.vehicles.model}` :
+                          'Vehicle info unavailable'
+                        }
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

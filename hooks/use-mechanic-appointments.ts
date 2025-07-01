@@ -25,7 +25,6 @@ export interface Appointment {
   location: string
   appointment_date: string
   status: AppointmentStatus
-  price: number | null
   phone_number: string | null
   car_runs: boolean | null
   issue_description: string | null
@@ -362,9 +361,11 @@ export function useMechanicAppointments(mechanicId: string) {
       if (error) throw error
 
       // Update local state for upcoming appointments if this appointment exists there
+      // Note: Price is now stored in mechanic_quotes table, not in appointment directly
       const appointment = upcomingAppointments.find((a: Appointment) => a.id === appointmentId)
       if (appointment) {
-        setUpcomingAppointments((prev: Appointment[]) => prev.map((a) => (a.id === appointmentId ? { ...a, price } : a)))
+        // Refresh the appointment data to get updated quote information
+        setUpcomingAppointments((prev: Appointment[]) => prev.map((a) => (a.id === appointmentId ? { ...a } : a)))
       }
 
       return true

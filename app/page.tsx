@@ -575,34 +575,42 @@ export default function HomePage(): React.JSX.Element {
           
           switch (fieldName) {
             case 'address':
-              targetElement = document.querySelector('input[name="address"]')
+              targetElement = document.querySelector('input[name="address"]') ||
+                             document.querySelector('input[placeholder*="address"], input[placeholder*="Address"]')
               break
             case 'year':
-              targetElement = document.querySelector('select[name="year"]')
+              targetElement = document.querySelector('select[name="year"]') ||
+                             document.querySelector('select[aria-label*="year"], select[aria-label*="Year"]')
               break
             case 'make':
-              targetElement = document.querySelector('select[name="make"]')
+              targetElement = document.querySelector('select[name="make"]') ||
+                             document.querySelector('select[aria-label*="make"], select[aria-label*="Make"]')
               break
             case 'model':
-              targetElement = document.querySelector('input[name="model"]')
+              targetElement = document.querySelector('input[name="model"]') ||
+                             document.querySelector('input[placeholder*="model"], input[placeholder*="Model"]')
               break
             case 'appointmentDate':
-              // Target the date selector specifically
+              // Target the date selector specifically with multiple fallbacks
               targetElement = document.querySelector('input[type="date"]') || 
                              document.querySelector('[data-testid="date-selector"]') ||
-                             document.querySelector('.date-selector')
+                             document.querySelector('.date-selector') ||
+                             document.querySelector('input[aria-label*="date"], input[aria-label*="Date"]')
               // Also target the parent container for better visibility
               parentContainer = document.querySelector('.date-time-selector') ||
-                               document.querySelector('[class*="DateTimeSelector"]')
+                               document.querySelector('[class*="DateTimeSelector"]') ||
+                               document.querySelector('[class*="date-time"]')
               break
             case 'appointmentTime':
-              // Target the time selector specifically
+              // Target the time selector specifically with multiple fallbacks
               targetElement = document.querySelector('[data-testid="time-selector"]') ||
                              document.querySelector('.time-selector') ||
-                             document.querySelector('select[aria-label*="time"], select[aria-label*="Time"]')
+                             document.querySelector('select[aria-label*="time"], select[aria-label*="Time"]') ||
+                             document.querySelector('input[type="time"]')
               // Also target the parent container for better visibility
               parentContainer = document.querySelector('.date-time-selector') ||
-                               document.querySelector('[class*="DateTimeSelector"]')
+                               document.querySelector('[class*="DateTimeSelector"]') ||
+                               document.querySelector('[class*="date-time"]')
               break
           }
           
@@ -612,10 +620,10 @@ export default function HomePage(): React.JSX.Element {
             if (elementToHighlight) {
               // Enhanced highlighting animation with more visual impact
               elementToHighlight.style.transition = 'all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1)'
-              elementToHighlight.style.transform = 'scale(1.03)'
-              elementToHighlight.style.boxShadow = '0 0 0 4px rgba(59, 130, 246, 0.6), 0 0 20px rgba(59, 130, 246, 0.3)'
-              elementToHighlight.style.borderColor = '#3b82f6'
-              elementToHighlight.style.backgroundColor = 'rgba(59, 130, 246, 0.05)'
+              elementToHighlight.style.transform = 'scale(1.05)'
+              elementToHighlight.style.boxShadow = '0 0 0 6px rgba(239, 68, 68, 0.8), 0 0 25px rgba(239, 68, 68, 0.4)'
+              elementToHighlight.style.borderColor = '#ef4444'
+              elementToHighlight.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'
               elementToHighlight.style.zIndex = '10'
               
               // Add ARIA live region announcement for screen readers
@@ -1032,6 +1040,11 @@ export default function HomePage(): React.JSX.Element {
                       handleDisabledContinueInteraction()
                     }
                   }}
+                  onMouseDown={() => {
+                    if (!isFormComplete && !isSubmitting) {
+                      handleDisabledContinueInteraction()
+                    }
+                  }}
                   // Enhanced accessibility attributes
                   aria-label={!isFormComplete ? `Continue button - ${missingFields.length} required field${missingFields.length > 1 ? 's' : ''} missing` : "Continue to next step"}
                   aria-describedby={!isFormComplete ? "missing-fields-help" : undefined}
@@ -1280,8 +1293,14 @@ export default function HomePage(): React.JSX.Element {
         
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
-          20%, 40%, 60%, 80% { transform: translateX(3px); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+        
+        @keyframes glow {
+          0% { box-shadow: 0 0 0 #ff4d4f; }
+          50% { box-shadow: 0 0 8px #ff4d4f; }
+          100% { box-shadow: 0 0 0 #ff4d4f; }
         }
         
         @keyframes gentleGlow {
@@ -1322,6 +1341,12 @@ export default function HomePage(): React.JSX.Element {
         
         .animate-focusRing {
           animation: focusRing 2s ease-in-out infinite;
+        }
+        
+        .missing-field {
+          animation: shake 0.5s, glow 0.5s;
+          border: 2px solid #ff4d4f !important;
+          box-shadow: 0 0 8px #ff4d4f !important;
         }
         
         /* Screen reader only class */

@@ -941,6 +941,27 @@ export default function MechanicDashboard() {
     }
   }
 
+  // Handle appointment click from schedule
+  const handleScheduleAppointmentClick = (appointment: AppointmentWithRelations) => {
+    // Find the appointment in available appointments
+    const availableIndex = availableAppointments.findIndex(apt => apt.id === appointment.id)
+    if (availableIndex !== -1) {
+      setCurrentAvailableIndex(availableIndex)
+      return
+    }
+    
+    // Find the appointment in upcoming appointments
+    const upcomingIndex = upcomingAppointments.findIndex(apt => apt.id === appointment.id)
+    if (upcomingIndex !== -1) {
+      // Scroll to upcoming appointments section
+      const upcomingSection = document.querySelector('[data-section="upcoming-appointments"]')
+      if (upcomingSection) {
+        upcomingSection.scrollIntoView({ behavior: 'smooth' })
+      }
+      return
+    }
+  }
+
   // Update handleUpdateQuote function
   const handleUpdateQuote = async (appointmentId: string) => {
     try {
@@ -1480,7 +1501,7 @@ export default function MechanicDashboard() {
       <div className="container mx-auto px-4 pb-12 flex-grow">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Column 1: Upcoming Appointments */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6" data-section="upcoming-appointments">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900">
                 Upcoming Appointments
@@ -1706,7 +1727,11 @@ export default function MechanicDashboard() {
           </div>
 
           {/* Column 2: Schedule */}
-          <MechanicSchedule />
+          <MechanicSchedule 
+            upcomingAppointments={upcomingAppointments}
+            availableAppointments={availableAppointments}
+            onAppointmentClick={handleScheduleAppointmentClick}
+          />
 
           {/* Column 3: Available Appointments */}
           <div className="bg-[#294a46] rounded-lg shadow-sm p-6 text-white">
