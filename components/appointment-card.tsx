@@ -77,7 +77,7 @@ export default function AppointmentCard({
     return dates
   }
 
-  // Generate time slots (8 AM to 6 PM, 15-minute increments)
+  // Generate time slots (8 AM to 8 PM, 15-minute increments)
   // For TODAY: Only show times from current hour onwards (no past times)
   // For FUTURE DATES: Show all times (full day available)
   const getTimeSlots = (forDate?: string): TimeSlot[] => {
@@ -90,7 +90,7 @@ export default function AppointmentCard({
     // Determine if we're generating slots for today
     const isToday = forDate === today
     
-    for (let hour = 8; hour < 18; hour++) {
+    for (let hour = 8; hour < 20; hour++) { // Changed from 18 to 20 (8 PM)
       for (let minute = 0; minute < 60; minute += 15) {
         // For today: Skip times that have already passed
         if (isToday) {
@@ -100,7 +100,7 @@ export default function AppointmentCard({
           if (hour === currentHour && minute < currentMinute) continue
         }
         
-        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+        const time = `${hour < 10 ? '0' + hour : hour}:${minute < 10 ? '0' + minute : minute}`
         const displayTime = new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
           hour: 'numeric',
           minute: '2-digit'

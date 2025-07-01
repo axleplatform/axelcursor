@@ -347,35 +347,24 @@ export function useMechanicAppointments(mechanicId: string) {
     }
   }
 
-  // Update price for an appointment
+  // Update price for an appointment (always updates the mechanic quote, not appointment directly)
   const updateAppointmentPrice = async (appointmentId: string, price: number): Promise<boolean> => {
     if (!mechanicId) return false
 
     try {
-      // Check if this is a direct appointment update or a quote update
+      // Price is always stored in mechanic_quotes table, not appointments table
+      const { error } = await supabase
+        .from("mechanic_quotes")
+        .update({ price, updated_at: new Date().toISOString() })
+        .eq("appointment_id", appointmentId)
+        .eq("mechanic_id", mechanicId)
+
+      if (error) throw error
+
+      // Update local state for upcoming appointments if this appointment exists there
       const appointment = upcomingAppointments.find((a: Appointment) => a.id === appointmentId)
-
       if (appointment) {
-        // Direct appointment update
-        const { error } = await supabase
-          .from("appointments")
-          .update({ price })
-          .eq("id", appointmentId)
-          .eq("mechanic_id", mechanicId)
-
-        if (error) throw error
-
-        // Update local state
         setUpcomingAppointments((prev: Appointment[]) => prev.map((a) => (a.id === appointmentId ? { ...a, price } : a)))
-      } else {
-        // Quote update
-        const { error } = await supabase
-          .from("mechanic_quotes")
-          .update({ price, updated_at: new Date().toISOString() })
-          .eq("appointment_id", appointmentId)
-          .eq("mechanic_id", mechanicId)
-
-        if (error) throw error
       }
 
       return true

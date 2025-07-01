@@ -52,6 +52,15 @@ export default function MechanicDashboard() {
   // Helper functions for default date/time
   const getDefaultDate = (): string => {
     const today = new Date();
+    const currentHour = today.getHours();
+    
+    // If current time is past 8 PM, automatically set to next day
+    if (currentHour >= 20) {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    }
+    
     return today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
   };
 
@@ -79,15 +88,15 @@ export default function MechanicDashboard() {
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     
-    // Ensure it's within business hours (8 AM - 6 PM)
+    // Ensure it's within business hours (8 AM - 8 PM)
     let defaultHour = currentHour;
     let defaultMinute = currentMinute;
     
     if (currentHour < 8) {
       defaultHour = 8; // If before 8 AM, default to 8:00 AM
       defaultMinute = 0;
-    } else if (currentHour >= 18) {
-      defaultHour = 8; // If after 6 PM, default to 8:00 AM next day
+    } else if (currentHour >= 20) {
+      defaultHour = 8; // If after 8 PM, default to 8:00 AM next day
       defaultMinute = 0;
     }
     
@@ -180,7 +189,7 @@ export default function MechanicDashboard() {
     return dates;
   };
 
-  // Generate time slots (8 AM to 6 PM, 15-minute increments)
+  // Generate time slots (8 AM to 8 PM, 15-minute increments)
   // For TODAY: Only show times from current hour onwards (no past times)
   // For FUTURE DATES: Show all times (full day available)
   const getTimeSlots = (forDate?: string): TimeSlot[] => {
@@ -193,7 +202,7 @@ export default function MechanicDashboard() {
     // Determine if we're generating slots for today
     const isToday = forDate === today;
     
-    for (let hour = 8; hour < 18; hour++) {
+    for (let hour = 8; hour < 20; hour++) { // Changed from 18 to 20 (8 PM)
       for (let minute = 0; minute < 60; minute += 15) {
         // For today: Skip times that have already passed
         if (isToday) {

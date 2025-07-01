@@ -704,7 +704,6 @@ export default function BookAppointment() {
           // Clear any previous selections to ensure fresh start
           selected_quote_id: null,
           mechanic_id: null,
-          price: null,
           updated_at: now
         })
         .eq('id', appointmentId)
