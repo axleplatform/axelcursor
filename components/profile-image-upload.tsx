@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { Loader2, Upload, X, User } from "lucide-react"
+import { Loader2,  X, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
@@ -99,8 +99,9 @@ export default function ProfileImageUpload({ initialImageUrl, onImageChange, use
       const newImageUrl = publicUrlData.publicUrl
       setImageUrl(newImageUrl)
       onImageChange(newImageUrl)
-    } catch (error: any) {
-      console.error("Error uploading image:", error)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Error uploading image:', errorMessage);
       setError("Failed to upload image. Please try again.")
     } finally {
       setIsUploading(false)
@@ -108,7 +109,7 @@ export default function ProfileImageUpload({ initialImageUrl, onImageChange, use
   }
 
   // Handle image removal
-  const handleRemoveImage = async () => {
+  const handleRemoveImage = async (): Promise<void> => {
     if (!imageUrl) return
 
     setIsUploading(true)
@@ -117,14 +118,18 @@ export default function ProfileImageUpload({ initialImageUrl, onImageChange, use
       // Delete the image from storage
       const filePath = imageUrl.split("/").pop()
       if (filePath) {
-        await supabase.storage.from("profile-images").remove([filePath])
+        const { error: deleteError } = await supabase.storage.from("profile-images").remove([filePath])
+        
+        if (deleteError) {
+          console.warn("Error deleting previous image:", deleteError)
+        }
       }
 
       setImageUrl(null)
       onImageChange(null)
-    } catch (error: any) {
-      console.error("Error removing image:", error)
-      setError("Failed to remove image. Please try again.")
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Error removing image:', errorMessage);
     } finally {
       setIsUploading(false)
     }
@@ -183,7 +188,7 @@ export default function ProfileImageUpload({ initialImageUrl, onImageChange, use
             isUploading ? "bg-gray-400 cursor-not-allowed" : "bg-[#294a46] hover:bg-[#1e3632]",
           )}
         >
-          <Upload className="h-4 w-4" />
+          <div className="h-4 w-4">📤</div>
           {imageUrl ? "Change Photo" : "Upload Photo"}
         </button>
         <input

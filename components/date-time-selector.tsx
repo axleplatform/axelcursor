@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react"
 
 // You can replace these with your preferred icon components
 const Calendar = () => (
@@ -71,13 +71,39 @@ const ChevronRight = () => (
   </svg>
 )
 
-export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date: Date, time: string) => void }) {
+interface DateTimeSelectorProps {
+  onDateTimeChange: (date: Date, time: string) => void
+  onTimeSelected?: () => void
+}
+
+interface DateTimeSelectorRef {
+  openDateDropdown: () => void
+  openTimeDropdown: () => void
+  isFormComplete: () => boolean
+}
+
+export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelectorProps>(({ onDateTimeChange, onTimeSelected }, ref) => {
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimeSelector, setShowTimeSelector] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [selectedTime, setSelectedTime] = useState("Now")
+  const [selectedTime, setSelectedTime] = useState("")
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()))
+
+  // Expose methods via ref for progressive navigation
+  useImperativeHandle(ref, () => ({
+    openDateDropdown: () => {
+      setShowCalendar(true)
+      setShowTimeSelector(false)
+    },
+    openTimeDropdown: () => {
+      setShowTimeSelector(true)
+      setShowCalendar(false)
+    },
+    isFormComplete: () => {
+      return !!(selectedTime && selectedTime !== "")
+    }
+  }))
 
   // Get the start date of the week (Sunday) for a given date
   function getWeekStart(date: Date): Date {
@@ -127,15 +153,19 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
     return `${hour12}:${minute.toString().padStart(2, "0")} ${ampm}`
   })
 
-  // Get the next available 30-minute interval from current time
+  // Get the next available 30-minute interval from current time + 30-minute buffer
   const getNextTimeSlot = () => {
     const now = new Date()
-    const hour = now.getHours()
-    const minute = now.getMinutes()
+    // Add 30-minute buffer for same-day appointments
+    const bufferTime = new Date(now.getTime() + 30 * 60 * 1000)
+    const hour = bufferTime.getHours()
+    const minute = bufferTime.getMinutes()
 
-    // Calculate the index in the time slots array
-    // Always round up to the next slot
-    let index = hour * 2 + (minute >= 0 && minute < 30 ? 1 : 2)
+    // Calculate the index in the time slots array, rounding UP to next slot
+    let index = hour * 2 + (minute > 0 ? 1 : 0)
+    if (minute > 30) {
+      index = hour * 2 + 2
+    }
 
     // Make sure we don't go beyond the available slots
     if (index >= allTimeSlots.length) {
@@ -178,32 +208,37 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
   // Update available time slots based on selected date
   useEffect(() => {
     if (isToday(selectedDate)) {
-      // For today, only show future time slots
-      const { index, timeSlot } = getNextTimeSlot()
+      // For today, always show ASAP first, then regular slots with 30-min buffer
+      const { index } = getNextTimeSlot() // Get slots 30+ minutes from now
       const futureTimeSlots = allTimeSlots.slice(index)
-
-      // Add "Now" option at the top of the list for today
-      setAvailableTimeSlots(["Now", ...futureTimeSlots])
-
-      // If the time was not explicitly selected by the user or is not valid anymore,
-      // default to the next available time slot
-      if (selectedTime === "Now" || !["Now", ...futureTimeSlots].includes(selectedTime)) {
-        setSelectedTime(timeSlot)
+      
+      // Always add "ASAP" as first option, then regular future slots
+      const todayTimeSlots = ["ASAP", ...futureTimeSlots]
+      setAvailableTimeSlots(todayTimeSlots)
+      
+      // Clear invalid time selections
+      if (!selectedTime || !todayTimeSlots.includes(selectedTime)) {
+        setSelectedTime("") // Force user to select a valid time
       }
     } else {
-      // For future dates, show all time slots without "Now" option
+      // For future dates, show all time slots (no ASAP option for future dates)
       setAvailableTimeSlots(allTimeSlots)
 
-      // If coming from today with "Now" selected to a future date
-      if (selectedTime === "Now") {
-        setSelectedTime("9:00 AM") // Default time for future dates
+      // For future dates, clear time selection to force user to pick
+      if (!allTimeSlots.includes(selectedTime)) {
+        setSelectedTime("") // Force user to select a time for future dates
       }
     }
   }, [selectedDate])
 
-  // Notify parent component when date or time changes
+  // Notify parent component when BOTH date AND time are properly selected
+  // This prevents auto-submission by ensuring incomplete selections don't trigger updates
   useEffect(() => {
-    onDateTimeChange(selectedDate, selectedTime)
+    // Only notify parent when we have a complete date/time selection
+    // This prevents partial selections from triggering form validation or submission
+    if (selectedTime && selectedTime !== "") {
+      onDateTimeChange(selectedDate, selectedTime)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedTime])
 
@@ -212,6 +247,11 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
     if (!isPastDate(date)) {
       setSelectedDate(date)
       setShowCalendar(false)
+      
+      // After selecting date, automatically open time selector for progressive navigation
+      setTimeout(() => {
+        setShowTimeSelector(true)
+      }, 150)
     }
   }
 
@@ -219,6 +259,13 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time)
     setShowTimeSelector(false)
+    
+    // Call the callback for progressive navigation
+    if (onTimeSelected) {
+      setTimeout(() => {
+        onTimeSelected()
+      }, 100)
+    }
   }
 
   // Format day number (1-31)
@@ -255,6 +302,7 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
       {/* Date Selector */}
       <div className="relative flex-1 date-selector">
         <button
+          type="button"
           className="flex items-center justify-center gap-2 p-3 border border-gray-200 rounded-md bg-gray-50 w-full"
           onClick={() => {
             setShowCalendar(!showCalendar)
@@ -270,6 +318,7 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
           <div className="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-md shadow-lg z-10 p-3">
             <div className="flex items-center justify-between mb-2">
               <button
+                type="button"
                 onClick={goToPreviousWeek}
                 className="p-1 rounded-full hover:bg-gray-100"
                 disabled={getWeekStart(today).getTime() === currentWeekStart.getTime()}
@@ -277,7 +326,11 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
                 <ChevronLeft />
               </button>
               <div className="text-center font-medium">{formatMonthYear(currentWeekStart)}</div>
-              <button onClick={goToNextWeek} className="p-1 rounded-full hover:bg-gray-100">
+              <button
+                type="button"
+                onClick={goToNextWeek}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
                 <ChevronRight />
               </button>
             </div>
@@ -300,6 +353,7 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
 
                 return (
                   <button
+                    type="button"
                     key={`day-${index}`}
                     className={`h-10 w-10 rounded-full flex items-center justify-center text-sm mx-auto ${
                       isDisabled
@@ -327,6 +381,7 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
       {/* Time Selector */}
       <div className="relative flex-1 time-selector">
         <button
+          type="button"
           className="flex items-center justify-center gap-2 p-3 border border-gray-200 rounded-md bg-gray-50 w-full"
           onClick={() => {
             setShowTimeSelector(!showTimeSelector)
@@ -334,30 +389,54 @@ export function DateTimeSelector({ onDateTimeChange }: { onDateTimeChange: (date
           }}
         >
           <Clock />
-          <span>{selectedTime}</span>
+          <span>{selectedTime === "ASAP" ? "⚡ Now" : selectedTime || "Select time"}</span>
           <span className="ml-1">▼</span>
         </button>
 
         {showTimeSelector && (
           <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
             {availableTimeSlots.length > 0 ? (
-              availableTimeSlots.map((time) => (
-                <button
-                  key={time}
-                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 text-sm ${
-                    time === "Now" ? "font-medium text-[#294a46]" : ""
-                  } ${time === selectedTime ? "bg-gray-100" : ""}`}
-                  onClick={() => handleTimeSelect(time)}
-                >
-                  {time}
-                </button>
-              ))
+              availableTimeSlots.map((time, index) => {
+                // Special handling for "ASAP" option
+                if (time === "ASAP") {
+                  return (
+                    <div key={time}>
+                      <button
+                        type="button"
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-100 text-sm border-b border-gray-100 ${
+                          time === selectedTime ? "bg-gray-100" : ""
+                        }`}
+                        onClick={() => handleTimeSelect(time)}
+                      >
+                        ⚡ Now
+                      </button>
+                      <div className="px-4 py-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-200">
+                        ℹ️ Arrival time may vary due to traffic
+                      </div>
+                    </div>
+                  )
+                }
+                
+                // Regular time slots
+                return (
+                  <button
+                    type="button"
+                    key={time}
+                    className={`w-full text-left px-4 py-2 hover:bg-gray-100 text-sm ${
+                      time === selectedTime ? "bg-gray-100" : ""
+                    }`}
+                    onClick={() => handleTimeSelect(time)}
+                  >
+                    {time}
+                  </button>
+                )
+              })
             ) : (
-              <div className="px-4 py-2 text-sm text-gray-500">No available times</div>
+              <div className="px-4 py-2 text-sm text-gray-500">No available times today</div>
             )}
           </div>
         )}
       </div>
     </div>
   )
-}
+})

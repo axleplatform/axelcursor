@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Loader2, MapPin, Car, Ruler } from "lucide-react"
+import { ChevronLeft, Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import OnboardingHeader from "@/components/onboarding-header"
@@ -70,8 +70,9 @@ export default function MechanicOnboardingStep2Page() {
             travelDistance: profile.service_radius?.toString() || "",
           })
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Auth check error:", error)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
         setError("Authentication error. Please try logging in again.")
       } finally {
         setIsLoading(false)
@@ -199,9 +200,10 @@ export default function MechanicOnboardingStep2Page() {
 
       // Redirect to next step
       router.push("/onboarding-mechanic-3")
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving data:", error)
-      setError("Failed to save your information. Please try again. " + (error.message || ""))
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      setError("Failed to save your information. Please try again. " + errorMessage)
 
       toast({
         title: "Error",
@@ -264,7 +266,7 @@ export default function MechanicOnboardingStep2Page() {
                   </label>
                   <div className="mt-1 relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Car className="h-5 w-5 text-gray-400" />
+                      <span className="text-lg sm:text-xl lg:text-2xl leading-none text-[#294a46] inline-flex items-center justify-center">🚗</span>
                     </div>
                     <select
                       id="businessStartYear"
@@ -297,7 +299,7 @@ export default function MechanicOnboardingStep2Page() {
                   </label>
                   <div className="mt-1 relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <MapPin className="h-5 w-5 text-gray-400" />
+                      <span className="text-lg sm:text-xl lg:text-2xl leading-none text-[#294a46] inline-flex items-center justify-center">📍</span>
                     </div>
                     <input
                       type="text"
@@ -326,7 +328,7 @@ export default function MechanicOnboardingStep2Page() {
                   </label>
                   <div className="mt-1 relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Ruler className="h-5 w-5 text-gray-400" />
+                      <span className="text-lg sm:text-xl lg:text-2xl leading-none text-[#294a46] inline-flex items-center justify-center">🚗</span>
                     </div>
                     <input
                       type="number"

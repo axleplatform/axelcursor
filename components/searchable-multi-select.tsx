@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
-import { Check, ChevronsUpDown, Plus, Search, X } from "lucide-react"
+import { Check, Search, X } from "lucide-react"
 import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 
@@ -202,7 +202,7 @@ export default function SearchableMultiSelect({
             onClick={() => setShowCustomInput(true)}
             className="px-3 py-2 border-t border-gray-100 hover:bg-gray-100 cursor-pointer flex items-center text-sm text-[#294a46]"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <span className="text-sm mr-2">+</span>
             {addCustomLabel}
           </div>
         ) : (
@@ -245,7 +245,7 @@ export default function SearchableMultiSelect({
         <div className="flex-1 min-h-[24px]">
           {selectedValues.length === 0 && <span className="text-gray-400 text-sm">{placeholder}</span>}
         </div>
-        <ChevronsUpDown className="h-4 w-4 text-gray-400" />
+        <div className="h-4 w-4 text-gray-400">⬇️</div>
       </div>
 
       {/* Selected values */}

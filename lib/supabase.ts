@@ -1,27 +1,13 @@
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createBrowserClient } from '@supabase/ssr'
 
-// Create a single supabase client for the browser with explicit cookie options
-export const supabase = createClientComponentClient({
-  options: {
-    cookies: {
-      name: "sb-auth-token",
-      lifetime: 60 * 60 * 24 * 7, // 1 week
-      domain: process.env.NEXT_PUBLIC_DOMAIN || "",
-      path: "/",
-      sameSite: "lax"
-    }
-  }
-})
+// Create a single supabase client for the browser using modern SSR approach
+export const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-// Export a function to get a fresh client instance with the same options
-export const getSupabaseClient = () => createClientComponentClient({
-  options: {
-    cookies: {
-      name: "sb-auth-token",
-      lifetime: 60 * 60 * 24 * 7, // 1 week
-      domain: process.env.NEXT_PUBLIC_DOMAIN || "",
-      path: "/",
-      sameSite: "lax"
-    }
-  }
-})
+// Export a function to get a fresh client instance
+export const getSupabaseClient = () => createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)

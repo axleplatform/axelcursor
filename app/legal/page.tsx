@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 
 export default function LegalHubPage() {
   return (
@@ -18,7 +18,7 @@ export default function LegalHubPage() {
           >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Privacy Policy</h2>
-              <ArrowRight className="h-5 w-5 text-[#294a46] group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="h-5 w-5 text-[#294a46] group-hover:translate-x-1 transition-transform" />
             </div>
             <p className="text-gray-600">
               Learn how we collect, use, and protect your personal information when you use our platform.
@@ -32,7 +32,7 @@ export default function LegalHubPage() {
           >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Cookie Policy</h2>
-              <ArrowRight className="h-5 w-5 text-[#294a46] group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="h-5 w-5 text-[#294a46] group-hover:translate-x-1 transition-transform" />
             </div>
             <p className="text-gray-600">
               Understand how we use cookies and similar technologies on our website and mobile applications.
@@ -46,7 +46,7 @@ export default function LegalHubPage() {
           >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Terms of Service</h2>
-              <ArrowRight className="h-5 w-5 text-[#294a46] group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="h-5 w-5 text-[#294a46] group-hover:translate-x-1 transition-transform" />
             </div>
             <p className="text-gray-600">The terms and conditions governing your use of the Axle platform.</p>
             <p className="text-sm text-gray-500 mt-4">Last updated: March 28th, 2025</p>
@@ -58,7 +58,7 @@ export default function LegalHubPage() {
           >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Mechanic Agreement</h2>
-              <ArrowRight className="h-5 w-5 text-[#294a46] group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="h-5 w-5 text-[#294a46] group-hover:translate-x-1 transition-transform" />
             </div>
             <p className="text-gray-600">Terms specific to mechanics providing services through the Axle platform.</p>
             <p className="text-sm text-gray-500 mt-4">Coming soon</p>

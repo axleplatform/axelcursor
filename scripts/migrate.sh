@@ -25,4 +25,4 @@ fi
 
 # Start the development server
 echo "Starting development server..."
-npm run dev 
+npm run dev

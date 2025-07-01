@@ -1,11 +1,11 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
-import { ChevronDown } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
+import Image from "next/image"
 
 export default function AboutPage() {
   return (
@@ -37,7 +37,7 @@ export default function AboutPage() {
 
           <div className="mt-8 flex flex-col items-center">
             <p className="text-sm mb-1">LEARN MORE</p>
-            <ChevronDown className="animate-bounce" />
+            <ChevronRight className="animate-bounce" />
           </div>
         </div>
       </section>

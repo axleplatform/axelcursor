@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Loader2, LinkIcon } from "lucide-react"
+import { ChevronLeft, Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import OnboardingHeader from "@/components/onboarding-header"
@@ -811,7 +811,7 @@ export default function MechanicOnboardingStep3Page() {
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <LinkIcon className="h-5 w-5 text-gray-400" />
+                        <span className="h-5 w-5 text-gray-400 text-sm">🔗</span>
                       </div>
                       <input
                         type="url"
@@ -836,7 +836,7 @@ export default function MechanicOnboardingStep3Page() {
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <LinkIcon className="h-5 w-5 text-gray-400" />
+                        <span className="h-5 w-5 text-gray-400 text-sm">🔗</span>
                       </div>
                       <input
                         type="url"
@@ -861,7 +861,7 @@ export default function MechanicOnboardingStep3Page() {
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <LinkIcon className="h-5 w-5 text-gray-400" />
+                        <span className="h-5 w-5 text-gray-400 text-sm">🔗</span>
                       </div>
                       <input
                         type="url"

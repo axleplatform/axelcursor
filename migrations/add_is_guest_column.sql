@@ -13,4 +13,4 @@ BEGIN
         -- Add index for performance
         CREATE INDEX IF NOT EXISTS idx_appointments_is_guest ON appointments(is_guest);
     END IF;
-END $$; 
+END $$;

@@ -161,4 +161,4 @@ END;
 $$;
 
 -- Execute the refresh
-SELECT public.refresh_schema_cache(); 
+SELECT public.refresh_schema_cache();

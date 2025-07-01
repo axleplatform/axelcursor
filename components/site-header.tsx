@@ -1,16 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Menu, X } from "lucide-react"
+import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const pathname = usePathname()
+
+  // Close mobile menu when pathname changes (navigation occurs)
+  useEffect(() => {
+    setIsMenuOpen(false)
+  }, [pathname])
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
@@ -39,7 +44,7 @@ export function SiteHeader() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-6">
-          <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-[#294a46]">
+          <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-transparent hover:border-gray-200 hover:bg-gray-50 transition-all duration-200">
             Log In
           </Link>
           <Button asChild className="rounded-full bg-[#294a46] hover:bg-[#1e3632] text-white">
@@ -76,7 +81,7 @@ export function SiteHeader() {
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             className="p-2 text-gray-700"
           >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {isMenuOpen ? <X size={24} /> : "☰"}
           </button>
         </div>
       </div>
@@ -87,15 +92,13 @@ export function SiteHeader() {
           <nav className="flex flex-col space-y-4">
             <Link
               href="/login"
-              className="text-sm font-medium text-gray-700 hover:text-[#294a46] py-2"
-              onClick={() => setIsMenuOpen(false)}
+              className="text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-transparent hover:border-gray-200 hover:bg-gray-50 transition-all duration-200"
             >
               Log In
             </Link>
             <Link
               href="/signup"
               className="text-sm font-medium text-white bg-[#294a46] hover:bg-[#1e3632] py-2 px-4 rounded-full inline-block text-center"
-              onClick={() => setIsMenuOpen(false)}
             >
               Sign Up
             </Link>
@@ -105,7 +108,6 @@ export function SiteHeader() {
                 "text-sm font-medium py-2",
                 isActive("/about") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
               )}
-              onClick={() => setIsMenuOpen(false)}
             >
               About
             </Link>
@@ -115,7 +117,6 @@ export function SiteHeader() {
                 "text-sm font-medium py-2",
                 isActive("/help") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
               )}
-              onClick={() => setIsMenuOpen(false)}
             >
               Help
             </Link>

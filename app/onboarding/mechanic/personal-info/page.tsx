@@ -69,7 +69,7 @@ export default function MechanicPersonalInfoPage() {
             zipCode: mechanic.zip_code || "",
           })
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Auth check error:", error)
       } finally {
         setIsLoading(false)
@@ -138,9 +138,10 @@ export default function MechanicPersonalInfoPage() {
 
       // Redirect to the next onboarding step
       router.push("/onboarding/mechanic/professional-info")
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving personal info:", error)
-      setError(error.message || "An error occurred while saving your information. Please try again.")
+      const errorMessage = error instanceof Error ? error.message : "An error occurred while saving your information. Please try again."
+      setError(errorMessage)
     } finally {
       setIsSaving(false)
     }

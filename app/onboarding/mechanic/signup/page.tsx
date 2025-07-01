@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { Eye, EyeOff, Loader2, AlertCircle, Clock } from "lucide-react"
+import { Loader2, X, Clock } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { createClient } from "@/lib/supabase/client"
@@ -33,6 +33,9 @@ export default function MechanicSignupPage() {
         isActive = false
       }
     }
+
+    // Return undefined for the case when submitAttempt <= 0
+    return
 
     async function handleSignupAttempt() {
       if (!isActive) return
@@ -102,23 +105,24 @@ export default function MechanicSignupPage() {
           // Redirect to the next onboarding step
           router.push("/onboarding-mechanic-1")
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (!isActive) return
 
         console.error("Error during signup:", error)
 
         // Check for rate limit errors in the caught error
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
         if (
-          error.message &&
-          (error.message.toLowerCase().includes("rate limit") ||
-            error.message.toLowerCase().includes("too many requests") ||
-            error.message.toLowerCase().includes("exceeded"))
+          errorMessage &&
+          (errorMessage.toLowerCase().includes("rate limit") ||
+            errorMessage.toLowerCase().includes("too many requests") ||
+            errorMessage.toLowerCase().includes("exceeded"))
         ) {
-          console.warn("Rate limit hit during signup:", error.message)
+          console.warn("Rate limit hit during signup:", errorMessage)
           setIsRateLimited(true)
           setError("Too many signup attempts. Please wait a few minutes and try again.")
         } else {
-          setError(error.message || "An error occurred during signup. Please try again.")
+          setError(errorMessage || "An error occurred during signup. Please try again.")
         }
       } finally {
         if (isActive) {
@@ -187,21 +191,22 @@ export default function MechanicSignupPage() {
           throw error
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error during Google sign-in:", error)
 
       // Check for rate limit errors in the caught error
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       if (
-        error.message &&
-        (error.message.toLowerCase().includes("rate limit") ||
-          error.message.toLowerCase().includes("too many requests") ||
-          error.message.toLowerCase().includes("exceeded"))
+        errorMessage &&
+        (errorMessage.toLowerCase().includes("rate limit") ||
+          errorMessage.toLowerCase().includes("too many requests") ||
+          errorMessage.toLowerCase().includes("exceeded"))
       ) {
-        console.warn("Rate limit hit during Google sign-in:", error.message)
+        console.warn("Rate limit hit during Google sign-in:", errorMessage)
         setIsRateLimited(true)
         setError("Too many sign-in attempts. Please wait a few minutes and try again.")
       } else {
-        setError(error.message || "An error occurred during sign-in. Please try again.")
+        setError(errorMessage || "An error occurred during sign-in. Please try again.")
       }
     } finally {
       setIsLoading(false)
@@ -247,7 +252,7 @@ export default function MechanicSignupPage() {
                   className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-start"
                   role="alert"
                 >
-                  <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                  <X className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
                   <span className="block">{error}</span>
                 </div>
               )}
@@ -295,11 +300,7 @@ export default function MechanicSignupPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     disabled={isLoading || isRateLimited}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400" />
-                    )}
+                    {showPassword ? <div className="h-4 w-4">🙈</div> : <div className="h-4 w-4">👁️</div>}
                   </button>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">Password must be at least 8 characters long</p>

@@ -103,4 +103,4 @@ SELECT public.verify_postgrest_access();
 COMMENT ON COLUMN public.appointments.is_guest IS 'Indicates if the appointment is for a guest user';
 
 -- Create an index on is_guest to ensure it's properly recognized
-CREATE INDEX IF NOT EXISTS idx_appointments_is_guest ON public.appointments(is_guest); 
+CREATE INDEX IF NOT EXISTS idx_appointments_is_guest ON public.appointments(is_guest);

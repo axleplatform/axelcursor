@@ -85,4 +85,4 @@ SELECT
     security_type
 FROM information_schema.routines 
 WHERE routine_schema = 'public' 
-AND routine_name IN ('refresh_schema_cache', 'verify_schema_cache'); 
+AND routine_name IN ('refresh_schema_cache', 'verify_schema_cache');

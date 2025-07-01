@@ -86,4 +86,4 @@ CREATE TRIGGER handle_user_account_linking
 -- Grant necessary permissions
 GRANT EXECUTE ON FUNCTION public.handle_user_account_linking() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.handle_user_account_linking() TO anon;
-GRANT EXECUTE ON FUNCTION public.handle_user_account_linking() TO service_role; 
+GRANT EXECUTE ON FUNCTION public.handle_user_account_linking() TO service_role;

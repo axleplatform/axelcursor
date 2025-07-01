@@ -253,4 +253,4 @@ GRANT EXECUTE ON FUNCTION public.verify_postgrest_schema() TO service_role;
 SELECT public.force_postgrest_reload();
 
 -- Verify the schema
-SELECT public.verify_postgrest_schema(); 
+SELECT public.verify_postgrest_schema();

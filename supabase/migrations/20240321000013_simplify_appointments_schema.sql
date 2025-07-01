@@ -182,4 +182,4 @@ $$;
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION public.create_anonymous_user() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.create_anonymous_user() TO anon;
-GRANT EXECUTE ON FUNCTION public.create_anonymous_user() TO service_role; 
+GRANT EXECUTE ON FUNCTION public.create_anonymous_user() TO service_role;

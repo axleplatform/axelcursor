@@ -66,7 +66,7 @@ const reducer = (state: State, action: Action): State => {
     case actionTypes.UPDATE_TOAST:
       return {
         ...state,
-        toasts: state.toasts.map((t) => (t.id === action.toast.id ? { ...t, ...action.toast } : t)),
+        toasts: state.toasts.map((t: any) => (t.id === action.toast.id ? { ...t, ...action.toast } : t)),
       }
 
     case actionTypes.DISMISS_TOAST: {
@@ -88,7 +88,7 @@ const reducer = (state: State, action: Action): State => {
 
       return {
         ...state,
-        toasts: state.toasts.map((t) =>
+        toasts: state.toasts.map((t: any) =>
           t.id === toastId || toastId === undefined
             ? {
                 ...t,
@@ -107,7 +107,7 @@ const reducer = (state: State, action: Action): State => {
       }
       return {
         ...state,
-        toasts: state.toasts.filter((t) => t.id !== action.toastId),
+        toasts: state.toasts.filter((t: any) => t.id !== action.toastId),
       }
   }
 }
@@ -118,7 +118,7 @@ let memoryState: State = { toasts: [] }
 
 function dispatch(action: Action) {
   memoryState = reducer(memoryState, action)
-  listeners.forEach((listener) => {
+  listeners.forEach((listener: any) => {
     listener(memoryState)
   })
 }
@@ -141,7 +141,7 @@ function toast({ ...props }: Toast) {
       ...props,
       id,
       open: true,
-      onOpenChange: (open) => {
+      onOpenChange: (open: boolean) => {
         if (!open) dismiss()
       },
     },

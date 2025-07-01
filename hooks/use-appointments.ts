@@ -1,7 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
+<<<<<<< HEAD
 import { createClient } from "@/lib/supabase/client"
+=======
+import { supabase } from "@/lib/supabase"
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js"
+>>>>>>> main
 
 export type AppointmentStatus = "pending" | "quoted" | "confirmed" | "in_progress" | "completed" | "cancelled"
 
@@ -51,7 +56,7 @@ export function useAppointments() {
           .from("appointments")
           .select(`
             *,
-            vehicles(*)
+            vehicles!fk_appointment_id(*)
           `)
           .order("appointment_date", { ascending: true })
 
@@ -78,18 +83,18 @@ export function useAppointments() {
           schema: "public",
           table: "appointments",
         },
-        (payload) => {
+        (payload: RealtimePostgresChangesPayload<Appointment>) => {
           console.log("Real-time update received:", payload)
           if (payload.eventType === "INSERT") {
-            setAppointments((prev) => [...prev, payload.new as Appointment])
+            setAppointments((prev: Appointment[]) => [...prev, payload.new as Appointment])
           } else if (payload.eventType === "UPDATE") {
-            setAppointments((prev) =>
-              prev.map((appointment) =>
+            setAppointments((prev: Appointment[]) =>
+              prev.map((appointment: Appointment) =>
                 appointment.id === payload.new.id ? (payload.new as Appointment) : appointment,
               ),
             )
           } else if (payload.eventType === "DELETE") {
-            setAppointments((prev) => prev.filter((appointment) => appointment.id !== payload.old.id))
+            setAppointments((prev: Appointment[]) => prev.filter((appointment: Appointment) => appointment.id !== payload.old.id))
           }
         },
       )
@@ -114,8 +119,8 @@ export function useAppointments() {
       if (error) throw error
 
       // Update local state
-      setAppointments((prev) =>
-        prev.map((appointment) =>
+      setAppointments((prev: Appointment[]) =>
+        prev.map((appointment: Appointment) =>
           appointment.id === appointmentId ? { ...appointment, status } : appointment,
         ),
       )
@@ -141,8 +146,8 @@ export function useAppointments() {
       if (error) throw error
 
       // Update local state
-      setAppointments((prev) =>
-        prev.map((appointment) =>
+      setAppointments((prev: Appointment[]) =>
+        prev.map((appointment: Appointment) =>
           appointment.id === appointmentId ? { ...appointment, price } : appointment,
         ),
       )

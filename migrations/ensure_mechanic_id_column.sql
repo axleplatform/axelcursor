@@ -78,4 +78,4 @@ BEGIN
         -- Create an index for performance
         CREATE INDEX IF NOT EXISTS idx_appointments_mechanic_id ON appointments(mechanic_id);
     END IF;
-END $$; 
+END $$;

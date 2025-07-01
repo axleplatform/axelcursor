@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, Upload, User } from "lucide-react"
+import { ChevronLeft,  User } from "lucide-react"
 
 export default function OnboardingMechanic5Preview() {
   // Mock state for demonstration
@@ -74,7 +74,7 @@ export default function OnboardingMechanic5Preview() {
                       type="button"
                       className="flex items-center gap-2 px-4 py-2 rounded-md text-white font-medium bg-[#294a46] hover:bg-[#1e3632]"
                     >
-                      <Upload className="h-4 w-4" />
+                      <div className="h-4 w-4">📤</div>
                       Upload Photo
                     </button>
                   </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { Wrench, Car, Check } from "lucide-react"
+import { Check } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 
@@ -38,7 +38,7 @@ export default function SignupPage() {
               className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
               style={{ backgroundColor: "#F9F9F9" }}
             >
-              <Car className="h-10 w-10 text-[#294a46]" />
+              <span className="text-2xl sm:text-3xl lg:text-4xl leading-none text-[#294a46] inline-flex items-center justify-center">🚗</span>
             </div>
             <h2 className="text-xl font-bold text-gray-800 mb-4">Car Owner</h2>
 
@@ -75,7 +75,7 @@ export default function SignupPage() {
               className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
               style={{ backgroundColor: "#F9F9F9" }}
             >
-              <Wrench className="h-10 w-10 text-[#294a46]" />
+              <span className="text-2xl sm:text-3xl lg:text-4xl leading-none text-[#294a46] inline-flex items-center justify-center">🔧</span>
             </div>
             <h2 className="text-xl font-bold text-gray-800 mb-4">Mobile Mechanic</h2>
 

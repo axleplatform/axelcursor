@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
+<<<<<<< HEAD
 import { User, LogOut, Settings, ChevronDown } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/use-toast"
@@ -15,6 +16,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+=======
+import { User, ChevronRight } from "lucide-react"
+import { supabase } from "@/lib/supabase"
+>>>>>>> main
 
 export function ProfileDropdown({ user }: { user: any }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -56,7 +61,7 @@ export function ProfileDropdown({ user }: { user: any }) {
         aria-label="Profile menu"
       >
         <User className="h-5 w-5" />
-        <ChevronDown className="h-4 w-4 ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <ChevronRight className="h-4 w-4 ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
       </button>
 
       {isOpen && (
@@ -70,7 +75,7 @@ export function ProfileDropdown({ user }: { user: any }) {
               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
               role="menuitem"
             >
-              <Settings className="h-4 w-4" />
+              <div className="h-4 w-4">⚙️</div>
               Profile Settings
             </button>
             <button
@@ -79,7 +84,6 @@ export function ProfileDropdown({ user }: { user: any }) {
               className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               role="menuitem"
             >
-              <LogOut className="h-4 w-4" />
               {isLoggingOut ? "Logging out..." : "Logout"}
             </button>
           </div>
@@ -87,4 +91,4 @@ export function ProfileDropdown({ user }: { user: any }) {
       )}
     </div>
   )
-} 
+}

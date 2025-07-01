@@ -2,6 +2,65 @@
 /// <reference types="react-dom" />
 /// <reference types="node" />
 
+// React JSX Runtime
+declare module 'react/jsx-runtime' {
+  export * from 'react'
+}
+
+declare module 'react/jsx-dev-runtime' {
+  export * from 'react'
+}
+
+// Next.js modules
+declare module 'next/navigation' {
+  export function useRouter(): {
+    push: (url: string) => void
+    replace: (url: string) => void
+    back: () => void
+    forward: () => void
+    refresh: () => void
+  }
+  export function useSearchParams(): URLSearchParams
+  export function usePathname(): string
+}
+
+declare module 'next/link' {
+  import React from 'react'
+  interface LinkProps {
+    href: string
+    as?: string
+    replace?: boolean
+    scroll?: boolean
+    shallow?: boolean
+    passHref?: boolean
+    prefetch?: boolean
+    locale?: string | false
+    legacyBehavior?: boolean
+    children?: React.ReactNode
+    className?: string
+  }
+  const Link: React.FC<LinkProps>
+  export default Link
+}
+
+// Extend global namespace for process.env
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      NEXT_PUBLIC_SUPABASE_URL?: string
+      NEXT_PUBLIC_SUPABASE_ANON_KEY?: string
+      NODE_ENV: 'development' | 'production' | 'test'
+    }
+  }
+  
+  // JSX namespace
+  namespace JSX {
+    interface IntrinsicElements {
+      [elemName: string]: any
+    }
+  }
+}
+
 declare module 'lucide-react' {
   import { FC, SVGProps } from 'react'
   export interface IconProps extends SVGProps<SVGSVGElement> {
@@ -45,4 +104,4 @@ declare module '@supabase/supabase-js' {
     }
     from(table: string): any
   }
-} 
+}

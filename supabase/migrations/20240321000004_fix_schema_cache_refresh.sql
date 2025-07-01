@@ -47,4 +47,4 @@ SELECT
     data_type as return_type
 FROM information_schema.routines 
 WHERE routine_schema = 'public' 
-AND routine_name IN ('refresh_schema_cache', 'notify_schema_reload'); 
+AND routine_name IN ('refresh_schema_cache', 'notify_schema_reload');

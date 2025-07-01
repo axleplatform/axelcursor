@@ -7,6 +7,7 @@ interface Appointment {
   appointment_date: string
   location: string
   issue_description?: string
+  selected_car_issues?: string[]
   car_runs?: boolean
   selected_services?: string[]
   vehicles?: {
@@ -44,8 +45,92 @@ export interface MechanicQuote {
   }
 }
 
+// Define proper types for the function parameters and return values
+interface CreateQuoteParams {
+  mechanic_id: string
+  appointment_id: string
+  price: number
+  eta: string
+  notes?: string
+}
+
+interface QuoteResponse {
+  success: boolean
+  error?: string
+  data?: any
+}
+
+interface AppointmentWithRelations {
+  id: string
+  status: string
+  appointment_date: string
+  location: string
+  issue_description?: string
+  selected_car_issues?: string[]
+  selected_services?: string[]
+  car_runs?: boolean
+  payment_status?: string
+  selected_mechanic_id?: string
+  vehicles?: {
+    year: string
+    make: string
+    model: string
+    vin?: string
+    mileage?: number
+  } | null
+  mechanic_quotes?: Array<{
+    id: string
+    mechanic_id: string
+    price: number
+    eta: string
+    notes?: string
+    created_at: string
+  }>
+  quote?: {
+    id: string
+    price: number
+    created_at: string
+  }
+}
+
+interface GetAppointmentsResponse {
+  success: boolean
+  appointments?: AppointmentWithRelations[]
+  error?: string
+}
+
+// Type for individual appointment items
+interface RawAppointment {
+  id: string
+  status: string
+  appointment_date: string
+  location: string
+  issue_description?: string
+  selected_car_issues?: string[]
+  selected_services?: string[]
+  car_runs?: boolean
+  payment_status?: string
+  selected_mechanic_id?: string
+  vehicles: {
+    year: string
+    make: string
+    model: string
+    vin?: string
+    mileage?: number
+  } | null
+  mechanic_quotes: Array<{
+    id: string
+    mechanic_id: string
+    price: number
+    eta: string
+    notes?: string
+    created_at: string
+  }>
+}
+
 /**
- * Creates or updates a quote from a mechanic for an appointment
+ * Creates or updates a quote for an appointment
+ * VERSION: 2.0.0 - Enhanced with extensive debugging and verification
  */
 export async function createOrUpdateQuote(
   mechanicId: string,
@@ -53,47 +138,71 @@ export async function createOrUpdateQuote(
   price: number,
   eta: string,
   notes?: string
-): Promise<{ success: boolean; error?: string }> {
-  console.log('=== CREATE/UPDATE QUOTE DEBUG ===');
-  console.log('Received quote data:', {
-    mechanicId,
-    appointmentId,
-    price,
-    eta,
-    notes
-  });
-
+): Promise<QuoteResponse> {
   try {
+    console.log('🎯 === CREATE/UPDATE QUOTE EXTENSIVE DEBUG START (v2.0.0) ===');
+    console.log('🎯 CODE VERSION CHECK: This is the NEW enhanced quote creation code with extensive debugging');
+    console.log('Received quote data:', {
+      mechanicId,
+      appointmentId,
+      price,
+      eta,
+      notes,
+      timestamp: new Date().toISOString(),
+      version: "2.0.0"
+    });
+
+    // Validate mechanic ID format and existence
+    const mechanicValidation = validateMechanicId(mechanicId);
+    if (!mechanicValidation.isValid) {
+      console.error('❌ Invalid mechanic ID:', mechanicValidation.error);
+      return { success: false, error: mechanicValidation.error };
+    }
+
+    console.log('✅ Step 1: Mechanic ID validation passed');
+
     // Verify mechanic profile exists
     const { data: mechanicProfile, error: mechanicError } = await createClient()
       .from('mechanic_profiles')
-      .select('id, user_id')
+      .select('id')
       .eq('id', mechanicId)
       .single();
 
-    console.log('Mechanic profile verification:', {
+    console.log('🔍 Step 2: Mechanic profile verification:', {
+      mechanicId,
       profile: mechanicProfile,
       error: mechanicError
     });
 
-    if (mechanicError || !mechanicProfile) {
+    if (mechanicError) {
       console.error('❌ Mechanic profile verification failed:', mechanicError);
-      return { success: false, error: 'Mechanic profile not found' };
+      return { 
+        success: false, 
+        error: `Mechanic profile not found: ${mechanicError.message}` 
+      };
     }
 
+<<<<<<< HEAD
     // Verify appointment exists and is in a valid state
     const { data: appointment, error: appointmentError } = await createClient()
+=======
+    console.log('✅ Step 2: Mechanic profile exists');
+
+    // Verify appointment exists and is valid
+    const { data: appointment, error: appointmentError } = await supabase
+>>>>>>> main
       .from('appointments')
       .select('id, status')
       .eq('id', appointmentId)
       .single();
 
-    console.log('Appointment verification:', {
+    console.log('🔍 Step 3: Appointment verification:', {
+      appointmentId,
       appointment,
       error: appointmentError
     });
 
-    if (appointmentError || !appointment) {
+    if (appointmentError) {
       console.error('❌ Appointment verification failed:', appointmentError);
       return { success: false, error: 'Appointment not found' };
     }
@@ -103,195 +212,369 @@ export async function createOrUpdateQuote(
       return { success: false, error: `Appointment is ${appointment.status}` };
     }
 
-    // Create or update quote using upsert
-    const quoteData = {
+    console.log('✅ Step 3: Appointment exists and is pending');
+
+    // Check if quote already exists for this mechanic+appointment
+    console.log('🔍 Step 4: Checking for existing quote...');
+    const { data: existingQuote, error: existingError } = await supabase
+      .from('mechanic_quotes')
+      .select('*')
+      .eq('mechanic_id', mechanicId)
+      .eq('appointment_id', appointmentId)
+      .single();
+
+    console.log('🔍 Existing quote check result:', {
+      existingQuote,
+      existingError,
+      hasExistingQuote: !!existingQuote
+    });
+
+    // Prepare quote data
+    const quoteData: CreateQuoteParams = {
       mechanic_id: mechanicId,
       appointment_id: appointmentId,
       price,
       eta: new Date(eta).toISOString(),
-      notes: notes || '',
-      status: 'pending',
-      updated_at: new Date().toISOString()
+      notes: notes || ''
     };
 
-    console.log('Upserting quote with data:', quoteData);
+    console.log('🔍 Step 5: Prepared quote data for upsert:', quoteData);
 
+<<<<<<< HEAD
     const { data: result, error: upsertError } = await createClient()
+=======
+    // Upsert the quote (insert or update if exists)
+    const { data: result, error: upsertError } = await supabase
+>>>>>>> main
       .from('mechanic_quotes')
-      .upsert(quoteData, {
-        onConflict: 'mechanic_id,appointment_id'
+      .upsert(quoteData, { 
+        onConflict: 'mechanic_id,appointment_id',
+        ignoreDuplicates: false 
       })
-      .select()
-      .single();
+      .select();
 
-    console.log('Quote upsert result:', {
+    console.log('🔍 Step 6: Quote upsert result:', {
       result,
-      error: upsertError
+      error: upsertError,
+      resultCount: result?.length,
+      isInsert: !existingQuote,
+      isUpdate: !!existingQuote
     });
 
     if (upsertError) {
       console.error('❌ Quote upsert failed:', upsertError);
-      return { success: false, error: 'Failed to create/update quote' };
+      return { success: false, error: `Failed to create quote: ${upsertError.message}` };
     }
 
-    console.log('✅ Quote operation successful:', result);
-    return { success: true };
-  } catch (error) {
+    console.log('✅ Step 6: Quote upsert successful');
+
+    // CRITICAL: Verify the quote was actually created/updated
+    console.log('🔍 Step 7: VERIFICATION - Checking if quote exists in database...');
+    const { data: verificationQuote, error: verificationError } = await supabase
+      .from('mechanic_quotes')
+      .select('*')
+      .eq('mechanic_id', mechanicId)
+      .eq('appointment_id', appointmentId)
+      .single();
+
+    console.log('🔍 VERIFICATION RESULT:', {
+      verificationQuote,
+      verificationError,
+      quoteExists: !!verificationQuote,
+      quoteId: verificationQuote?.id,
+      quotePrice: verificationQuote?.price,
+      quoteCreatedAt: verificationQuote?.created_at
+    });
+
+    if (!verificationQuote) {
+      console.error('❌ CRITICAL: Quote was not saved to database!');
+      return { success: false, error: 'Quote was not saved properly' };
+    }
+
+    console.log('✅ VERIFICATION PASSED: Quote exists in database');
+    console.log('🎯 === CREATE/UPDATE QUOTE EXTENSIVE DEBUG END ===');
+    return { success: true, data: result };
+
+  } catch (error: unknown) {
     console.error('❌ Unexpected error in createOrUpdateQuote:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return { success: false, error: errorMessage };
   }
 }
 
 /**
  * Gets all quotes for an appointment with real-time updates
  */
-export async function getQuotesForAppointment(appointmentId: string): Promise<{
-  success: boolean
-  quotes?: MechanicQuote[]
-  error?: string
-}> {
+export async function getQuotesForAppointment(appointmentId: string): Promise<any[]> {
   try {
+<<<<<<< HEAD
     const { data, error } = await createClient()
+=======
+    const { data: quotes, error } = await supabase
+>>>>>>> main
       .from("mechanic_quotes")
       .select(`
         *,
-        mechanic:mechanic_id(
-          id,
-          first_name,
-          last_name,
-          profile_image_url,
-          metadata,
-          rating,
-          review_count
-        )
+        mechanic_profiles(first_name, last_name)
       `)
       .eq("appointment_id", appointmentId)
       .order("created_at", { ascending: true })
 
     if (error) {
       console.error("Error getting quotes for appointment:", error)
-      return { success: false, error: "Failed to get quotes" }
+      return []
     }
 
-    return { success: true, quotes: data }
-  } catch (err) {
+    return quotes || []
+  } catch (err: unknown) {
     console.error("Exception in getQuotesForAppointment:", err)
-    return { success: false, error: "An unexpected error occurred" }
+    return []
   }
 }
 
 /**
  * Gets all available appointments for a mechanic to quote
+ * VERSION: 2.0.0 - Enhanced filtering with extensive debugging
  */
-export async function getAvailableAppointmentsForMechanic(mechanicId: string): Promise<{ success: boolean; appointments?: Appointment[]; error?: string }> {
+export async function getAvailableAppointmentsForMechanic(mechanicId: string): Promise<GetAppointmentsResponse> {
   try {
-    console.log("🔍 getAvailableAppointmentsForMechanic called with:", { 
-      mechanicId, 
+    console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG START (v2.0.0) ===");
+    console.log("🔍 CODE VERSION CHECK: This is the NEW enhanced filtering code with extensive debugging");
+    console.log("🔍 getAvailableAppointmentsForMechanic called with:", {
+      mechanicId,
       type: typeof mechanicId,
-      isString: typeof mechanicId === 'string',
-      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
-      isZero: mechanicId === '0'
-    })
+      length: mechanicId?.length,
+      timestamp: new Date().toISOString(),
+      version: "2.0.0"
+    });
 
     // Validate mechanic ID
-    const validation = validateMechanicId(mechanicId)
+    const validation = validateMechanicId(mechanicId);
     if (!validation.isValid) {
-      console.error("❌ Mechanic ID validation failed:", validation.error)
-      return { success: false, error: validation.error }
+      console.error("❌ Mechanic ID validation failed:", validation.error);
+      return { success: false, error: validation.error };
     }
 
-    console.log("✅ mechanicId validation passed:", { 
-      mechanicId, 
-      type: typeof mechanicId,
-      isString: typeof mechanicId === 'string',
-      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
-      isZero: mechanicId === '0'
-    })
-    
-    const { data: appointments, error } = await createClient()
-      .from("appointments")
-      .select("*, vehicles(*)")
-      .eq("status", "pending")
-      .order("appointment_date", { ascending: true })
+    console.log("✅ mechanicId validation passed:", {
+      mechanicId,
+      isValid: validation.isValid
+    });
+
+    // First, get the appointment IDs that this mechanic has already skipped
+    console.log("🔍 Step 1: Fetching skipped appointments...");
+    const { data: skippedAppointments, error: skippedError } = await supabase
+      .from('mechanic_skipped_appointments')
+      .select('appointment_id')
+      .eq('mechanic_id', mechanicId);
+
+    if (skippedError) {
+      console.error("❌ Error fetching skipped appointments:", skippedError);
+      return { success: false, error: skippedError.message };
+    }
+
+    const skippedAppointmentIds = skippedAppointments?.map((skip: { appointment_id: string }) => skip.appointment_id) || [];
+    console.log("🔍 Found skipped appointment IDs:", {
+      count: skippedAppointmentIds.length,
+      ids: skippedAppointmentIds
+    });
+
+    // Second, get the appointment IDs that this mechanic has already quoted
+    console.log("🔍 Step 2: Fetching quoted appointments...");
+    const { data: quotedAppointments, error: quotedError } = await supabase
+      .from('mechanic_quotes')
+      .select('appointment_id')
+      .eq('mechanic_id', mechanicId);
+
+    if (quotedError) {
+      console.error("❌ Error fetching quoted appointments:", quotedError);
+      return { success: false, error: quotedError.message };
+    }
+
+    const quotedAppointmentIds = quotedAppointments?.map((quote: { appointment_id: string }) => quote.appointment_id) || [];
+    console.log("🔍 Found quoted appointment IDs:", {
+      count: quotedAppointmentIds.length,
+      ids: quotedAppointmentIds,
+      rawData: quotedAppointments
+    });
+
+    // Combine both exclusion lists
+    const excludedAppointmentIds = [...skippedAppointmentIds, ...quotedAppointmentIds];
+    console.log("🔍 Step 3: Combined exclusion list:", {
+      totalExcluded: excludedAppointmentIds.length,
+      skippedCount: skippedAppointmentIds.length,
+      quotedCount: quotedAppointmentIds.length,
+      allExcludedIds: excludedAppointmentIds
+    });
+
+    // Get pending appointments, excluding both skipped and quoted appointments
+    console.log("🔍 Step 4: Building query for available appointments...");
+    let query = supabase
+      .from('appointments')
+      .select(`
+        *,
+        vehicles!fk_appointment_id(*),
+        mechanic_quotes!appointment_id(*)
+      `)
+      .eq('status', 'pending');
+
+    console.log("🔍 Base query constructed for status = 'pending'");
+
+    // Exclude appointments that this mechanic has skipped or quoted
+    if (excludedAppointmentIds.length > 0) {
+      query = query.not('id', 'in', `(${excludedAppointmentIds.join(',')})`);
+      console.log("🔍 Applied exclusion filter for IDs:", excludedAppointmentIds);
+    } else {
+      console.log("🔍 No exclusions applied - no skipped or quoted appointments");
+    }
+
+    console.log("🔍 Step 5: Executing query...");
+    const { data: appointments, error } = await query;
 
     if (error) {
-      console.error("❌ Error fetching appointments:", error)
-      return { success: false, error: error.message }
+      console.error("❌ Error fetching appointments:", error);
+      return { success: false, error: error.message };
     }
 
-    console.log("✅ Found available appointments:", { count: appointments?.length || 0 })
-    return { success: true, appointments: appointments || [] }
-  } catch (error: any) {
-    console.error("❌ Error getting available appointments:", { 
-      error, 
-      mechanicId, 
-      type: typeof mechanicId,
-      isString: typeof mechanicId === 'string',
-      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
-      isZero: mechanicId === '0'
-    })
-    return { success: false, error: error.message }
+    console.log("🔍 === QUERY RESULTS ===");
+    console.log("✅ Found available appointments:", { 
+      count: appointments?.length || 0,
+      appointmentIds: appointments?.map((apt: any) => apt.id) || [],
+      fullData: appointments
+    });
+
+    console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG END ===");
+    return { success: true, appointments: appointments || [] };
+
+  } catch (error: unknown) {
+    console.error("❌ Error getting available appointments:", {
+      error,
+      mechanicId,
+      timestamp: new Date().toISOString()
+    });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return { success: false, error: errorMessage };
   }
 }
 
 /**
  * Gets all appointments a mechanic has quoted
+ * VERSION: 2.0.0 - Enhanced querying with extensive debugging
  */
-export async function getQuotedAppointmentsForMechanic(mechanicId: string): Promise<{ success: boolean; appointments?: Appointment[]; error?: string }> {
+export async function getQuotedAppointmentsForMechanic(mechanicId: string): Promise<GetAppointmentsResponse> {
   try {
-    console.log("🔍 getQuotedAppointmentsForMechanic called with:", { 
-      mechanicId, 
+    console.log("🔍 === QUOTED APPOINTMENTS DEBUG START (v2.0.0) ===");
+    console.log("🔍 CODE VERSION CHECK: This is the NEW enhanced querying code with extensive debugging");
+    console.log("🔍 getQuotedAppointmentsForMechanic called with:", {
+      mechanicId,
       type: typeof mechanicId,
-      isString: typeof mechanicId === 'string',
-      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
-      isZero: mechanicId === '0'
-    })
+      length: mechanicId?.length,
+      timestamp: new Date().toISOString(),
+      version: "2.0.0"
+    });
 
     // Validate mechanic ID
-    const validation = validateMechanicId(mechanicId)
+    const validation = validateMechanicId(mechanicId);
     if (!validation.isValid) {
-      console.error("❌ Mechanic ID validation failed:", validation.error)
-      return { success: false, error: validation.error }
+      console.error("❌ Mechanic ID validation failed:", validation.error);
+      return { success: false, error: validation.error };
     }
 
-    console.log("✅ mechanicId validation passed:", { 
-      mechanicId, 
-      type: typeof mechanicId,
-      isString: typeof mechanicId === 'string',
-      length: typeof mechanicId === 'string' ? mechanicId.length : 0,
-      isZero: mechanicId === '0'
-    })
-    
-    const { data: appointments, error } = await createClient()
-      .from("appointments")
-      .select("*, vehicles(*), mechanic_quotes!inner(*)")
-      .eq("mechanic_quotes.mechanic_id", mechanicId)
-      .order("appointment_date", { ascending: true })
+    console.log("✅ mechanicId validation passed:", {
+      mechanicId,
+      isValid: validation.isValid
+    });
+
+    // First, get the appointment IDs that this mechanic has quoted
+    console.log("🔍 Step 1: Fetching appointment IDs that mechanic has quoted...");
+    const { data: quotedAppointments, error: quotedError } = await supabase
+      .from('mechanic_quotes')
+      .select('appointment_id')
+      .eq('mechanic_id', mechanicId);
+
+    if (quotedError) {
+      console.error("❌ Error fetching quoted appointment IDs:", quotedError);
+      return { success: false, error: quotedError.message };
+    }
+
+    const quotedAppointmentIds = quotedAppointments?.map((quote: { appointment_id: string }) => quote.appointment_id) || [];
+    console.log("🔍 Step 2: Found quoted appointment IDs:", {
+      count: quotedAppointmentIds.length,
+      ids: quotedAppointmentIds,
+      rawQuotes: quotedAppointments
+    });
+
+    // If no quoted appointments, return empty array
+    if (quotedAppointmentIds.length === 0) {
+      console.log("✅ No quoted appointments found - returning empty array");
+      return { success: true, appointments: [] };
+    }
+
+    // Get the appointments where this mechanic has submitted quotes
+    console.log("🔍 Step 3: Fetching full appointment details for quoted appointments...");
+    const { data: appointments, error } = await supabase
+      .from('appointments')
+      .select(`
+        *,
+        vehicles!fk_appointment_id(*),
+        mechanic_quotes!appointment_id(*)
+      `)
+      .in('id', quotedAppointmentIds)
+      .in('status', ['pending', 'quoted', 'confirmed', 'in_progress']);
+
+    console.log("🔍 Step 4: Query executed with filters:", {
+      appointmentIds: quotedAppointmentIds,
+      statusFilters: ['pending', 'quoted', 'confirmed', 'in_progress']
+    });
 
     if (error) {
-      console.error("❌ Error fetching quoted appointments:", error)
-      return { success: false, error: error.message }
+      console.error("❌ Error fetching quoted appointments:", error);
+      return { success: false, error: error.message };
     }
 
-    // Transform the data to match the Appointment interface
-    const transformedAppointments = appointments?.map((appointment: any) => ({
-      ...appointment,
-      quote: appointment.mechanic_quotes?.[0] ? {
-        id: appointment.mechanic_quotes[0].id,
-        price: appointment.mechanic_quotes[0].price,
-        created_at: appointment.mechanic_quotes[0].created_at
-      } : undefined
-    })) || []
+    console.log("🔍 Step 5: Raw appointment data retrieved:", {
+      count: appointments?.length || 0,
+      appointmentIds: appointments?.map((apt: any) => apt.id) || [],
+      appointmentStatuses: appointments?.map((apt: any) => ({ id: apt.id, status: apt.status })) || []
+    });
 
-    console.log("✅ Found quoted appointments:", { 
+    // Transform the data to match expected format with proper typing
+    const transformedAppointments = appointments?.map((appointment: RawAppointment): AppointmentWithRelations => {
+      const myQuote = appointment.mechanic_quotes.find(q => q.mechanic_id === mechanicId);
+      console.log("🔍 Processing appointment:", {
+        appointmentId: appointment.id,
+        status: appointment.status,
+        hasMyQuote: !!myQuote,
+        myQuoteData: myQuote
+      });
+      
+      return {
+        ...appointment,
+        quote: myQuote ? {
+          id: myQuote.id,
+          price: myQuote.price,
+          created_at: myQuote.created_at
+        } : undefined
+      };
+    }) || [];
+
+    console.log("🔍 === TRANSFORMATION RESULTS ===");
+    console.log("✅ Transformed quoted appointments:", {
       count: transformedAppointments.length,
-      mechanicId,
-      type: typeof mechanicId
-    })
-    return { success: true, appointments: transformedAppointments }
-  } catch (error: any) {
-    console.error("❌ Error getting quoted appointments:", error)
-    return { success: false, error: error.message }
+      appointmentDetails: transformedAppointments.map((apt: AppointmentWithRelations) => ({
+        id: apt.id,
+        status: apt.status,
+        hasQuote: !!apt.quote,
+        quotePrice: apt.quote?.price
+      }))
+    });
+
+    console.log("🔍 === QUOTED APPOINTMENTS DEBUG END ===");
+    return { success: true, appointments: transformedAppointments };
+
+  } catch (error: unknown) {
+    console.error("❌ Error getting quoted appointments:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return { success: false, error: errorMessage };
   }
 }
 

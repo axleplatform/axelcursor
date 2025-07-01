@@ -91,4 +91,4 @@ DROP TRIGGER IF EXISTS log_mechanic_skip_trigger ON mechanic_skipped_appointment
 CREATE TRIGGER log_mechanic_skip_trigger
     AFTER INSERT ON mechanic_skipped_appointments
     FOR EACH ROW
-    EXECUTE FUNCTION log_mechanic_skip(); 
+    EXECUTE FUNCTION log_mechanic_skip();

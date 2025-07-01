@@ -67,4 +67,4 @@ BEGIN
 END $$;
 
 -- Force refresh the schema cache
-SELECT pg_reload_conf(); 
+SELECT pg_reload_conf();
