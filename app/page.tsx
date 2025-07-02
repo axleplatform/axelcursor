@@ -911,9 +911,9 @@ export default function HomePage(): React.JSX.Element {
                   ref={continueButtonRef}
                   type="submit"
                   disabled={isSubmitting || !isFormComplete}
-                  className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 relative focus:outline-none focus:ring-0 ${
+                  className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 relative focus:outline-none focus:ring-0 hover:outline-none active:outline-none ${
                     isFormComplete && !isSubmitting 
-                      ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] hover:shadow-md active:scale-[0.99]" 
+                      ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] active:scale-[0.99]" 
                       : "bg-[#294a46]/40 text-white cursor-pointer hover:bg-[#294a46]/60 hover:scale-[1.02] active:scale-[0.98]"
                   }`}
                   onClick={(e) => {
@@ -1105,6 +1105,21 @@ export default function HomePage(): React.JSX.Element {
         
         .animate-shake {
           animation: shake 0.5s ease-in-out;
+        }
+        
+        /* Remove all outline and glow effects from continue button */
+        button[type="submit"] {
+          outline: none !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
+        
+        button[type="submit"]:hover,
+        button[type="submit"]:focus,
+        button[type="submit"]:active {
+          outline: none !important;
+          box-shadow: none !important;
+          border: none !important;
         }
         
         /* Screen reader only class */

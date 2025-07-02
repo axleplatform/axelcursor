@@ -269,6 +269,11 @@ export default function MechanicDashboard() {
     setSearchQuery('');
   };
 
+  // Helper function to format price - show whole numbers without .00
+  const formatPrice = (price: number): string => {
+    return price % 1 === 0 ? `$${price.toFixed(0)}` : `$${price.toFixed(2)}`;
+  };
+
   // Generate available dates (next 7 days)
   const getAvailableDates = (): DateOption[] => {
     const dates: DateOption[] = [];
@@ -1724,7 +1729,7 @@ export default function MechanicDashboard() {
                             {/* Price Quote */}
                             {myQuote && (
                               <div className="text-4xl font-bold text-[#294a46]">
-                                ${myQuote.price.toFixed(2)}
+                                {formatPrice(myQuote.price)}
                               </div>
                             )}
                             
@@ -2108,11 +2113,11 @@ export default function MechanicDashboard() {
                       {filteredAvailableAppointments[currentAvailableIndex].selected_services && (
                         <div className="flex-1">
                           <h4 className="text-sm font-medium mb-2">Selected Services</h4>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-nowrap gap-1 overflow-x-auto">
                             {filteredAvailableAppointments[currentAvailableIndex].selected_services.map((service: string, index: number) => (
                               <span
                                 key={index}
-                                className="bg-white/20 text-xs px-3 py-1 rounded-full"
+                                className="bg-white/20 text-xs px-3 py-1 rounded-full whitespace-nowrap"
                               >
                                 {service}
                               </span>
@@ -2125,7 +2130,7 @@ export default function MechanicDashboard() {
                       {filteredAvailableAppointments[currentAvailableIndex].car_runs !== null && (
                         <div className="flex-1 text-right">
                           <h4 className="text-sm font-medium mb-2">Car Status</h4>
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1">
                             <div className={`w-3 h-3 rounded-full ${filteredAvailableAppointments[currentAvailableIndex].car_runs ? 'bg-green-400' : 'bg-red-400'}`}></div>
                             <span className="text-sm">
                               {filteredAvailableAppointments[currentAvailableIndex].car_runs
