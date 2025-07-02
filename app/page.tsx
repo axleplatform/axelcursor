@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useCallback, useEffect, useRef } from "react"
+import { useState, useCallback, useEffect, useRef, Suspense } from "react"
 import type { FormEvent, ChangeEvent, KeyboardEvent } from 'react'
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -33,7 +33,8 @@ interface SupabaseQueryResult {
   error: unknown
 }
 
-export default function HomePage(): React.JSX.Element {
+// Component that uses useSearchParams - needs to be wrapped in Suspense
+function HomePageContent(): React.JSX.Element {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
@@ -1148,5 +1149,30 @@ export default function HomePage(): React.JSX.Element {
         }
       `}</style>
     </div>
+  )
+}
+
+// Loading fallback component
+function HomePageLoading(): React.JSX.Element {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <SiteHeader />
+      <main className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294a46] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  )
+}
+
+// Main export with Suspense wrapper
+export default function HomePage(): React.JSX.Element {
+  return (
+    <Suspense fallback={<HomePageLoading />}>
+      <HomePageContent />
+    </Suspense>
   )
 }
