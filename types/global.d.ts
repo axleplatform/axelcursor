@@ -79,12 +79,7 @@ declare module 'lucide-react' {
   export const ChevronRight: Icon
 }
 
-declare module '@supabase/auth-helpers-nextjs' {
-  import { SupabaseClient } from '@supabase/supabase-js'
-  export function createClientComponentClient(): SupabaseClient
-  export function createServerComponentClient(): SupabaseClient
-  export function createRouteHandlerClient(): SupabaseClient
-}
+
 
 declare module '@supabase/supabase-js' {
   export interface RealtimePostgresChangesPayload<T = any> {

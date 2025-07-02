@@ -11,7 +11,7 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createBrowserClient } from "@supabase/ssr"
 import { getQuotesForAppointment } from "@/lib/mechanic-quotes"
 
 export default function PickMechanicPage() {
@@ -20,7 +20,10 @@ export default function PickMechanicPage() {
  const router = useRouter()
  const searchParams = useSearchParams()
  const { toast } = useToast()
- const supabase = createClientComponentClient()
+ const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+ )
 
  const [appointment, setAppointment] = useState(null)
  const [isLoading, setIsLoading] = useState(true)
