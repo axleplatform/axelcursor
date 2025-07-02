@@ -25,9 +25,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createServerClient(supabaseUrl, supabaseServiceKey, {
-      cookies: {}
-    })
+    const supabase = createServerClient(supabaseUrl, supabaseServiceKey)
 
     console.log('🕒 Starting overdue appointment cleanup...')
 
