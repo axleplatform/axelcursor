@@ -2,7 +2,7 @@
   "version": 2,
   "devCommand": "next dev",
   "framework": "nextjs",
-  "installCommand": "echo 'Starting clean install with Supabase v2.50.2' && rm -rf node_modules package-lock.json pnpm-lock.yaml yarn.lock .npm .pnpm-store .next 2>/dev/null || true && npm cache clean --force && npm install @supabase/supabase-js@2.50.2 --save-exact && npm install --verbose --legacy-peer-deps",
+  "installCommand": "npm install",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "regions": ["iad1"],
