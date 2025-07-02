@@ -8,7 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Formats a date string into a readable format
  * @param dateString - The date string to format
- * @returns A formatted date string in the format "Mon, Dec 25, 2023 at 2:30 PM"
+ * @returns A formatted date string in the format "Tuesday, July 1st at 3:05 PM"
  */
 export function formatDate(dateString: string): string {
   try {
@@ -16,17 +16,48 @@ export function formatDate(dateString: string): string {
     if (isNaN(date.getTime())) {
       return 'Invalid date'
     }
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    
+    // Get day of week
+    const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' })
+    
+    // Get month
+    const month = date.toLocaleDateString('en-US', { month: 'long' })
+    
+    // Get day with ordinal suffix
+    const day = date.getDate()
+    const ordinalSuffix = getOrdinalSuffix(day)
+    
+    // Get time without leading zero
+    const hour = date.getHours()
+    const minute = date.getMinutes()
+    const ampm = hour >= 12 ? 'PM' : 'AM'
+    const displayHour = hour % 12 || 12 // Convert 0 to 12 for 12 AM
+    const displayMinute = minute < 10 ? `0${minute}` : `${minute}`
+    
+    return `${dayOfWeek}, ${month} ${day}${ordinalSuffix} at ${displayHour}:${displayMinute} ${ampm}`
   } catch (error: unknown) {
     return 'Invalid date'
   }
+}
+
+/**
+ * Returns the ordinal suffix for a number (st, nd, rd, th)
+ * @param num - The number to get the ordinal suffix for
+ * @returns The ordinal suffix
+ */
+function getOrdinalSuffix(num: number): string {
+  const j = num % 10
+  const k = num % 100
+  if (j === 1 && k !== 11) {
+    return 'st'
+  }
+  if (j === 2 && k !== 12) {
+    return 'nd'
+  }
+  if (j === 3 && k !== 13) {
+    return 'rd'
+  }
+  return 'th'
 }
 
 /**

@@ -589,7 +589,8 @@ export default function HomePage(): React.JSX.Element {
                            document.querySelector('[data-testid="date-selector"]')
             break
           case 'appointmentTime':
-            targetElement = document.querySelector('[data-testid="time-selector"]') ||
+            targetElement = document.querySelector('.time-selector button') ||
+                           document.querySelector('[data-testid="time-selector"]') ||
                            document.querySelector('select[aria-label*="time"]')
             break
         }
@@ -624,7 +625,8 @@ export default function HomePage(): React.JSX.Element {
                              document.querySelector('[data-testid="date-selector"]')
               break
             case 'appointmentTime':
-              targetElement = document.querySelector('[data-testid="time-selector"]') ||
+              targetElement = document.querySelector('.time-selector button') ||
+                             document.querySelector('[data-testid="time-selector"]') ||
                              document.querySelector('select[aria-label*="time"]')
               break
           }
@@ -912,7 +914,7 @@ export default function HomePage(): React.JSX.Element {
                   className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 relative ${
                     isFormComplete && !isSubmitting 
                       ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] hover:shadow-md active:scale-[0.99]" 
-                      : "bg-[#294a46]/40 text-white cursor-pointer hover:bg-[#294a46]/60 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled-button-feedback"
+                      : "bg-[#294a46]/40 text-white cursor-pointer hover:bg-[#294a46]/60 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
                   }`}
                   onClick={(e) => {
                     if (!isFormComplete && !isSubmitting) {
