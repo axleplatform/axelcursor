@@ -2,7 +2,7 @@
   "version": 2,
   "devCommand": "next dev",
   "framework": "nextjs",
-  "installCommand": "npm install",
+  "installCommand": "npm install @supabase/supabase-js@2.50.2 --save-exact && npm install",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "regions": ["iad1"],
