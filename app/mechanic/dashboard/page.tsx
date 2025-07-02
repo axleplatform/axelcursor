@@ -2113,7 +2113,7 @@ export default function MechanicDashboard() {
                       {filteredAvailableAppointments[currentAvailableIndex].selected_services && (
                         <div className="flex-1">
                           <h4 className="text-sm font-medium mb-2">Selected Services</h4>
-                          <div className="flex flex-nowrap gap-1 overflow-x-auto">
+                          <div className="flex flex-nowrap gap-2 overflow-x-auto">
                             {filteredAvailableAppointments[currentAvailableIndex].selected_services.map((service: string, index: number) => (
                               <span
                                 key={index}
@@ -2146,11 +2146,11 @@ export default function MechanicDashboard() {
                     {filteredAvailableAppointments[currentAvailableIndex].selected_car_issues && filteredAvailableAppointments[currentAvailableIndex].selected_car_issues.length > 0 ? (
                       <div className="mb-6">
                         <h4 className="text-sm font-medium mb-2">Car Issues</h4>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-nowrap gap-2 overflow-x-auto">
                           {filteredAvailableAppointments[currentAvailableIndex].selected_car_issues.map((issue: string, index: number) => (
                             <span
                               key={index}
-                              className="bg-orange-200/30 text-orange-100 text-xs px-3 py-1 rounded-full"
+                              className="bg-orange-200/30 text-orange-100 text-xs px-3 py-1 rounded-full whitespace-nowrap"
                             >
                               {issue}
                             </span>
