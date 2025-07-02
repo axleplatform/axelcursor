@@ -42,7 +42,7 @@ export function SiteHeader() {
           </Link>
         </div>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Navigation - Combined */}
         <div className="hidden md:flex items-center space-x-6">
           <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-transparent hover:border-gray-200 hover:bg-gray-50 transition-all duration-200">
             Log In
@@ -50,10 +50,6 @@ export function SiteHeader() {
           <Button asChild className="rounded-full bg-[#294a46] hover:bg-[#1e3632] text-white">
             <Link href="/signup">Sign Up</Link>
           </Button>
-        </div>
-
-        {/* Desktop Right Navigation */}
-        <div className="hidden md:flex items-center space-x-6">
           <Link
             href="/about"
             className={cn(
@@ -89,37 +85,44 @@ export function SiteHeader() {
       {/* Mobile Menu Dropdown */}
       {isMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-200 py-4 px-4 shadow-lg">
-          <nav className="flex flex-col space-y-4">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-transparent hover:border-gray-200 hover:bg-gray-50 transition-all duration-200"
-            >
-              Log In
-            </Link>
-            <Link
-              href="/signup"
-              className="text-sm font-medium text-white bg-[#294a46] hover:bg-[#1e3632] py-2 px-4 rounded-full inline-block text-center"
-            >
-              Sign Up
-            </Link>
-            <Link
-              href="/about"
-              className={cn(
-                "text-sm font-medium py-2",
-                isActive("/about") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
-              )}
-            >
-              About
-            </Link>
-            <Link
-              href="/help"
-              className={cn(
-                "text-sm font-medium py-2",
-                isActive("/help") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
-              )}
-            >
-              Help
-            </Link>
+          <nav className="space-y-4">
+            {/* Sign Up and Log In buttons side by side */}
+            <div className="flex space-x-3">
+              <Link
+                href="/login"
+                className="flex-1 text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-center"
+              >
+                Log In
+              </Link>
+              <Link
+                href="/signup"
+                className="flex-1 text-sm font-medium text-white bg-[#294a46] hover:bg-[#1e3632] py-2 px-4 rounded-full text-center transition-all duration-200"
+              >
+                Sign Up
+              </Link>
+            </div>
+            
+            {/* Other navigation links */}
+            <div className="flex flex-col space-y-2">
+              <Link
+                href="/about"
+                className={cn(
+                  "text-sm font-medium py-2",
+                  isActive("/about") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
+                )}
+              >
+                About
+              </Link>
+              <Link
+                href="/help"
+                className={cn(
+                  "text-sm font-medium py-2",
+                  isActive("/help") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
+                )}
+              >
+                Help
+              </Link>
+            </div>
           </nav>
         </div>
       )}
