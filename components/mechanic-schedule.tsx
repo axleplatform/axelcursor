@@ -85,38 +85,22 @@ export default function MechanicSchedule({
       time: string
     }> = []
 
-    // Check upcoming appointments (confirmed)
-    upcomingAppointments.forEach(appointment => {
+    // Check all appointments and determine status based on selected_mechanic_id
+    const allAppointments = [...upcomingAppointments, ...availableAppointments]
+    
+    allAppointments.forEach(appointment => {
       const myQuote = appointment.mechanic_quotes?.[0]
       if (myQuote?.eta) {
         const etaDate = new Date(myQuote.eta)
         const etaDateString = etaDate.toISOString().split('T')[0]
         
         if (etaDateString === dateString) {
+          // Determine if this appointment is confirmed (customer selected this mechanic)
+          const isConfirmed = appointment.selected_mechanic_id === myQuote.mechanic_id
+          
           appointments.push({
             appointment,
-            status: 'confirmed',
-            time: etaDate.toLocaleTimeString('en-US', { 
-              hour: 'numeric', 
-              minute: '2-digit',
-              hour12: true 
-            })
-          })
-        }
-      }
-    })
-
-    // Check available appointments (pending)
-    availableAppointments.forEach(appointment => {
-      const myQuote = appointment.mechanic_quotes?.[0]
-      if (myQuote?.eta) {
-        const etaDate = new Date(myQuote.eta)
-        const etaDateString = etaDate.toISOString().split('T')[0]
-        
-        if (etaDateString === dateString) {
-          appointments.push({
-            appointment,
-            status: 'pending',
+            status: isConfirmed ? 'confirmed' : 'pending',
             time: etaDate.toLocaleTimeString('en-US', { 
               hour: 'numeric', 
               minute: '2-digit',
@@ -143,7 +127,7 @@ export default function MechanicSchedule({
 
       <div className="flex items-center gap-4 mb-4">
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#294a46' }}></div>
           <span className="text-sm">Confirmed</span>
         </div>
         <div className="flex items-center gap-1">
@@ -179,8 +163,10 @@ export default function MechanicSchedule({
                 {day.getDate()}
               </div>
               {appointments.length > 0 && (
-                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {appointments.length}
+                <div className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center border border-white shadow-sm">
+                  <span className="text-[10px] font-semibold leading-none">
+                    {appointments.length > 9 ? '9+' : appointments.length}
+                  </span>
                 </div>
               )}
             </div>
@@ -235,7 +221,7 @@ export default function MechanicSchedule({
                             )}
                             {/* Status Dot */}
                             <div className={`w-2 h-2 rounded-full ${
-                              status === 'confirmed' ? 'bg-green-500' : 'bg-yellow-500'
+                              status === 'confirmed' ? 'bg-[#294a46]' : 'bg-yellow-500'
                             }`}></div>
                           </div>
                         </div>

@@ -4,7 +4,7 @@ import React from "react"
 import { useState, useEffect } from "react"
 import type { ChangeEvent } from 'react'
 import { useRouter } from "next/navigation"
-import { Search, Loader2, Clock, MapPin, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { Search, Loader2, Clock, MapPin, X, ChevronLeft, ChevronRight, Check } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { useToast } from "@/components/ui/use-toast"
 import Footer from "@/components/footer"
@@ -20,6 +20,13 @@ import { formatDate, validateMechanicId } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { ProfileDropdown } from "@/components/profile-dropdown"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import type { 
   Appointment, 
   MechanicProfile, 
@@ -132,6 +139,10 @@ export default function MechanicDashboard() {
   const [editTime, setEditTime] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
+  // Refer a Friend modal state
+  const [showReferModal, setShowReferModal] = useState(false);
+  const [isLinkCopied, setIsLinkCopied] = useState(false);
+
   // Update selectedDate and selectedTime when current available appointment changes
   useEffect(() => {
     if (availableAppointments.length > 0 && availableAppointments[currentAvailableIndex]) {
@@ -175,6 +186,23 @@ export default function MechanicDashboard() {
   const showNotification = (message: string, type: NotificationState['type'] = 'error') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
+  };
+
+  // Copy link to clipboard function
+  const copyLinkToClipboard = async () => {
+    const landingPageUrl = window.location.origin;
+    
+    try {
+      await navigator.clipboard.writeText(landingPageUrl);
+      setIsLinkCopied(true);
+      showNotification('Link copied! Thank you for sharing.', 'success');
+      
+      // Reset the copied state after 2 seconds
+      setTimeout(() => setIsLinkCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      showNotification('Failed to copy link. Please try again.', 'error');
+    }
   };
 
   // Generate available dates (next 7 days)
@@ -1510,7 +1538,10 @@ export default function MechanicDashboard() {
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             </div>
-            <button className="bg-[#294a46] text-white px-4 py-2 rounded-full hover:bg-[#1e3632] transition-colors flex items-center gap-2">
+            <button 
+              onClick={() => setShowReferModal(true)}
+              className="bg-[#294a46] text-white px-4 py-2 rounded-full hover:bg-[#1e3632] transition-colors flex items-center gap-2"
+            >
               Refer a friend
             </button>
             <ProfileDropdown />
@@ -2325,6 +2356,58 @@ export default function MechanicDashboard() {
           </div>
         </div>
       )}
+
+      {/* Refer a Friend Modal */}
+      <Dialog open={showReferModal} onOpenChange={setShowReferModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl font-bold text-gray-900">
+              Refer a Friend
+            </DialogTitle>
+            <DialogDescription className="text-center text-gray-600">
+              Thank you for helping us grow! Share the link below with your friends.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={window.location.origin}
+                readOnly
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 focus:outline-none"
+                placeholder="Landing page URL"
+              />
+              <button
+                onClick={copyLinkToClipboard}
+                className={`px-4 py-2 rounded-md transition-all duration-200 flex items-center gap-2 ${
+                  isLinkCopied 
+                    ? 'bg-green-500 text-white hover:bg-green-600' 
+                    : 'bg-[#294a46] text-white hover:bg-[#1e3632]'
+                }`}
+              >
+                {isLinkCopied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <span className="text-sm">📋</span>
+                    Copy Link
+                  </>
+                )}
+              </button>
+            </div>
+            
+            <div className="text-center">
+              <p className="text-sm text-gray-500">
+                When your friends sign up using this link, you'll both benefit from our referral program!
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

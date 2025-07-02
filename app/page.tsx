@@ -567,215 +567,73 @@ export default function HomePage(): React.JSX.Element {
     if (!isFormComplete && !isSubmitting) {
       setShowMissingFields(true)
       
-      // Clear any existing animations first
-      const existingHighlights = document.querySelectorAll('.missing-field-highlight')
-      existingHighlights.forEach(el => {
-        el.classList.remove('missing-field-highlight')
+      // Simple red border for missing fields
+      missingFields.forEach((fieldName) => {
+        let targetElement: HTMLElement | null = null
+        
+        switch (fieldName) {
+          case 'address':
+            targetElement = document.querySelector('input[name="address"]')
+            break
+          case 'year':
+            targetElement = document.querySelector('select[name="year"]')
+            break
+          case 'make':
+            targetElement = document.querySelector('select[name="make"]')
+            break
+          case 'model':
+            targetElement = document.querySelector('input[name="model"]')
+            break
+          case 'appointmentDate':
+            targetElement = document.querySelector('input[type="date"]') || 
+                           document.querySelector('[data-testid="date-selector"]')
+            break
+          case 'appointmentTime':
+            targetElement = document.querySelector('[data-testid="time-selector"]') ||
+                           document.querySelector('select[aria-label*="time"]')
+            break
+        }
+        
+        if (targetElement) {
+          targetElement.style.borderColor = '#ef4444'
+        }
       })
       
-      // Enhanced visual feedback for all missing fields with improved targeting
-      missingFields.forEach((fieldName, index) => {
-        setTimeout(() => {
+      // Auto-hide after 3 seconds
+      setTimeout(() => {
+        setShowMissingFields(false)
+        // Remove red borders
+        missingFields.forEach((fieldName) => {
           let targetElement: HTMLElement | null = null
           
-          // More specific selectors for better targeting
           switch (fieldName) {
             case 'address':
-              targetElement = document.querySelector('input[name="address"]') ||
-                             document.querySelector('input[placeholder*="address"], input[placeholder*="Address"]') ||
-                             document.querySelector('input[placeholder*="location"], input[placeholder*="Location"]')
+              targetElement = document.querySelector('input[name="address"]')
               break
             case 'year':
-              targetElement = document.querySelector('select[name="year"]') ||
-                             document.querySelector('select[aria-label*="year"], select[aria-label*="Year"]') ||
-                             document.querySelector('select[data-field="year"]')
+              targetElement = document.querySelector('select[name="year"]')
               break
             case 'make':
-              targetElement = document.querySelector('select[name="make"]') ||
-                             document.querySelector('select[aria-label*="make"], select[aria-label*="Make"]') ||
-                             document.querySelector('select[data-field="make"]')
+              targetElement = document.querySelector('select[name="make"]')
               break
             case 'model':
-              targetElement = document.querySelector('input[name="model"]') ||
-                             document.querySelector('input[placeholder*="model"], input[placeholder*="Model"]') ||
-                             document.querySelector('input[data-field="model"]')
+              targetElement = document.querySelector('input[name="model"]')
               break
             case 'appointmentDate':
               targetElement = document.querySelector('input[type="date"]') || 
-                             document.querySelector('[data-testid="date-selector"]') ||
-                             document.querySelector('.date-selector') ||
-                             document.querySelector('input[aria-label*="date"], input[aria-label*="Date"]') ||
-                             document.querySelector('[data-field="appointmentDate"]')
+                             document.querySelector('[data-testid="date-selector"]')
               break
             case 'appointmentTime':
               targetElement = document.querySelector('[data-testid="time-selector"]') ||
-                             document.querySelector('.time-selector') ||
-                             document.querySelector('select[aria-label*="time"], select[aria-label*="Time"]') ||
-                             document.querySelector('input[type="time"]') ||
-                             document.querySelector('[data-field="appointmentTime"]')
+                             document.querySelector('select[aria-label*="time"]')
               break
           }
           
           if (targetElement) {
-            // Add CSS class for consistent styling
-            targetElement.classList.add('missing-field-highlight')
-            
-            // Enhanced highlighting animation with more visual impact
-            targetElement.style.transition = 'all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1)'
-            targetElement.style.transform = 'scale(1.02)'
-            targetElement.style.boxShadow = '0 0 0 4px rgba(239, 68, 68, 0.6), 0 0 20px rgba(239, 68, 68, 0.3)'
-            targetElement.style.borderColor = '#ef4444'
-            targetElement.style.backgroundColor = 'rgba(239, 68, 68, 0.05)'
-            targetElement.style.zIndex = '10'
-            
-            // Add ARIA live region announcement for screen readers
-            const announcement = document.createElement('div')
-            announcement.setAttribute('aria-live', 'polite')
-            announcement.setAttribute('aria-atomic', 'true')
-            announcement.className = 'sr-only'
-            announcement.textContent = `Required field missing: ${fieldName.replace(/([A-Z])/g, ' $1').toLowerCase()}`
-            document.body.appendChild(announcement)
-            
-            // Add shake and glow animations
-            targetElement.style.animation = 'shake 0.5s ease-in-out, glow 0.5s ease-in-out'
-            
-            // Reset styles after animation
-            setTimeout(() => {
-              if (targetElement) {
-                targetElement.style.transform = ''
-                targetElement.style.boxShadow = ''
-                targetElement.style.animation = ''
-                targetElement.style.borderColor = ''
-                targetElement.style.backgroundColor = ''
-                targetElement.style.zIndex = ''
-                targetElement.style.transition = ''
-                targetElement.classList.remove('missing-field-highlight')
-              }
-              // Remove the announcement element
-              if (announcement && announcement.parentNode) {
-                announcement.parentNode.removeChild(announcement)
-              }
-            }, 3000)
+            targetElement.style.borderColor = ''
           }
-        }, index * 150) // Reduced stagger for faster feedback
-      })
-      
-      // Enhanced scrolling and focusing to the first missing field
-      const firstMissingField = missingFields[0]
-      if (firstMissingField) {
-        setTimeout(() => {
-          let targetElement: HTMLElement | null = null
-          
-          switch (firstMissingField) {
-            case 'address':
-              targetElement = document.querySelector('input[name="address"]') ||
-                             document.querySelector('input[placeholder*="address"], input[placeholder*="Address"]')
-              break
-            case 'year':
-              targetElement = document.querySelector('select[name="year"]') ||
-                             document.querySelector('select[aria-label*="year"], select[aria-label*="Year"]')
-              break
-            case 'make':
-              targetElement = document.querySelector('select[name="make"]') ||
-                             document.querySelector('select[aria-label*="make"], select[aria-label*="Make"]')
-              break
-            case 'model':
-              targetElement = document.querySelector('input[name="model"]') ||
-                             document.querySelector('input[placeholder*="model"], input[placeholder*="Model"]')
-              break
-            case 'appointmentDate':
-              targetElement = document.querySelector('input[type="date"]') || 
-                             document.querySelector('[data-testid="date-selector"]') ||
-                             document.querySelector('.date-selector') ||
-                             document.querySelector('.date-time-selector')
-              break
-            case 'appointmentTime':
-              targetElement = document.querySelector('[data-testid="time-selector"]') ||
-                             document.querySelector('.time-selector') ||
-                             document.querySelector('select[aria-label*="time"], select[aria-label*="Time"]') ||
-                             document.querySelector('.date-time-selector')
-              break
-          }
-          
-          if (targetElement) {
-            // Enhanced smooth scroll with better positioning
-            const elementRect = targetElement.getBoundingClientRect()
-            const offset = 100 // Adjusted offset for better visibility
-            const targetPosition = window.pageYOffset + elementRect.top - offset
-            
-            // Ensure we don't scroll past the top of the page
-            const finalPosition = Math.max(0, targetPosition)
-            
-            window.scrollTo({
-              top: finalPosition,
-              behavior: 'smooth'
-            })
-            
-            // Enhanced focus logic with better element detection
-            setTimeout(() => {
-              if (targetElement) {
-                // Check if element is focusable
-                if ('focus' in targetElement && typeof targetElement.focus === 'function') {
-                  try {
-                    (targetElement as HTMLInputElement | HTMLSelectElement).focus()
-                    
-                    // Add a subtle focus ring for extra visibility
-                    targetElement.style.outline = '2px solid #3b82f6'
-                    targetElement.style.outlineOffset = '2px'
-                    
-                    // Remove focus ring after a delay
-                    setTimeout(() => {
-                      if (targetElement) {
-                        targetElement.style.outline = ''
-                        targetElement.style.outlineOffset = ''
-                      }
-                    }, 2000)
-                  } catch (focusError) {
-                    console.warn('Focus failed:', focusError)
-                  }
-                }
-                
-                // For non-focusable elements, ensure they're visible
-                const isInViewport = elementRect.top >= 0 && elementRect.bottom <= window.innerHeight
-                if (!isInViewport) {
-                  targetElement.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center',
-                    inline: 'nearest'
-                  })
-                }
-              }
-            }, 500)
-          }
-        }, 200) // Reduced delay for faster response
-      }
-      
-      // Enhanced auto-hide with user interaction detection
-      const hideTimeout = setTimeout(() => setShowMissingFields(false), 6000) // Reduced to 6 seconds
-      
-      // Clear timeout if user starts interacting with form
-      const clearTimeoutOnInteraction = () => {
-        clearTimeout(hideTimeout)
-        document.removeEventListener('keydown', clearTimeoutOnInteraction)
-        document.removeEventListener('click', clearTimeoutOnInteraction)
-      }
-      
-      document.addEventListener('keydown', clearTimeoutOnInteraction, { once: true })
-      document.addEventListener('click', clearTimeoutOnInteraction, { once: true })
-      
-      // Announce to screen readers
-      const globalAnnouncement = document.createElement('div')
-      globalAnnouncement.setAttribute('aria-live', 'assertive')
-      globalAnnouncement.setAttribute('aria-atomic', 'true')
-      globalAnnouncement.className = 'sr-only'
-      globalAnnouncement.textContent = `Please complete ${missingFields.length} required field${missingFields.length > 1 ? 's' : ''} to continue. Highlighted fields need your attention.`
-      document.body.appendChild(globalAnnouncement)
-      
-      setTimeout(() => {
-        if (globalAnnouncement && globalAnnouncement.parentNode) {
-          globalAnnouncement.parentNode.removeChild(globalAnnouncement)
-        }
-      }, 5000)
+        })
+      }, 3000)
     }
   }, [isFormComplete, isSubmitting, missingFields])
 
@@ -866,9 +724,7 @@ export default function HomePage(): React.JSX.Element {
                   className={`block w-full p-4 pl-10 pr-16 text-sm text-gray-900 border rounded-lg bg-white relative z-10 transition-all duration-300 ${
                     errors.address 
                       ? "border-red-500" 
-                      : showMissingFields && missingFields.includes('address')
-                        ? "border-amber-400 bg-amber-50 animate-pulse"
-                        : "border-gray-300"
+                      : "border-gray-300"
                   }`}
                 />
               </div>
@@ -896,9 +752,7 @@ export default function HomePage(): React.JSX.Element {
                   className={`w-full h-[46px] px-2 pr-6 text-sm border rounded-md bg-gray-50 appearance-none transition-all duration-300 ${
                     errors.year 
                       ? "border-red-500" 
-                      : showMissingFields && missingFields.includes('year')
-                        ? "border-amber-400 bg-amber-50 animate-pulse"
-                        : "border-gray-200"
+                      : "border-gray-200"
                   }`}
                 >
                   <option value="">Year</option>
@@ -930,9 +784,7 @@ export default function HomePage(): React.JSX.Element {
                   className={`w-full h-[46px] px-2 pr-6 text-sm border rounded-md bg-gray-50 appearance-none transition-all duration-300 ${
                     errors.make 
                       ? "border-red-500" 
-                      : showMissingFields && missingFields.includes('make')
-                        ? "border-amber-400 bg-amber-50 animate-pulse"
-                        : "border-gray-200"
+                      : "border-gray-200"
                   }`}
                 >
                   <option value="">Make</option>
@@ -968,9 +820,7 @@ export default function HomePage(): React.JSX.Element {
                   className={`w-full h-[46px] px-2 text-sm border rounded-md bg-gray-50 transition-all duration-300 ${
                     errors.model 
                       ? "border-red-500" 
-                      : showMissingFields && missingFields.includes('model')
-                        ? "border-amber-400 bg-amber-50 animate-pulse"
-                        : "border-gray-200"
+                      : "border-gray-200"
                   }`}
                 />
                 {errors.model && <p className="text-red-500 text-xs absolute -bottom-5">{errors.model}</p>}
@@ -1004,11 +854,7 @@ export default function HomePage(): React.JSX.Element {
             </div>
 
             {/* Date Time Selector */}
-            <div className={`mb-6 rounded-lg transition-all duration-300 ${
-              showMissingFields && (missingFields.includes('appointmentDate') || missingFields.includes('appointmentTime'))
-                ? 'border-2 border-amber-400 bg-amber-50 p-3 animate-pulse'
-                : ''
-            }`}>
+            <div className="mb-6 rounded-lg transition-all duration-300">
               <DateTimeSelector
                 ref={dateTimeSelectorRef}
                 onDateTimeChange={handleDateTimeChange}
@@ -1092,88 +938,11 @@ export default function HomePage(): React.JSX.Element {
                   )}
                 </Button>
                 
-                {/* Enhanced Tooltip for Disabled State */}
-                {!isFormComplete && !isSubmitting && showMissingFields && (
-                  <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 z-20 animate-slideIn">
-                    <div className="bg-gray-900 text-white text-sm py-2 px-4 rounded-lg shadow-lg whitespace-nowrap">
-                      <div className="flex items-center">
-                        <svg className="w-4 h-4 mr-2 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-                        </svg>
-                        Complete {missingFields.length} required field{missingFields.length > 1 ? 's' : ''}
-                      </div>
-                      {/* Tooltip Arrow */}
-                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-                    </div>
-                  </div>
-                )}
+
               </div>
             </div>
 
-            {/* Hidden accessibility helper */}
-            <div id="missing-fields-help" className="sr-only" aria-live="polite">
-              {!isFormComplete && `Required fields: ${missingFields.map(field => field.replace(/([A-Z])/g, ' $1').toLowerCase()).join(', ')}`}
-            </div>
 
-            {/* Enhanced Missing Fields Indicator */}
-            {showMissingFields && !isFormComplete && (
-              <div className="mb-6 p-5 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl shadow-lg animate-slideIn">
-                <div className="flex items-start mb-3">
-                  <div className="flex-shrink-0 mr-3 mt-0.5">
-                    <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-amber-900 font-semibold text-base mb-1">Complete Required Fields</h3>
-                    <p className="text-amber-700 text-sm mb-3">Please fill out the following information to continue:</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {missingFields.includes('address') && (
-                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
-                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
-                          📍 Enter your location
-                        </div>
-                      )}
-                      {missingFields.includes('year') && (
-                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
-                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
-                          🗓️ Select vehicle year
-                        </div>
-                      )}
-                      {missingFields.includes('make') && (
-                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
-                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
-                          🚗 Select vehicle make
-                        </div>
-                      )}
-                      {missingFields.includes('model') && (
-                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
-                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
-                          🔧 Enter vehicle model
-                        </div>
-                      )}
-                      {missingFields.includes('appointmentDate') && (
-                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
-                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
-                          📅 Choose appointment date
-                        </div>
-                      )}
-                      {missingFields.includes('appointmentTime') && (
-                        <div className="flex items-center text-sm text-amber-800 bg-white/50 px-3 py-1.5 rounded-md">
-                          <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
-                          ⏰ Select appointment time
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-xs text-amber-600 text-center mt-3 font-medium">
-                  💡 This guide will automatically disappear in a few seconds
-                </div>
-              </div>
-            )}
 
             
             {/* Error Display */}
