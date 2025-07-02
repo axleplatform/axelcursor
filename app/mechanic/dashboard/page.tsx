@@ -1665,8 +1665,9 @@ export default function MechanicDashboard() {
               console.log('🎯 UPCOMING APPOINTMENTS RENDER DEBUG:', {
                 isAppointmentsLoading,
                 upcomingAppointmentsLength: upcomingAppointments.length,
-                upcomingAppointments: upcomingAppointments,
-                willShowCards: !isAppointmentsLoading && upcomingAppointments.length > 0
+                filteredUpcomingLength: filteredUpcomingAppointments.length,
+                searchQuery,
+                willShowCards: !isAppointmentsLoading && filteredUpcomingAppointments.length > 0
               });
               return null;
             })()}
@@ -1674,13 +1675,26 @@ export default function MechanicDashboard() {
               <div className="flex items-center justify-center h-[400px]">
                 <Loader2 className="h-8 w-8 animate-spin text-[#294a46]" />
               </div>
-            ) : upcomingAppointments.length === 0 ? (
+            ) : filteredUpcomingAppointments.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[400px] text-center">
                 <Clock className="h-16 w-16 mb-4 text-gray-400" />
-                <h3 className="text-xl font-medium mb-2 text-gray-900">No Upcoming Appointments</h3>
+                <h3 className="text-xl font-medium mb-2 text-gray-900">
+                  {searchQuery ? 'No Appointments Found' : 'No Upcoming Appointments'}
+                </h3>
                 <p className="text-gray-600">
-                  You haven't quoted any appointments yet. New appointments will appear here when you submit a quote.
+                  {searchQuery 
+                    ? `No upcoming appointments match "${searchQuery}". Try a different search term.`
+                    : 'You haven\'t quoted any appointments yet. New appointments will appear here when you submit a quote.'
+                  }
                 </p>
+                {searchQuery && (
+                  <button 
+                    onClick={clearSearch}
+                    className="mt-4 bg-[#294a46] text-white px-4 py-2 rounded-full hover:bg-[#1e3632] transition-colors"
+                  >
+                    Clear Search
+                  </button>
+                )}
               </div>
             ) : (
               <div className="relative">
@@ -1689,7 +1703,7 @@ export default function MechanicDashboard() {
                   return null;
                 })()}
                 {/* Navigation buttons for multiple appointments */}
-                {upcomingAppointments.length > 1 && (
+                {filteredUpcomingAppointments.length > 1 && (
                   <>
                     <div className="absolute top-1/2 -left-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
                       <button
@@ -1713,10 +1727,10 @@ export default function MechanicDashboard() {
                 )}
 
                 {/* Current appointment details */}
-                {upcomingAppointments[currentUpcomingIndex] && (
+                {filteredUpcomingAppointments[currentUpcomingIndex] && (
                   <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
                     {(() => {
-                      const appointment = upcomingAppointments[currentUpcomingIndex];
+                      const appointment = filteredUpcomingAppointments[currentUpcomingIndex];
                       const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
                       const isSelected = appointment.selected_mechanic_id === mechanicId;
                       const isEditing = selectedAppointment?.id === appointment.id;
