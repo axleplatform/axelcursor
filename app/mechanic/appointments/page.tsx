@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, MapPin, Clock, FileText, Search } from "lucide-react"
+import { ChevronLeft, MapPin, Clock, Search } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -217,7 +217,7 @@ export default function MechanicAppointmentsPage() {
             {filteredAppointments.length === 0 ? (
               <div className="bg-white rounded-lg shadow-sm p-12 text-center">
                 <div className="text-gray-400 mb-4">
-                  <Calendar className="h-16 w-16 mx-auto" />
+                  <div className="text-4xl mb-4">📅</div>
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   {searchQuery || statusFilter !== "all" ? "No appointments found" : "No appointments yet"}
