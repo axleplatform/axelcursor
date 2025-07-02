@@ -34,11 +34,24 @@
 - Added `MechanicQuote`, `Vehicle`, etc. interfaces
 - **Status**: COMPLETE
 
+### 4. ✅ **Supabase Import Error** - FIXED
+- Updated Supabase package versions to specific versions instead of "latest"
+- Fixed import in `app/api/auto-cancel-appointments/route.ts` to use `createServerClient` from `@supabase/ssr`
+
+**Changes Made**:
+- `package.json`: Updated Supabase packages to specific versions
+- `app/api/auto-cancel-appointments/route.ts`: Fixed import and client creation
+
+### 5. ✅ **Missing Database Columns** - FIXED
+- Created migration to add missing cancellation columns
+
+**Migration File**: `migrations/add_cancellation_columns_fix.sql`
+
 ---
 
 ## 🔴 **REMAINING CRITICAL ISSUES**
 
-### 4. **Implicit 'any' Types in Map Functions** - PRIORITY 1
+### 6. **Implicit 'any' Types in Map Functions** - PRIORITY 1
 **Impact**: TypeScript strict mode will fail  
 **Status**: PARTIALLY FIXED
 
@@ -52,7 +65,7 @@ const upcomingAppointments = allAppointments?.filter((apt: any) => {
 })
 \`\`\`
 
-### 5. **Error Handling Types** - PRIORITY 2
+### 7. **Error Handling Types** - PRIORITY 2
 **Impact**: TypeScript strict mode violations  
 **Pattern**: `} catch (error: any) {`  
 **Count**: 25+ occurrences
@@ -67,7 +80,7 @@ const upcomingAppointments = allAppointments?.filter((apt: any) => {
 
 ## 🟡 **HIGH PRIORITY REMAINING**
 
-### 6. **Missing Return Type Annotations** - PRIORITY 3
+### 8. **Missing Return Type Annotations** - PRIORITY 3
 **Impact**: TypeScript strict mode will fail  
 **Status**: PARTIALLY FIXED
 
@@ -81,7 +94,7 @@ const goToNextWeek = () => {                      // → void
 const toggleVisibility = () => {                  // → void
 \`\`\`
 
-### 7. **Console Statements** - PRIORITY 4
+### 9. **Console Statements** - PRIORITY 4
 **Impact**: ESLint warnings in production  
 **Count**: 200+ statements
 **Action**: Remove debug console.log, keep essential console.error
@@ -90,14 +103,14 @@ const toggleVisibility = () => {                  // → void
 
 ## 🟢 **MEDIUM PRIORITY ISSUES**
 
-### 8. **Inconsistent Number Conversion**
+### 10. **Inconsistent Number Conversion**
 **Impact**: Code consistency  
 **Mixed usage**:
 - `Number.parseInt()` vs `parseInt()`
 - `Number.parseFloat()` vs `parseFloat()`
 - `Number()` conversion
 
-### 9. **Middleware Type Issues**
+### 11. **Middleware Type Issues**
 **File**: `middleware.ts:25,32`  
 \`\`\`typescript
 set(name: string, value: string, options: any)  // Should be typed
@@ -108,14 +121,14 @@ remove(name: string, options: any)              // Should be typed
 
 ## ⚪ **LOW PRIORITY ISSUES**
 
-### 10. **Global Type Definitions**
+### 12. **Global Type Definitions**
 **File**: `types/global.d.ts:42-43`  
 \`\`\`typescript
 getSession(): Promise<{ data: { session: any } | null }>  // Should be typed
 signOut(): Promise<{ error: any }>                        // Should be typed
 \`\`\`
 
-### 11. **Unused Variables in Map Iterations**
+### 13. **Unused Variables in Map Iterations**
 **Pattern**: Variables created but not fully utilized  
 **Impact**: Minor ESLint warnings
 
@@ -166,3 +179,91 @@ signOut(): Promise<{ error: any }>                        // Should be typed
 - Main remaining issues are function signatures and error handling
 
 **Status**: READY FOR FINAL PUSH TO DEPLOYMENT SUCCESS 🚀
+
+# Deployment Fixes
+
+This document outlines the fixes applied to resolve deployment issues.
+
+## Issues Fixed
+
+### 1. Supabase Import Error
+**Problem**: `Module '@supabase/supabase-js' has no exported member 'createClient'`
+
+**Solution**: 
+- Updated Supabase package versions to specific versions instead of "latest"
+- Fixed import in `app/api/auto-cancel-appointments/route.ts` to use `createServerClient` from `@supabase/ssr`
+
+**Changes Made**:
+- `package.json`: Updated Supabase packages to specific versions
+- `app/api/auto-cancel-appointments/route.ts`: Fixed import and client creation
+
+### 2. Missing Database Columns
+**Problem**: Auto-cancel function failing due to missing `cancellation_reason` column
+
+**Solution**: Created migration to add missing cancellation columns
+
+**Migration File**: `migrations/add_cancellation_columns_fix.sql`
+
+## Deployment Steps
+
+### Step 1: Clean Dependencies
+```bash
+# Run the fix script
+./scripts/fix-deployment.sh
+
+# Or manually:
+rm -rf node_modules
+rm -f package-lock.json
+npm install
+```
+
+### Step 2: Run Database Migration
+Execute the following SQL in your Supabase Dashboard → SQL Editor:
+
+```sql
+-- Add missing cancellation columns to appointments table
+-- This fixes the auto-cancel function errors
+
+-- Add cancellation_reason column
+ALTER TABLE appointments 
+ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;
+
+-- Add cancelled_at column  
+ALTER TABLE appointments 
+ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP WITH TIME ZONE;
+
+-- Add cancelled_by column
+ALTER TABLE appointments 
+ADD COLUMN IF NOT EXISTS cancelled_by VARCHAR(50);
+
+-- Add cancellation_fee column (used in some parts of the code)
+ALTER TABLE appointments 
+ADD COLUMN IF NOT EXISTS cancellation_fee DECIMAL(10, 2);
+
+-- Verify the columns were added
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns 
+WHERE table_name = 'appointments' 
+AND column_name IN ('cancellation_reason', 'cancelled_at', 'cancelled_by', 'cancellation_fee')
+ORDER BY column_name;
+
+-- Force refresh the schema cache
+SELECT pg_reload_conf();
+```
+
+### Step 3: Deploy
+After completing the above steps, your deployment should work correctly.
+
+## Package Versions Updated
+
+- `@supabase/auth-helpers-nextjs`: `^0.9.0`
+- `@supabase/ssr`: `^0.1.0`
+- `@supabase/supabase-js`: `^2.39.0`
+
+## Verification
+
+After deployment, verify that:
+1. The build completes successfully
+2. The mechanic dashboard loads without errors
+3. Auto-cancel functionality works properly
+4. No more "cancellation_reason column missing" errors

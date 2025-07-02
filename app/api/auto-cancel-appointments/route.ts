@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +17,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createServerClient(supabaseUrl, supabaseServiceKey, {
+      cookies: {}
+    })
 
     console.log('🕒 Starting overdue appointment cleanup...')
 
