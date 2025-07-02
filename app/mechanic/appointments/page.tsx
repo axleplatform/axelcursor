@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, MapPin, Clock, Calendar, Search, Filter } from "lucide-react"
+import { ChevronLeft, MapPin, Clock, Calendar, Search } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -161,7 +161,7 @@ export default function MechanicAppointmentsPage() {
               onClick={() => router.push('/mechanic/dashboard')}
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ChevronLeft className="h-5 w-5" />
               Back to Dashboard
             </button>
             <div className="flex-1">
