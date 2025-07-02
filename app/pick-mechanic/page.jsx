@@ -72,28 +72,48 @@ export default function PickMechanicPage() {
    
    const appointment = appointments[0] // Get first item from array
    
-   // Verify the appointment belongs to the current user OR allow guest access
+   // ENHANCED ACCESS CONTROL FOR GUEST FLOW:
+   // Allow access in these cases:
+   // 1. No authenticated user (guest flow) - allow access via URL (most common case)
+   // 2. Authenticated user matches appointment.user_id
+   // 3. For temporary users (created for guest bookings), allow access via URL
+   
    const { data: { user } } = await supabase.auth.getUser()
    console.log('Current user:', user?.id, 'Appointment user:', appointment.user_id)
    
-   // SIMPLIFIED ACCESS CONTROL FOR ALWAYS-CREATE-USER SYSTEM:
-   // With the new system, all appointments have real user_ids (including temporary users for guests)
-   // Allow access in these cases:
-   // 1. No authenticated user (guest flow) - allow access via URL
-   // 2. Authenticated user matches appointment.user_id
-   // This supports both guest bookings and logged-in user bookings
+   // Check if this is a temporary user (guest booking)
+   // Temporary users have account_type = 'temporary' in the users table
+   // We need to check the users table to determine if this is a temporary user
+   const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('account_type')
+    .eq('id', appointment.user_id)
+    .single()
+   
+   const isTemporaryUser = userData?.account_type === 'temporary'
+   
+   if (userError) {
+    console.log('⚠️ Could not determine user type (proceeding with guest access):', userError)
+    // If we can't determine user type, allow access (fail open for guest flow)
+   }
    
    console.log('🔍 Access Control Check:', {
     appointmentUserId: appointment.user_id,
     currentUserId: user?.id,
     hasCurrentUser: !!user,
     isGuestFlow: !user,
-    accessGranted: !user || user?.id === appointment.user_id
+    isTemporaryUser: isTemporaryUser,
+    userAccountType: userData?.account_type,
+    userError: !!userError,
+    accessGranted: !user || user?.id === appointment.user_id || isTemporaryUser || userError
    })
    
-   // For guest flow (no authenticated user), allow access via URL
-   // For authenticated users, require matching user_id
-   if (user && user?.id !== appointment.user_id) {
+   // Allow access if:
+   // 1. No authenticated user (guest flow)
+   // 2. Authenticated user matches appointment.user_id
+   // 3. This is a temporary user (guest booking) - allow access via URL
+   // 4. We can't determine user type (fail open for guest flow)
+   if (user && user?.id !== appointment.user_id && !isTemporaryUser && !userError) {
     console.error('❌ Access denied: Appointment belongs to different user')
     console.error('Appointment user_id:', appointment.user_id)
     console.error('Current user_id:', user?.id)
@@ -104,6 +124,8 @@ export default function PickMechanicPage() {
    
    if (!user) {
     console.log('✅ Guest flow access granted (no authentication required)')
+   } else if (isTemporaryUser) {
+    console.log('✅ Temporary user access granted (guest booking via URL)')
    } else {
     console.log('✅ Authenticated user appointment access granted')
    }

@@ -456,6 +456,10 @@ function HomePageContent(): React.JSX.Element {
         const tempUserId = await createTemporaryUser()
         console.log('✅ Got user ID:', tempUserId)
         
+        // Note: Temporary users don't have auth credentials, so we proceed without authentication
+        // The pick-mechanic page will handle access control based on appointment ID in URL
+        console.log('✅ Temporary user created, proceeding without authentication (guest flow)')
+        
         // Create appointment with real user_id (never NULL!)
         const initialAppointmentData = {
           user_id: tempUserId, // ALWAYS has a user_id
