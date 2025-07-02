@@ -14,4 +14,4 @@ export default function MechanicAppointmentsLoading() {
       <Footer />
     </div>
   )
-} 
+}

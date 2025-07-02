@@ -18,4 +18,4 @@ SELECT column_name, data_type, is_nullable
 FROM information_schema.columns 
 WHERE table_name = 'appointments' 
 AND column_name IN ('cancellation_reason', 'cancelled_at', 'cancelled_by')
-ORDER BY column_name; 
+ORDER BY column_name;

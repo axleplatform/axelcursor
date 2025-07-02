@@ -25,4 +25,4 @@ AND column_name IN ('cancellation_reason', 'cancelled_at', 'cancelled_by', 'canc
 ORDER BY column_name;
 
 -- Force refresh the schema cache
-SELECT pg_reload_conf(); 
+SELECT pg_reload_conf();

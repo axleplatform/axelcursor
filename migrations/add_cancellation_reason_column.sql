@@ -46,4 +46,4 @@ BEGIN
     ELSE
         RAISE NOTICE 'cancelled_by column already exists in appointments table';
     END IF;
-END $$; 
+END $$;
