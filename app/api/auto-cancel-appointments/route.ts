@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 
 // Interface for the appointment data returned from the query
 interface AppointmentData {
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createServerClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     console.log('🕒 Starting overdue appointment cleanup...')
 
