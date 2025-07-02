@@ -42,7 +42,7 @@ export function SiteHeader() {
           </Link>
         </div>
 
-        {/* Desktop Navigation - Combined */}
+        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-6">
           <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-transparent hover:border-gray-200 hover:bg-gray-50 transition-all duration-200">
             Log In
@@ -50,6 +50,10 @@ export function SiteHeader() {
           <Button asChild className="rounded-full bg-[#294a46] hover:bg-[#1e3632] text-white">
             <Link href="/signup">Sign Up</Link>
           </Button>
+        </div>
+
+        {/* Desktop Right Navigation */}
+        <div className="hidden md:flex items-center space-x-6">
           <Link
             href="/about"
             className={cn(
@@ -85,7 +89,7 @@ export function SiteHeader() {
       {/* Mobile Menu Dropdown */}
       {isMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-200 py-4 px-4 shadow-lg">
-          <nav className="space-y-4">
+          <nav className="max-w-xs mx-auto space-y-4">
             {/* Sign Up and Log In buttons side by side */}
             <div className="flex space-x-3">
               <Link
