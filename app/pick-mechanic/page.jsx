@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Star, Clock, MapPin, X, FileText, CreditCard, User, ArrowLeft, AlertTriangle } from "lucide-react"
+import { Star, Clock, MapPin, X, FileText, CreditCard, User, ChevronLeft, AlertTriangle } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -426,7 +426,7 @@ function PickMechanicContent() {
         size="sm"
         className="flex items-center gap-2 hover:bg-gray-100 border-gray-300"
        >
-        <ArrowLeft className="h-4 w-4" />
+                        <ChevronLeft className="h-4 w-4" />
         Back
        </Button>
       </div>
