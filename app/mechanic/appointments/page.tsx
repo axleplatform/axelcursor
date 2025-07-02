@@ -67,8 +67,8 @@ export default function MechanicAppointmentsPage() {
         return
       }
 
-      // Filter appointments where this mechanic has quoted or is selected
-      const filteredAppointments = appointmentsData.filter(appointment => {
+        // Filter appointments where this mechanic has quoted or is selected
+  const filteredAppointments = appointmentsData.filter((appointment: any) => {
         const hasQuoted = appointment.mechanic_quotes?.some(quote => quote.mechanic_id === mechanicProfile.id)
         const isSelected = appointment.selected_mechanic_id === mechanicProfile.id
         return hasQuoted || isSelected
