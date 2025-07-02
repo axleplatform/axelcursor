@@ -911,10 +911,10 @@ export default function HomePage(): React.JSX.Element {
                   ref={continueButtonRef}
                   type="submit"
                   disabled={isSubmitting || !isFormComplete}
-                  className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 relative ${
+                  className={`font-medium py-6 px-10 rounded-full transform transition-all duration-200 relative focus:outline-none focus:ring-0 ${
                     isFormComplete && !isSubmitting 
                       ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] hover:shadow-md active:scale-[0.99]" 
-                      : "bg-[#294a46]/40 text-white cursor-pointer hover:bg-[#294a46]/60 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                      : "bg-[#294a46]/40 text-white cursor-pointer hover:bg-[#294a46]/60 hover:scale-[1.02] active:scale-[0.98]"
                   }`}
                   onClick={(e) => {
                     if (!isFormComplete && !isSubmitting) {
@@ -1099,114 +1099,12 @@ export default function HomePage(): React.JSX.Element {
           75% { transform: translateX(5px); }
         }
         
-        @keyframes glow {
-          0% { box-shadow: 0 0 0 #ff4d4f; }
-          50% { box-shadow: 0 0 8px #ff4d4f; }
-          100% { box-shadow: 0 0 0 #ff4d4f; }
-        }
-        
-        @keyframes gentleGlow {
-          0%, 100% { 
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.6), 0 0 20px rgba(59, 130, 246, 0.3);
-          }
-          50% { 
-            box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.8), 0 0 25px rgba(59, 130, 246, 0.5);
-          }
-        }
-        
-        @keyframes focusRing {
-          0% { 
-            outline-offset: 2px;
-            outline-color: rgba(59, 130, 246, 0.8);
-          }
-          50% { 
-            outline-offset: 4px;
-            outline-color: rgba(59, 130, 246, 0.6);
-          }
-          100% { 
-            outline-offset: 2px;
-            outline-color: rgba(59, 130, 246, 0.8);
-          }
-        }
-        
         .animate-slideIn {
           animation: slideIn 0.3s ease-out;
         }
         
         .animate-shake {
           animation: shake 0.5s ease-in-out;
-        }
-        
-        .animate-gentleGlow {
-          animation: gentleGlow 2s ease-in-out infinite;
-        }
-        
-        .animate-focusRing {
-          animation: focusRing 2s ease-in-out infinite;
-        }
-        
-        .missing-field {
-          animation: shake 0.5s, glow 0.5s;
-          border: 2px solid #ff4d4f !important;
-          box-shadow: 0 0 8px #ff4d4f !important;
-        }
-        
-        .missing-field-highlight {
-          animation: shake 0.5s ease-in-out, glow 0.5s ease-in-out;
-          border: 2px solid #ef4444 !important;
-          box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.6), 0 0 20px rgba(239, 68, 68, 0.3) !important;
-          background-color: rgba(239, 68, 68, 0.05) !important;
-          transform: scale(1.02);
-          transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
-          z-index: 10;
-        }
-        
-        .disabled-button-feedback:hover {
-          animation: gentlePulse 0.6s ease-in-out;
-          box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3), 0 0 15px rgba(239, 68, 68, 0.2) !important;
-        }
-        
-        .disabled-button-feedback:active {
-          animation: shake 0.3s ease-in-out;
-          transform: scale(0.98) !important;
-        }
-        
-        @keyframes gentlePulse {
-          0%, 100% { 
-            transform: scale(1.02);
-            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3), 0 0 15px rgba(239, 68, 68, 0.2);
-          }
-          50% { 
-            transform: scale(1.05);
-            box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.5), 0 0 20px rgba(239, 68, 68, 0.3);
-          }
-        }
-        
-        /* Button wrapper styling for disabled state */
-        .relative.inline-block:has(button[disabled]) {
-          cursor: pointer;
-        }
-        
-        .relative.inline-block:has(button[disabled]):hover {
-          animation: gentlePulse 0.6s ease-in-out;
-        }
-        
-        .relative.inline-block:has(button[disabled]):active {
-          animation: shake 0.3s ease-in-out;
-        }
-        
-        /* Ensure wrapper is focusable and has proper outline */
-        .relative.inline-block[tabindex="0"]:focus {
-          outline: 2px solid #3b82f6;
-          outline-offset: 2px;
-          border-radius: 9999px;
-        }
-        
-        /* Mobile touch feedback */
-        @media (hover: none) and (pointer: coarse) {
-          .relative.inline-block:has(button[disabled]):active {
-            animation: gentlePulse 0.4s ease-in-out;
-          }
         }
         
         /* Screen reader only class */
@@ -1220,13 +1118,6 @@ export default function HomePage(): React.JSX.Element {
           clip: rect(0, 0, 0, 0);
           white-space: nowrap;
           border: 0;
-        }
-        
-        /* Enhanced accessibility for focus states */
-        .enhanced-focus:focus {
-          outline: 2px solid #3b82f6;
-          outline-offset: 2px;
-          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
         }
         
         /* Custom tooltip animations */
