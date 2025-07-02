@@ -7,7 +7,7 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { formatDate } from "@/lib/utils"
-import type { AppointmentWithRelations } from "@/types"
+import type { AppointmentWithRelations, MechanicQuote } from "@/types"
 
 export default function MechanicAppointmentsPage() {
   const router = useRouter()
@@ -68,8 +68,8 @@ export default function MechanicAppointmentsPage() {
       }
 
         // Filter appointments where this mechanic has quoted or is selected
-  const filteredAppointments = appointmentsData.filter((appointment: any) => {
-                  const hasQuoted = appointment.mechanic_quotes?.some((quote: any) => quote.mechanic_id === mechanicProfile.id)
+  const filteredAppointments = appointmentsData.filter((appointment: AppointmentWithRelations) => {
+                  const hasQuoted = appointment.mechanic_quotes?.some((quote: MechanicQuote) => quote.mechanic_id === mechanicProfile.id)
         const isSelected = appointment.selected_mechanic_id === mechanicProfile.id
         return hasQuoted || isSelected
       })
@@ -83,7 +83,7 @@ export default function MechanicAppointmentsPage() {
   }
 
   // Filter appointments based on search query and status
-  const filteredAppointments = appointments.filter((appointment: any) => {
+  const filteredAppointments = appointments.filter((appointment: AppointmentWithRelations) => {
     const matchesSearch = searchQuery === "" || 
       appointment.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
       appointment.vehicles?.make?.toLowerCase().includes(searchQuery.toLowerCase()) ||
