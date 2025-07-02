@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
@@ -14,7 +14,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { createBrowserClient } from "@supabase/ssr"
 import { getQuotesForAppointment } from "@/lib/mechanic-quotes"
 
-export default function PickMechanicPage() {
+function PickMechanicContent() {
  console.log("🔍 PickMechanicPage component mounting...")
  
  const router = useRouter()
@@ -776,5 +776,30 @@ export default function PickMechanicPage() {
     }
    `}</style>
   </div>
+ )
+}
+
+// Loading component for Suspense fallback
+function PickMechanicLoading() {
+ return (
+  <div className="flex flex-col min-h-screen">
+   <SiteHeader />
+   <main className="flex-1 container mx-auto px-4 py-8">
+    <div className="text-center">
+     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294a46] mx-auto mb-4"></div>
+     <p className="text-gray-600">Loading appointment details...</p>
+    </div>
+   </main>
+   <Footer />
+  </div>
+ )
+}
+
+// Main export with Suspense wrapper
+export default function PickMechanicPage() {
+ return (
+  <Suspense fallback={<PickMechanicLoading />}>
+   <PickMechanicContent />
+  </Suspense>
  )
 }

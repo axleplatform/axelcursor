@@ -2,6 +2,7 @@
 import type React from "react"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
+import { Suspense } from "react"
 import {
   Check,
 } from "lucide-react"
@@ -472,7 +473,7 @@ interface AppointmentData {
   } | null
 }
 // Define database schema types
-export default function BookAppointment() {
+function BookAppointmentContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
@@ -994,5 +995,32 @@ or type Oil Change"
       {/* Footer */}
       <Footer />
     </div>
+  )
+}
+
+// Loading component for Suspense fallback
+function BookAppointmentLoading() {
+  return (
+    <div className="flex flex-col min-h-screen">
+      <SiteHeader />
+      <main className="flex-1">
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294a46] mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading appointment form...</p>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  )
+}
+
+// Main export with Suspense wrapper
+export default function BookAppointment() {
+  return (
+    <Suspense fallback={<BookAppointmentLoading />}>
+      <BookAppointmentContent />
+    </Suspense>
   )
 }
