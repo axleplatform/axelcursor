@@ -513,7 +513,7 @@ export default function MechanicDashboard() {
       schema: 'public',
       table: 'appointments'
      },
-     (payload) => {
+     (payload: RealtimePostgresChangesPayload<any>) => {
       console.log('📡 Appointment change detected:', payload)
       // Refresh appointments when any appointment changes
       fetchInitialAppointments()
@@ -531,7 +531,7 @@ export default function MechanicDashboard() {
       schema: 'public',
       table: 'mechanic_quotes'
      },
-     (payload) => {
+     (payload: RealtimePostgresChangesPayload<any>) => {
       console.log('📡 Quote change detected:', payload)
       // Refresh appointments when quotes change
       fetchInitialAppointments()
@@ -549,7 +549,7 @@ export default function MechanicDashboard() {
       schema: 'public',
       table: 'mechanic_skipped_appointments'
      },
-     (payload) => {
+     (payload: RealtimePostgresChangesPayload<any>) => {
       console.log('📡 Skip change detected:', payload)
       // Refresh appointments when skips change
       fetchInitialAppointments()
