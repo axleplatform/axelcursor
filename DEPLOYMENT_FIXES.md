@@ -207,7 +207,7 @@ This document outlines the fixes applied to resolve deployment issues.
 ## Deployment Steps
 
 ### Step 1: Clean Dependencies
-```bash
+\`\`\`bash
 # Run the fix script
 ./scripts/fix-deployment.sh
 
@@ -215,12 +215,12 @@ This document outlines the fixes applied to resolve deployment issues.
 rm -rf node_modules
 rm -f package-lock.json
 npm install
-```
+\`\`\`
 
 ### Step 2: Run Database Migration
 Execute the following SQL in your Supabase Dashboard → SQL Editor:
 
-```sql
+\`\`\`sql
 -- Add missing cancellation columns to appointments table
 -- This fixes the auto-cancel function errors
 
@@ -249,7 +249,7 @@ ORDER BY column_name;
 
 -- Force refresh the schema cache
 SELECT pg_reload_conf();
-```
+\`\`\`
 
 ### Step 3: Deploy
 After completing the above steps, your deployment should work correctly.
