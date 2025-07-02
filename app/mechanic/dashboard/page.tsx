@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import type { ChangeEvent } from 'react'
 import { useRouter } from "next/navigation"
 import { Search, Loader2, Clock, MapPin, X, ChevronLeft, ChevronRight, Check } from "lucide-react"
@@ -143,6 +143,9 @@ export default function MechanicDashboard() {
   const [showReferModal, setShowReferModal] = useState(false);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
   // Update selectedDate and selectedTime when current available appointment changes
   useEffect(() => {
     if (availableAppointments.length > 0 && availableAppointments[currentAvailableIndex]) {
@@ -205,6 +208,67 @@ export default function MechanicDashboard() {
     }
   };
 
+  // Comprehensive search function
+  const searchAppointments = (appointments: AppointmentWithRelations[], query: string): AppointmentWithRelations[] => {
+    if (!query.trim()) return appointments;
+    
+    const searchTerm = query.toLowerCase().trim();
+    
+    return appointments.filter(appointment => {
+      // Create a comprehensive search string from all relevant fields
+      const searchableText = [
+        // Vehicle info
+        appointment.vehicles?.year?.toString() || '',
+        appointment.vehicles?.make || '',
+        appointment.vehicles?.model || '',
+        appointment.vehicles?.vin || '',
+        appointment.vehicles?.mileage?.toString() || '',
+        
+        // Appointment details
+        appointment.location || '',
+        appointment.issue_description || '',
+        appointment.appointment_date ? new Date(appointment.appointment_date).toLocaleDateString() : '',
+        appointment.appointment_date ? new Date(appointment.appointment_date).toLocaleTimeString() : '',
+        
+        // Services and issues
+        ...(appointment.selected_services || []),
+        ...(appointment.selected_car_issues || []),
+        
+        // Status and quotes
+        appointment.status || '',
+        appointment.payment_status || '',
+        appointment.mechanic_quotes?.map(q => q.price?.toString() || '').join(' ') || '',
+        appointment.mechanic_quotes?.map(q => q.eta ? new Date(q.eta).toLocaleString() : '').join(' ') || '',
+        appointment.mechanic_quotes?.map(q => q.notes || '').join(' ') || '',
+        
+        // Car status
+        appointment.car_runs !== null ? (appointment.car_runs ? 'running' : 'not running') : '',
+        
+        // Quote info
+        appointment.quote?.price?.toString() || '',
+        appointment.quote?.created_at ? new Date(appointment.quote.created_at).toLocaleString() : ''
+      ].join(' ').toLowerCase();
+      
+      return searchableText.includes(searchTerm);
+    });
+  };
+
+  // Get filtered appointments
+  const filteredAvailableAppointments = useMemo(() => 
+    searchAppointments(availableAppointments, searchQuery), 
+    [availableAppointments, searchQuery]
+  );
+
+  const filteredUpcomingAppointments = useMemo(() => 
+    searchAppointments(upcomingAppointments, searchQuery), 
+    [upcomingAppointments, searchQuery]
+  );
+
+  // Clear search function
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
+
   // Generate available dates (next 7 days)
   const getAvailableDates = (): DateOption[] => {
     const dates: DateOption[] = [];
@@ -259,6 +323,15 @@ export default function MechanicDashboard() {
     return slots;
   };
 
+  // Helper to check if a pending appointment is overdue
+  function isPendingAndOverdue(appointment: AppointmentWithRelations) {
+    if (appointment.status !== 'pending') return false;
+    if (!appointment.appointment_date) return false;
+    const appointmentTime = new Date(appointment.appointment_date).getTime();
+    const now = Date.now();
+    return now - appointmentTime > 15 * 60 * 1000; // 15 minutes in ms
+  }
+
   // OPTIMIZED: Simplified fetch using database filters (performance fix applied to hook)
   // VERSION: 2.0.0 - Enhanced with extensive debugging
   const fetchInitialAppointments = async (): Promise<void> => {
@@ -280,8 +353,12 @@ export default function MechanicDashboard() {
       console.log('Available appointments result:', availableResult);
 
       if (availableResult.success && availableResult.appointments) {
-        setAvailableAppointments(availableResult.appointments);
-        console.log('Query results (available):', availableResult.appointments);
+        // Filter out overdue pending appointments from available and upcoming
+        const filteredAvailable = availableResult.appointments?.filter(
+          (apt: AppointmentWithRelations) => !isPendingAndOverdue(apt)
+        ) || [];
+        setAvailableAppointments(filteredAvailable);
+        console.log('Query results (available):', filteredAvailable);
       } else {
         console.error('Error fetching available appointments:', availableResult.error);
         setAvailableAppointments([]);
@@ -292,9 +369,12 @@ export default function MechanicDashboard() {
       console.log('Upcoming appointments result:', upcomingResult);
 
       if (upcomingResult.success && upcomingResult.appointments) {
-        // getQuotedAppointmentsForMechanic already filters correctly - no additional filtering needed
-        setUpcomingAppointments(upcomingResult.appointments);
-        console.log('Query results (upcoming):', upcomingResult.appointments);
+        // Filter out overdue pending appointments from available and upcoming
+        const filteredUpcoming = upcomingResult.appointments?.filter(
+          (apt: AppointmentWithRelations) => !isPendingAndOverdue(apt)
+        ) || [];
+        setUpcomingAppointments(filteredUpcoming);
+        console.log('Query results (upcoming):', filteredUpcoming);
       } else {
         console.error('Error fetching upcoming appointments:', upcomingResult.error);
         setUpcomingAppointments([]);
@@ -1002,7 +1082,10 @@ export default function MechanicDashboard() {
     // Find the appointment in upcoming appointments
     const upcomingIndex = upcomingAppointments.findIndex(apt => apt.id === appointment.id)
     if (upcomingIndex !== -1) {
-      // Scroll to upcoming appointments section
+      // Set the clicked appointment as the active one in upcoming appointments
+      setCurrentUpcomingIndex(upcomingIndex)
+      
+      // Scroll to upcoming appointments section for better UX
       const upcomingSection = document.querySelector('[data-section="upcoming-appointments"]')
       if (upcomingSection) {
         upcomingSection.scrollIntoView({ behavior: 'smooth' })
@@ -1534,9 +1617,20 @@ export default function MechanicDashboard() {
               <input
                 type="text"
                 placeholder="Find appointments"
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-full w-64 focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10 py-2 border border-gray-300 rounded-full w-64 focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
             <button 
               onClick={() => setShowReferModal(true)}
@@ -1869,8 +1963,9 @@ export default function MechanicDashboard() {
               console.log('🎯 AVAILABLE APPOINTMENTS RENDER DEBUG:', {
                 isAppointmentsLoading,
                 availableAppointmentsLength: availableAppointments.length,
-                availableAppointments: availableAppointments,
-                willShowCards: !isAppointmentsLoading && availableAppointments.length > 0
+                filteredAvailableLength: filteredAvailableAppointments.length,
+                searchQuery,
+                willShowCards: !isAppointmentsLoading && filteredAvailableAppointments.length > 0
               });
               return null;
             })()}
@@ -1878,19 +1973,34 @@ export default function MechanicDashboard() {
               <div className="flex items-center justify-center h-[400px]">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
               </div>
-            ) : availableAppointments.length === 0 ? (
+            ) : filteredAvailableAppointments.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[400px] text-center">
                 <Clock className="h-16 w-16 mb-4 text-white/70" />
-                <h3 className="text-xl font-medium mb-2">No Available Appointments</h3>
+                <h3 className="text-xl font-medium mb-2">
+                  {searchQuery ? 'No Appointments Found' : 'No Available Appointments'}
+                </h3>
                 <p className="text-white/70">
-                  There are no pending appointments at this time. Check back later for new requests.
+                  {searchQuery 
+                    ? `No appointments match "${searchQuery}". Try a different search term.`
+                    : 'There are no pending appointments at this time. Check back later for new requests.'
+                  }
                 </p>
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="mt-4 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full transition-colors"
-                >
-                  Refresh
-                </button>
+                {searchQuery && (
+                  <button 
+                    onClick={clearSearch}
+                    className="mt-4 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full transition-colors"
+                  >
+                    Clear Search
+                  </button>
+                )}
+                {!searchQuery && (
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="mt-4 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full transition-colors"
+                  >
+                    Refresh
+                  </button>
+                )}
               </div>
             ) : (
               <div className="relative">
@@ -1899,7 +2009,7 @@ export default function MechanicDashboard() {
                   return null;
                 })()}
                 {/* Navigation buttons for multiple appointments */}
-                {availableAppointments.length > 1 && (
+                {filteredAvailableAppointments.length > 1 && (
                   <>
                     <div className="absolute top-1/2 -left-4 transform -translate-y-1/2 z-10 flex flex-col gap-2">
                     <button
@@ -1925,17 +2035,17 @@ export default function MechanicDashboard() {
                 )}
 
                 {/* Current appointment details */}
-                {availableAppointments[currentAvailableIndex] && (
+                {filteredAvailableAppointments[currentAvailableIndex] && (
                   <div className="bg-white/10 rounded-lg p-6">
                     {/* Location and Date */}
                     <div className="flex items-center gap-4 mb-6">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        <span className="text-sm">{availableAppointments[currentAvailableIndex].location}</span>
+                        <span className="text-sm">{filteredAvailableAppointments[currentAvailableIndex].location}</span>
                         </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4" />
-                        <span className="text-sm">{formatDate(availableAppointments[currentAvailableIndex].appointment_date)}</span>
+                        <span className="text-sm">{formatDate(filteredAvailableAppointments[currentAvailableIndex].appointment_date)}</span>
                         </div>
                     </div>
 
@@ -1945,9 +2055,9 @@ export default function MechanicDashboard() {
                         {/* Year, Make, Model Row */}
                         <div className="flex items-center gap-2 text-white">
                           {(() => {
-                            const vehicle = availableAppointments[currentAvailableIndex]?.vehicles;
+                            const vehicle = filteredAvailableAppointments[currentAvailableIndex]?.vehicles;
                             console.log('🎯 Rendering vehicle info for appointment:', {
-                              appointmentId: availableAppointments[currentAvailableIndex]?.id,
+                              appointmentId: filteredAvailableAppointments[currentAvailableIndex]?.id,
                               hasVehicle: !!vehicle,
                               vehicleData: vehicle
                             });
@@ -1973,7 +2083,7 @@ export default function MechanicDashboard() {
                         {/* VIN and Mileage Row */}
                         <div className="flex items-center gap-4 text-white/70 text-sm">
                           {(() => {
-                            const vehicle = availableAppointments[currentAvailableIndex]?.vehicles;
+                            const vehicle = filteredAvailableAppointments[currentAvailableIndex]?.vehicles;
                             if (!vehicle) return null;
                             
                             const hasDetails = vehicle.vin || vehicle.mileage;
@@ -1995,11 +2105,11 @@ export default function MechanicDashboard() {
                     {/* Selected Services and Car Status Row */}
                     <div className="flex justify-between items-start mb-6">
                       {/* Selected Services */}
-                      {availableAppointments[currentAvailableIndex].selected_services && (
+                      {filteredAvailableAppointments[currentAvailableIndex].selected_services && (
                         <div className="flex-1">
                           <h4 className="text-sm font-medium mb-2">Selected Services</h4>
                           <div className="flex flex-wrap gap-2">
-                            {availableAppointments[currentAvailableIndex].selected_services.map((service: string, index: number) => (
+                            {filteredAvailableAppointments[currentAvailableIndex].selected_services.map((service: string, index: number) => (
                               <span
                                 key={index}
                                 className="bg-white/20 text-xs px-3 py-1 rounded-full"
@@ -2012,13 +2122,13 @@ export default function MechanicDashboard() {
                       )}
 
                       {/* Car Status */}
-                      {availableAppointments[currentAvailableIndex].car_runs !== null && (
+                      {filteredAvailableAppointments[currentAvailableIndex].car_runs !== null && (
                         <div className="flex-1 text-right">
                           <h4 className="text-sm font-medium mb-2">Car Status</h4>
                           <div className="flex items-center justify-end gap-2">
-                            <div className={`w-3 h-3 rounded-full ${availableAppointments[currentAvailableIndex].car_runs ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                            <div className={`w-3 h-3 rounded-full ${filteredAvailableAppointments[currentAvailableIndex].car_runs ? 'bg-green-400' : 'bg-red-400'}`}></div>
                             <span className="text-sm">
-                              {availableAppointments[currentAvailableIndex].car_runs
+                              {filteredAvailableAppointments[currentAvailableIndex].car_runs
                                 ? "Car is running"
                                 : "Car is not running"}
                             </span>
@@ -2028,11 +2138,11 @@ export default function MechanicDashboard() {
                     </div>
 
                     {/* Car Issues Section */}
-                    {availableAppointments[currentAvailableIndex].selected_car_issues && availableAppointments[currentAvailableIndex].selected_car_issues.length > 0 ? (
+                    {filteredAvailableAppointments[currentAvailableIndex].selected_car_issues && filteredAvailableAppointments[currentAvailableIndex].selected_car_issues.length > 0 ? (
                       <div className="mb-6">
                         <h4 className="text-sm font-medium mb-2">Car Issues</h4>
                         <div className="flex flex-wrap gap-2">
-                          {availableAppointments[currentAvailableIndex].selected_car_issues.map((issue: string, index: number) => (
+                          {filteredAvailableAppointments[currentAvailableIndex].selected_car_issues.map((issue: string, index: number) => (
                             <span
                               key={index}
                               className="bg-orange-200/30 text-orange-100 text-xs px-3 py-1 rounded-full"

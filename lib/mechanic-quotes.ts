@@ -320,19 +320,56 @@ export async function getQuotesForAppointment(appointmentId: string): Promise<an
 }
 
 /**
+ * Calls the auto-cancel appointments Edge Function to eliminate overdue pending appointments
+ */
+export async function autoCancelOverdueAppointments(): Promise<{ success: boolean; eliminatedCount?: number; error?: string }> {
+  try {
+    console.log('🕒 Calling auto-cancel overdue appointments function...')
+    
+    const response = await fetch(`${typeof window !== 'undefined' ? window.location.origin : ''}/api/auto-cancel-appointments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('❌ Auto-cancel function failed:', errorText)
+      return { success: false, error: `HTTP ${response.status}: ${errorText}` }
+    }
+
+    const result = await response.json()
+    console.log('✅ Auto-cancel function result:', result)
+    
+    return { 
+      success: result.success, 
+      eliminatedCount: result.eliminatedCount || 0,
+      error: result.error 
+    }
+  } catch (error) {
+    console.error('❌ Error calling auto-cancel function:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+}
+
+/**
  * Gets all available appointments for a mechanic to quote
- * VERSION: 2.0.0 - Enhanced filtering with extensive debugging
+ * VERSION: 2.1.0 - Enhanced filtering with overdue appointment cleanup
  */
 export async function getAvailableAppointmentsForMechanic(mechanicId: string): Promise<GetAppointmentsResponse> {
   try {
-    console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG START (v2.0.0) ===");
-    console.log("🔍 CODE VERSION CHECK: This is the NEW enhanced filtering code with extensive debugging");
+    console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG START (v2.1.0) ===");
+    console.log("🔍 CODE VERSION CHECK: This is the NEW enhanced filtering code with overdue cleanup");
     console.log("🔍 getAvailableAppointmentsForMechanic called with:", {
       mechanicId,
       type: typeof mechanicId,
       length: mechanicId?.length,
       timestamp: new Date().toISOString(),
-      version: "2.0.0"
+      version: "2.1.0"
     });
 
     // Validate mechanic ID
@@ -346,6 +383,15 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
       mechanicId,
       isValid: validation.isValid
     });
+
+    // NEW: Auto-cancel overdue appointments before fetching
+    console.log("🕒 Step 0: Auto-cancelling overdue appointments...");
+    const autoCancelResult = await autoCancelOverdueAppointments();
+    if (autoCancelResult.success && autoCancelResult.eliminatedCount && autoCancelResult.eliminatedCount > 0) {
+      console.log(`🧹 Auto-cancelled ${autoCancelResult.eliminatedCount} overdue appointments`);
+    } else if (autoCancelResult.error) {
+      console.warn("⚠️ Auto-cancel failed, continuing with fetch:", autoCancelResult.error);
+    }
 
     // First, get the appointment IDs that this mechanic has already skipped
     console.log("🔍 Step 1: Fetching skipped appointments...");
@@ -394,6 +440,7 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
     });
 
     // Get pending appointments, excluding both skipped and quoted appointments
+    // NEW: Also exclude cancelled appointments (including auto-cancelled ones)
     console.log("🔍 Step 4: Building query for available appointments...");
     let query = supabase
       .from('appointments')
