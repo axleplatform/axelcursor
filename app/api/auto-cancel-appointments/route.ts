@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
+// Interface for the appointment data returned from the query
+interface AppointmentData {
+  id: string
+  appointment_date: string
+  status: string
+  location: string
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('🕒 API route: Auto-cancelling overdue appointments...')
@@ -53,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Log the appointments that will be eliminated
-    overdueAppointments.forEach(apt => {
+    overdueAppointments.forEach((apt: AppointmentData) => {
       console.log(`🗑️ Will eliminate appointment ${apt.id} scheduled for ${apt.appointment_date} at ${apt.location}`)
     })
 
@@ -66,7 +74,7 @@ export async function POST(request: NextRequest) {
         cancelled_by: 'system',
         cancellation_reason: 'Automatically cancelled - more than 15 minutes overdue'
       })
-      .in('id', overdueAppointments.map(apt => apt.id))
+      .in('id', overdueAppointments.map((apt: AppointmentData) => apt.id))
       .eq('status', 'pending')
       .select('id')
 
@@ -82,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     // Also clean up any associated mechanic quotes for these appointments
     if (eliminatedAppointments && eliminatedAppointments.length > 0) {
-      const appointmentIds = eliminatedAppointments.map(apt => apt.id)
+      const appointmentIds = eliminatedAppointments.map((apt: { id: string }) => apt.id)
       
       const { error: quotesError } = await supabase
         .from('mechanic_quotes')
@@ -101,7 +109,7 @@ export async function POST(request: NextRequest) {
       success: true, 
       message: `Successfully eliminated ${eliminatedAppointments?.length || 0} overdue appointments`,
       eliminatedCount: eliminatedAppointments?.length || 0,
-      eliminatedAppointments: eliminatedAppointments?.map(apt => apt.id) || []
+      eliminatedAppointments: eliminatedAppointments?.map((apt: { id: string }) => apt.id) || []
     }
 
     console.log('✅ Auto-cancel function result:', result)
