@@ -8,12 +8,14 @@ interface MechanicScheduleProps {
   upcomingAppointments: AppointmentWithRelations[]
   availableAppointments: AppointmentWithRelations[]
   onAppointmentClick?: (appointment: AppointmentWithRelations) => void
+  isPastETA?: (appointment: AppointmentWithRelations) => boolean
 }
 
 export default function MechanicSchedule({ 
   upcomingAppointments, 
   availableAppointments, 
-  onAppointmentClick 
+  onAppointmentClick,
+  isPastETA
 }: MechanicScheduleProps) {
   const [currentWeek, setCurrentWeek] = useState<Date>(new Date())
 

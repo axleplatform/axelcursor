@@ -57,6 +57,57 @@ export default function MechanicDashboard() {
   const [currentAvailableIndex, setCurrentAvailableIndex] = useState(0)
   const [currentUpcomingIndex, setCurrentUpcomingIndex] = useState(0)
   const [priceInput, setPriceInput] = useState<string>("")
+  // Helper functions for appointment visibility logic
+  const isPastETA = (appointment: AppointmentWithRelations): boolean => {
+    const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
+    if (!myQuote?.eta) return false;
+    
+    const etaDate = new Date(myQuote.eta);
+    const currentDate = new Date();
+    
+    // Set both dates to midnight for day boundary comparison
+    const etaMidnight = new Date(etaDate.getFullYear(), etaDate.getMonth(), etaDate.getDate());
+    const currentMidnight = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+    
+    return currentMidnight > etaMidnight;
+  };
+
+  const isRestoredToday = (appointmentId: string): boolean => {
+    return restoredToday.has(appointmentId);
+  };
+
+  const shouldShowInUpcoming = (appointment: AppointmentWithRelations): boolean => {
+    // If it's restored today, always show it
+    if (isRestoredToday(appointment.id)) {
+      return true;
+    }
+    
+    // If it's past ETA, don't show it in upcoming
+    if (isPastETA(appointment)) {
+      return false;
+    }
+    
+    // Otherwise, show it normally
+    return true;
+  };
+
+  const handleRestoreAppointment = (appointment: AppointmentWithRelations) => {
+    setRestoredToday(prev => new Set([...prev, appointment.id]));
+  };
+
+  // Reset restored appointments at midnight
+  useEffect(() => {
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    const timer = setTimeout(() => {
+      setRestoredToday(new Set());
+    }, timeUntilMidnight);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   // Helper functions for default date/time
   const getDefaultDate = (): string => {
     const today = new Date();
@@ -145,6 +196,9 @@ export default function MechanicDashboard() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Appointment visibility logic state
+  const [restoredToday, setRestoredToday] = useState<Set<string>>(new Set());
 
   // Update selectedDate and selectedTime when current available appointment changes
   useEffect(() => {
@@ -259,10 +313,10 @@ export default function MechanicDashboard() {
     [availableAppointments, searchQuery]
   );
 
-  const filteredUpcomingAppointments = useMemo(() => 
-    searchAppointments(upcomingAppointments, searchQuery), 
-    [upcomingAppointments, searchQuery]
-  );
+  const filteredUpcomingAppointments = useMemo(() => {
+    const visibleAppointments = upcomingAppointments.filter(shouldShowInUpcoming);
+    return searchAppointments(visibleAppointments, searchQuery);
+  }, [upcomingAppointments, searchQuery, restoredToday]);
 
   // Clear search function
   const clearSearch = () => {
@@ -1077,6 +1131,15 @@ export default function MechanicDashboard() {
 
   // Handle appointment click from schedule
   const handleScheduleAppointmentClick = (appointment: AppointmentWithRelations) => {
+    // Check if this is a past-ETA appointment that needs to be restored
+    if (isPastETA(appointment) && !isRestoredToday(appointment.id)) {
+      handleRestoreAppointment(appointment);
+      toast({
+        title: "Appointment Restored",
+        description: "This appointment has been restored to your upcoming appointments for today.",
+      });
+    }
+    
     // Find the appointment in available appointments
     const availableIndex = availableAppointments.findIndex(apt => apt.id === appointment.id)
     if (availableIndex !== -1) {
@@ -1966,6 +2029,7 @@ export default function MechanicDashboard() {
             upcomingAppointments={upcomingAppointments}
             availableAppointments={availableAppointments}
             onAppointmentClick={handleScheduleAppointmentClick}
+            isPastETA={isPastETA}
           />
 
           {/* Column 3: Available Appointments */}
