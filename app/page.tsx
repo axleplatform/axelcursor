@@ -1065,7 +1065,7 @@ function HomePageContent(): React.JSX.Element {
 
             {/* Register Shop */}
             <div className="flex flex-col items-center justify-center mx-auto text-center">
-              <span className="text-2xl sm:text-3xl lg:text-4xl leading-none text-white inline-flex items-center justify-center mb-4">🏢</span>
+              <span className="text-2xl sm:text-3xl lg:text-4xl leading-none text-white inline-flex items-center justify-center mb-4">🏪</span>
               <h3 className="text-xl font-medium mb-2">Register your Shop</h3>
               <div className="space-y-1 mb-2">
                 <p className="text-sm">Custom pricing and quotes</p>
