@@ -42,7 +42,7 @@ export default function HelpPage() {
 
               <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-shadow">
                 <div className="w-16 h-16 bg-[#F9F9F9] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <div className="h-8 w-8 text-[#294a46]">⚙️</div>
+                  <span className="text-3xl">⚙️</span>
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Troubleshooting</h3>
                 <p className="text-gray-600 mb-4">Solutions to common issues you might encounter.</p>
@@ -53,7 +53,7 @@ export default function HelpPage() {
 
               <div className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition-shadow">
                 <div className="w-16 h-16 bg-[#F9F9F9] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <div className="h-10 w-10 text-[#294a46]">📧</div>
+                  <span className="text-3xl">📧</span>
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Contact Support</h3>
                 <p className="text-gray-600 mb-4">Get in touch with our customer support team.</p>
@@ -300,7 +300,7 @@ export default function HelpPage() {
               <div className="bg-white rounded-lg shadow-sm overflow-hidden p-8">
                 <div className="flex flex-col items-center justify-center text-center">
                   <div className="w-20 h-20 bg-[#F9F9F9] rounded-full flex items-center justify-center mb-6">
-                    <div className="h-10 w-10 text-[#294a46]">📧</div>
+                    <span className="text-3xl">📧</span>
                   </div>
                   <h3 className="text-2xl font-semibold mb-4">Email Support</h3>
                   <p className="text-gray-600 mb-6 max-w-lg mx-auto">

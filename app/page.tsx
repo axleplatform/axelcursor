@@ -728,6 +728,7 @@ function HomePageContent(): React.JSX.Element {
                   value={formData.address}
                   onChange={handleChange}
                   placeholder="Enter complete address (123 Main St, City, State)"
+                  autoFocus={true}
                   className={`block w-full p-4 pl-10 pr-16 text-sm text-gray-900 border rounded-lg bg-white relative z-10 transition-all duration-300 ${
                     errors.address 
                       ? "border-red-500" 
@@ -993,7 +994,7 @@ function HomePageContent(): React.JSX.Element {
             <div className="flex flex-col items-center text-center">
               <div className="w-28 h-28 flex items-center justify-center mb-2">
                 <div className="w-20 h-20 flex items-center justify-center">
-                  <span className="text-xl sm:text-2xl lg:text-3xl leading-none text-gray-500 inline-flex items-center justify-center">📅</span>
+                  <span className="text-2xl sm:text-3xl lg:text-4xl leading-none text-gray-500 inline-flex items-center justify-center">📅</span>
                 </div>
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">Book Appointments Online</h3>
@@ -1036,7 +1037,7 @@ function HomePageContent(): React.JSX.Element {
           <div className="grid md:grid-cols-3 gap-10">
             {/* Register Car */}
             <div className="flex flex-col items-center justify-center mx-auto text-center">
-              <User className="h-10 w-10 mb-4" />
+              <span className="text-2xl sm:text-3xl lg:text-4xl leading-none text-white inline-flex items-center justify-center mb-4">🚗</span>
               <h3 className="text-xl font-bold mb-2">Register your Car</h3>
               <div className="space-y-1 mb-2">
                 <p className="text-sm">Find trusted mechanics</p>
@@ -1064,7 +1065,7 @@ function HomePageContent(): React.JSX.Element {
 
             {/* Register Shop */}
             <div className="flex flex-col items-center justify-center mx-auto text-center">
-              <span className="text-2xl sm:text-3xl lg:text-4xl leading-none text-white inline-flex items-center justify-center mb-4">🏠</span>
+              <span className="text-2xl sm:text-3xl lg:text-4xl leading-none text-white inline-flex items-center justify-center mb-4">🏢</span>
               <h3 className="text-xl font-medium mb-2">Register your Shop</h3>
               <div className="space-y-1 mb-2">
                 <p className="text-sm">Custom pricing and quotes</p>
