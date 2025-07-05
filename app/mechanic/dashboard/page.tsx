@@ -1417,7 +1417,7 @@ export default function MechanicDashboard() {
     
     const confirmed = window.confirm(
       `Canceling a confirmed appointment will incur a 5% cancellation fee of $${cancellationFee}.\n` +
-      `You will be charged the full price if there is a no-show.\n\n` +
+      `You will be charged the full price if there is a no-show, unless you cancel the appointment.\n\n` +
       `Are you sure you want to cancel?`
     );
     
