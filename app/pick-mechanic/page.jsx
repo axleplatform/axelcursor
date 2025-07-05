@@ -451,44 +451,34 @@ function PickMechanicContent() {
  return (
   <div className="flex flex-col min-h-screen">
    <SiteHeader />
-   <main className="flex-grow bg-[#f5f5f5]">
-    <div className="container mx-auto py-8 px-4 max-w-7xl">
-     {/* Header with Back Button */}
-     <div className="flex items-center justify-between mb-8">
-      <div className="flex items-center gap-4">
-       <Button
-        onClick={handleBack}
-        variant="outline"
-        size="sm"
-        className="flex items-center gap-2 hover:bg-gray-100 border-gray-300"
-       >
-        <ChevronLeft className="h-4 w-4" />
-        Back
-       </Button>
-      </div>
-      
-      {/* Centered Page Title */}
-      <div className="absolute left-1/2 transform -translate-x-1/2">
-       <div className="text-center">
-        <h1 className="text-3xl font-bold text-center text-[#294a46] mb-6">Pick Your Mechanic</h1>
-        <p className="text-lg text-gray-600">Pick & Pay</p>
-       </div>
-      </div>
-      
-      <div></div> {/* Spacer for flex layout balance */}
+   <main className="flex-1">
+    <div className="container mx-auto px-4 py-8 max-w-3xl">
+     {/* Page Title */}
+     <h1 className="text-3xl font-bold text-center text-[#294a46] mb-2">Pick Your Mechanic</h1>
+     <div className="text-center mb-6">
+      <p className="text-gray-600">Pick & Pay</p>
+     </div>
+     
+     {/* Back Button */}
+     <div className="mb-6">
+      <Button
+       onClick={handleBack}
+       variant="ghost"
+       className="flex items-center gap-2 text-[#294a46] hover:bg-gray-100"
+      >
+       <ChevronLeft className="h-4 w-4" />
+       Back
+      </Button>
      </div>
 
-     {/* Split-Screen Layout */}
-     <div className="flex flex-col md:flex-row gap-6 h-full">
-      {/* Left Side - Available Mechanics (50% width) */}
-      <div className="w-full md:w-1/2">
-       <Card className="overflow-hidden h-full bg-white">
-        <div className="p-6 border-b">
-         <h2 className="text-2xl font-semibold text-[#294a46]">Available Mechanics</h2>
-         <p className="text-sm text-gray-600 mt-1">Choose your preferred mechanic from the options below</p>
-        </div>
+     {/* Available Mechanics Section */}
+     <Card className="overflow-hidden bg-white mb-6">
+      <div className="p-6 border-b">
+       <h2 className="text-2xl font-semibold text-[#294a46]">Available Mechanics</h2>
+       <p className="text-sm text-gray-600 mt-1">Choose your preferred mechanic from the options below</p>
+      </div>
 
-        <div className="p-6">
+      <div className="p-6">
          {isLoadingQuotes ? (
           <div className="flex items-center justify-center py-12">
            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#294a46]"></div>
@@ -635,128 +625,124 @@ function PickMechanicContent() {
          )}
         </div>
        </Card>
-      </div>
 
-      {/* Right Side - Order Summary (50% width) */}
-      <div className="w-full md:w-1/2">
-       <Card className="p-0 sticky top-8 h-fit bg-white shadow-lg">
-        <div className="p-6 border-b bg-gradient-to-r from-[#294a46] to-[#1e3632]">
-         <h2 className="text-2xl font-semibold text-white">Order Summary</h2>
-         <p className="text-gray-200 mt-1">Review your appointment details</p>
-        </div>
+      {/* Order Summary Section */}
+      <Card className="p-0 bg-white shadow-lg">
+       <div className="p-6 border-b bg-gradient-to-r from-[#294a46] to-[#1e3632]">
+        <h2 className="text-2xl font-semibold text-white">Order Summary</h2>
+        <p className="text-gray-200 mt-1">Review your appointment details</p>
+       </div>
 
-        <div className="p-6">
-         <div className="space-y-6">
-          <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
-           <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
-           <div className="flex-1">
-            <h3 className="font-semibold text-gray-800 text-base">Appointment Details</h3>
-            <p className="text-sm text-gray-600 mt-1">{formatDate(appointment.appointment_date)}</p>
-            <div className="flex items-start mt-2">
-             <MapPin className="h-4 w-4 text-gray-400 mt-0.5 mr-2 flex-shrink-0" />
-             <p className="text-sm text-gray-500">{appointment.location}</p>
-            </div>
+       <div className="p-6">
+        <div className="space-y-6">
+         <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+          <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
+          <div className="flex-1">
+           <h3 className="font-semibold text-gray-800 text-base">Appointment Details</h3>
+           <p className="text-sm text-gray-600 mt-1">{formatDate(appointment.appointment_date)}</p>
+           <div className="flex items-start mt-2">
+            <MapPin className="h-4 w-4 text-gray-400 mt-0.5 mr-2 flex-shrink-0" />
+            <p className="text-sm text-gray-500">{appointment.location}</p>
            </div>
           </div>
+         </div>
 
-          {appointment.vehicles && (
-           <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
-            <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
-            <div className="flex-1">
-             <h3 className="font-semibold text-gray-800 text-base">Vehicle</h3>
-             <p className="text-sm text-gray-600 mt-1 font-medium">
-              {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
-             </p>
-             {appointment.vehicles.color && (
-              <p className="text-sm text-gray-500 mt-1">Color: {appointment.vehicles.color}</p>
-             )}
-             {appointment.vehicles.vin && (
-              <p className="text-sm text-gray-500">VIN: {appointment.vehicles.vin}</p>
-             )}
-             {appointment.vehicles.mileage && (
-              <p className="text-sm text-gray-500">Mileage: {appointment.vehicles.mileage}</p>
-             )}
-            </div>
-           </div>
-          )}
-
-          {appointment.selected_services && appointment.selected_services.length > 0 && (
-           <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
-            <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
-            <div className="flex-1">
-             <h3 className="font-semibold text-gray-800 text-base">Requested Services</h3>
-             <ul className="mt-2 space-y-2">
-              {appointment.selected_services.map((service, index) => (
-               <li key={index} className="flex items-center">
-                <div className="h-2 w-2 rounded-full bg-[#294a46] mr-3"></div>
-                <span className="text-sm text-gray-600">{service}</span>
-               </li>
-              ))}
-             </ul>
-            </div>
-           </div>
-          )}
-
-          {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
-           <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
-            <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">⚠️</span>
-            <div className="flex-1">
-             <h3 className="font-semibold text-gray-800 text-base">Reported Issues</h3>
-             <ul className="mt-2 space-y-2">
-              {appointment.selected_car_issues.map((issue, index) => (
-               <li key={index} className="flex items-center">
-                <div className="h-2 w-2 rounded-full bg-red-500 mr-3"></div>
-                <span className="text-sm text-gray-600">{issue}</span>
-               </li>
-              ))}
-             </ul>
-            </div>
-           </div>
-          )}
-
-          {appointment.issue_description && (
-           <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
-            <FileText className="h-5 w-5 text-[#294a46] mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-             <h3 className="font-semibold text-gray-800 text-base">Description</h3>
-             <p className="text-sm text-gray-600 mt-2 leading-relaxed">{appointment.issue_description}</p>
-            </div>
-           </div>
-          )}
-
+         {appointment.vehicles && (
           <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
-           <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔋</span>
+           <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
            <div className="flex-1">
-            <h3 className="font-semibold text-gray-800 text-base">Car Status</h3>
-            <p className="text-sm text-gray-600 mt-1">
-             {appointment.car_runs !== null
-              ? appointment.car_runs
-               ? "✅ Car is running"
-               : "❌ Car is not running"
-              : "❓ Car status not specified"}
+            <h3 className="font-semibold text-gray-800 text-base">Vehicle</h3>
+            <p className="text-sm text-gray-600 mt-1 font-medium">
+             {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
             </p>
+            {appointment.vehicles.color && (
+             <p className="text-sm text-gray-500 mt-1">Color: {appointment.vehicles.color}</p>
+            )}
+            {appointment.vehicles.vin && (
+             <p className="text-sm text-gray-500">VIN: {appointment.vehicles.vin}</p>
+            )}
+            {appointment.vehicles.mileage && (
+             <p className="text-sm text-gray-500">Mileage: {appointment.vehicles.mileage}</p>
+            )}
            </div>
           </div>
-         </div>
+         )}
 
-         <div className="mt-6 p-6 border border-dashed border-gray-300 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
-          <div className="flex items-center justify-center mb-4">
-           <CreditCard className="h-6 w-6 text-[#294a46] mr-3" />
-           <h3 className="font-semibold text-gray-700 text-base">Payment Integration Coming Soon</h3>
-          </div>
-          <div className="space-y-3">
-           <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
-           <div className="grid grid-cols-2 gap-3">
-            <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
-            <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+         {appointment.selected_services && appointment.selected_services.length > 0 && (
+          <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+           <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
+           <div className="flex-1">
+            <h3 className="font-semibold text-gray-800 text-base">Requested Services</h3>
+            <ul className="mt-2 space-y-2">
+             {appointment.selected_services.map((service, index) => (
+              <li key={index} className="flex items-center">
+               <div className="h-2 w-2 rounded-full bg-[#294a46] mr-3"></div>
+               <span className="text-sm text-gray-600">{service}</span>
+              </li>
+             ))}
+            </ul>
            </div>
           </div>
-          <p className="text-xs text-gray-500 text-center mt-4">Secure payment processing with Stripe</p>
+         )}
+
+         {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
+          <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+           <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">⚠️</span>
+           <div className="flex-1">
+            <h3 className="font-semibold text-gray-800 text-base">Reported Issues</h3>
+            <ul className="mt-2 space-y-2">
+             {appointment.selected_car_issues.map((issue, index) => (
+              <li key={index} className="flex items-center">
+               <div className="h-2 w-2 rounded-full bg-red-500 mr-3"></div>
+               <span className="text-sm text-gray-600">{issue}</span>
+              </li>
+             ))}
+            </ul>
+           </div>
+          </div>
+         )}
+
+         {appointment.issue_description && (
+          <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+           <FileText className="h-5 w-5 text-[#294a46] mt-0.5 flex-shrink-0" />
+           <div className="flex-1">
+            <h3 className="font-semibold text-gray-800 text-base">Description</h3>
+            <p className="text-sm text-gray-600 mt-2 leading-relaxed">{appointment.issue_description}</p>
+           </div>
+          </div>
+         )}
+
+         <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
+          <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔋</span>
+          <div className="flex-1">
+           <h3 className="font-semibold text-gray-800 text-base">Car Status</h3>
+           <p className="text-sm text-gray-600 mt-1">
+            {appointment.car_runs !== null
+             ? appointment.car_runs
+              ? "✅ Car is running"
+              : "❌ Car is not running"
+             : "❓ Car status not specified"}
+           </p>
+          </div>
          </div>
         </div>
-       </Card>
-      </div>
-     </div>
+
+        <div className="mt-6 p-6 border border-dashed border-gray-300 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
+         <div className="flex items-center justify-center mb-4">
+          <CreditCard className="h-6 w-6 text-[#294a46] mr-3" />
+          <h3 className="font-semibold text-gray-700 text-base">Payment Integration Coming Soon</h3>
+         </div>
+         <div className="space-y-3">
+          <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+          <div className="grid grid-cols-2 gap-3">
+           <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+           <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+          </div>
+         </div>
+         <p className="text-xs text-gray-500 text-center mt-4">Secure payment processing with Stripe</p>
+        </div>
+       </div>
+      </Card>
     </div>
    </main>
    <Footer />
