@@ -628,8 +628,6 @@ function PickMechanicContent() {
          )}
         </div>
        </Card>
-
-       </div>
       </div>
 
       {/* Right Side - Order Summary */}
