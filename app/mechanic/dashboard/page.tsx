@@ -95,6 +95,117 @@ export default function MechanicDashboard() {
     setRestoredToday(prev => new Set([...prev, appointment.id]));
   };
 
+  // Schedule-specific handlers
+  const handleScheduleCancel = (appointment: AppointmentWithRelations) => {
+    setShowScheduleCancelModal(true);
+  };
+
+  const handleScheduleEdit = (appointment: AppointmentWithRelations) => {
+    // Initialize form fields with current appointment data
+    const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
+    if (myQuote) {
+      setPriceInput(myQuote.price.toString());
+      
+      // Parse ETA date and time
+      const etaDate = new Date(myQuote.eta);
+      const year = etaDate.getFullYear();
+      const month = pad(etaDate.getMonth() + 1);
+      const day = pad(etaDate.getDate());
+      const hours = pad(etaDate.getHours());
+      const minutes = pad(etaDate.getMinutes());
+      
+      setSelectedDate(`${year}-${month}-${day}`);
+      setSelectedTime(`${hours}:${minutes}`);
+      setNotes(myQuote.notes || '');
+    }
+    
+    setShowScheduleEditModal(true);
+  };
+
+  const handleScheduleCancelSubmit = async () => {
+    try {
+      const currentAppointment = filteredUpcomingAppointments[currentUpcomingIndex];
+      if (!currentAppointment) return;
+
+      // Update appointment with cancellation details
+      const { error } = await supabase
+        .from('appointments')
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          cancelled_by: 'mechanic',
+          cancellation_reason: cancellationReason,
+          cancellation_type: cancellationType
+        })
+        .eq('id', currentAppointment.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Appointment Cancelled",
+        description: cancellationType === 'customer' 
+          ? "Customer will receive a full refund. A cancellation fee will be charged to the customer."
+          : "Customer will receive a full refund. You will be charged a cancellation fee.",
+      });
+
+      setShowScheduleCancelModal(false);
+      setCancellationReason('');
+      setCancellationType('customer');
+      setIsFromSchedule(false);
+      await fetchInitialAppointments();
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleScheduleEditSubmit = async () => {
+    try {
+      const currentAppointment = filteredUpcomingAppointments[currentUpcomingIndex];
+      if (!currentAppointment) return;
+
+      const myQuote = currentAppointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
+      if (!myQuote) return;
+
+      // Combine date and time
+      const [year, month, day] = selectedDate.split('-');
+      const [hour, minute] = selectedTime.split(':');
+      const etaDateTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)).toISOString();
+
+      const { error } = await supabase
+        .from('mechanic_quotes')
+        .update({
+          price: parseFloat(priceInput),
+          eta: etaDateTime,
+          notes: notes || '',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', myQuote.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Quote Updated",
+        description: "Your quote has been updated successfully.",
+      });
+
+      setShowScheduleEditModal(false);
+      setIsFromSchedule(false);
+      await fetchInitialAppointments();
+    } catch (error) {
+      console.error('Error updating quote:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update quote. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Reset restored appointments at midnight
   useEffect(() => {
     const now = new Date();
@@ -199,6 +310,13 @@ export default function MechanicDashboard() {
 
   // Appointment visibility logic state
   const [restoredToday, setRestoredToday] = useState<Set<string>>(new Set());
+  
+  // Schedule click tracking state
+  const [isFromSchedule, setIsFromSchedule] = useState<boolean>(false);
+  const [showScheduleCancelModal, setShowScheduleCancelModal] = useState<boolean>(false);
+  const [showScheduleEditModal, setShowScheduleEditModal] = useState<boolean>(false);
+  const [cancellationReason, setCancellationReason] = useState<string>('');
+  const [cancellationType, setCancellationType] = useState<'customer' | 'mechanic'>('customer');
 
   // Update selectedDate and selectedTime when current available appointment changes
   useEffect(() => {
@@ -1120,17 +1238,22 @@ export default function MechanicDashboard() {
   const goToNextUpcoming = (): void => {
     if (upcomingAppointments.length > 1) {
       setCurrentUpcomingIndex((prev: number) => (prev + 1) % upcomingAppointments.length)
+      setIsFromSchedule(false); // Reset flag when navigating normally
     }
   }
 
   const goToPrevUpcoming = (): void => {
     if (upcomingAppointments.length > 1) {
       setCurrentUpcomingIndex((prev: number) => (prev === 0 ? upcomingAppointments.length - 1 : prev - 1))
+      setIsFromSchedule(false); // Reset flag when navigating normally
     }
   }
 
   // Handle appointment click from schedule
   const handleScheduleAppointmentClick = (appointment: AppointmentWithRelations) => {
+    // Set flag to indicate this appointment was accessed from schedule
+    setIsFromSchedule(true);
+    
     // Check if this is a past-ETA appointment that needs to be restored
     if (isPastETA(appointment) && !isRestoredToday(appointment.id)) {
       handleRestoreAppointment(appointment);
@@ -1939,19 +2062,39 @@ export default function MechanicDashboard() {
                           <div className="flex gap-3">
                             {isConfirmed ? (
                               <>
-                                <button
-                                  onClick={() => handleStartAppointment(appointment)}
-                                  className="flex-1 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
-                                  style={{ backgroundColor: '#294A46' }}
-                                >
-                                  Start
-                                </button>
-                                <button
-                                  onClick={() => handleCancelConfirmedAppointment(appointment, myQuote?.price || 0)}
-                                  className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
-                                >
-                                  Cancel
-                                </button>
+                                {isFromSchedule ? (
+                                  <>
+                                    <button
+                                      onClick={() => handleScheduleEdit(appointment)}
+                                      className="flex-1 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
+                                      style={{ backgroundColor: '#294A46' }}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleScheduleCancel(appointment)}
+                                      className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => handleStartAppointment(appointment)}
+                                      className="flex-1 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
+                                      style={{ backgroundColor: '#294A46' }}
+                                    >
+                                      Start
+                                    </button>
+                                    <button
+                                      onClick={() => handleCancelConfirmedAppointment(appointment, myQuote?.price || 0)}
+                                      className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </>
+                                )}
                               </>
                             ) : (
                               <>
@@ -2540,6 +2683,215 @@ export default function MechanicDashboard() {
                   type="button"
                   onClick={() => setShowEditModal(false)}
                   disabled={isProcessing}
+                  className="flex-1 bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Cancel Modal */}
+      {showScheduleCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Who initiated the cancellation?</h3>
+            
+            <div className="mb-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cancellation Type
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="cancellationType"
+                      value="customer"
+                      checked={cancellationType === 'customer'}
+                      onChange={(e) => setCancellationType(e.target.value as 'customer' | 'mechanic')}
+                      className="mr-2"
+                    />
+                    Customer Reasons
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="cancellationType"
+                      value="mechanic"
+                      checked={cancellationType === 'mechanic'}
+                      onChange={(e) => setCancellationType(e.target.value as 'customer' | 'mechanic')}
+                      className="mr-2"
+                    />
+                    Mechanic Reasons
+                  </label>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason
+                </label>
+                <select
+                  value={cancellationReason}
+                  onChange={(e) => setCancellationReason(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#294a46]"
+                  required
+                >
+                  <option value="">Select a reason</option>
+                  {cancellationType === 'customer' ? (
+                    <>
+                      <option value="customer_cancelled">Customer cancelled</option>
+                      <option value="customer_no_answer">Customer did not answer</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="mechanic_no_show">I did not show up</option>
+                      <option value="mechanic_incomplete">I did not complete the work</option>
+                      <option value="mechanic_decided">I decided to cancel</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p className="text-sm text-gray-700">
+                  {cancellationType === 'customer' 
+                    ? "Customer will receive a full refund. A cancellation fee will be charged to the customer."
+                    : "Customer will receive a full refund. You will be charged a cancellation fee."
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleScheduleCancelSubmit}
+                disabled={!cancellationReason}
+                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                Confirm Cancellation
+              </button>
+              <button
+                onClick={() => {
+                  setShowScheduleCancelModal(false);
+                  setCancellationReason('');
+                  setCancellationType('customer');
+                }}
+                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Edit Modal */}
+      {showScheduleEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Edit Appointment</h3>
+            
+            <form onSubmit={(e) => { e.preventDefault(); handleScheduleEditSubmit(); }}>
+              {/* Price Input */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Price (USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                  <input
+                    type="number"
+                    value={priceInput}
+                    onChange={(e) => setPriceInput(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#294a46]"
+                    min="10"
+                    max="10000"
+                    step="0.01"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* ETA Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  When can you show up?
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Date Selection */}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Select Date</label>
+                    <select
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#294a46]"
+                      required
+                    >
+                      <option value="">Choose a date</option>
+                      {getAvailableDates().map((date) => (
+                        <option key={date.value} value={date.value}>
+                          {date.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Time Selection */}
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Select Time</label>
+                    <select
+                      value={selectedTime}
+                      onChange={(e) => setSelectedTime(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#294a46]"
+                      required
+                    >
+                      <option value="">Choose a time</option>
+                      {getTimeSlots(selectedDate).map((slot) => (
+                        <option key={slot.value} value={slot.value}>
+                          {slot.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes Input */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#294a46]"
+                  rows={3}
+                  placeholder="Add any additional notes..."
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={!priceInput || !selectedDate || !selectedTime}
+                  className="flex-1 bg-[#294a46] text-white font-medium py-2 px-4 rounded-md hover:bg-[#1e3632] transition-colors disabled:opacity-50"
+                >
+                  Save Changes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowScheduleEditModal(false);
+                    setPriceInput('');
+                    setSelectedDate(getDefaultDate());
+                    setSelectedTime(getDefaultTime());
+                    setNotes('');
+                  }}
                   className="flex-1 bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md hover:bg-gray-300 transition-colors"
                 >
                   Cancel
