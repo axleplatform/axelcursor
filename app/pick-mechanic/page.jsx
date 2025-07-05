@@ -471,14 +471,17 @@ function PickMechanicContent() {
       </Button>
      </div>
 
-     {/* Available Mechanics Section */}
-     <Card className="overflow-hidden bg-white mb-6">
-      <div className="p-6 border-b">
-       <h2 className="text-2xl font-semibold text-[#294a46]">Available Mechanics</h2>
-       <p className="text-sm text-gray-600 mt-1">Choose your preferred mechanic from the options below</p>
-      </div>
+     {/* Split-Screen Layout */}
+     <div className="flex flex-col lg:flex-row gap-6">
+      {/* Left Side - Available Mechanics */}
+      <div className="w-full lg:w-2/3">
+       <Card className="overflow-hidden bg-white h-full">
+        <div className="p-6 border-b">
+         <h2 className="text-2xl font-semibold text-[#294a46]">Available Mechanics</h2>
+         <p className="text-sm text-gray-600 mt-1">Choose your preferred mechanic from the options below</p>
+        </div>
 
-      <div className="p-6">
+        <div className="p-6">
          {isLoadingQuotes ? (
           <div className="flex items-center justify-center py-12">
            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#294a46]"></div>
@@ -626,123 +629,129 @@ function PickMechanicContent() {
         </div>
        </Card>
 
-      {/* Order Summary Section */}
-      <Card className="p-0 bg-white shadow-lg">
-       <div className="p-6 border-b bg-gradient-to-r from-[#294a46] to-[#1e3632]">
-        <h2 className="text-2xl font-semibold text-white">Order Summary</h2>
-        <p className="text-gray-200 mt-1">Review your appointment details</p>
        </div>
+      </div>
 
-       <div className="p-6">
-        <div className="space-y-6">
-         <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
-          <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
-          <div className="flex-1">
-           <h3 className="font-semibold text-gray-800 text-base">Appointment Details</h3>
-           <p className="text-sm text-gray-600 mt-1">{formatDate(appointment.appointment_date)}</p>
-           <div className="flex items-start mt-2">
-            <MapPin className="h-4 w-4 text-gray-400 mt-0.5 mr-2 flex-shrink-0" />
-            <p className="text-sm text-gray-500">{appointment.location}</p>
+      {/* Right Side - Order Summary */}
+      <div className="w-full lg:w-1/3">
+       <Card className="p-0 bg-white shadow-lg sticky top-8 h-fit">
+        <div className="p-4 border-b bg-gradient-to-r from-[#294a46] to-[#1e3632]">
+         <h2 className="text-lg font-semibold text-white">Order Summary</h2>
+         <p className="text-gray-200 text-sm mt-1">Review your appointment details</p>
+        </div>
+
+        <div className="p-4">
+         <div className="space-y-4">
+          <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+           <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
+           <div className="flex-1">
+            <h3 className="font-semibold text-gray-800 text-sm">Appointment Details</h3>
+            <p className="text-xs text-gray-600 mt-1">{formatDate(appointment.appointment_date)}</p>
+            <div className="flex items-start mt-1">
+             <MapPin className="h-3 w-3 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
+             <p className="text-xs text-gray-500">{appointment.location}</p>
+            </div>
            </div>
           </div>
-         </div>
 
-         {appointment.vehicles && (
-          <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
-           <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
+          {appointment.vehicles && (
+           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+            <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
+            <div className="flex-1">
+             <h3 className="font-semibold text-gray-800 text-sm">Vehicle</h3>
+             <p className="text-xs text-gray-600 mt-1 font-medium">
+              {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
+             </p>
+             {appointment.vehicles.color && (
+              <p className="text-xs text-gray-500 mt-1">Color: {appointment.vehicles.color}</p>
+             )}
+             {appointment.vehicles.vin && (
+              <p className="text-xs text-gray-500">VIN: {appointment.vehicles.vin}</p>
+             )}
+             {appointment.vehicles.mileage && (
+              <p className="text-xs text-gray-500">Mileage: {appointment.vehicles.mileage}</p>
+             )}
+            </div>
+           </div>
+          )}
+
+          {appointment.selected_services && appointment.selected_services.length > 0 && (
+           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+            <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
+            <div className="flex-1">
+             <h3 className="font-semibold text-gray-800 text-sm">Requested Services</h3>
+             <ul className="mt-1 space-y-1">
+              {appointment.selected_services.map((service, index) => (
+               <li key={index} className="flex items-center">
+                <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
+                <span className="text-xs text-gray-600">{service}</span>
+               </li>
+              ))}
+             </ul>
+            </div>
+           </div>
+          )}
+
+          {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
+           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+            <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">⚠️</span>
+            <div className="flex-1">
+             <h3 className="font-semibold text-gray-800 text-sm">Reported Issues</h3>
+             <ul className="mt-1 space-y-1">
+              {appointment.selected_car_issues.map((issue, index) => (
+               <li key={index} className="flex items-center">
+                <div className="h-1.5 w-1.5 rounded-full bg-red-500 mr-2"></div>
+                <span className="text-xs text-gray-600">{issue}</span>
+               </li>
+              ))}
+             </ul>
+            </div>
+           </div>
+          )}
+
+          {appointment.issue_description && (
+           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+            <FileText className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+             <h3 className="font-semibold text-gray-800 text-sm">Description</h3>
+             <p className="text-xs text-gray-600 mt-1 leading-relaxed">{appointment.issue_description}</p>
+            </div>
+           </div>
+          )}
+
+          <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+           <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔋</span>
            <div className="flex-1">
-            <h3 className="font-semibold text-gray-800 text-base">Vehicle</h3>
-            <p className="text-sm text-gray-600 mt-1 font-medium">
-             {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
+            <h3 className="font-semibold text-gray-800 text-sm">Car Status</h3>
+            <p className="text-xs text-gray-600 mt-1">
+             {appointment.car_runs !== null
+              ? appointment.car_runs
+               ? "✅ Car is running"
+               : "❌ Car is not running"
+              : "❓ Car status not specified"}
             </p>
-            {appointment.vehicles.color && (
-             <p className="text-sm text-gray-500 mt-1">Color: {appointment.vehicles.color}</p>
-            )}
-            {appointment.vehicles.vin && (
-             <p className="text-sm text-gray-500">VIN: {appointment.vehicles.vin}</p>
-            )}
-            {appointment.vehicles.mileage && (
-             <p className="text-sm text-gray-500">Mileage: {appointment.vehicles.mileage}</p>
-            )}
            </div>
           </div>
-         )}
+         </div>
 
-         {appointment.selected_services && appointment.selected_services.length > 0 && (
-          <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
-           <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
-           <div className="flex-1">
-            <h3 className="font-semibold text-gray-800 text-base">Requested Services</h3>
-            <ul className="mt-2 space-y-2">
-             {appointment.selected_services.map((service, index) => (
-              <li key={index} className="flex items-center">
-               <div className="h-2 w-2 rounded-full bg-[#294a46] mr-3"></div>
-               <span className="text-sm text-gray-600">{service}</span>
-              </li>
-             ))}
-            </ul>
+         <div className="mt-4 p-4 border border-dashed border-gray-300 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="flex items-center justify-center mb-3">
+           <CreditCard className="h-5 w-5 text-[#294a46] mr-2" />
+           <h3 className="font-semibold text-gray-700 text-sm">Payment Integration Coming Soon</h3>
+          </div>
+          <div className="space-y-2">
+           <div className="h-8 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+           <div className="grid grid-cols-2 gap-2">
+            <div className="h-8 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+            <div className="h-8 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
            </div>
           </div>
-         )}
-
-         {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
-          <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
-           <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">⚠️</span>
-           <div className="flex-1">
-            <h3 className="font-semibold text-gray-800 text-base">Reported Issues</h3>
-            <ul className="mt-2 space-y-2">
-             {appointment.selected_car_issues.map((issue, index) => (
-              <li key={index} className="flex items-center">
-               <div className="h-2 w-2 rounded-full bg-red-500 mr-3"></div>
-               <span className="text-sm text-gray-600">{issue}</span>
-              </li>
-             ))}
-            </ul>
-           </div>
-          </div>
-         )}
-
-         {appointment.issue_description && (
-          <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
-           <FileText className="h-5 w-5 text-[#294a46] mt-0.5 flex-shrink-0" />
-           <div className="flex-1">
-            <h3 className="font-semibold text-gray-800 text-base">Description</h3>
-            <p className="text-sm text-gray-600 mt-2 leading-relaxed">{appointment.issue_description}</p>
-           </div>
-          </div>
-         )}
-
-         <div className="flex items-start space-x-4 pb-4 border-b border-gray-200">
-          <span className="text-lg leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔋</span>
-          <div className="flex-1">
-           <h3 className="font-semibold text-gray-800 text-base">Car Status</h3>
-           <p className="text-sm text-gray-600 mt-1">
-            {appointment.car_runs !== null
-             ? appointment.car_runs
-              ? "✅ Car is running"
-              : "❌ Car is not running"
-             : "❓ Car status not specified"}
-           </p>
-          </div>
+          <p className="text-xs text-gray-500 text-center mt-3">Secure payment processing with Stripe</p>
          </div>
         </div>
-
-        <div className="mt-6 p-6 border border-dashed border-gray-300 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
-         <div className="flex items-center justify-center mb-4">
-          <CreditCard className="h-6 w-6 text-[#294a46] mr-3" />
-          <h3 className="font-semibold text-gray-700 text-base">Payment Integration Coming Soon</h3>
-         </div>
-         <div className="space-y-3">
-          <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
-          <div className="grid grid-cols-2 gap-3">
-           <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
-           <div className="h-12 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
-          </div>
-         </div>
-         <p className="text-xs text-gray-500 text-center mt-4">Secure payment processing with Stripe</p>
-        </div>
-       </div>
-      </Card>
+       </Card>
+      </div>
+     </div>
     </div>
    </main>
    <Footer />
