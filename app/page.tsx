@@ -764,11 +764,22 @@ function HomePageContent(): React.JSX.Element {
                   }`}
                 >
                   <option value="">Year</option>
-                  {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
+                  {(() => {
+                    const currentYear = new Date().getFullYear()
+                    const currentMonth = new Date().getMonth() // 0-11, where 8 = September
+                    const maxYear = currentMonth >= 8 ? currentYear + 2 : currentYear + 1 // Add extra year if September or later
+                    const years = []
+                    
+                    for (let year = maxYear; year >= currentYear - 29; year--) {
+                      years.push(year)
+                    }
+                    
+                    return years.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))
+                  })()}
                 </select>
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 h-3 w-3 pointer-events-none text-gray-500">
                   <svg
