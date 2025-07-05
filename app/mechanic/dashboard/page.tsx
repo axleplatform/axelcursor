@@ -318,6 +318,23 @@ export default function MechanicDashboard() {
   const [cancellationReason, setCancellationReason] = useState<string>('');
   const [cancellationType, setCancellationType] = useState<'customer' | 'mechanic'>('customer');
 
+  // Helper function to check if appointment is within 2 days (for schedule-accessed appointments)
+  const isWithinTwoDays = (appointment: AppointmentWithRelations): boolean => {
+    const appointmentDate = new Date(appointment.appointment_date);
+    const today = new Date();
+    
+    // Set both dates to midnight for accurate day comparison
+    const appointmentMidnight = new Date(appointmentDate.getFullYear(), appointmentDate.getMonth(), appointmentDate.getDate());
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    // Calculate difference in days
+    const diffTime = todayMidnight.getTime() - appointmentMidnight.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Return true if within 2 days (including the appointment day and 2 days after)
+    return diffDays >= -1 && diffDays <= 2;
+  };
+
   // Update selectedDate and selectedTime when current available appointment changes
   useEffect(() => {
     if (availableAppointments.length > 0 && availableAppointments[currentAvailableIndex]) {
@@ -2064,19 +2081,27 @@ export default function MechanicDashboard() {
                               <>
                                 {isFromSchedule ? (
                                   <>
-                                    <button
-                                      onClick={() => handleScheduleEdit(appointment)}
-                                      className="flex-1 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
-                                      style={{ backgroundColor: '#294A46' }}
-                                    >
-                                      Edit
-                                    </button>
-                                    <button
-                                      onClick={() => handleScheduleCancel(appointment)}
-                                      className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
-                                    >
-                                      Cancel
-                                    </button>
+                                    {isWithinTwoDays(appointment) ? (
+                                      <>
+                                        <button
+                                          onClick={() => handleScheduleEdit(appointment)}
+                                          className="flex-1 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
+                                          style={{ backgroundColor: '#294A46' }}
+                                        >
+                                          Edit
+                                        </button>
+                                        <button
+                                          onClick={() => handleScheduleCancel(appointment)}
+                                          className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <div className="flex-1 text-center text-gray-500 text-sm py-2">
+                                        View-only (past 2-day limit)
+                                      </div>
+                                    )}
                                   </>
                                 ) : (
                                   <>
