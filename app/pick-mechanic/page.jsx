@@ -34,6 +34,19 @@ function PickMechanicContent() {
  const [showCancelModal, setShowCancelModal] = useState(false)
  const [isCanceling, setIsCanceling] = useState(false)
 
+ // Loading animation state
+ const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
+ const loadingMessages = [
+   "Searching the Mobile Mechanics Near You",
+   "Checking their above 4 star rating",
+   "Contacting their Business",
+   "Mechanics go thru the Sign Up",
+   "Checking their availability",
+   "Sent appointment details",
+   "Receiving their Quotes",
+   "Adding Processing fee"
+ ]
+
  // Get appointmentId from searchParams
  const appointmentId = searchParams?.get("appointmentId")
  
@@ -199,8 +212,9 @@ function PickMechanicContent() {
      filter: `appointment_id=eq.${appointmentId}`
     },
     (payload) => {
-     console.log('New quote received:', payload)
-     fetchAppointmentData() // Refresh when new quote arrives
+     console.log('🔍 New quote received:', payload)
+     // Refresh quotes when new one is added
+     fetchAppointmentData()
     }
    )
    .subscribe()
@@ -209,6 +223,17 @@ function PickMechanicContent() {
    subscription.unsubscribe()
   }
  }, [appointmentId])
+
+ // Loading animation effect
+ useEffect(() => {
+  if (mechanicQuotes.length > 0) return // Stop animation when quotes arrive
+  
+  const interval = setInterval(() => {
+   setCurrentMessageIndex((prevIndex) => (prevIndex + 1) % loadingMessages.length)
+  }, 800) // 0.8 seconds per message
+
+  return () => clearInterval(interval)
+ }, [mechanicQuotes.length, loadingMessages.length])
 
  // Show loading state
  if (isLoading) {
@@ -426,7 +451,7 @@ function PickMechanicContent() {
         size="sm"
         className="flex items-center gap-2 hover:bg-gray-100 border-gray-300"
        >
-                        <ChevronLeft className="h-4 w-4" />
+        <ChevronLeft className="h-4 w-4" />
         Back
        </Button>
       </div>
@@ -434,8 +459,8 @@ function PickMechanicContent() {
       {/* Centered Page Title */}
       <div className="absolute left-1/2 transform -translate-x-1/2">
        <div className="text-center">
-        <h1 className="text-3xl font-bold text-center text-[#294a46] mb-6">Pick Your Mechanic</h1>
-        <p className="text-lg text-gray-600 mt-1">Pick & Pay</p>
+        <h1 className="text-3xl font-bold text-center text-[#294a46] mb-2">Pick Your Mechanic</h1>
+        <p className="text-lg text-gray-600">Pick & Pay</p>
        </div>
       </div>
       
@@ -575,11 +600,26 @@ function PickMechanicContent() {
           </div>
          ) : (
           <div className="text-center py-16 bg-gray-50 rounded-lg border border-gray-200">
-           <Clock className="h-16 w-16 text-gray-400 mx-auto mb-6" />
-           <h3 className="text-xl font-medium text-gray-900 mb-3">No Quotes Yet</h3>
-           <p className="text-gray-500 text-lg">
-            Mechanics are reviewing your request. This page refreshes automatically.
-           </p>
+           {/* Static Title */}
+           <h3 className="text-2xl font-bold text-[#294a46] mb-8">This is how we Find Your Mechanic</h3>
+           
+           {/* Animated Loading Messages */}
+           <div className="space-y-4">
+             <div className="flex items-center justify-center mb-6">
+               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#294a46] mr-3"></div>
+               <span className="text-lg text-gray-600">Processing...</span>
+             </div>
+             
+             <div className="h-8 flex items-center justify-center">
+               <p className="text-lg text-gray-700 font-medium transition-opacity duration-300">
+                 {loadingMessages[currentMessageIndex]}
+               </p>
+             </div>
+             
+             <p className="text-sm text-gray-500 mt-4">
+               This page refreshes automatically every 8 seconds
+             </p>
+           </div>
           </div>
          )}
         </div>
