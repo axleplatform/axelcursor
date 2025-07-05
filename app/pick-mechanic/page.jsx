@@ -36,6 +36,7 @@ function PickMechanicContent() {
 
  // Loading animation state
  const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
+ const [isFading, setIsFading] = useState(false)
  const loadingMessages = [
    "Searching the Mobile Mechanics Near You",
    "Checking their above 4 star rating",
@@ -228,12 +229,22 @@ function PickMechanicContent() {
  useEffect(() => {
   if (mechanicQuotes.length > 0) return // Stop animation when quotes arrive
   
-  const interval = setInterval(() => {
+  const messageDuration = currentMessageIndex === loadingMessages.length - 1 ? 800 : 2000 // 0.8s for last message, 2s for others
+  
+  const fadeOutTimer = setTimeout(() => {
+   setIsFading(true)
+  }, messageDuration - 300) // Start fade out 300ms before transition
+  
+  const transitionTimer = setTimeout(() => {
    setCurrentMessageIndex((prevIndex) => (prevIndex + 1) % loadingMessages.length)
-  }, 800) // 0.8 seconds per message
-
-  return () => clearInterval(interval)
- }, [mechanicQuotes.length, loadingMessages.length])
+   setIsFading(false)
+  }, messageDuration)
+  
+  return () => {
+   clearTimeout(fadeOutTimer)
+   clearTimeout(transitionTimer)
+  }
+ }, [currentMessageIndex, mechanicQuotes.length, loadingMessages.length])
 
  // Show loading state
  if (isLoading) {
@@ -459,7 +470,7 @@ function PickMechanicContent() {
       {/* Centered Page Title */}
       <div className="absolute left-1/2 transform -translate-x-1/2">
        <div className="text-center">
-        <h1 className="text-3xl font-bold text-center text-[#294a46] mb-2">Pick Your Mechanic</h1>
+        <h1 className="text-3xl font-bold text-center text-[#294a46] mb-6">Pick Your Mechanic</h1>
         <p className="text-lg text-gray-600">Pick & Pay</p>
        </div>
       </div>
@@ -600,18 +611,18 @@ function PickMechanicContent() {
           </div>
          ) : (
           <div className="text-center py-16 bg-gray-50 rounded-lg border border-gray-200">
-           {/* Static Title */}
-           <h3 className="text-2xl font-bold text-[#294a46] mb-8">This is how we Find Your Mechanic</h3>
+           {/* Static Title with Loading Spinner */}
+           <div className="flex items-center justify-center mb-8">
+             <h3 className="text-2xl font-bold text-[#294a46] mr-3">Processing Mechanics</h3>
+             <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#294a46]"></div>
+           </div>
            
-           {/* Animated Loading Messages */}
+           {/* Animated Loading Messages with Fade Transitions */}
            <div className="space-y-4">
-             <div className="flex items-center justify-center mb-6">
-               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#294a46] mr-3"></div>
-               <span className="text-lg text-gray-600">Processing...</span>
-             </div>
-             
              <div className="h-8 flex items-center justify-center">
-               <p className="text-lg text-gray-700 font-medium transition-opacity duration-300">
+               <p className={`text-lg text-gray-700 font-medium transition-opacity duration-300 ${
+                 isFading ? 'opacity-0' : 'opacity-100'
+               }`}>
                  {loadingMessages[currentMessageIndex]}
                </p>
              </div>
