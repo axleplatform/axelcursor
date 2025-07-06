@@ -90,7 +90,7 @@ export function SiteHeader() {
       {isMenuOpen && (
         <div className="md:hidden absolute top-16 right-0 left-0 z-50">
           <div className="flex justify-end px-4">
-            <div className="w-fit bg-white/5 rounded-md shadow-lg border border-gray-200 p-4">
+            <div className="w-fit bg-white/5 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-4">
               <nav className="space-y-4">
                 {/* Sign Up and Log In buttons side by side */}
                 <div className="flex space-x-3">
@@ -109,11 +109,11 @@ export function SiteHeader() {
                 </div>
                 
                 {/* Other navigation links */}
-                <div className="flex flex-col space-y-2">
+                <div className="flex space-x-4 justify-end">
                   <Link
                     href="/about"
                     className={cn(
-                      "text-sm font-medium py-2 whitespace-nowrap text-right",
+                      "text-sm font-medium py-2 whitespace-nowrap",
                       isActive("/about") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
                     )}
                   >
@@ -122,7 +122,7 @@ export function SiteHeader() {
                   <Link
                     href="/help"
                     className={cn(
-                      "text-sm font-medium py-2 whitespace-nowrap text-right",
+                      "text-sm font-medium py-2 whitespace-nowrap",
                       isActive("/help") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
                     )}
                   >
