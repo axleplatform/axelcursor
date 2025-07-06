@@ -2502,22 +2502,70 @@ export default function MechanicDashboard() {
                         )}
                       </div>
 
+                    {/* Booking Completion Status */}
+                    {(() => {
+                      const currentAppointment = availableAppointments[currentAvailableIndex];
+                      const hasCompletedBooking = currentAppointment?.phone_number && 
+                        (currentAppointment?.issue_description || 
+                         (currentAppointment?.selected_services && currentAppointment.selected_services.length > 0));
+                      
+                      if (!hasCompletedBooking) {
+                        return (
+                          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <div className="flex items-center text-yellow-800 text-sm">
+                              <span className="mr-2">⏳</span>
+                              <span className="font-medium">Cannot quote yet</span>
+                            </div>
+                            <p className="text-yellow-700 text-xs mt-1">
+                              Customer hasn't completed booking details yet. You can still enter your price and prepare your quote.
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
                     {/* Action Buttons */}
                     <div className="flex gap-3">
-                      <button
-                        onClick={() => handleSubmitQuote(availableAppointments[currentAvailableIndex].id, Number.parseFloat(priceInput), selectedDate + 'T' + selectedTime)}
-                        disabled={isProcessing || !priceInput || Number.parseFloat(priceInput) <= 0}
-                        className="flex-1 bg-white text-[#294a46] font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-gray-100 hover:shadow-md active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed"
-                      >
-                        {isProcessing ? (
-                          <span className="flex items-center justify-center">
-                            <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-[#294a46] rounded-full mr-2"></span>
-                            Processing...
-                          </span>
-                        ) : (
-                          "Submit Quote"
-                        )}
-                      </button>
+                      {/* Check if customer has completed booking (has phone number) */}
+                      {(() => {
+                        const currentAppointment = availableAppointments[currentAvailableIndex];
+                        const hasCompletedBooking = currentAppointment?.phone_number && 
+                          (currentAppointment?.issue_description || 
+                           (currentAppointment?.selected_services && currentAppointment.selected_services.length > 0));
+                        
+                        if (!hasCompletedBooking) {
+                          return (
+                            <button
+                              disabled={true}
+                              className="flex-1 bg-gray-300 text-gray-500 font-medium text-lg py-2 px-4 rounded-full cursor-not-allowed"
+                              title="Cannot quote - customer hasn't completed booking details yet"
+                            >
+                              <div className="flex items-center justify-center">
+                                <span className="mr-2">⏳</span>
+                                Cannot Quote Yet
+                              </div>
+                            </button>
+                          );
+                        }
+                        
+                        return (
+                          <button
+                            onClick={() => handleSubmitQuote(availableAppointments[currentAvailableIndex].id, Number.parseFloat(priceInput), selectedDate + 'T' + selectedTime)}
+                            disabled={isProcessing || !priceInput || Number.parseFloat(priceInput) <= 0}
+                            className="flex-1 bg-white text-[#294a46] font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-gray-100 hover:shadow-md active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed"
+                          >
+                            {isProcessing ? (
+                              <span className="flex items-center justify-center">
+                                <span className="animate-spin h-4 w-4 border-t-2 border-b-2 border-[#294a46] rounded-full mr-2"></span>
+                                Processing...
+                              </span>
+                            ) : (
+                              "Submit Quote"
+                            )}
+                          </button>
+                        );
+                      })()}
                       <button
                         onClick={() => handleSkipAppointment(availableAppointments[currentAvailableIndex])}
                         disabled={isProcessing}
