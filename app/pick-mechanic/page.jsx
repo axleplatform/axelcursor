@@ -481,7 +481,7 @@ function PickMechanicContent() {
   <div className="flex flex-col min-h-screen">
    <SiteHeader />
    <main className="flex-1">
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
      {/* Page Title */}
      <h1 className="text-3xl font-bold text-center text-[#294a46] mb-2">Pick Your Mechanic</h1>
      <div className="text-center mb-6">
@@ -506,107 +506,99 @@ function PickMechanicContent() {
          ) : mechanicQuotes && mechanicQuotes.length > 0 ? (
           <div className="space-y-6">
            {mechanicQuotes.map((quote) => (
-            <div key={quote.id} className="bg-gray-50 rounded-lg p-6 hover:bg-gray-100 transition-colors border border-gray-200">
-             {/* Mechanic profile header */}
-             <div className="flex items-start gap-4 mb-4">
-              {/* Profile image */}
+            <div 
+              key={quote.id} 
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-[#294a46] hover:bg-[#e6eeec]/50 transition-all duration-200 cursor-pointer active:scale-[0.99]"
+              onClick={() => handleSelectMechanic(quote.mechanic_id, quote.id)}
+            >
+             {/* Top row: Quote amount and Available date/time */}
+             <div className="flex justify-between items-start mb-4">
+              <div className="text-2xl font-bold text-[#294a46]">${quote.price}</div>
+              <div className="text-sm text-gray-600 text-right">
+               <div>Available: {new Date(quote.eta).toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+               })}</div>
+               <div>{new Date(quote.eta).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit'
+               })}</div>
+              </div>
+             </div>
+
+             {/* Mechanic info */}
+             <div className="mb-4">
+              <h3 className="font-semibold text-lg text-gray-900">
+               {quote.mechanic_profiles?.business_name || `${quote.mechanic_profiles?.first_name} ${quote.mechanic_profiles?.last_name}`}
+              </h3>
+              {/* Rating on one line */}
+              <div className="flex items-center gap-2 mt-1">
+               <span className="text-yellow-400">⭐</span>
+               <span className="text-sm text-gray-700">{quote.mechanic_profiles?.rating || 'N/A'}</span>
+              </div>
+              {/* Reviews on next line */}
+              <div className="text-sm text-gray-600 mt-1">
+               {quote.mechanic_profiles?.review_count || 0} reviews
+              </div>
+             </div>
+
+             {/* Profile image */}
+             <div className="flex items-center gap-3 mb-4">
               {quote.mechanic_profiles?.profile_image_url ? (
                <img 
                 src={quote.mechanic_profiles.profile_image_url} 
                 alt={quote.mechanic_profiles.full_name}
-                className="w-16 h-16 rounded-full object-cover"
+                className="w-12 h-12 rounded-full object-cover"
                />
               ) : (
-               <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
-                <span className="text-2xl text-gray-500">
+               <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                <span className="text-lg text-gray-500">
                  {quote.mechanic_profiles?.first_name?.charAt(0) || 'M'}
                 </span>
                </div>
               )}
               
-              {/* Mechanic info */}
+              {/* Mechanic details */}
               <div className="flex-1">
-               <h3 className="text-xl font-semibold">
-                {quote.mechanic_profiles?.business_name || `${quote.mechanic_profiles?.first_name} ${quote.mechanic_profiles?.last_name}`}
-               </h3>
-               <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                <span className="flex items-center">
-                  <span className="text-base sm:text-lg lg:text-xl leading-none inline-flex items-center justify-center mr-2">⭐</span>
-                  {/* TODO: Implement actual rating calculation when review system is built */}
-                  {quote.mechanic_profiles?.rating || 'N/A'}
-                </span>
-                <span>• {/* TODO: Implement actual review counting when review system is built */}{quote.mechanic_profiles?.review_count || 0} reviews</span>
-               </div>
-              </div>
-              
-              {/* Quote price */}
-              <div className="text-right">
-               <p className="text-sm text-gray-500">Quote</p>
-               <p className="text-3xl font-bold text-green-600">${quote.price}</p>
-              </div>
-             </div>
-             
-             {/* Date and time */}
-             <div className="bg-gray-50 rounded-lg p-3 mb-4">
-              <p className="text-sm text-gray-600">
-               <span className="font-medium">Available:</span> {new Date(quote.eta).toLocaleDateString('en-US', {
-                weekday: 'long',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit'
-               })}
-              </p>
-             </div>
-             
-             {/* Mechanic details */}
-             <div className="space-y-3 mb-4">
-              {/* Profile descriptions - enhanced display */}
-              {quote.mechanic_profiles?.bio && (
-               <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <p className="text-sm font-semibold text-[#294a46] mb-3 flex items-center">
-                 <User className="h-4 w-4 mr-2" />
-                 About This Mechanic
-                </p>
-                
-                {/* Bio */}
-                <div className="mb-3">
-                 <p className="text-sm text-gray-700 leading-relaxed">{quote.mechanic_profiles.bio}</p>
-                </div>
-                
-                {/* Specialties if available */}
-                {quote.mechanic_profiles?.specialties && quote.mechanic_profiles.specialties.length > 0 && (
-                 <div>
-                  <p className="text-xs font-medium text-gray-600 mb-2">Specialties:</p>
-                  <div className="flex flex-wrap gap-1">
-                   {quote.mechanic_profiles.specialties.map((specialty, index) => (
-                    <span key={index} className="bg-[#e6eeec] text-[#294a46] text-xs px-2 py-1 rounded-full">
-                     {specialty}
-                    </span>
-                   ))}
-                  </div>
+               {/* Profile descriptions - enhanced display */}
+               {quote.mechanic_profiles?.bio && (
+                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                 <p className="text-sm font-semibold text-[#294a46] mb-2 flex items-center">
+                  <User className="h-3 w-3 mr-1" />
+                  About This Mechanic
+                 </p>
+                 
+                 {/* Bio */}
+                 <div className="mb-2">
+                  <p className="text-xs text-gray-700 leading-relaxed line-clamp-2">{quote.mechanic_profiles.bio}</p>
                  </div>
-                )}
-               </div>
-              )}
-              
-              {/* Quote notes */}
-              {quote.notes && (
-               <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                <p className="text-sm font-medium text-blue-800 mb-1">Quote Details:</p>
-                <p className="text-sm text-blue-700">{quote.notes}</p>
-               </div>
-              )}
+                 
+                 {/* Specialties if available */}
+                 {quote.mechanic_profiles?.specialties && quote.mechanic_profiles.specialties.length > 0 && (
+                  <div>
+                   <p className="text-xs font-medium text-gray-600 mb-1">Specialties:</p>
+                   <div className="flex flex-wrap gap-1">
+                    {quote.mechanic_profiles.specialties.map((specialty, index) => (
+                     <span key={index} className="bg-[#e6eeec] text-[#294a46] text-xs px-2 py-1 rounded-full">
+                      {specialty}
+                     </span>
+                    ))}
+                   </div>
+                  </div>
+                 )}
+                </div>
+               )}
+               
+               {/* Quote notes */}
+               {quote.notes && (
+                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 mt-2">
+                 <p className="text-xs font-medium text-blue-800 mb-1">Quote Details:</p>
+                 <p className="text-xs text-blue-700">{quote.notes}</p>
+                </div>
+               )}
+              </div>
              </div>
-             
-             {/* Select button */}
-             <button
-              onClick={() => handleSelectMechanic(quote.mechanic_id, quote.id)}
-              disabled={isProcessing}
-              className="w-full bg-[#294a46] text-white py-3 px-4 rounded-md hover:bg-[#1e3632] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-             >
-              {isProcessing ? 'Selecting...' : 'Select This Mechanic'}
-             </button>
             </div>
            ))}
           </div>
@@ -863,7 +855,7 @@ function PickMechanicLoading() {
   <div className="flex flex-col min-h-screen">
    <SiteHeader />
    <main className="flex-1">
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
      <div className="text-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294a46] mx-auto mb-4"></div>
       <p className="text-gray-600">Loading appointment details...</p>
