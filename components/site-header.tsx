@@ -89,45 +89,47 @@ export function SiteHeader() {
       {/* Mobile Menu Dropdown */}
       {isMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-200 py-4 px-4 shadow-lg">
-          <nav className="ml-auto w-fit space-y-4">
-            {/* Sign Up and Log In buttons side by side */}
-            <div className="flex space-x-3">
-              <Link
-                href="/login"
-                className="text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-center whitespace-nowrap"
-              >
-                Log In
-              </Link>
-              <Link
-                href="/signup"
-                className="text-sm font-medium text-white bg-[#294a46] hover:bg-[#1e3632] py-2 px-4 rounded-full text-center transition-all duration-200 whitespace-nowrap"
-              >
-                Sign Up
-              </Link>
-            </div>
-            
-            {/* Other navigation links */}
-            <div className="flex flex-col space-y-2">
-              <Link
-                href="/about"
-                className={cn(
-                  "text-sm font-medium py-2 whitespace-nowrap",
-                  isActive("/about") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
-                )}
-              >
-                About
-              </Link>
-              <Link
-                href="/help"
-                className={cn(
-                  "text-sm font-medium py-2 whitespace-nowrap",
-                  isActive("/help") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
-                )}
-              >
-                Help
-              </Link>
-            </div>
-          </nav>
+          <div className="flex justify-end">
+            <nav className="w-fit space-y-4">
+              {/* Sign Up and Log In buttons side by side */}
+              <div className="flex space-x-3">
+                <Link
+                  href="/login"
+                  className="text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-center whitespace-nowrap"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="text-sm font-medium text-white bg-[#294a46] hover:bg-[#1e3632] py-2 px-4 rounded-full text-center transition-all duration-200 whitespace-nowrap"
+                >
+                  Sign Up
+                </Link>
+              </div>
+              
+              {/* Other navigation links */}
+              <div className="flex flex-col space-y-2">
+                <Link
+                  href="/about"
+                  className={cn(
+                    "text-sm font-medium py-2 whitespace-nowrap",
+                    isActive("/about") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
+                  )}
+                >
+                  About
+                </Link>
+                <Link
+                  href="/help"
+                  className={cn(
+                    "text-sm font-medium py-2 whitespace-nowrap",
+                    isActive("/help") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
+                  )}
+                >
+                  Help
+                </Link>
+              </div>
+            </nav>
+          </div>
         </div>
       )}
     </header>
