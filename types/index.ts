@@ -67,6 +67,7 @@ export interface MechanicProfile {
   last_name: string
   email?: string
   phone?: string
+  rating?: number // 0.0 to 5.0
   created_at?: string
   updated_at?: string
 }
