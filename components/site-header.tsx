@@ -88,9 +88,9 @@ export function SiteHeader() {
 
       {/* Mobile Menu Dropdown */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white border-b border-gray-200 py-4 px-4 shadow-lg">
-          <div className="flex justify-end">
-            <div className="w-fit bg-white rounded-md shadow-lg border border-gray-200 p-4">
+        <div className="md:hidden absolute top-16 right-0 left-0 z-50">
+          <div className="flex justify-end px-4">
+            <div className="w-fit bg-white/95 backdrop-blur-sm rounded-md shadow-lg border border-gray-200 p-4">
               <nav className="space-y-4">
                 {/* Sign Up and Log In buttons side by side */}
                 <div className="flex space-x-3">
