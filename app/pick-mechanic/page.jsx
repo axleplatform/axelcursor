@@ -220,7 +220,7 @@ function PickMechanicContent() {
 
   console.log('🔄 Setting up real-time subscription for appointmentId:', appointmentId)
 
-  // Subscribe to new quotes
+  // Subscribe to new quotes with enhanced debugging
   const subscription = supabase
    .channel(`mechanic-quotes-${appointmentId}`) // Unique channel per appointment
    .on(
@@ -232,12 +232,24 @@ function PickMechanicContent() {
      filter: `appointment_id=eq.${appointmentId}`
     },
     (payload) => {
-     console.log('🔍 New quote received:', payload)
-     // Refresh quotes when new one is added
-     fetchAppointmentData()
+     console.log('🚨 REAL-TIME EVENT RECEIVED:', {
+       timestamp: new Date().toISOString(),
+       payload,
+       appointmentId
+     });
+     fetchAppointmentData();
     }
    )
-   .subscribe()
+   .on('subscribe', (status) => {
+     console.log('📡 Subscription status:', status);
+   })
+   .on('error', (error) => {
+     console.error('❌ Subscription error:', error);
+   })
+   .subscribe((status, err) => {
+     if (err) console.error('❌ Subscribe error:', err);
+     console.log('📡 Subscribe callback:', status);
+   });
 
   return () => {
    console.log('🔄 Unsubscribing from real-time updates')
