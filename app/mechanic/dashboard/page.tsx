@@ -450,7 +450,9 @@ export default function MechanicDashboard() {
 
   const filteredUpcomingAppointments = useMemo(() => {
     const visibleAppointments = upcomingAppointments.filter(shouldShowInUpcoming);
-    return searchAppointments(visibleAppointments, searchQuery);
+    // Filter out cancelled appointments from upcoming appointments
+    const nonCancelledAppointments = visibleAppointments.filter(apt => apt.status !== 'cancelled');
+    return searchAppointments(nonCancelledAppointments, searchQuery);
   }, [upcomingAppointments, searchQuery, restoredToday]);
 
   // Clear search function

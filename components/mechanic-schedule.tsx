@@ -83,7 +83,7 @@ export default function MechanicSchedule({
     
     const appointments: Array<{
       appointment: AppointmentWithRelations
-      status: 'pending' | 'confirmed'
+      status: 'pending' | 'confirmed' | 'cancelled'
       time: string
     }> = []
 
@@ -97,18 +97,31 @@ export default function MechanicSchedule({
         const etaDateString = etaDate.toISOString().split('T')[0]
         
         if (etaDateString === dateString) {
-          // Determine if this appointment is confirmed (customer selected this mechanic)
-          const isConfirmed = appointment.selected_mechanic_id === myQuote.mechanic_id
-          
-          appointments.push({
-            appointment,
-            status: isConfirmed ? 'confirmed' : 'pending',
-            time: etaDate.toLocaleTimeString('en-US', { 
-              hour: 'numeric', 
-              minute: '2-digit',
-              hour12: true 
+          // Check if appointment is cancelled first
+          if (appointment.status === 'cancelled') {
+            appointments.push({
+              appointment,
+              status: 'cancelled',
+              time: etaDate.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+              })
             })
-          })
+          } else {
+            // Determine if this appointment is confirmed (customer selected this mechanic)
+            const isConfirmed = appointment.selected_mechanic_id === myQuote.mechanic_id
+            
+            appointments.push({
+              appointment,
+              status: isConfirmed ? 'confirmed' : 'pending',
+              time: etaDate.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+              })
+            })
+          }
         }
       }
     })
@@ -135,6 +148,10 @@ export default function MechanicSchedule({
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
           <span className="text-sm">Pending</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+          <span className="text-sm">Cancelled</span>
         </div>
       </div>
 
@@ -198,12 +215,16 @@ export default function MechanicSchedule({
                         className={`p-2 rounded-md cursor-pointer transition-colors hover:bg-gray-50 ${
                           status === 'confirmed' 
                             ? 'bg-[#294a46]/10 border border-[#294a46]/20' 
+                            : status === 'cancelled'
+                            ? 'bg-red-100 border border-red-200 opacity-75'
                             : 'bg-yellow-400/10 border border-yellow-400/20'
                         }`}
                         onClick={() => handleAppointmentClick(appointment)}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium">{time}</span>
+                          <span className={`text-sm font-medium ${status === 'cancelled' ? 'line-through' : ''}`}>
+                            {time}
+                          </span>
                           <div className="flex items-center gap-2">
                             {/* Location Pin */}
                             <button 
@@ -217,22 +238,27 @@ export default function MechanicSchedule({
                             </button>
                             {/* Quote */}
                             {myQuote && (
-                              <span className="text-xs font-medium text-gray-700">
+                              <span className={`text-xs font-medium ${status === 'cancelled' ? 'text-red-600' : 'text-gray-700'}`}>
                                 ${myQuote.price.toFixed(2)}
                               </span>
                             )}
                             {/* Status Dot */}
                             <div className={`w-2 h-2 rounded-full ${
-                              status === 'confirmed' ? 'bg-[#294a46]' : 'bg-yellow-500'
+                              status === 'confirmed' ? 'bg-[#294a46]' : 
+                              status === 'cancelled' ? 'bg-red-500' : 
+                              'bg-yellow-500'
                             }`}></div>
                           </div>
                         </div>
-                        <div className="text-xs text-gray-600 truncate">
+                        <div className={`text-xs ${status === 'cancelled' ? 'text-red-600 line-through' : 'text-gray-600'} truncate`}>
                           {appointment.vehicles ? 
                             `${appointment.vehicles.year} ${appointment.vehicles.make} ${appointment.vehicles.model}` :
                             'Vehicle info unavailable'
                           }
                         </div>
+                        {status === 'cancelled' && (
+                          <div className="text-[10px] mt-1 text-red-600 font-medium">CANCELLED</div>
+                        )}
                       </div>
                     )
                   })}
