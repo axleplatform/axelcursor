@@ -36,7 +36,7 @@ export function ProfileDropdown() {
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative flex-shrink-0" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-10 h-10 rounded-full bg-[#294a46] flex items-center justify-center text-white hover:bg-[#1e3632] transition-colors group"
@@ -47,26 +47,26 @@ export function ProfileDropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+        <div className="absolute right-0 mt-2 w-48 sm:w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 max-w-[calc(100vw-2rem)]">
           <div className="py-1" role="menu" aria-orientation="vertical">
             <button
               onClick={() => {
                 setIsOpen(false)
                 router.push("/mechanic/profile")
               }}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 whitespace-nowrap"
               role="menuitem"
             >
-              <div className="h-4 w-4">⚙️</div>
-              Profile Settings
+              <div className="h-4 w-4 flex-shrink-0">⚙️</div>
+              <span className="truncate">Profile Settings</span>
             </button>
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               role="menuitem"
             >
-              {isLoggingOut ? "Logging out..." : "Logout"}
+              <span className="truncate">{isLoggingOut ? "Logging out..." : "Logout"}</span>
             </button>
           </div>
         </div>

@@ -1890,14 +1890,14 @@ export default function MechanicDashboard() {
           <h1 className="text-3xl font-bold text-gray-900">Mechanic Dashboard</h1>
           {mechanicProfile && <p className="text-lg text-gray-600 mt-1">Welcome back, {mechanicProfile.first_name}!</p>}
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Find appointments"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10 py-2 border border-gray-300 rounded-full w-64 focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                className="pl-10 pr-10 py-2 border border-gray-300 rounded-full w-48 sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               {searchQuery && (
@@ -1912,7 +1912,7 @@ export default function MechanicDashboard() {
             </div>
             <button 
               onClick={() => setShowReferModal(true)}
-              className="bg-[#294a46] text-white px-4 py-2 rounded-full hover:bg-[#1e3632] transition-colors flex items-center gap-2"
+              className="bg-[#294a46] text-white px-3 sm:px-4 py-2 rounded-full hover:bg-[#1e3632] transition-colors flex items-center gap-2 text-sm sm:text-base whitespace-nowrap"
             >
               Refer a friend
             </button>
