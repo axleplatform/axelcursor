@@ -92,8 +92,8 @@ export function SiteHeader() {
           <div className="flex justify-end px-4">
             <div className="w-fit bg-white/5 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-4">
               <nav className="space-y-4">
-                {/* Sign Up and Log In buttons side by side */}
-                <div className="flex space-x-3">
+                {/* Sign Up and Log In buttons stacked */}
+                <div className="flex flex-col space-y-2">
                   <Link
                     href="/login"
                     className="text-sm font-medium text-gray-700/90 hover:text-[#294a46] px-3 py-2 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-center whitespace-nowrap"
