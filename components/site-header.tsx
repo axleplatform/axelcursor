@@ -96,7 +96,7 @@ export function SiteHeader() {
                 <div className="flex space-x-3">
                   <Link
                     href="/login"
-                    className="text-sm font-medium text-gray-700/15 hover:text-[#294a46] px-3 py-2 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-center whitespace-nowrap"
+                    className="text-sm font-medium text-gray-700/90 hover:text-[#294a46] px-3 py-2 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-center whitespace-nowrap"
                   >
                     Log In
                   </Link>
@@ -109,11 +109,11 @@ export function SiteHeader() {
                 </div>
                 
                 {/* Other navigation links */}
-                <div className="flex flex-col space-y-2 items-end">
+                <div className="flex flex-col space-y-2">
                   <Link
                     href="/about"
                     className={cn(
-                      "text-sm font-medium py-2 whitespace-nowrap",
+                      "text-sm font-medium py-2 whitespace-nowrap text-right",
                       isActive("/about") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
                     )}
                   >
@@ -122,7 +122,7 @@ export function SiteHeader() {
                   <Link
                     href="/help"
                     className={cn(
-                      "text-sm font-medium py-2 whitespace-nowrap",
+                      "text-sm font-medium py-2 whitespace-nowrap text-right",
                       isActive("/help") ? "text-[#294a46]" : "text-gray-700 hover:text-[#294a46]",
                     )}
                   >
