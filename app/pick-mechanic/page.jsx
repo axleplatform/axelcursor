@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Star, Clock, MapPin, X, FileText, CreditCard, User, ChevronLeft, AlertTriangle } from "lucide-react"
+import { Star, Clock, MapPin, X, FileText, CreditCard, User, ChevronLeft, AlertTriangle, RefreshCw } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -66,10 +66,12 @@ function PickMechanicContent() {
  
  console.log("🔍 AppointmentId from searchParams:", appointmentId)
 
- const fetchAppointmentData = React.useCallback(async () => {
+ // Move fetchAppointmentData OUTSIDE of useCallback to fix dependency issues
+ const fetchAppointmentData = async () => {
   try {
    console.log('=== FETCH DEBUG ===')
    console.log('Appointment ID:', appointmentId)
+   console.log('Appointment ID type:', typeof appointmentId)
    
    if (!appointmentId) {
     console.log('No appointment ID provided')
@@ -185,7 +187,7 @@ function PickMechanicContent() {
    setIsLoading(false)
    setIsLoadingQuotes(false)
   }
- }, [appointmentId, toast]) // Add dependencies
+ }
 
  // Initial fetch
  useEffect(() => {
@@ -196,7 +198,7 @@ function PickMechanicContent() {
    console.log("🔍 No appointmentId, setting loading to false")
    setIsLoading(false)
   }
- }, [appointmentId, fetchAppointmentData])
+ }, [appointmentId]) // Removed fetchAppointmentData dependency
 
  // Auto-refresh every 8 seconds - with proper dependency management
  useEffect(() => {
@@ -212,38 +214,43 @@ function PickMechanicContent() {
    console.log('🔄 Clearing auto-refresh interval')
    clearInterval(interval)
   }
- }, [appointmentId, fetchAppointmentData]) // Add fetchAppointmentData dependency
+ }, [appointmentId]) // Removed fetchAppointmentData dependency
 
- // Real-time subscription for instant updates - with proper dependency management
+ // Real-time subscription for instant updates - FIXED VERSION
  useEffect(() => {
-  if (!appointmentId) return
-
-  console.log('🔄 Setting up real-time subscription for appointmentId:', appointmentId)
-
-  // Subscribe to new quotes
-  const subscription = supabase
-   .channel(`mechanic-quotes-${appointmentId}`) // Unique channel per appointment
-   .on(
-    'postgres_changes',
-    {
-     event: 'INSERT',
-     schema: 'public',
-     table: 'mechanic_quotes',
-     filter: `appointment_id=eq.${appointmentId}`
-    },
-    (payload) => {
-     console.log('🔍 New quote received:', payload)
-     // Refresh quotes when new one is added
-     fetchAppointmentData()
-    }
-   )
-   .subscribe()
+  console.log('🔍 Real-time useEffect running, appointmentId:', appointmentId);
+  console.log('🔍 appointmentId type:', typeof appointmentId);
+  
+  if (!appointmentId) {
+    console.log('⚠️ No appointmentId, skipping subscription');
+    return;
+  }
+  
+  console.log('📡 STARTING REAL-TIME SUBSCRIPTION');
+  
+  const channel = supabase.channel(`quotes-${appointmentId}`)
+    .on('postgres_changes', 
+      { event: '*', schema: 'public', table: 'mechanic_quotes' },
+      (payload) => {
+        console.log('🚨 REAL-TIME EVENT:', payload);
+        // Only refresh if it's for our appointment
+        if (payload.new?.appointment_id === appointmentId) {
+          console.log('✅ Refreshing for our appointment');
+          fetchAppointmentData();
+        } else {
+          console.log('⏭️ Skipping - different appointment');
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log('📡 SUBSCRIPTION STATUS:', status);
+    });
 
   return () => {
-   console.log('🔄 Unsubscribing from real-time updates')
-   subscription.unsubscribe()
-  }
- }, [appointmentId, fetchAppointmentData]) // Add fetchAppointmentData dependency
+    console.log('🔚 CLEANUP: Unsubscribing');
+    channel.unsubscribe();
+  };
+ }, [appointmentId]) // Removed fetchAppointmentData dependency
 
  // Loading animation effect - with proper dependency management
  useEffect(() => {
@@ -614,6 +621,19 @@ function PickMechanicContent() {
              <p className="text-sm text-gray-500 mt-4">
                This page refreshes automatically every 8 seconds
              </p>
+             
+             {/* Manual Refresh Button */}
+             <div className="mt-4">
+               <Button
+                 onClick={fetchAppointmentData}
+                 variant="outline"
+                 size="sm"
+                 className="text-[#294a46] border-[#294a46] hover:bg-[#294a46] hover:text-white"
+               >
+                 <RefreshCw className="h-4 w-4 mr-2" />
+                 Refresh Quotes
+               </Button>
+             </div>
            </div>
           </div>
          )}
