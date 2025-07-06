@@ -480,14 +480,20 @@ function PickMechanicContent() {
  return (
   <div className="flex flex-col min-h-screen">
    <SiteHeader />
-   <main className="flex-1">
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
+   <main className="flex-1 py-8">
+    {/* Header section - original width */}
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
      {/* Page Title */}
      <h1 className="text-3xl font-bold text-center text-[#294a46] mb-2">Pick Your Mechanic</h1>
      <div className="text-center mb-6">
       <p className="text-gray-600">Pick & Pay</p>
      </div>
+    </div>
 
+    {/* Available mechanics section - slightly wider */}
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+     <h2 className="text-2xl font-bold mb-6 text-[#294a46]">Available Mechanics</h2>
+     
      {/* Split-Screen Layout */}
      <div className="flex flex-col lg:flex-row gap-6">
       {/* Left Side - Available Mechanics */}
@@ -764,9 +770,36 @@ function PickMechanicContent() {
        </Card>
       </div>
      </div>
+    </div>
 
-     {/* Back Button */}
-     <div className="mt-6 text-center">
+    {/* Appointment details section - original width */}
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-[#294a46] mb-4">Appointment Details</h3>
+      <div className="space-y-3">
+       <div className="flex items-center gap-2">
+        <span className="text-[#294a46]">📅</span>
+        <span className="text-sm text-gray-700">{formatDate(appointment.appointment_date)}</span>
+       </div>
+       <div className="flex items-center gap-2">
+        <MapPin className="h-4 w-4 text-[#294a46]" />
+        <span className="text-sm text-gray-700">{appointment.location}</span>
+       </div>
+       {appointment.vehicles && (
+        <div className="flex items-center gap-2">
+         <span className="text-[#294a46]">🚗</span>
+         <span className="text-sm text-gray-700">
+          {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
+         </span>
+        </div>
+       )}
+      </div>
+     </div>
+    </div>
+
+    {/* Back Button - original width */}
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+     <div className="text-center">
       <Button
        onClick={handleBack}
        variant="ghost"
@@ -854,8 +887,8 @@ function PickMechanicLoading() {
  return (
   <div className="flex flex-col min-h-screen">
    <SiteHeader />
-   <main className="flex-1">
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
+   <main className="flex-1 py-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
      <div className="text-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294a46] mx-auto mb-4"></div>
       <p className="text-gray-600">Loading appointment details...</p>
