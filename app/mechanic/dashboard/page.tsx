@@ -2502,28 +2502,7 @@ export default function MechanicDashboard() {
                         )}
                       </div>
 
-                    {/* Booking Completion Status */}
-                    {(() => {
-                      const currentAppointment = availableAppointments[currentAvailableIndex];
-                      const hasCompletedBooking = currentAppointment?.phone_number && 
-                        (currentAppointment?.issue_description || 
-                         (currentAppointment?.selected_services && currentAppointment.selected_services.length > 0));
-                      
-                      if (!hasCompletedBooking) {
-                        return (
-                          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                            <div className="flex items-center text-yellow-800 text-sm">
-                              <span className="mr-2">⏳</span>
-                              <span className="font-medium">Cannot quote yet</span>
-                            </div>
-                            <p className="text-yellow-700 text-xs mt-1">
-                              Customer hasn't completed booking details yet. You can still enter your price and prepare your quote.
-                            </p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
+
 
                     {/* Action Buttons */}
                     <div className="flex gap-3">
