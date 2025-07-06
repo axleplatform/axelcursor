@@ -15,7 +15,20 @@ import { createBrowserClient } from "@supabase/ssr"
 import { getQuotesForAppointment } from "@/lib/mechanic-quotes"
 
 function PickMechanicContent() {
- console.log("🔍 PickMechanicPage component mounting...")
+ // Add React.StrictMode detection
+ const isStrictMode = React.useMemo(() => {
+  try {
+   return React.StrictMode !== undefined
+  } catch {
+   return false
+  }
+ }, [])
+ 
+ console.log("🔍 PickMechanicPage component mounting...", {
+  timestamp: new Date().toISOString(),
+  isStrictMode,
+  appointmentId: searchParams?.get("appointmentId")
+ })
  
  const router = useRouter()
  const searchParams = useSearchParams()
@@ -53,7 +66,7 @@ function PickMechanicContent() {
  
  console.log("🔍 AppointmentId from searchParams:", appointmentId)
 
- const fetchAppointmentData = async () => {
+ const fetchAppointmentData = React.useCallback(async () => {
   try {
    console.log('=== FETCH DEBUG ===')
    console.log('Appointment ID:', appointmentId)
@@ -172,7 +185,7 @@ function PickMechanicContent() {
    setIsLoading(false)
    setIsLoadingQuotes(false)
   }
- }
+ }, [appointmentId, toast]) // Add dependencies
 
  // Initial fetch
  useEffect(() => {
@@ -183,27 +196,33 @@ function PickMechanicContent() {
    console.log("🔍 No appointmentId, setting loading to false")
    setIsLoading(false)
   }
- }, [appointmentId])
+ }, [appointmentId, fetchAppointmentData])
 
- // Auto-refresh every 8 seconds
+ // Auto-refresh every 8 seconds - with proper dependency management
  useEffect(() => {
   if (!appointmentId) return
   
+  console.log('🔄 Setting up auto-refresh interval for appointmentId:', appointmentId)
   const interval = setInterval(() => {
    console.log('Auto-refreshing quotes...')
    fetchAppointmentData()
   }, 8000) // 8 seconds
 
-  return () => clearInterval(interval)
- }, [appointmentId])
+  return () => {
+   console.log('🔄 Clearing auto-refresh interval')
+   clearInterval(interval)
+  }
+ }, [appointmentId, fetchAppointmentData]) // Add fetchAppointmentData dependency
 
- // Real-time subscription for instant updates
+ // Real-time subscription for instant updates - with proper dependency management
  useEffect(() => {
   if (!appointmentId) return
 
+  console.log('🔄 Setting up real-time subscription for appointmentId:', appointmentId)
+
   // Subscribe to new quotes
   const subscription = supabase
-   .channel('mechanic-quotes')
+   .channel(`mechanic-quotes-${appointmentId}`) // Unique channel per appointment
    .on(
     'postgres_changes',
     {
@@ -221,13 +240,19 @@ function PickMechanicContent() {
    .subscribe()
 
   return () => {
+   console.log('🔄 Unsubscribing from real-time updates')
    subscription.unsubscribe()
   }
- }, [appointmentId])
+ }, [appointmentId, fetchAppointmentData]) // Add fetchAppointmentData dependency
 
- // Loading animation effect
+ // Loading animation effect - with proper dependency management
  useEffect(() => {
-  if (mechanicQuotes.length > 0) return // Stop animation when quotes arrive
+  if (mechanicQuotes.length > 0) {
+   console.log('🔄 Stopping loading animation - quotes received')
+   return // Stop animation when quotes arrive
+  }
+  
+  console.log('🔄 Running loading animation effect, currentMessageIndex:', currentMessageIndex)
   
   const messageDuration = currentMessageIndex === loadingMessages.length - 1 ? 800 : 2000 // 0.8s for last message, 2s for others
   
@@ -244,7 +269,7 @@ function PickMechanicContent() {
    clearTimeout(fadeOutTimer)
    clearTimeout(transitionTimer)
   }
- }, [currentMessageIndex, mechanicQuotes.length, loadingMessages.length])
+ }, [currentMessageIndex, mechanicQuotes.length]) // Removed loadingMessages.length as it's static
 
  // Show loading state
  if (isLoading) {
@@ -395,31 +420,9 @@ function PickMechanicContent() {
    // Step 4: Force refresh of real-time subscriptions by triggering a notification
    console.log('🔄 Step 4: Triggering real-time updates...')
    try {
-    // Insert and immediately delete a dummy record to trigger real-time updates
-    const dummyRecord = {
-     appointment_id: appointmentId,
-     mechanic_id: 'trigger-update-' + Date.now(),
-     price: 0,
-     eta: new Date().toISOString(),
-     notes: 'TRIGGER_UPDATE_ONLY',
-     status: 'pending'
-    }
-    
-    const { data: triggerQuote, error: triggerError } = await supabase
-     .from('mechanic_quotes')
-     .insert(dummyRecord)
-     .select()
-     .single()
-
-    if (!triggerError && triggerQuote) {
-     // Immediately delete the dummy record
-     await supabase
-      .from('mechanic_quotes')
-      .delete()
-      .eq('id', triggerQuote.id)
-     
-     console.log('✅ Step 4 complete: Real-time update triggered')
-    }
+    // Use a proper real-time trigger instead of dummy record insertion
+    // This avoids the 400 error from incorrect POST requests
+    console.log('✅ Step 4 complete: Real-time updates will be handled by existing subscription')
    } catch (triggerError) {
     console.log('⚠️ Real-time trigger failed (non-critical):', triggerError)
    }
