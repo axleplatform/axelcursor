@@ -358,7 +358,7 @@ function PickMechanicContent() {
    })
 
    // Navigate to confirmation page
-   router.push(`/appointment-confirmation?appointmentId=${appointment.id}`)
+   router.push(`/appointment-confirmation?id=${appointment.id}`)
    
   } catch (error) {
    console.error('Error selecting mechanic:', error)
