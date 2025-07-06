@@ -3,7 +3,7 @@
 import React from "react"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { Input } from "@/components/ui/input"
-import { Clock, MapPin, Check, Loader2, User, Star } from "lucide-react"
+import { Clock, MapPin, Check, Loader2, User } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -331,7 +331,7 @@ export default function AppointmentConfirmationPage() {
                           {mechanic?.business_name || `${mechanic?.first_name} ${mechanic?.last_name}`}
                         </p>
                         <div className="flex items-center gap-1">
-                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                          <span className="text-yellow-400">⭐</span>
                           <span className="text-xs text-gray-500">
                             {mechanic?.rating || 'N/A'} ({mechanic?.review_count || 0} reviews)
                           </span>
