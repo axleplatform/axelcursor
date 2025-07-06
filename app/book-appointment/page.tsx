@@ -715,38 +715,8 @@ function BookAppointmentContent() {
         throw new Error("Failed to create appointment")
       }
 
-      // Trigger real-time updates for mechanics to see the appointment immediately
-      try {
-        console.log('🔄 Triggering real-time updates for appointment:', appointment.id)
-        
-        // Insert and immediately delete a dummy quote to trigger real-time subscriptions
-        const dummyRecord = {
-          appointment_id: appointment.id,
-          mechanic_id: 'refresh-trigger-' + Date.now(),
-          price: 0,
-          eta: new Date().toISOString(),
-          notes: 'REFRESH_TRIGGER',
-          status: 'pending'
-        }
-        
-        const { data: triggerQuote, error: triggerError } = await supabase
-          .from('mechanic_quotes')
-          .insert(dummyRecord)
-          .select()
-          .single()
-
-        if (!triggerError && triggerQuote) {
-          // Immediately delete the dummy record
-          await supabase
-            .from('mechanic_quotes')
-            .delete()
-            .eq('id', triggerQuote.id)
-          
-          console.log('✅ Real-time update triggered for mechanics')
-        }
-      } catch (triggerError) {
-        console.log('⚠️ Real-time trigger failed (non-critical):', triggerError)
-      }
+      // Real-time updates will be handled by existing subscriptions
+      console.log('✅ Appointment created successfully - real-time updates handled by existing subscription')
 
       toast({
         title: "Success!",
