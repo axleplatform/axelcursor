@@ -152,6 +152,18 @@ export async function createOrUpdateQuote(
       timestamp: new Date().toISOString(),
       version: "2.0.0"
     });
+    
+    // CRITICAL: Log appointment ID details for debugging
+    console.log('🎯 APPOINTMENT ID DEBUG:', {
+      appointmentId,
+      type: typeof appointmentId,
+      length: appointmentId?.length,
+      trimmed: appointmentId?.trim(),
+      hasSpaces: appointmentId?.includes(' '),
+      hasNewlines: appointmentId?.includes('\n'),
+      hasTabs: appointmentId?.includes('\t'),
+      charCodes: appointmentId?.split('').map(c => c.charCodeAt(0))
+    });
 
     // Validate mechanic ID format and existence
     const mechanicValidation = validateMechanicId(mechanicId);
@@ -262,6 +274,13 @@ export async function createOrUpdateQuote(
 
     // CRITICAL: Verify the quote was actually created/updated
     console.log('🔍 Step 7: VERIFICATION - Checking if quote exists in database...');
+    console.log('🔍 VERIFICATION QUERY PARAMS:', {
+      mechanicId,
+      appointmentId,
+      appointmentIdType: typeof appointmentId,
+      appointmentIdLength: appointmentId?.length
+    });
+    
     const { data: verificationQuote, error: verificationError } = await supabase
       .from('mechanic_quotes')
       .select('*')
@@ -299,7 +318,19 @@ export async function createOrUpdateQuote(
  */
 export async function getQuotesForAppointment(appointmentId: string): Promise<any[]> {
   try {
-    console.log("🔍 Getting quotes for appointment:", appointmentId)
+    console.log('🔍 Getting quotes for appointment:', appointmentId);
+    console.log('🔍 Appointment ID type:', typeof appointmentId);
+    console.log('🔍 Appointment ID length:', appointmentId?.length);
+    console.log('🔍 Appointment ID trimmed:', `"${appointmentId?.trim()}"`);
+    
+    // Temporary debug: check if ANY quotes exist for this appointment
+    const { data: allQuotes } = await supabase
+      .from("mechanic_quotes")
+      .select("appointment_id, mechanic_id, created_at")
+      .eq("appointment_id", appointmentId);
+
+    console.log('🔍 Direct quote check:', allQuotes);
+    console.log('🔍 Direct quote count:', allQuotes?.length || 0);
     
     const { data: quotes, error } = await supabase
       .from("mechanic_quotes")
@@ -318,22 +349,25 @@ export async function getQuotesForAppointment(appointmentId: string): Promise<an
         )
       `)
       .eq("appointment_id", appointmentId)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: true });
 
+    console.log('🔍 Supabase query result:', { quotes, error });
+    console.log('🔍 Raw SQL would be:', `SELECT * FROM mechanic_quotes WHERE appointment_id = '${appointmentId}'`);
+    
     if (error) {
-      console.error("Error getting quotes for appointment:", error)
-      return []
+      console.error('❌ Query error:', error);
+      return [];
     }
 
     console.log("🔍 Retrieved quotes:", {
       count: quotes?.length || 0,
       quotes: quotes
-    })
+    });
 
-    return quotes || []
+    return quotes || [];
   } catch (err: unknown) {
-    console.error("Exception in getQuotesForAppointment:", err)
-    return []
+    console.error("Exception in getQuotesForAppointment:", err);
+    return [];
   }
 }
 

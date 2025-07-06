@@ -164,6 +164,16 @@ function PickMechanicContent() {
    
    // Use standardized function to fetch quotes (RLS-compatible)
    console.log('🔍 Fetching quotes using standardized function for appointment:', appointmentId)
+   console.log('🔍 CUSTOMER VIEW - Appointment ID details:', {
+     appointmentId,
+     type: typeof appointmentId,
+     length: appointmentId?.length,
+     trimmed: appointmentId?.trim(),
+     hasSpaces: appointmentId?.includes(' '),
+     hasNewlines: appointmentId?.includes('\n'),
+     hasTabs: appointmentId?.includes('\t')
+   })
+   
    const quotes = await getQuotesForAppointment(appointmentId)
    
    console.log('🔍 Quotes retrieved successfully:', {
@@ -227,12 +237,21 @@ function PickMechanicContent() {
   }
   
   console.log('📡 STARTING REAL-TIME SUBSCRIPTION');
+  console.log('📡 SUBSCRIPTION PARAMS:', {
+    appointmentId,
+    channelName: `quotes-${appointmentId}`,
+    table: 'mechanic_quotes'
+  });
   
   const channel = supabase.channel(`quotes-${appointmentId}`)
     .on('postgres_changes', 
       { event: '*', schema: 'public', table: 'mechanic_quotes' },
       (payload) => {
         console.log('🚨 REAL-TIME EVENT:', payload);
+        console.log('🚨 EVENT APPOINTMENT ID:', payload.new?.appointment_id);
+        console.log('🚨 OUR APPOINTMENT ID:', appointmentId);
+        console.log('🚨 IDS MATCH?', payload.new?.appointment_id === appointmentId);
+        
         // Only refresh if it's for our appointment
         if (payload.new?.appointment_id === appointmentId) {
           console.log('✅ Refreshing for our appointment');
