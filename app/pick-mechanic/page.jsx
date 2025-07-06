@@ -492,8 +492,6 @@ function PickMechanicContent() {
 
     {/* Available mechanics section - slightly wider */}
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-     <h2 className="text-2xl font-bold mb-6 text-[#294a46]">Available Mechanics</h2>
-     
      {/* Split-Screen Layout */}
      <div className="flex flex-col lg:flex-row gap-6">
       {/* Left Side - Available Mechanics */}
@@ -768,31 +766,6 @@ function PickMechanicContent() {
          </div>
         </div>
        </Card>
-      </div>
-     </div>
-    </div>
-
-    {/* Appointment details section - original width */}
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-[#294a46] mb-4">Appointment Details</h3>
-      <div className="space-y-3">
-       <div className="flex items-center gap-2">
-        <span className="text-[#294a46]">📅</span>
-        <span className="text-sm text-gray-700">{formatDate(appointment.appointment_date)}</span>
-       </div>
-       <div className="flex items-center gap-2">
-        <MapPin className="h-4 w-4 text-[#294a46]" />
-        <span className="text-sm text-gray-700">{appointment.location}</span>
-       </div>
-       {appointment.vehicles && (
-        <div className="flex items-center gap-2">
-         <span className="text-[#294a46]">🚗</span>
-         <span className="text-sm text-gray-700">
-          {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
-         </span>
-        </div>
-       )}
       </div>
      </div>
     </div>
