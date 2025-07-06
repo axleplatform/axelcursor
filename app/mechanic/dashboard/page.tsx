@@ -57,6 +57,9 @@ export default function MechanicDashboard() {
   const [currentAvailableIndex, setCurrentAvailableIndex] = useState(0)
   const [currentUpcomingIndex, setCurrentUpcomingIndex] = useState(0)
   const [priceInput, setPriceInput] = useState<string>("")
+  
+  // Appointment visibility logic state
+  const [restoredToday, setRestoredToday] = useState<Set<string>>(new Set())
   // Helper functions for appointment visibility logic
   const isPastETA = (appointment: AppointmentWithRelations): boolean => {
     const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
@@ -337,9 +340,6 @@ export default function MechanicDashboard() {
   // Search state
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Appointment visibility logic state
-  const [restoredToday, setRestoredToday] = useState<Set<string>>(new Set());
-  
   // Schedule click tracking state
   const [isFromSchedule, setIsFromSchedule] = useState<boolean>(false);
   const [showScheduleCancelModal, setShowScheduleCancelModal] = useState<boolean>(false);
@@ -396,14 +396,7 @@ export default function MechanicDashboard() {
     }
   }, [availableAppointments.length, currentAvailableIndex]);
 
-  // Ensure currentUpcomingIndex is always valid when upcomingAppointments changes
-  useEffect(() => {
-    if (filteredUpcomingAppointments.length > 0 && currentUpcomingIndex >= filteredUpcomingAppointments.length) {
-      setCurrentUpcomingIndex(0);
-    } else if (filteredUpcomingAppointments.length === 0) {
-      setCurrentUpcomingIndex(0);
-    }
-  }, [filteredUpcomingAppointments.length, currentUpcomingIndex]);
+
 
   // Add showNotification function
   const showNotification = (message: string, type: NotificationState['type'] = 'error') => {
