@@ -65,6 +65,7 @@ interface AppointmentWithRelations {
   status: string
   appointment_date: string
   location: string
+  phone_number?: string
   issue_description?: string
   selected_car_issues?: string[]
   selected_services?: string[]
