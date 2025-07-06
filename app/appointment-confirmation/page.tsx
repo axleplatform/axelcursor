@@ -70,6 +70,7 @@ export default function AppointmentConfirmationPage() {
 
   const [appointmentData, setAppointmentData] = React.useState<AppointmentData | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isCancelled, setIsCancelled] = React.useState(false)
   
   // Simplified account creation form state
   const [fullName, setFullName] = React.useState("")
@@ -117,6 +118,10 @@ export default function AppointmentConfirmationPage() {
         if (error) throw error
 
         setAppointmentData(data)
+        // Check if appointment is already cancelled
+        if (data.status === 'cancelled') {
+          setIsCancelled(true)
+        }
         console.log("Fetched appointment data:", data)
       } catch (error) {
         console.error("Error fetching appointment data:", error)
@@ -147,6 +152,10 @@ export default function AppointmentConfirmationPage() {
           console.log("Real-time update received:", payload)
           if (payload.eventType === "UPDATE") {
             setAppointmentData(payload.new)
+            // Check if appointment was cancelled
+            if (payload.new.status === 'cancelled') {
+              setIsCancelled(true)
+            }
           }
         },
       )
@@ -281,6 +290,9 @@ export default function AppointmentConfirmationPage() {
           return
         }
 
+        // Set cancelled state to true
+        setIsCancelled(true)
+
         // Handle refund logic here (would integrate with payment processor)
         // For now, just show success message
         
@@ -288,7 +300,6 @@ export default function AppointmentConfirmationPage() {
           title: "Appointment Cancelled",
           description: "Your appointment has been cancelled and refund processed.",
         })
-        router.push("/")
       } catch (error) {
         console.error('Error cancelling appointment:', error)
         toast({
@@ -344,24 +355,48 @@ export default function AppointmentConfirmationPage() {
       <SiteHeader />
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8 max-w-6xl">
-          {/* Success Header */}
+          {/* Success/Cancellation Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
-              <div className="w-12 h-12 rounded-full bg-[#e6eeec] flex items-center justify-center">
-                <Check className="h-6 w-6 text-[#294a46]" />
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                isCancelled ? 'bg-red-100' : 'bg-[#e6eeec]'
+              }`}>
+                {isCancelled ? (
+                  <span className="text-2xl">❌</span>
+                ) : (
+                  <Check className="h-6 w-6 text-[#294a46]" />
+                )}
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Appointment Confirmed!</h1>
-            <p className="text-gray-600">Your appointment has been successfully scheduled</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              {isCancelled ? "Appointment Cancelled!" : "Appointment Confirmed!"}
+            </h1>
+            <p className="text-gray-600">
+              {isCancelled 
+                ? "Your appointment has been successfully cancelled." 
+                : "Your appointment has been successfully scheduled"
+              }
+            </p>
           </div>
 
           {/* Two Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Column - Order Summary */}
             <div className="bg-white rounded-lg shadow-md p-0 overflow-hidden">
-              <div className="p-4 border-b bg-gradient-to-r from-[#294a46] to-[#1e3632]">
-                <h2 className="text-lg font-semibold text-white">Order Summary</h2>
-                <p className="text-gray-200 text-sm mt-1">Review your appointment details</p>
+              <div className={`p-4 border-b bg-gradient-to-r ${
+                isCancelled 
+                  ? 'from-red-600 to-red-700' 
+                  : 'from-[#294a46] to-[#1e3632]'
+              }`}>
+                <h2 className="text-lg font-semibold text-white">
+                  {isCancelled ? "Cancelled Appointment" : "Order Summary"}
+                </h2>
+                <p className="text-gray-200 text-sm mt-1">
+                  {isCancelled 
+                    ? "Your appointment has been cancelled" 
+                    : "Review your appointment details"
+                  }
+                </p>
               </div>
               <div className="p-6">
                 <div className="space-y-4">
@@ -468,15 +503,17 @@ export default function AppointmentConfirmationPage() {
                   )}
                 </div>
 
-                <div className="mt-8 text-center">
-                  <Button
-                    variant="ghost"
-                    className="w-full mt-4 text-gray-500 hover:text-red-600 hover:bg-red-50 border border-gray-200 hover:border-red-200 transition-colors"
-                    onClick={handleCancelAppointment}
-                  >
-                    Cancel Appointment
-                  </Button>
-                </div>
+                {!isCancelled && (
+                  <div className="mt-8 text-center">
+                    <Button
+                      variant="ghost"
+                      className="w-full mt-4 text-gray-500 hover:text-red-600 hover:bg-red-50 border border-gray-200 hover:border-red-200 transition-colors"
+                      onClick={handleCancelAppointment}
+                    >
+                      Cancel Appointment
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
