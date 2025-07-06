@@ -543,7 +543,7 @@ function PickMechanicContent() {
              {/* Mechanic details */}
              <div className="space-y-3 mb-4">
               {/* Profile descriptions - enhanced display */}
-              {(quote.mechanic_profiles?.bio || quote.mechanic_profiles?.business_description) && (
+              {quote.mechanic_profiles?.bio && (
                <div className="bg-white rounded-lg p-4 border border-gray-200">
                 <p className="text-sm font-semibold text-[#294a46] mb-3 flex items-center">
                  <User className="h-4 w-4 mr-2" />
@@ -551,19 +551,9 @@ function PickMechanicContent() {
                 </p>
                 
                 {/* Bio */}
-                {quote.mechanic_profiles?.bio && (
-                 <div className="mb-3">
-                  <p className="text-sm text-gray-700 leading-relaxed">{quote.mechanic_profiles.bio}</p>
-                 </div>
-                )}
-                
-                {/* Business Description */}
-                {quote.mechanic_profiles?.business_description && (
-                 <div className="mb-2">
-                  <p className="text-xs font-medium text-gray-600 mb-1">Business Type:</p>
-                  <p className="text-sm text-gray-700">{quote.mechanic_profiles.business_description}</p>
-                 </div>
-                )}
+                <div className="mb-3">
+                 <p className="text-sm text-gray-700 leading-relaxed">{quote.mechanic_profiles.bio}</p>
+                </div>
                 
                 {/* Specialties if available */}
                 {quote.mechanic_profiles?.specialties && quote.mechanic_profiles.specialties.length > 0 && (

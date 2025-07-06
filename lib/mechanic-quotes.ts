@@ -313,7 +313,6 @@ export async function getQuotesForAppointment(appointmentId: string): Promise<an
           rating,
           review_count,
           bio,
-          business_description,
           specialties,
           profile_image_url
         )
