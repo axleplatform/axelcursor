@@ -87,12 +87,41 @@ export default function MechanicDashboard() {
       return false;
     }
     
+    // For cancelled appointments, only show if they've been restored today
+    if (appointment.status === 'cancelled') {
+      return isRestoredToday(appointment.id);
+    }
+    
     // Otherwise, show it normally
     return true;
   };
 
   const handleRestoreAppointment = (appointment: AppointmentWithRelations) => {
     setRestoredToday(prev => new Set([...prev, appointment.id]));
+  };
+
+  const handleToggleCancelledAppointment = (appointment: AppointmentWithRelations) => {
+    if (appointment.status === 'cancelled') {
+      if (isRestoredToday(appointment.id)) {
+        // Remove from restored list (hide it)
+        setRestoredToday(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(appointment.id);
+          return newSet;
+        });
+        toast({
+          title: "Appointment Hidden",
+          description: "Cancelled appointment has been hidden from upcoming appointments.",
+        });
+      } else {
+        // Add to restored list (show it)
+        handleRestoreAppointment(appointment);
+        toast({
+          title: "Appointment Restored",
+          description: "Cancelled appointment has been restored to upcoming appointments.",
+        });
+      }
+    }
   };
 
   // Schedule-specific handlers
@@ -369,10 +398,12 @@ export default function MechanicDashboard() {
 
   // Ensure currentUpcomingIndex is always valid when upcomingAppointments changes
   useEffect(() => {
-    if (upcomingAppointments.length > 0 && currentUpcomingIndex >= upcomingAppointments.length) {
+    if (filteredUpcomingAppointments.length > 0 && currentUpcomingIndex >= filteredUpcomingAppointments.length) {
+      setCurrentUpcomingIndex(0);
+    } else if (filteredUpcomingAppointments.length === 0) {
       setCurrentUpcomingIndex(0);
     }
-  }, [upcomingAppointments.length, currentUpcomingIndex]);
+  }, [filteredUpcomingAppointments.length, currentUpcomingIndex]);
 
   // Add showNotification function
   const showNotification = (message: string, type: NotificationState['type'] = 'error') => {
@@ -453,6 +484,15 @@ export default function MechanicDashboard() {
     // Include cancelled appointments so they appear in the schedule
     return searchAppointments(visibleAppointments, searchQuery);
   }, [upcomingAppointments, searchQuery, restoredToday]);
+
+  // Ensure currentUpcomingIndex is always valid when filtered appointments change
+  useEffect(() => {
+    if (filteredUpcomingAppointments.length > 0 && currentUpcomingIndex >= filteredUpcomingAppointments.length) {
+      setCurrentUpcomingIndex(0);
+    } else if (filteredUpcomingAppointments.length === 0) {
+      setCurrentUpcomingIndex(0);
+    }
+  }, [filteredUpcomingAppointments.length, currentUpcomingIndex]);
 
   // Clear search function
   const clearSearch = () => {
@@ -1254,15 +1294,23 @@ export default function MechanicDashboard() {
 
   // Navigate through upcoming appointments
   const goToNextUpcoming = (): void => {
-    if (upcomingAppointments.length > 1) {
-      setCurrentUpcomingIndex((prev: number) => (prev + 1) % upcomingAppointments.length)
+    if (filteredUpcomingAppointments.length > 1) {
+      setCurrentUpcomingIndex((prev: number) => {
+        const newIndex = (prev + 1) % filteredUpcomingAppointments.length;
+        // Ensure the index is valid
+        return newIndex >= 0 && newIndex < filteredUpcomingAppointments.length ? newIndex : 0;
+      });
       setIsFromSchedule(false); // Reset flag when navigating normally
     }
   }
 
   const goToPrevUpcoming = (): void => {
-    if (upcomingAppointments.length > 1) {
-      setCurrentUpcomingIndex((prev: number) => (prev === 0 ? upcomingAppointments.length - 1 : prev - 1))
+    if (filteredUpcomingAppointments.length > 1) {
+      setCurrentUpcomingIndex((prev: number) => {
+        const newIndex = prev === 0 ? filteredUpcomingAppointments.length - 1 : prev - 1;
+        // Ensure the index is valid
+        return newIndex >= 0 && newIndex < filteredUpcomingAppointments.length ? newIndex : 0;
+      });
       setIsFromSchedule(false); // Reset flag when navigating normally
     }
   }
@@ -1271,6 +1319,12 @@ export default function MechanicDashboard() {
   const handleScheduleAppointmentClick = (appointment: AppointmentWithRelations) => {
     // Set flag to indicate this appointment was accessed from schedule
     setIsFromSchedule(true);
+    
+    // Special handling for cancelled appointments - toggle visibility
+    if (appointment.status === 'cancelled') {
+      handleToggleCancelledAppointment(appointment);
+      return;
+    }
     
     // Check if this is a past-ETA appointment that needs to be restored
     if (isPastETA(appointment) && !isRestoredToday(appointment.id)) {
@@ -1288,11 +1342,11 @@ export default function MechanicDashboard() {
       return
     }
     
-    // Find the appointment in upcoming appointments
-    const upcomingIndex = upcomingAppointments.findIndex(apt => apt.id === appointment.id)
-    if (upcomingIndex !== -1) {
+    // Find the appointment in the FILTERED upcoming appointments (not the original array)
+    const filteredUpcomingIndex = filteredUpcomingAppointments.findIndex(apt => apt.id === appointment.id)
+    if (filteredUpcomingIndex !== -1) {
       // Set the clicked appointment as the active one in upcoming appointments
-      setCurrentUpcomingIndex(upcomingIndex)
+      setCurrentUpcomingIndex(filteredUpcomingIndex)
       
       // Scroll to upcoming appointments section for better UX
       const upcomingSection = document.querySelector('[data-section="upcoming-appointments"]')
@@ -1300,6 +1354,28 @@ export default function MechanicDashboard() {
         upcomingSection.scrollIntoView({ behavior: 'smooth' })
       }
       return
+    }
+    
+    // If not found in filtered appointments, it might be filtered out
+    // Try to find it in the original upcoming appointments and restore it if needed
+    const originalUpcomingIndex = upcomingAppointments.findIndex(apt => apt.id === appointment.id)
+    if (originalUpcomingIndex !== -1) {
+      // This appointment exists but is filtered out - restore it and set as current
+      handleRestoreAppointment(appointment);
+      // After restoration, it should appear in filtered appointments
+      // We'll need to wait for the next render cycle to find the correct index
+      setTimeout(() => {
+        const newFilteredIndex = filteredUpcomingAppointments.findIndex(apt => apt.id === appointment.id);
+        if (newFilteredIndex !== -1) {
+          setCurrentUpcomingIndex(newFilteredIndex);
+        }
+      }, 100);
+      
+      toast({
+        title: "Appointment Restored",
+        description: "This appointment has been restored to your upcoming appointments.",
+      });
+      return;
     }
   }
 
