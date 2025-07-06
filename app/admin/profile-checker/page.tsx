@@ -9,6 +9,7 @@ interface MechanicProfile {
   first_name: string
   last_name: string
   rating?: number // 0.0 to 5.0
+  review_count?: number // Number of reviews, default 0
   specialized_cars: Array<{
     make: string
     model: string

@@ -68,6 +68,7 @@ export interface MechanicProfile {
   email?: string
   phone?: string
   rating?: number // 0.0 to 5.0
+  review_count?: number // Number of reviews, default 0
   created_at?: string
   updated_at?: string
 }

@@ -513,9 +513,10 @@ function PickMechanicContent() {
                <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
                 <span className="flex items-center">
                   <span className="text-base sm:text-lg lg:text-xl leading-none inline-flex items-center justify-center mr-2">⭐</span>
+                  {/* TODO: Implement actual rating calculation when review system is built */}
                   {quote.mechanic_profiles?.rating || 'N/A'}
                 </span>
-                <span>• {quote.mechanic_profiles?.review_count || 0} reviews</span>
+                <span>• {/* TODO: Implement actual review counting when review system is built */}{quote.mechanic_profiles?.review_count || 0} reviews</span>
                </div>
               </div>
               
