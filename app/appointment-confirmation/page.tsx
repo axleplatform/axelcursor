@@ -354,7 +354,7 @@ export default function AppointmentConfirmationPage() {
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
       <main className="flex-1">
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
           {/* Success/Cancellation Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
