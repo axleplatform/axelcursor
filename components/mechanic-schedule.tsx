@@ -222,9 +222,14 @@ export default function MechanicSchedule({
                         onClick={() => handleAppointmentClick(appointment)}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className={`text-sm font-medium ${status === 'cancelled' ? 'line-through' : ''}`}>
-                            {time}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-medium ${status === 'cancelled' ? 'line-through' : ''}`}>
+                              {time}
+                            </span>
+                            {status === 'cancelled' && (
+                              <span className="text-xs text-red-600 font-medium">cancelled</span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2">
                             {/* Location Pin */}
                             <button 
@@ -256,9 +261,6 @@ export default function MechanicSchedule({
                             'Vehicle info unavailable'
                           }
                         </div>
-                        {status === 'cancelled' && (
-                          <div className="text-[10px] mt-1 text-red-600 font-medium">CANCELLED</div>
-                        )}
                       </div>
                     )
                   })}
