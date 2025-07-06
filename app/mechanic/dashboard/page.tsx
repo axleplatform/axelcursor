@@ -2258,10 +2258,10 @@ export default function MechanicDashboard() {
                 )}
 
                 {/* Pagination Dots */}
-                {upcomingAppointments.length > 1 && (
+                {filteredUpcomingAppointments.length > 1 && (
                   <div className="flex justify-center mt-4">
                     <div className="flex space-x-2">
-                      {upcomingAppointments.map((_, index) => (
+                      {filteredUpcomingAppointments.map((_, index) => (
                         <button
                           key={index}
                           onClick={() => setCurrentUpcomingIndex(index)}
