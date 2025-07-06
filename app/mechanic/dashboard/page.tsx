@@ -450,9 +450,8 @@ export default function MechanicDashboard() {
 
   const filteredUpcomingAppointments = useMemo(() => {
     const visibleAppointments = upcomingAppointments.filter(shouldShowInUpcoming);
-    // Filter out cancelled appointments from upcoming appointments
-    const nonCancelledAppointments = visibleAppointments.filter(apt => apt.status !== 'cancelled');
-    return searchAppointments(nonCancelledAppointments, searchQuery);
+    // Include cancelled appointments so they appear in the schedule
+    return searchAppointments(visibleAppointments, searchQuery);
   }, [upcomingAppointments, searchQuery, restoredToday]);
 
   // Clear search function
@@ -1954,7 +1953,19 @@ export default function MechanicDashboard() {
                             
                             {/* Status and ETA */}
                             <div className="text-right">
-                              {isConfirmed ? (
+                              {appointment.status === 'cancelled' ? (
+                                <div className="flex flex-col items-end">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2 bg-red-100 text-red-800">
+                                    ❌ Cancelled
+                                  </span>
+                                  <div className="text-sm text-gray-600">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-4 w-4" />
+                                      <span>ETA: {new Date(myQuote?.eta || '').toLocaleString()}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : isConfirmed ? (
                                 <div className="flex flex-col items-end">
                                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2" style={{ backgroundColor: '#294A46', color: 'white' }}>
                                     ✓ Confirmed
@@ -2079,7 +2090,11 @@ export default function MechanicDashboard() {
 
                           {/* Action buttons */}
                           <div className="flex gap-3">
-                            {isConfirmed ? (
+                            {appointment.status === 'cancelled' ? (
+                              <div className="flex-1 text-center text-gray-500 text-sm py-2 bg-gray-100 rounded-full">
+                                Appointment Cancelled
+                              </div>
+                            ) : isConfirmed ? (
                               <>
                                 {isFromSchedule ? (
                                   <>

@@ -605,11 +605,11 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
         mechanic_quotes!appointment_id(*)
       `)
       .in('id', quotedAppointmentIds)
-      .in('status', ['pending', 'quoted', 'confirmed', 'in_progress']);
+      .in('status', ['pending', 'quoted', 'confirmed', 'in_progress', 'cancelled']);
 
     console.log("🔍 Step 4: Query executed with filters:", {
       appointmentIds: quotedAppointmentIds,
-      statusFilters: ['pending', 'quoted', 'confirmed', 'in_progress']
+      statusFilters: ['pending', 'quoted', 'confirmed', 'in_progress', 'cancelled']
     });
 
     if (error) {
