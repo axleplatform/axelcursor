@@ -316,8 +316,8 @@ export default function AppointmentConfirmationPage() {
           {/* Success Header */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <Check className="h-6 w-6 text-green-600" />
+              <div className="w-12 h-12 rounded-full bg-[#e6eeec] flex items-center justify-center">
+                <Check className="h-6 w-6 text-[#294a46]" />
               </div>
             </div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Appointment Confirmed!</h1>
@@ -453,8 +453,8 @@ export default function AppointmentConfirmationPage() {
             <div className="bg-white rounded-lg shadow-md p-6">
               {accountCreated ? (
                 <div className="text-center py-8">
-                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-                    <Check className="h-8 w-8 text-green-600" />
+                  <div className="w-16 h-16 rounded-full bg-[#e6eeec] flex items-center justify-center mx-auto mb-4">
+                    <Check className="h-8 w-8 text-[#294a46]" />
                   </div>
                   <h2 className="text-2xl font-bold text-gray-800 mb-2">Account Created!</h2>
                   <p className="text-gray-600 mb-6">You can now track all your services and get maintenance reminders.</p>
