@@ -525,7 +525,7 @@ export default function AppointmentConfirmationPage() {
                     )}
                     
                     <Button 
-                      className="w-full bg-teal-600 hover:bg-teal-700"
+                      className="w-full bg-[#294a46] hover:bg-[#1e3632] text-white"
                       onClick={handleEmailSignup}
                       disabled={isCreatingAccount}
                     >
