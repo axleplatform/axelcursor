@@ -15,6 +15,9 @@ import { createBrowserClient } from "@supabase/ssr"
 import { getQuotesForAppointment } from "@/lib/mechanic-quotes"
 
 function PickMechanicContent() {
+ const router = useRouter()
+ const searchParams = useSearchParams()
+ 
  // Add React.StrictMode detection
  const isStrictMode = React.useMemo(() => {
   try {
@@ -29,9 +32,6 @@ function PickMechanicContent() {
   isStrictMode,
   appointmentId: searchParams?.get("appointmentId")
  })
- 
- const router = useRouter()
- const searchParams = useSearchParams()
  const { toast } = useToast()
  const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
