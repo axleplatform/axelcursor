@@ -298,11 +298,24 @@ export async function createOrUpdateQuote(
  */
 export async function getQuotesForAppointment(appointmentId: string): Promise<any[]> {
   try {
+    console.log("🔍 Getting quotes for appointment:", appointmentId)
+    
     const { data: quotes, error } = await supabase
       .from("mechanic_quotes")
       .select(`
         *,
-        mechanic_profiles(first_name, last_name)
+        mechanic_profiles(
+          id,
+          first_name,
+          last_name,
+          business_name,
+          rating,
+          review_count,
+          bio,
+          business_description,
+          specialties,
+          profile_image_url
+        )
       `)
       .eq("appointment_id", appointmentId)
       .order("created_at", { ascending: true })
@@ -311,6 +324,11 @@ export async function getQuotesForAppointment(appointmentId: string): Promise<an
       console.error("Error getting quotes for appointment:", error)
       return []
     }
+
+    console.log("🔍 Retrieved quotes:", {
+      count: quotes?.length || 0,
+      quotes: quotes
+    })
 
     return quotes || []
   } catch (err: unknown) {
