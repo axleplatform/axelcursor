@@ -7,10 +7,31 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { supabase } from "@/lib/supabase"
+import { useRouter } from "next/navigation"
 
 export function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+
+  // Check authentication state
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setIsLoggedIn(!!session)
+    }
+    
+    checkAuth()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   // Close mobile menu when pathname changes (navigation occurs)
   useEffect(() => {
@@ -19,6 +40,18 @@ export function SiteHeader() {
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
+  }
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true)
+      await supabase.auth.signOut()
+      router.replace("/login")
+    } catch (error) {
+      console.error("Error logging out:", error)
+    } finally {
+      setIsLoggingOut(false)
+    }
   }
 
   const isActive = (path: string) => {
@@ -44,12 +77,24 @@ export function SiteHeader() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-6">
-          <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-transparent hover:border-gray-200 hover:bg-gray-50 transition-all duration-200">
-            Log In
-          </Link>
-          <Button asChild className="rounded-full bg-[#294a46] hover:bg-[#1e3632] text-white">
-            <Link href="/signup">Sign Up</Link>
-          </Button>
+          {isLoggedIn ? (
+            <Button 
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-transparent hover:border-gray-200 hover:bg-gray-50 transition-all duration-200"
+            >
+              {isLoggingOut ? "Logging out..." : "Logout"}
+            </Button>
+          ) : (
+            <>
+              <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-transparent hover:border-gray-200 hover:bg-gray-50 transition-all duration-200">
+                Log In
+              </Link>
+              <Button asChild className="rounded-full bg-[#294a46] hover:bg-[#1e3632] text-white">
+                <Link href="/signup">Sign Up</Link>
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Desktop Right Navigation */}
@@ -94,18 +139,30 @@ export function SiteHeader() {
               <nav className="space-y-4">
                 {/* Sign Up and Log In buttons stacked */}
                 <div className="flex flex-col space-y-2">
-                  <Link
-                    href="/login"
-                    className="text-sm font-medium text-gray-700/90 hover:text-[#294a46] px-3 py-2 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-center whitespace-nowrap"
-                  >
-                    Log In
-                  </Link>
-                  <Link
-                    href="/signup"
-                    className="text-sm font-medium text-white bg-[#294a46] hover:bg-[#1e3632] py-2 px-4 rounded-full text-center transition-all duration-200 whitespace-nowrap"
-                  >
-                    Sign Up
-                  </Link>
+                  {isLoggedIn ? (
+                    <button
+                      onClick={handleLogout}
+                      disabled={isLoggingOut}
+                      className="text-sm font-medium text-gray-700/90 hover:text-[#294a46] px-3 py-2 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-center whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoggingOut ? "Logging out..." : "Logout"}
+                    </button>
+                  ) : (
+                    <>
+                      <Link
+                        href="/login"
+                        className="text-sm font-medium text-gray-700/90 hover:text-[#294a46] px-3 py-2 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-center whitespace-nowrap"
+                      >
+                        Log In
+                      </Link>
+                      <Link
+                        href="/signup"
+                        className="text-sm font-medium text-white bg-[#294a46] hover:bg-[#1e3632] py-2 px-4 rounded-full text-center transition-all duration-200 whitespace-nowrap"
+                      >
+                        Sign Up
+                      </Link>
+                    </>
+                  )}
                 </div>
                 
                 {/* Other navigation links */}
