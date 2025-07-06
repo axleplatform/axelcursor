@@ -316,121 +316,125 @@ export default function AppointmentConfirmationPage() {
           {/* Two Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Column - Order Summary */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">Order Summary</h2>
-              
-              <div className="space-y-4">
-                {/* Selected Mechanic */}
-                {hasQuoteData && (
-                  <div className="flex items-start gap-3">
-                    <User className="h-5 w-5 text-gray-500 mt-1" />
-                    <div>
-                      <h3 className="font-medium text-gray-700">Selected Mechanic</h3>
-                      <div className="flex items-center gap-2">
-                        <p className="text-gray-600 font-medium">
-                          {mechanic?.business_name || `${mechanic?.first_name} ${mechanic?.last_name}`}
-                        </p>
-                        <div className="flex items-center gap-1">
-                          <span className="text-yellow-400">⭐</span>
-                          <span className="text-xs text-gray-500">
-                            {mechanic?.rating || 'N/A'} ({mechanic?.review_count || 0} reviews)
-                          </span>
+            <div className="bg-white rounded-lg shadow-md p-0 overflow-hidden">
+              <div className="p-4 border-b bg-gradient-to-r from-[#294a46] to-[#1e3632]">
+                <h2 className="text-lg font-semibold text-white">Order Summary</h2>
+                <p className="text-gray-200 text-sm mt-1">Review your appointment details</p>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  {/* Selected Mechanic */}
+                  {hasQuoteData && (
+                    <div className="flex items-start gap-3">
+                      <User className="h-5 w-5 text-gray-500 mt-1" />
+                      <div>
+                        <h3 className="font-medium text-gray-700">Selected Mechanic</h3>
+                        <div className="flex items-center gap-2">
+                          <p className="text-gray-600 font-medium">
+                            {mechanic?.business_name || `${mechanic?.first_name} ${mechanic?.last_name}`}
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <span className="text-yellow-400">⭐</span>
+                            <span className="text-xs text-gray-500">
+                              {mechanic?.rating || 'N/A'} ({mechanic?.review_count || 0} reviews)
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Price */}
-                {hasQuoteData && (
+                  {/* Price */}
+                  {hasQuoteData && (
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 text-gray-500 mt-1">$</div>
+                      <div>
+                        <h3 className="font-medium text-gray-700">Price</h3>
+                        <p className="text-gray-600 font-bold text-lg">${quote?.price}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ETA */}
+                  {hasQuoteData && (
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-5 w-5 text-gray-500 mt-1" />
+                      <div>
+                        <h3 className="font-medium text-gray-700">Estimated Arrival</h3>
+                        <p className="text-gray-600">{formatDate(quote?.eta || '')}</p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-start gap-3">
-                    <div className="h-5 w-5 text-gray-500 mt-1">$</div>
+                    <MapPin className="h-5 w-5 text-gray-500 mt-1" />
                     <div>
-                      <h3 className="font-medium text-gray-700">Price</h3>
-                      <p className="text-gray-600 font-bold text-lg">${quote?.price}</p>
+                      <h3 className="font-medium text-gray-700">Location</h3>
+                      <p className="text-gray-600">{appointmentData.location}</p>
                     </div>
                   </div>
-                )}
 
-                {/* ETA */}
-                {hasQuoteData && (
                   <div className="flex items-start gap-3">
                     <Clock className="h-5 w-5 text-gray-500 mt-1" />
                     <div>
-                      <h3 className="font-medium text-gray-700">Estimated Arrival</h3>
-                      <p className="text-gray-600">{formatDate(quote?.eta || '')}</p>
+                      <h3 className="font-medium text-gray-700">Appointment Date</h3>
+                      <p className="text-gray-600">{formatDate(appointmentData.appointment_date)}</p>
                     </div>
                   </div>
-                )}
 
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-gray-500 mt-1" />
-                  <div>
-                    <h3 className="font-medium text-gray-700">Location</h3>
-                    <p className="text-gray-600">{appointmentData.location}</p>
+                  <div className="flex items-start gap-3">
+                    <div className="h-5 w-5 text-gray-500 mt-1">🚗</div>
+                    <div>
+                      <h3 className="font-medium text-gray-700">Vehicle</h3>
+                      <p className="text-gray-600">
+                        {appointmentData.vehicles
+                          ? `${appointmentData.vehicles.year} ${appointmentData.vehicles.make} ${appointmentData.vehicles.model}`
+                          : "No vehicle information"}
+                      </p>
+                    </div>
                   </div>
+
+                  {appointmentData.phone_number && (
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 text-gray-500 mt-1">📞</div>
+                      <div>
+                        <h3 className="font-medium text-gray-700">Phone Number</h3>
+                        <p className="text-gray-600">{appointmentData.phone_number}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {appointmentData.issue_description && (
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 text-gray-500 mt-1">!</div>
+                      <div>
+                        <h3 className="font-medium text-gray-700">Issue Description</h3>
+                        <p className="text-gray-600">{appointmentData.issue_description}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mechanic Notes */}
+                  {hasQuoteData && quote?.notes && (
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 text-gray-500 mt-1">📝</div>
+                      <div>
+                        <h3 className="font-medium text-gray-700">Mechanic Notes</h3>
+                        <p className="text-gray-600">{quote.notes}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <Clock className="h-5 w-5 text-gray-500 mt-1" />
-                  <div>
-                    <h3 className="font-medium text-gray-700">Appointment Date</h3>
-                    <p className="text-gray-600">{formatDate(appointmentData.appointment_date)}</p>
-                  </div>
+                <div className="mt-8 text-center">
+                  <button
+                    type="button"
+                    onClick={() => router.push("/")}
+                    className="bg-[#294a46] text-white px-8 py-3 rounded-full hover:bg-[#1e3632] transition-colors"
+                  >
+                    Return Home
+                  </button>
                 </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="h-5 w-5 text-gray-500 mt-1">🚗</div>
-                  <div>
-                    <h3 className="font-medium text-gray-700">Vehicle</h3>
-                    <p className="text-gray-600">
-                      {appointmentData.vehicles
-                        ? `${appointmentData.vehicles.year} ${appointmentData.vehicles.make} ${appointmentData.vehicles.model}`
-                        : "No vehicle information"}
-                    </p>
-                  </div>
-                </div>
-
-                {appointmentData.phone_number && (
-                  <div className="flex items-start gap-3">
-                    <div className="h-5 w-5 text-gray-500 mt-1">📞</div>
-                    <div>
-                      <h3 className="font-medium text-gray-700">Phone Number</h3>
-                      <p className="text-gray-600">{appointmentData.phone_number}</p>
-                    </div>
-                  </div>
-                )}
-
-                {appointmentData.issue_description && (
-                  <div className="flex items-start gap-3">
-                    <div className="h-5 w-5 text-gray-500 mt-1">!</div>
-                    <div>
-                      <h3 className="font-medium text-gray-700">Issue Description</h3>
-                      <p className="text-gray-600">{appointmentData.issue_description}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Mechanic Notes */}
-                {hasQuoteData && quote?.notes && (
-                  <div className="flex items-start gap-3">
-                    <div className="h-5 w-5 text-gray-500 mt-1">📝</div>
-                    <div>
-                      <h3 className="font-medium text-gray-700">Mechanic Notes</h3>
-                      <p className="text-gray-600">{quote.notes}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-8 text-center">
-                <button
-                  type="button"
-                  onClick={() => router.push("/")}
-                  className="bg-[#294a46] text-white px-8 py-3 rounded-full hover:bg-[#1e3632] transition-colors"
-                >
-                  Return Home
-                </button>
               </div>
             </div>
 
