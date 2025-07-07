@@ -9,7 +9,119 @@ import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
-import { FeedbackWidget } from "./feedback-widget"
+
+// Feedback Button Component
+function FeedbackButton() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<'issue' | 'idea' | null>(null);
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!message.trim() || !feedbackType) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('feedback')
+        .insert({
+          type: feedbackType,
+          message: message.trim(),
+          url: window.location.href,
+          user_id: user?.id || null
+        });
+
+      if (error) throw error;
+      
+      // Success - close modal
+      setIsOpen(false);
+      setFeedbackType(null);
+      setMessage('');
+      alert('Thank you for your feedback!');
+      
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to submit feedback. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+      >
+        Feedback
+      </button>
+      
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">What would you like to share?</h3>
+              <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600">
+                ✕
+              </button>
+            </div>
+            
+            {!feedbackType ? (
+              <div className="p-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => setFeedbackType('issue')}
+                    className="p-6 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 transition-all"
+                  >
+                    <div className="text-3xl mb-2">⚠️</div>
+                    <span className="block text-sm font-medium">Issue</span>
+                  </button>
+                  <button
+                    onClick={() => setFeedbackType('idea')}
+                    className="p-6 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all"
+                  >
+                    <div className="text-3xl mb-2">💡</div>
+                    <span className="block text-sm font-medium">Idea</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-6">
+                <button onClick={() => setFeedbackType(null)} className="text-sm text-gray-500 hover:text-gray-700 mb-4">
+                  ← Back
+                </button>
+                <h4 className="text-lg font-medium mb-2">
+                  {feedbackType === 'issue' ? 'Report an issue' : 'Share your idea'}
+                </h4>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder={feedbackType === 'issue' ? "Describe the issue..." : "Tell us about your idea..."}
+                  className="w-full h-32 p-3 border border-gray-300 rounded-md mb-4"
+                />
+                <div className="flex justify-end gap-3">
+                  <button onClick={() => setIsOpen(false)} className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={!message.trim() || isSubmitting}
+                    className="px-4 py-2 text-sm text-white bg-teal-600 hover:bg-teal-700 rounded-md disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 export function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -118,7 +230,7 @@ export function SiteHeader() {
           >
             Help
           </Link>
-          <FeedbackWidget />
+          <FeedbackButton />
         </div>
 
         {/* Mobile Menu Button */}
@@ -191,7 +303,7 @@ export function SiteHeader() {
                 
                 {/* Feedback widget for mobile */}
                 <div className="flex justify-end">
-                  <FeedbackWidget />
+                  <FeedbackButton />
                 </div>
               </nav>
             </div>
