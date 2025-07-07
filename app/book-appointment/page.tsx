@@ -661,6 +661,9 @@ function BookAppointmentContent() {
     setIsSubmitting(true)
     setValidationError(null)
     try {
+      // Check if we're in edit mode
+      const isEditMode = searchParams.get('edit') === 'true'
+      
       // Always-Create-User System: Handle phone number merging
       const currentUserId = appointmentData?.user_id
       
@@ -705,6 +708,8 @@ function BookAppointmentContent() {
           // Clear any previous selections to ensure fresh start
           selected_quote_id: null,
           mechanic_id: null,
+          // Handle editing protection
+          is_being_edited: false, // Re-enable quoting
           updated_at: now
         })
         .eq('id', appointmentId)
@@ -715,12 +720,46 @@ function BookAppointmentContent() {
         throw new Error("Failed to create appointment")
       }
 
+      // If in edit mode, clear all existing quotes and notify mechanics
+      if (isEditMode) {
+        console.log('🔄 Edit mode detected - clearing existing quotes and notifying mechanics')
+        
+        // Delete all existing quotes for this appointment (prices are now invalid)
+        const { error: quotesError } = await supabase
+          .from('mechanic_quotes')
+          .delete()
+          .eq('appointment_id', appointmentId)
+        
+        if (quotesError) {
+          console.error('⚠️ Warning: Could not clear existing quotes:', quotesError)
+          // Don't throw error for this - it's not critical
+        } else {
+          console.log('✅ All existing quotes cleared')
+        }
+        
+        // Notify mechanics via real-time
+        const { error: notificationError } = await supabase
+          .from('appointment_updates')
+          .insert({
+            appointment_id: appointmentId,
+            update_type: 'details_changed',
+            message: 'Customer updated appointment details. Previous quotes have been cleared.'
+          })
+        
+        if (notificationError) {
+          console.error('⚠️ Warning: Could not send notification to mechanics:', notificationError)
+          // Don't throw error for this - it's not critical
+        } else {
+          console.log('✅ Mechanics notified of appointment update')
+        }
+      }
+
       // Real-time updates will be handled by existing subscriptions
       console.log('✅ Appointment created successfully - real-time updates handled by existing subscription')
 
       toast({
         title: "Success!",
-        description: "Your appointment has been saved.",
+        description: isEditMode ? "Your appointment has been updated and mechanics have been notified." : "Your appointment has been saved.",
       })
       // Clear sessionStorage since we're moving to the next step
       sessionStorage.removeItem('axle-book-appointment-form-data')

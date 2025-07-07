@@ -57,6 +57,9 @@ export interface Appointment {
     price: number
     created_at: string
   }
+  // Editing protection fields
+  is_being_edited?: boolean
+  last_edited_at?: string
 }
 
 // Mechanic Profile interface
@@ -144,4 +147,7 @@ export interface AppointmentWithRelations {
     price: number
     created_at: string
   }
+  // Editing protection fields
+  is_being_edited?: boolean
+  last_edited_at?: string
 }

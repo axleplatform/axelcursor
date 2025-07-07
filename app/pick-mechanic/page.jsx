@@ -380,8 +380,44 @@ function PickMechanicContent() {
  }
 
  // Handle back button - comprehensive workflow management
- const handleBack = () => {
-  setShowCancelModal(true)
+ const handleBack = async () => {
+  try {
+   console.log('🔄 === APPOINTMENT EDIT MODE ACTIVATION ===')
+   console.log('🔄 Marking appointment as being edited for appointment:', appointmentId)
+
+   // Mark appointment as being edited
+   const { error: editError } = await supabase
+    .from('appointments')
+    .update({ 
+      is_being_edited: true,
+      last_edited_at: new Date().toISOString(),
+      selected_quote_id: null // Clear any selected quote
+    })
+    .eq('id', appointmentId)
+
+   if (editError) {
+    console.error('❌ Failed to mark appointment as being edited:', editError)
+    toast({
+     title: "Error",
+     description: "Failed to enter edit mode. Please try again.",
+     variant: "destructive",
+    })
+    return
+   }
+
+   console.log('✅ Appointment marked as being edited')
+
+   // Navigate back to book-appointment with edit mode
+   router.push(`/book-appointment?appointment_id=${appointmentId}&edit=true`)
+   
+  } catch (error) {
+   console.error('❌ Error entering edit mode:', error)
+   toast({
+    title: "Error",
+    description: "Failed to enter edit mode. Please try again.",
+    variant: "destructive",
+   })
+  }
  }
 
  const handleCancelAppointment = async () => {
