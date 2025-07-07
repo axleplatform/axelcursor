@@ -16,6 +16,8 @@ interface AppointmentData {
   id: string
   user_id: string
   location: string
+  latitude?: number
+  longitude?: number
   appointment_date: string
   status: string
   source: string
