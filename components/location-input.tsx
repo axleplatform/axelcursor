@@ -145,7 +145,7 @@ export default function LocationInput({
             center={coordinates || { lat: 37.7749, lng: -122.4194 }}
             onLocationSelect={handleMapLocationSelect}
             height={mapHeight}
-            address={value}
+            location={value}
             isLoading={isLoading}
           />
         </div>
