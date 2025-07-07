@@ -8,9 +8,6 @@ const nextConfig = {
     // Enable TypeScript checking during builds - do not ignore errors
     ignoreBuildErrors: false,
   },
-  env: {
-    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-  },
   images: {
     // Enable image optimization - do not ignore optimization
     unoptimized: false,

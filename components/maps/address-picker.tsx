@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { MapPin, Loader2 } from 'lucide-react';
 import GoogleMapsMap from '../google-maps-map';
+import { useJsApiLoader } from '@react-google-maps/api';
 
 interface AddressPickerProps { 
   onLocationSelect: (location: { 
@@ -17,6 +18,22 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
   const [center, setCenter] = useState({ lat: 40.7128, lng: -74.0060 }); // NYC default
   const [markerPosition, setMarkerPosition] = useState(center);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+
+  useEffect(() => {
+    fetch('/api/maps-config')
+      .then(res => res.json())
+      .then(data => setApiKey(data.apiKey || ''));
+  }, []);
+
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: apiKey,
+    libraries: ['places']
+  });
+
+  if (!apiKey) {
+    return <div className="h-[400px] bg-gray-100 animate-pulse flex items-center justify-center">Loading...</div>;
+  }
 
   // Memoize the place selection handler to prevent infinite loops
   const handlePlaceSelection = useCallback((place: any) => {
