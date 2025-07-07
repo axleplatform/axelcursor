@@ -270,7 +270,7 @@ export function SiteHeader() {
 
   return (
     <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="container mx-auto px-4 h-16 flex items-center relative">
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between md:relative">
         {/* Logo */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center">
