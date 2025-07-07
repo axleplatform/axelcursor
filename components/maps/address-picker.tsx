@@ -16,11 +16,40 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
   const [showMap, setShowMap] = useState(false);
   const [center, setCenter] = useState({ lat: 40.7128, lng: -74.0060 });
   const [markerPosition, setMarkerPosition] = useState(center);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Memoize the place selection handler to prevent infinite loops
+  const handlePlaceSelection = useCallback((place: google.maps.places.PlaceResult) => {
+    if (place.geometry && place.geometry.location) {
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      const address = place.formatted_address || '';
+
+      // Validate coordinates before proceeding
+      if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+        setIsUpdating(true);
+        setAddress(address);
+        setCenter({ lat, lng });
+        setMarkerPosition({ lat, lng });
+
+        onLocationSelect({
+          address,
+          coordinates: { lat, lng },
+          placeId: place.place_id
+        });
+        setIsUpdating(false);
+      } else {
+        console.error('Invalid coordinates received from place:', { lat, lng });
+      }
+    } else {
+      console.warn('Place selected but no geometry available:', place);
+    }
+  }, [onLocationSelect]);
 
   // Initialize Google Maps Autocomplete
   useEffect(() => {
     const initializeAutocomplete = async () => {
-      if (!inputRef.current) return;
+      if (!inputRef.current || isUpdating) return;
 
       try {
         setIsLoading(true);
@@ -39,29 +68,7 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
         // Handle place selection
         autocomplete.addListener('place_changed', () => {
           const place = autocomplete.getPlace();
-          
-          if (place.geometry && place.geometry.location) {
-            const lat = place.geometry.location.lat();
-            const lng = place.geometry.location.lng();
-            const address = place.formatted_address || '';
-
-            // Validate coordinates before proceeding
-            if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
-              setAddress(address);
-              setCenter({ lat, lng });
-              setMarkerPosition({ lat, lng });
-
-              onLocationSelect({
-                address,
-                coordinates: { lat, lng },
-                placeId: place.place_id
-              });
-            } else {
-              console.error('Invalid coordinates received from place:', { lat, lng });
-            }
-          } else {
-            console.warn('Place selected but no geometry available:', place);
-          }
+          handlePlaceSelection(place);
         });
 
       } catch (error) {
@@ -72,10 +79,12 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
     };
 
     initializeAutocomplete();
-  }, [onLocationSelect]);
+  }, [handlePlaceSelection, isUpdating]); // Remove onLocationSelect from dependencies
 
-  // Get user's current location on mount
+  // Get user's current location on mount with guard
   useEffect(() => {
+    if (isUpdating) return; // Prevent multiple rapid updates
+    
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -94,9 +103,9 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
         }
       );
     }
-  }, []);
+  }, [isUpdating]);
 
-  const reverseGeocode = async (location: { lat: number; lng: number }) => {
+  const reverseGeocode = useCallback(async (location: { lat: number; lng: number }) => {
     try {
       // Validate coordinates before reverse geocoding
       if (typeof location.lat !== 'number' || typeof location.lng !== 'number' || 
@@ -123,12 +132,13 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
     } catch (error) {
       console.error('Error reverse geocoding:', error);
     }
-  };
+  }, [onLocationSelect]);
 
-  // Handle manual input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle manual input changes - ONLY update local state, don't trigger callbacks
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setAddress(e.target.value);
-  };
+    // Don't call onLocationSelect here - only on actual place selection
+  }, []);
 
   return (
     <div className="mb-3">

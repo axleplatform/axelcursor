@@ -696,8 +696,8 @@ function HomePageContent(): React.JSX.Element {
     }))
   }, [])
 
-  // Add handleLocationSelect function
-  const handleLocationSelect = (location: {
+  // Add handleLocationSelect function with useCallback to prevent infinite loops
+  const handleLocationSelect = useCallback((location: {
     address: string;
     coordinates: { lat: number; lng: number };
     placeId?: string;
@@ -721,7 +721,7 @@ function HomePageContent(): React.JSX.Element {
       longitude: location.coordinates.lng,
       place_id: location.placeId || '',
     }));
-  };
+  }, []); // Empty deps array to prevent re-creation
 
   // Show loading state while restoring data
   if (isLoadingExistingData) {

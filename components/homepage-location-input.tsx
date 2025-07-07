@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { MapPin, Loader2 } from 'lucide-react'
 import SimpleMap from './simple-map'
 
@@ -24,11 +24,41 @@ export default function HomepageLocationInput({
   const inputRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  // Memoize the place selection handler to prevent infinite loops
+  const handlePlaceSelection = useCallback((place: google.maps.places.PlaceResult) => {
+    if (place.geometry && place.geometry.location) {
+      const lat = place.geometry.location.lat()
+      const lng = place.geometry.location.lng()
+      const address = place.formatted_address || value
+
+      // Validate coordinates before proceeding
+      if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+        setIsUpdating(true)
+        setCoordinates({ lat, lng })
+        onChange(address)
+
+        if (onLocationSelect) {
+          onLocationSelect({ 
+            address, 
+            coordinates: { lat, lng }, 
+            placeId: place.place_id 
+          })
+        }
+        setIsUpdating(false)
+      } else {
+        console.error('Invalid coordinates received from place:', { lat, lng })
+      }
+    } else {
+      console.warn('Place selected but no geometry available:', place)
+    }
+  }, [onChange, onLocationSelect, value])
 
   // Initialize Google Maps Autocomplete
   useEffect(() => {
     const initializeAutocomplete = async () => {
-      if (!inputRef.current) return
+      if (!inputRef.current || isUpdating) return
 
       try {
         setIsLoading(true)
@@ -47,30 +77,7 @@ export default function HomepageLocationInput({
         // Handle place selection
         autocomplete.addListener('place_changed', () => {
           const place = autocomplete.getPlace()
-          
-          if (place.geometry && place.geometry.location) {
-            const lat = place.geometry.location.lat()
-            const lng = place.geometry.location.lng()
-            const address = place.formatted_address || value
-
-            // Validate coordinates before proceeding
-            if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
-              setCoordinates({ lat, lng })
-              onChange(address)
-
-              if (onLocationSelect) {
-                onLocationSelect({ 
-                  address, 
-                  coordinates: { lat, lng }, 
-                  placeId: place.place_id 
-                })
-              }
-            } else {
-              console.error('Invalid coordinates received from place:', { lat, lng })
-            }
-          } else {
-            console.warn('Place selected but no geometry available:', place)
-          }
+          handlePlaceSelection(place)
         })
 
       } catch (error) {
@@ -81,17 +88,17 @@ export default function HomepageLocationInput({
     }
 
     initializeAutocomplete()
-  }, [onChange, onLocationSelect, value])
+  }, [handlePlaceSelection, isUpdating]) // Remove onChange and value from dependencies
 
-  // Handle manual input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle manual input changes - ONLY update local state, don't trigger callbacks
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value)
     // Clear coordinates when user manually types
     setCoordinates(null)
-  }
+  }, [onChange])
 
   // Handle map location selection
-  const handleMapLocationSelect = (location: { lat: number; lng: number; address: string }) => {
+  const handleMapLocationSelect = useCallback((location: { lat: number; lng: number; address: string }) => {
     // Validate coordinates before proceeding
     if (typeof location.lat !== 'number' || typeof location.lng !== 'number' || 
         isNaN(location.lat) || isNaN(location.lng)) {
@@ -99,6 +106,7 @@ export default function HomepageLocationInput({
       return;
     }
 
+    setIsUpdating(true)
     setCoordinates({ lat: location.lat, lng: location.lng })
     onChange(location.address)
     
@@ -109,7 +117,8 @@ export default function HomepageLocationInput({
         placeId: undefined
       })
     }
-  }
+    setIsUpdating(false)
+  }, [onChange, onLocationSelect])
 
   return (
     <div className="mb-3">
