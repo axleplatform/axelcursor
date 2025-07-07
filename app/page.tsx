@@ -752,8 +752,8 @@ function HomePageContent(): React.JSX.Element {
 
             {/* Car Selector */}
             <div className="mb-4 w-full">
-              {/* First row: Year, Make, Model */}
-              <div className="flex gap-2 mb-2">
+              {/* Desktop layout: All fields in one row */}
+              <div className="hidden sm:flex gap-2">
                 <div className="relative w-[8ch]">
                   <select
                     name="year"
@@ -797,7 +797,7 @@ function HomePageContent(): React.JSX.Element {
                   {errors.year && <p className="text-red-500 text-xs absolute -bottom-5">{errors.year}</p>}
                 </div>
 
-                <div className="relative flex-1">
+                <div className="relative w-[20%]">
                   <select
                     name="make"
                     value={formData.make}
@@ -829,7 +829,7 @@ function HomePageContent(): React.JSX.Element {
                   {errors.make && <p className="text-red-500 text-xs absolute -bottom-5">{errors.make}</p>}
                 </div>
 
-                <div className="relative flex-1">
+                <div className="relative w-[20%]">
                   <input
                     ref={modelRef}
                     type="text"
@@ -846,11 +846,8 @@ function HomePageContent(): React.JSX.Element {
                   />
                   {errors.model && <p className="text-red-500 text-xs absolute -bottom-5">{errors.model}</p>}
                 </div>
-              </div>
 
-              {/* Second row: VIN and Mileage */}
-              <div className="flex gap-2">
-                <div className="relative flex-1">
+                <div className="relative w-[30%]">
                   <input
                     ref={vinRef}
                     type="text"
@@ -863,7 +860,7 @@ function HomePageContent(): React.JSX.Element {
                   />
                 </div>
 
-                <div className="relative w-[120px]">
+                <div className="relative w-[15%]">
                   <input
                     ref={mileageRef}
                     type="number"
@@ -874,6 +871,134 @@ function HomePageContent(): React.JSX.Element {
                     placeholder="Mileage"
                     className="w-full h-[46px] px-2 text-sm border border-gray-200 rounded-md bg-gray-50"
                   />
+                </div>
+              </div>
+
+              {/* Mobile layout: Two rows */}
+              <div className="sm:hidden">
+                {/* First row: Year, Make, Model */}
+                <div className="flex gap-2 mb-2">
+                  <div className="relative w-[8ch]">
+                    <select
+                      name="year"
+                      value={formData.year}
+                      onChange={handleChange}
+                      className={`w-full h-[46px] px-2 pr-6 text-sm border rounded-md bg-gray-50 appearance-none transition-all duration-300 ${
+                        errors.year 
+                          ? "border-red-500" 
+                          : "border-gray-200"
+                      }`}
+                    >
+                      <option value="">Year</option>
+                      {(() => {
+                        const currentYear = new Date().getFullYear()
+                        const currentMonth = new Date().getMonth() // 0-11, where 8 = September
+                        const maxYear = currentMonth >= 8 ? currentYear + 2 : currentYear + 1 // Add extra year if September or later
+                        const years = []
+                        
+                        for (let year = maxYear; year >= currentYear - 29; year--) {
+                          years.push(year)
+                        }
+                        
+                        return years.map((year) => (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        ))
+                      })()}
+                    </select>
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 h-3 w-3 pointer-events-none text-gray-500">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-3 w-3"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                    {errors.year && <p className="text-red-500 text-xs absolute -bottom-5">{errors.year}</p>}
+                  </div>
+
+                  <div className="relative flex-1">
+                    <select
+                      name="make"
+                      value={formData.make}
+                      onChange={handleChange}
+                      className={`w-full h-[46px] px-2 pr-6 text-sm border rounded-md bg-gray-50 appearance-none transition-all duration-300 ${
+                        errors.make 
+                          ? "border-red-500" 
+                          : "border-gray-200"
+                      }`}
+                    >
+                      <option value="">Make</option>
+                      {makes.map((make) => (
+                        <option key={make} value={make}>
+                          {make}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 h-3 w-3 pointer-events-none text-gray-500">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-3 w-3"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                    {errors.make && <p className="text-red-500 text-xs absolute -bottom-5">{errors.make}</p>}
+                  </div>
+
+                  <div className="relative flex-1">
+                    <input
+                      ref={modelRef}
+                      type="text"
+                      name="model"
+                      value={formData.model}
+                      onChange={handleChange}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Model"
+                      className={`w-full h-[46px] px-2 text-sm border rounded-md bg-gray-50 transition-all duration-300 ${
+                        errors.model 
+                          ? "border-red-500" 
+                          : "border-gray-200"
+                      }`}
+                    />
+                    {errors.model && <p className="text-red-500 text-xs absolute -bottom-5">{errors.model}</p>}
+                  </div>
+                </div>
+
+                {/* Second row: VIN and Mileage */}
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      ref={vinRef}
+                      type="text"
+                      name="vin"
+                      value={formData.vin}
+                      onChange={handleChange}
+                      onKeyDown={handleKeyDown}
+                      placeholder="VIN (optional)"
+                      className="w-full h-[46px] px-2 text-sm border border-gray-200 rounded-md bg-gray-50"
+                    />
+                  </div>
+
+                  <div className="relative w-[120px]">
+                    <input
+                      ref={mileageRef}
+                      type="number"
+                      name="mileage"
+                      value={formData.mileage}
+                      onChange={handleChange}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Mileage"
+                      className="w-full h-[46px] px-2 text-sm border border-gray-200 rounded-md bg-gray-50"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
