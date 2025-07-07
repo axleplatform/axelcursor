@@ -1,9 +1,10 @@
-import { createBrowserClient, SupabaseClient } from '@supabase/ssr'
+import { createBrowserClient } from '@supabase/ssr'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Create singleton instance
 let supabaseInstance: SupabaseClient | null = null;
 
-export function createSupabaseClient() {
+export function createClient() {
   if (supabaseInstance) return supabaseInstance;
   
   supabaseInstance = createBrowserClient(
@@ -15,7 +16,7 @@ export function createSupabaseClient() {
 }
 
 // Export the singleton instance
-export const supabase = createSupabaseClient();
+export const supabase = createClient();
 
 // Export a function to get a fresh client instance (if needed)
-export const getSupabaseClient = () => createSupabaseClient();
+export const getSupabaseClient = () => createClient();
