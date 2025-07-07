@@ -318,20 +318,25 @@ export async function createOrUpdateQuote(
  */
 export async function getQuotesForAppointment(appointmentId: string): Promise<any[]> {
   try {
-    console.log('🔍 Getting quotes for appointment:', appointmentId);
-    console.log('🔍 Appointment ID type:', typeof appointmentId);
-    console.log('🔍 Appointment ID length:', appointmentId?.length);
-    console.log('🔍 Appointment ID trimmed:', `"${appointmentId?.trim()}"`);
-    
-    // Temporary debug: check if ANY quotes exist for this appointment
-    const { data: allQuotes } = await supabase
-      .from("mechanic_quotes")
-      .select("appointment_id, mechanic_id, created_at")
-      .eq("appointment_id", appointmentId);
+    // First, check if the appointment was edited after quotes
+    const { data: appointment, error: appointmentError } = await supabase
+      .from('appointments')
+      .select('edited_after_quotes')
+      .eq('id', appointmentId)
+      .single();
 
-    console.log('🔍 Direct quote check:', allQuotes);
-    console.log('🔍 Direct quote count:', allQuotes?.length || 0);
-    
+    if (appointmentError) {
+      console.error('❌ Error fetching appointment for quote check:', appointmentError);
+      return [];
+    }
+
+    if (appointment?.edited_after_quotes) {
+      // If the appointment was edited after quotes, do not return any quotes
+      console.log('🔄 Appointment was edited after quotes. Returning no quotes.');
+      return [];
+    }
+
+    // Otherwise, fetch quotes as normal
     const { data: quotes, error } = await supabase
       .from("mechanic_quotes")
       .select(`
@@ -351,18 +356,10 @@ export async function getQuotesForAppointment(appointmentId: string): Promise<an
       .eq("appointment_id", appointmentId)
       .order("created_at", { ascending: true });
 
-    console.log('🔍 Supabase query result:', { quotes, error });
-    console.log('🔍 Raw SQL would be:', `SELECT * FROM mechanic_quotes WHERE appointment_id = '${appointmentId}'`);
-    
     if (error) {
       console.error('❌ Query error:', error);
       return [];
     }
-
-    console.log("🔍 Retrieved quotes:", {
-      count: quotes?.length || 0,
-      quotes: quotes
-    });
 
     return quotes || [];
   } catch (err: unknown) {
