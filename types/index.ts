@@ -34,6 +34,8 @@ export interface Appointment {
   status: string
   appointment_date: string
   location: string
+  latitude?: number
+  longitude?: number
   issue_description?: string
   selected_car_issues?: string[]
   car_runs?: boolean
@@ -123,6 +125,8 @@ export interface AppointmentWithRelations {
   status: string
   appointment_date: string
   location: string
+  latitude?: number
+  longitude?: number
   phone_number?: string
   issue_description?: string
   selected_car_issues?: string[]
