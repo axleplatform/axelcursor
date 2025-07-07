@@ -20,6 +20,7 @@ import { formatDate, validateMechanicId, formatCarIssue } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { ProfileDropdown } from "@/components/profile-dropdown"
+import { useIsMobile } from "@/hooks/use-mobile"
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ import type {
 export default function MechanicDashboard() {
   const { toast } = useToast()
   const router = useRouter()
+  const isMobile = useIsMobile()
   const [mechanicId, setMechanicId] = useState<string | null>(null)
   const [mechanicProfile, setMechanicProfile] = useState<MechanicProfile | null>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
@@ -1359,6 +1361,18 @@ export default function MechanicDashboard() {
     const availableIndex = availableAppointments.findIndex(apt => apt.id === appointment.id)
     if (availableIndex !== -1) {
       setCurrentAvailableIndex(availableIndex)
+      
+      // For mobile, scroll to available appointments section
+      if (isMobile) {
+        const availableSection = document.querySelector('[data-section="available-appointments"]')
+        if (availableSection) {
+          availableSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          toast({
+            title: "Appointment Found",
+            description: "Scrolled to available appointments section",
+          });
+        }
+      }
       return
     }
     
@@ -1368,10 +1382,30 @@ export default function MechanicDashboard() {
       // Set the clicked appointment as the active one in upcoming appointments
       setCurrentUpcomingIndex(filteredUpcomingIndex)
       
-      // Scroll to upcoming appointments section for better UX
+      // Enhanced scrolling for mobile devices
       const upcomingSection = document.querySelector('[data-section="upcoming-appointments"]')
       if (upcomingSection) {
-        upcomingSection.scrollIntoView({ behavior: 'smooth' })
+        if (isMobile) {
+          // For mobile, scroll with better positioning and add visual feedback
+          upcomingSection.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          })
+          
+          // Add a brief highlight effect to the section
+          upcomingSection.classList.add('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
+          setTimeout(() => {
+            upcomingSection.classList.remove('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
+          }, 2000)
+          
+          toast({
+            title: "Appointment Found",
+            description: "Scrolled to upcoming appointments section",
+          });
+        } else {
+          // Desktop behavior - smooth scroll
+          upcomingSection.scrollIntoView({ behavior: 'smooth' })
+        }
       }
       return
     }
@@ -1388,6 +1422,21 @@ export default function MechanicDashboard() {
         const newFilteredIndex = filteredUpcomingAppointments.findIndex(apt => apt.id === appointment.id);
         if (newFilteredIndex !== -1) {
           setCurrentUpcomingIndex(newFilteredIndex);
+          
+          // Scroll to the section after restoration
+          const upcomingSection = document.querySelector('[data-section="upcoming-appointments"]')
+          if (upcomingSection && isMobile) {
+            upcomingSection.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start' 
+            })
+            
+            // Add visual feedback
+            upcomingSection.classList.add('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
+            setTimeout(() => {
+              upcomingSection.classList.remove('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
+            }, 2000)
+          }
         }
       }, 100);
       
@@ -2314,7 +2363,7 @@ export default function MechanicDashboard() {
           />
 
           {/* Column 3: Available Appointments */}
-          <div className="bg-[#294a46] rounded-lg shadow-sm p-6 text-white">
+          <div className="bg-[#294a46] rounded-lg shadow-sm p-6 text-white" data-section="available-appointments">
             <div className="mb-6">
               <h2 className="text-2xl font-bold">
                 Available Appointments
