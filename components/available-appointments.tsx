@@ -160,21 +160,18 @@ export default function AvailableAppointments({
                   <span className="ml-1">{appointments[currentIndex].car_runs ? "Yes" : "No"}</span>
                 </div>
 
-                {appointments[currentIndex].selected_services && appointments[currentIndex].selected_services!.length > 0 ? (
-                  <div className="mb-3">
-                    <div className="font-semibold mb-1">Recommended Services:</div>
+                <div className="mb-3">
+                  <div className="font-semibold mb-1">Recommended Services:</div>
+                  {(appointments[currentIndex].selected_services && appointments[currentIndex].selected_services.length > 0) ? (
                     <ul className="list-disc pl-5 space-y-1">
-                      {appointments[currentIndex].selected_services!.map((service, index) => (
+                      {appointments[currentIndex].selected_services.map((service, index) => (
                         <li key={index}>{service}</li>
                       ))}
                     </ul>
-                  </div>
-                ) : (
-                  <div className="mb-3">
-                    <div className="font-semibold mb-1">Recommended Services:</div>
+                  ) : (
                     <p className="text-sm text-gray-500 italic">No services selected</p>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {appointments[currentIndex].selected_car_issues &&
                   appointments[currentIndex].selected_car_issues!.length > 0 && (
