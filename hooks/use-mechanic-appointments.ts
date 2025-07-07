@@ -23,6 +23,8 @@ export interface Vehicle {
 export interface Appointment {
   id: string
   location: string
+  latitude?: number
+  longitude?: number
   appointment_date: string
   status: AppointmentStatus
   phone_number: string | null
