@@ -1,9 +1,10 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Clock, MapPin, Check, X } from "lucide-react"
 import type { Appointment, MechanicQuote } from "@/types/index"
 import { formatCarIssue } from "@/lib/utils"
+import { GoogleMapsLink } from "@/components/google-maps-link"
 
 interface AppointmentCardProps {
   appointment: Appointment
@@ -145,7 +146,13 @@ export default function AppointmentCard({
       <p className={`mb-1 ${isUpcoming ? 'text-gray-600' : 'text-white/70'}`}>
         {appointment.vehicles?.year} {appointment.vehicles?.make} {appointment.vehicles?.model}
       </p>
-      <p className={`mb-4 ${isUpcoming ? 'text-gray-600' : 'text-white/70'}`}>{appointment.location}</p>
+      <div className={`mb-4 ${isUpcoming ? 'text-gray-600' : 'text-white/70'}`}>
+        <GoogleMapsLink 
+          address={appointment.location}
+          latitude={appointment.latitude}
+          longitude={appointment.longitude}
+        />
+      </div>
 
       {/* Car Issues and Description */}
       <div className={`p-4 rounded-md mb-4 ${isUpcoming ? 'bg-gray-50' : 'bg-white/10'}`}>

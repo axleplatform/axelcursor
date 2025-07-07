@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Check, MapPin, X } from "lucide-react"
 import type { Appointment } from "@/hooks/use-appointments"
 import { formatDate, formatCarIssue } from "@/lib/utils"
+import { GoogleMapsLink } from "@/components/google-maps-link"
 
 interface UpcomingAppointmentCardProps {
   appointment: Appointment
@@ -95,8 +96,11 @@ export default function UpcomingAppointmentCard({
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
-          <MapPin className="h-5 w-5 text-gray-500" />
-          <span className="text-gray-700">{appointment.location}</span>
+          <GoogleMapsLink 
+            address={appointment.location}
+            latitude={appointment.latitude}
+            longitude={appointment.longitude}
+          />
         </div>
         <span className={`px-2 py-1 rounded-full text-sm font-medium ${getStatusColor(appointment.status)}`}>
           {getStatusText(appointment.status)}

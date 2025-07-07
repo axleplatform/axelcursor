@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
 import { getQuotesForAppointment } from "@/lib/mechanic-quotes"
 import { formatCarIssue } from "@/lib/utils"
+import { GoogleMapsLink } from "@/components/google-maps-link"
 
 function PickMechanicContent() {
  const router = useRouter()
@@ -697,8 +698,11 @@ function PickMechanicContent() {
             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Appointment Details</h3>
             <p className="text-xs text-gray-600 mt-1">{formatDate(appointment.appointment_date)}</p>
             <div className="flex items-start mt-1">
-             <MapPin className="h-3 w-3 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
-             <p className="text-xs text-gray-500">{appointment.location}</p>
+             <GoogleMapsLink 
+               address={appointment.location}
+               latitude={appointment.latitude}
+               longitude={appointment.longitude}
+             />
             </div>
            </div>
           </div>

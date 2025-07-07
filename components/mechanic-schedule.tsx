@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { ChevronLeft, ChevronRight, MapPin } from "lucide-react"
 import { AppointmentWithRelations } from "@/types"
+import { GoogleMapsLink } from "@/components/google-maps-link"
 
 interface MechanicScheduleProps {
   upcomingAppointments: AppointmentWithRelations[]
@@ -232,15 +233,11 @@ export default function MechanicSchedule({
                           </div>
                           <div className="flex items-center gap-2">
                             {/* Location Pin */}
-                            <button 
-                              className="p-1 hover:bg-gray-200 rounded-full transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                // Future: Handle location click
-                              }}
-                            >
-                              <MapPin className="h-3 w-3 text-gray-500" />
-                            </button>
+                            <GoogleMapsLink 
+                              address={appointment.location}
+                              latitude={appointment.latitude}
+                              longitude={appointment.longitude}
+                            />
                             {/* Quote */}
                             {myQuote && (
                               <span className={`text-xs font-medium ${status === 'cancelled' ? 'text-red-600' : 'text-gray-700'}`}>

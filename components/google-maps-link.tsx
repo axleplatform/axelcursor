@@ -14,7 +14,7 @@ export function GoogleMapsLink({ address, latitude, longitude }: GoogleMapsLinkP
       href={mapsUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
+      className="text-gray-700 hover:text-gray-900 flex items-center gap-1 cursor-pointer"
     >
       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
         <path d="M10 2C6.69 2 4 4.69 4 8c0 4.5 6 10 6 10s6-5.5 6-10c0-3.31-2.69-6-6-6zm0 8.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>

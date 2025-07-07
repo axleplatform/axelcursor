@@ -4,6 +4,7 @@ import { useState } from "react"
 import { MapPin, X, Check, ChevronLeft, ChevronRight, Clock } from "lucide-react"
 import { formatDate, formatCarIssue } from "@/lib/utils"
 import type { Appointment } from "@/hooks/use-mechanic-appointments"
+import { GoogleMapsLink } from "@/components/google-maps-link"
 
 interface AvailableAppointmentsProps {
   appointments: Appointment[]
@@ -113,10 +114,11 @@ export default function AvailableAppointments({
                   <div className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-xs font-medium text-gray-900">
                     {currentIndex + 1}
                   </div>
-                  <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
-                    <MapPin className="h-4 w-4 text-gray-700" />
-                  </div>
-                  <span className="text-white line-clamp-1">{appointments[currentIndex].location}</span>
+                  <GoogleMapsLink 
+                    address={appointments[currentIndex].location}
+                    latitude={appointments[currentIndex].latitude}
+                    longitude={appointments[currentIndex].longitude}
+                  />
                 </div>
                 <button
                   onClick={() => handleDeny(appointments[currentIndex].id)}

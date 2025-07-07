@@ -8,6 +8,7 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { formatDate } from "@/lib/utils"
 import type { AppointmentWithRelations, MechanicQuote } from "@/types"
+import { GoogleMapsLink } from "@/components/google-maps-link"
 
 export default function MechanicAppointmentsPage() {
   const router = useRouter()
@@ -264,8 +265,11 @@ export default function MechanicAppointmentsPage() {
                         {/* Location and Date */}
                         <div className="flex items-center gap-4 mb-3 text-sm text-gray-600">
                           <div className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            <span>{appointment.location}</span>
+                            <GoogleMapsLink 
+                              address={appointment.location}
+                              latitude={appointment.latitude}
+                              longitude={appointment.longitude}
+                            />
                           </div>
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />

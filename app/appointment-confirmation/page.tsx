@@ -10,6 +10,7 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
 import { formatDate } from "@/lib/utils"
+import { GoogleMapsLink } from "@/components/google-maps-link"
 
 interface AppointmentData {
   id: string
@@ -444,10 +445,13 @@ export default function AppointmentConfirmationPage() {
                   )}
 
                   <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-gray-500 mt-1" />
+                    <GoogleMapsLink 
+                      address={appointmentData.location}
+                      latitude={appointmentData.latitude}
+                      longitude={appointmentData.longitude}
+                    />
                     <div>
                       <h3 className="font-medium text-gray-700">Location</h3>
-                      <p className="text-gray-600">{appointmentData.location}</p>
                     </div>
                   </div>
 
