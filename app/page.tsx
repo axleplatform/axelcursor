@@ -12,6 +12,7 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { DateTimeSelector } from "@/components/date-time-selector"
 import { toast } from "@/components/ui/use-toast"
+import { AddressPicker } from "@/components/maps/address-picker"
 
 // Define types for form data
 interface AppointmentFormData {
@@ -26,6 +27,9 @@ interface AppointmentFormData {
   issueDescription?: string
   selectedServices?: string[]
   carRuns?: boolean
+  latitude?: number
+  longitude?: number
+  place_id?: string
 }
 
 interface SupabaseQueryResult {
@@ -63,6 +67,13 @@ function HomePageContent(): React.JSX.Element {
 
   // Get appointment ID from URL parameters for restoring state
   const appointmentId = searchParams?.get("appointment_id") || null
+
+  // Add selectedLocation state
+  const [selectedLocation, setSelectedLocation] = useState<{
+    address: string;
+    coordinates: { lat: number; lng: number };
+    placeId?: string;
+  } | null>(null)
 
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
@@ -102,7 +113,10 @@ function HomePageContent(): React.JSX.Element {
           appointmentTime: data.appointment_date ? data.appointment_date.split('T')[1]?.substring(0, 5) : "",
           issueDescription: data.issue_description || "",
           selectedServices: data.selected_services || [],
-          carRuns: data.car_runs
+          carRuns: data.car_runs,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          place_id: data.place_id
         }))
 
         toast({
@@ -678,6 +692,22 @@ function HomePageContent(): React.JSX.Element {
     }))
   }, [])
 
+  // Add handleLocationSelect function
+  const handleLocationSelect = (location: {
+    address: string;
+    coordinates: { lat: number; lng: number };
+    placeId?: string;
+  }) => {
+    setSelectedLocation(location);
+    setFormData((prev) => ({
+      ...prev,
+      address: location.address,
+      latitude: location.coordinates.lat,
+      longitude: location.coordinates.lng,
+      place_id: location.placeId,
+    }));
+  };
+
   // Show loading state while restoring data
   if (isLoadingExistingData) {
     return (
@@ -715,40 +745,8 @@ function HomePageContent(): React.JSX.Element {
           </div>
 
           <form onSubmit={handleSubmit}>
-            {/* Location Input */}
-            <div className="mb-3">
-              <h2 className="text-lg font-medium mb-1">Enter your location</h2>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-20">
-                  <MapPin className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="Enter complete address (123 Main St, City, State)"
-                  autoFocus={true}
-                  className={`block w-full p-4 pl-10 pr-16 text-sm text-gray-900 border rounded-lg bg-white relative z-10 transition-all duration-300 ${
-                    errors.address 
-                      ? "border-red-500" 
-                      : "border-gray-300"
-                  }`}
-                />
-              </div>
-              {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
-              <div className="flex items-center justify-between text-xs mt-1">
-                <p className="text-gray-500">Or drag the pin on the map to set your exact location</p>
-              </div>
-            </div>
-
-            {/* Map Placeholder */}
-            <div className="mb-4 h-[220px] bg-gray-100 rounded-lg flex items-center justify-center">
-              <div className="text-gray-500 flex flex-col items-center">
-                <MapPin className="h-10 w-10 mb-2" />
-                <span>Map View</span>
-              </div>
-            </div>
+            {/* Location Input with Google Maps */}
+            <AddressPicker onLocationSelect={handleLocationSelect} />
 
             {/* Car Selector */}
             <div className="mb-4 w-full">
