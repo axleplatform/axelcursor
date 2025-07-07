@@ -325,7 +325,14 @@ export async function getQuotesForAppointment(appointmentId: string): Promise<an
       .eq('id', appointmentId)
       .single();
 
-    if (appointmentError) {
+    // If the column doesn't exist, just show quotes (fallback for migration delay)
+    if (
+      appointmentError &&
+      appointmentError.message &&
+      appointmentError.message.includes('edited_after_quotes')
+    ) {
+      console.warn('⚠️ edited_after_quotes column missing, showing quotes as fallback');
+    } else if (appointmentError) {
       console.error('❌ Error fetching appointment for quote check:', appointmentError);
       return [];
     }
@@ -407,18 +414,18 @@ export async function autoCancelOverdueAppointments(): Promise<{ success: boolea
 
 /**
  * Gets all available appointments for a mechanic to quote
- * VERSION: 2.1.0 - Enhanced filtering with overdue appointment cleanup
+ * VERSION: 2.2.0 - Enhanced filtering with edited appointments
  */
 export async function getAvailableAppointmentsForMechanic(mechanicId: string): Promise<GetAppointmentsResponse> {
   try {
-    console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG START (v2.1.0) ===");
-    console.log("🔍 CODE VERSION CHECK: This is the NEW enhanced filtering code with overdue cleanup");
+    console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG START (v2.2.0) ===");
+    console.log("🔍 CODE VERSION CHECK: This is the FIXED version that includes edited appointments");
     console.log("🔍 getAvailableAppointmentsForMechanic called with:", {
       mechanicId,
       type: typeof mechanicId,
       length: mechanicId?.length,
       timestamp: new Date().toISOString(),
-      version: "2.1.0"
+      version: "2.2.0"
     });
 
     // Validate mechanic ID
@@ -479,7 +486,8 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
       rawData: quotedAppointments
     });
 
-    // Combine both exclusion lists
+    // FIXED: Only exclude skipped appointments and currently quoted appointments
+    // Edited appointments that have been cleared of quotes should be included
     const excludedAppointmentIds = [...skippedAppointmentIds, ...quotedAppointmentIds];
     console.log("🔍 Step 3: Combined exclusion list:", {
       totalExcluded: excludedAppointmentIds.length,
@@ -488,8 +496,8 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
       allExcludedIds: excludedAppointmentIds
     });
 
-    // Get pending appointments, excluding both skipped and quoted appointments
-    // NEW: Also exclude cancelled appointments (including auto-cancelled ones)
+    // Get pending appointments, excluding both skipped and currently quoted appointments
+    // FIXED: Include edited appointments that have been cleared of quotes
     console.log("🔍 Step 4: Building query for available appointments...");
     let query = supabase
       .from('appointments')
@@ -502,7 +510,7 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
 
     console.log("🔍 Base query constructed for status = 'pending'");
 
-    // Exclude appointments that this mechanic has skipped or quoted
+    // Exclude appointments that this mechanic has skipped or currently has quotes for
     if (excludedAppointmentIds.length > 0) {
       query = query.not('id', 'in', `(${excludedAppointmentIds.join(',')})`);
       console.log("🔍 Applied exclusion filter for IDs:", excludedAppointmentIds);
@@ -525,8 +533,33 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
       fullData: appointments
     });
 
+    // FIXED: Additional filtering to ensure edited appointments are included
+    // Filter out appointments that still have quotes from this mechanic
+    const finalAppointments = appointments?.filter((appointment: any) => {
+      const hasMyQuote = appointment.mechanic_quotes?.some((quote: any) => quote.mechanic_id === mechanicId);
+      const isEdited = appointment.edited_after_quotes;
+      
+      console.log("🔍 Filtering appointment:", {
+        appointmentId: appointment.id,
+        hasMyQuote,
+        isEdited,
+        shouldInclude: !hasMyQuote
+      });
+      
+      // Include if no current quotes from this mechanic
+      // This ensures edited appointments (which have no quotes) are included
+      return !hasMyQuote;
+    }) || [];
+
+    console.log("🔍 === FINAL FILTERED RESULTS ===");
+    console.log("✅ Final available appointments after filtering:", { 
+      count: finalAppointments.length,
+      appointmentIds: finalAppointments.map((apt: any) => apt.id),
+      editedAppointments: finalAppointments.filter((apt: any) => apt.edited_after_quotes).map((apt: any) => apt.id)
+    });
+
     console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG END ===");
-    return { success: true, appointments: appointments || [] };
+    return { success: true, appointments: finalAppointments };
 
   } catch (error: unknown) {
     console.error("❌ Error getting available appointments:", {

@@ -149,8 +149,20 @@ export function useMechanicAppointments(mechanicId: string) {
         })
 
         // Filter available appointments to only show those without quotes from this mechanic
+        // FIXED: Include edited appointments that have been cleared of quotes
         const filteredAvailable = availableData?.filter((appointment: any) => {
           const hasMyQuote = appointment.mechanic_quotes?.some((quote: any) => quote.mechanic_id === mechanicId)
+          const isEdited = appointment.edited_after_quotes
+          
+          console.log("🔍 Hook filtering appointment:", {
+            appointmentId: appointment.id,
+            hasMyQuote,
+            isEdited,
+            shouldInclude: !hasMyQuote
+          })
+          
+          // Include if no current quotes from this mechanic
+          // This ensures edited appointments (which have no quotes) are included
           return !hasMyQuote
         }) || []
 

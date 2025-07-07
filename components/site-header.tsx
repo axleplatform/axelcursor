@@ -9,6 +9,7 @@ import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
+import { FeedbackWidget } from "./feedback-widget"
 
 export function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -117,6 +118,7 @@ export function SiteHeader() {
           >
             Help
           </Link>
+          <FeedbackWidget />
         </div>
 
         {/* Mobile Menu Button */}
@@ -185,6 +187,11 @@ export function SiteHeader() {
                   >
                     Help
                   </Link>
+                </div>
+                
+                {/* Feedback widget for mobile */}
+                <div className="flex justify-end">
+                  <FeedbackWidget />
                 </div>
               </nav>
             </div>
