@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Star, Clock, MapPin, X, FileText, CreditCard, User, ChevronLeft, AlertTriangle, RefreshCw } from "lucide-react"
+import { Star, Clock, MapPin, X, FileText, CreditCard, User, ChevronLeft, AlertTriangle } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
@@ -657,23 +657,6 @@ function PickMechanicContent() {
                }`}>
                  {loadingMessages[currentMessageIndex]}
                </p>
-             </div>
-             
-             <p className="text-sm text-gray-500 mt-4">
-               This page refreshes automatically every 8 seconds
-             </p>
-             
-             {/* Manual Refresh Button */}
-             <div className="mt-4">
-               <Button
-                 onClick={fetchAppointmentData}
-                 variant="outline"
-                 size="sm"
-                 className="text-[#294a46] border-[#294a46] hover:bg-[#294a46] hover:text-white"
-               >
-                 <RefreshCw className="h-4 w-4 mr-2" />
-                 Refresh Quotes
-               </Button>
              </div>
            </div>
           </div>
