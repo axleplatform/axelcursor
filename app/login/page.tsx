@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
-import { createBrowserClient } from '@supabase/ssr'
+import { supabase } from "@/lib/supabase"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -31,10 +31,7 @@ export default function LoginPage() {
         throw new Error("Please enter both email and password")
       }
 
-      const { data, error: signInError } = await createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      ).auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password,
       })
@@ -51,10 +48,8 @@ export default function LoginPage() {
       console.log("✅ Login successful, user:", data.user.id)
       
       // Check if this is a mechanic
-      const { data: profile } = await createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      ).from('mechanic_profiles')
+      const { data: profile } = await supabase
+        .from('mechanic_profiles')
         .select('id')
         .eq('user_id', data.user.id)
         .single()
@@ -81,10 +76,7 @@ export default function LoginPage() {
 
     setIsResendingEmail(true)
     try {
-      const { error } = await createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      ).auth.resend({
+      const { error } = await supabase.auth.resend({
         type: 'signup',
         email: email.trim(),
       })

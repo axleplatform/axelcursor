@@ -11,7 +11,6 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
-import { createBrowserClient } from "@supabase/ssr"
 import { getQuotesForAppointment } from "@/lib/mechanic-quotes"
 
 function PickMechanicContent() {
@@ -33,10 +32,6 @@ function PickMechanicContent() {
   appointmentId: searchParams?.get("appointmentId")
  })
  const { toast } = useToast()
- const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
- )
 
  const [appointment, setAppointment] = useState(null)
  const [isLoading, setIsLoading] = useState(true)
