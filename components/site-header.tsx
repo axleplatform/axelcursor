@@ -421,7 +421,7 @@ export function SiteHeader() {
       {isFeedbackOpen && (
         <div className="md:hidden absolute top-16 right-0 left-0 z-50">
           <div className="flex justify-end px-4">
-            <div className="w-80 bg-white/5 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-6">
+            <div className="w-80 bg-white/50 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">What would you like to share?</h3>
                 <button 
