@@ -24,6 +24,11 @@ export default function ProfileChecker(): JSX.Element {
 
   const fetchProfiles = async (): Promise<void> => {
     try {
+      if (!supabase) {
+        console.error('Supabase client not initialized');
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('mechanic_profiles')
         .select('*')
@@ -41,6 +46,11 @@ export default function ProfileChecker(): JSX.Element {
 
   const showProfile = async (profileId: string): Promise<void> => {
     try {
+      if (!supabase) {
+        console.error('Supabase client not initialized');
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('mechanic_profiles')
         .select('*')
