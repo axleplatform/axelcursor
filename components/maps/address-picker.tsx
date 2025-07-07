@@ -1,12 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import {
-  GoogleMap,
-  LoadScript,
-  Marker,
-  Autocomplete
-} from '@react-google-maps/api';
-
-const libraries = ['places'];
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { MapPin, Loader2 } from 'lucide-react';
 
 interface AddressPickerProps { 
   onLocationSelect: (location: { 
@@ -17,11 +10,62 @@ interface AddressPickerProps {
 }
 
 export function AddressPicker({ onLocationSelect }: AddressPickerProps) { 
-  const [map, setMap] = useState(null); 
-  const [center, setCenter] = useState({ lat: 40.7128, lng: -74.0060 }); 
-  const [markerPosition, setMarkerPosition] = useState(center); 
-  const [address, setAddress] = useState(''); 
-  const autocompleteRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [address, setAddress] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [center, setCenter] = useState({ lat: 40.7128, lng: -74.0060 });
+  const [markerPosition, setMarkerPosition] = useState(center);
+
+  // Initialize Google Maps Autocomplete
+  useEffect(() => {
+    const initializeAutocomplete = async () => {
+      if (!inputRef.current) return;
+
+      try {
+        setIsLoading(true);
+        
+        // Dynamic import to avoid SSR issues
+        const { loadGoogleMaps } = await import('@/lib/google-maps');
+        const google = await loadGoogleMaps();
+
+        // Create autocomplete instance
+        const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
+          types: ['address'],
+          componentRestrictions: { country: 'us' },
+          fields: ['address_components', 'geometry', 'formatted_address']
+        });
+
+        // Handle place selection
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          
+          if (place.geometry && place.geometry.location) {
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
+            const address = place.formatted_address || '';
+
+            setAddress(address);
+            setCenter({ lat, lng });
+            setMarkerPosition({ lat, lng });
+
+            onLocationSelect({
+              address,
+              coordinates: { lat, lng },
+              placeId: place.place_id
+            });
+          }
+        });
+
+      } catch (error) {
+        console.error('Error initializing autocomplete:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAutocomplete();
+  }, [onLocationSelect]);
 
   // Get user's current location on mount
   useEffect(() => {
@@ -46,110 +90,77 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
   }, []);
 
   const reverseGeocode = async (location: { lat: number; lng: number }) => {
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ location }, (results, status) => {
-      if (status === 'OK' && results[0]) {
-        setAddress(results[0].formatted_address);
-        onLocationSelect({
-          address: results[0].formatted_address,
-          coordinates: location,
-          placeId: results[0].place_id
-        });
-      }
-    });
-  };
-
-  const onLoad = useCallback((map) => {
-    setMap(map);
-  }, []);
-
-  const onAutocompleteLoad = (autocomplete) => {
-    autocompleteRef.current = autocomplete;
-  };
-
-  const onPlaceChanged = () => {
-    if (autocompleteRef.current) {
-      const place = autocompleteRef.current.getPlace();
-      if (place.geometry) {
-        const newLocation = {
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng()
-        };
-        
-        setCenter(newLocation);
-        setMarkerPosition(newLocation);
-        setAddress(place.formatted_address);
-        
-        onLocationSelect({
-          address: place.formatted_address,
-          coordinates: newLocation,
-          placeId: place.place_id
-        });
-      }
+    try {
+      const { loadGoogleMaps } = await import('@/lib/google-maps');
+      const google = await loadGoogleMaps();
+      
+      const geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ location }, (results: google.maps.GeocoderResult[], status: google.maps.GeocoderStatus) => {
+        if (status === 'OK' && results[0]) {
+          const address = results[0].formatted_address;
+          setAddress(address);
+          onLocationSelect({
+            address,
+            coordinates: location,
+            placeId: results[0].place_id
+          });
+        }
+      });
+    } catch (error) {
+      console.error('Error reverse geocoding:', error);
     }
   };
 
-  const onMarkerDragEnd = (e) => {
-    const newLocation = {
-      lat: e.latLng.lat(),
-      lng: e.latLng.lng()
-    };
-    setMarkerPosition(newLocation);
-    reverseGeocode(newLocation);
+  // Handle manual input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAddress(e.target.value);
   };
 
   return (
-    <LoadScript
-      googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-      libraries={libraries}
-    >
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Enter your service address
-          </label>
-          <Autocomplete
-            onLoad={onAutocompleteLoad}
-            onPlaceChanged={onPlaceChanged}
-          >
-            <input
-              type="text"
-              placeholder="Start typing your address..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-            />
-          </Autocomplete>
+    <div className="mb-3">
+      <h2 className="text-lg font-medium mb-1">Enter your location</h2>
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-20">
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
+          ) : (
+            <MapPin className="h-5 w-5 text-gray-400" />
+          )}
         </div>
-
-        <div className="rounded-lg overflow-hidden shadow-lg border border-gray-200">
-          <GoogleMap
-            mapContainerStyle={{ width: '100%', height: '400px' }}
-            center={center}
-            zoom={17}
-            onLoad={onLoad}
-            options={{
-              streetViewControl: false,
-              mapTypeControl: false,
-              fullscreenControl: false
-            }}
-          >
-            <Marker
-              position={markerPosition}
-              draggable={true}
-              onDragEnd={onMarkerDragEnd}
-              icon={{
-                url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
-              }}
-            />
-          </GoogleMap>
-        </div>
-
-        <div className="flex items-center text-sm text-gray-600 bg-blue-50 p-3 rounded">
-          <span className="mr-2">📍</span>
-          Drag the pin to adjust your exact location
-        </div>
+        <input
+          ref={inputRef}
+          type="text"
+          name="address"
+          value={address}
+          onChange={handleInputChange}
+          placeholder="Enter complete address (123 Main St, City, State)"
+          autoFocus={true}
+          className="block w-full p-4 pl-10 pr-16 text-sm text-gray-900 border border-gray-300 rounded-lg bg-white relative z-10 transition-all duration-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+        />
       </div>
-    </LoadScript>
+      <div className="flex items-center justify-between text-xs mt-1">
+        <p className="text-gray-500">Start typing to see address suggestions</p>
+        <button
+          type="button"
+          onClick={() => setShowMap(!showMap)}
+          className="text-blue-600 hover:text-blue-800 transition-colors"
+        >
+          {showMap ? 'Hide' : 'Show'} Map
+        </button>
+      </div>
+
+      {/* Optional Map View */}
+      {showMap && (
+        <div className="mt-3">
+          <div className="h-[220px] bg-gray-100 rounded-lg flex items-center justify-center">
+            <div className="text-gray-500 flex flex-col items-center">
+              <MapPin className="h-10 w-10 mb-2" />
+              <span>Interactive Map View</span>
+              <p className="text-xs mt-1">Google Maps integration coming soon</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 } 

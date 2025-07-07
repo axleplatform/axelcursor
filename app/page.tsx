@@ -12,7 +12,7 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { DateTimeSelector } from "@/components/date-time-selector"
 import { toast } from "@/components/ui/use-toast"
-import { AddressPicker } from "@/components/maps/address-picker"
+import HomepageLocationInput from "@/components/homepage-location-input"
 
 // Define types for form data
 interface AppointmentFormData {
@@ -745,8 +745,13 @@ function HomePageContent(): React.JSX.Element {
           </div>
 
           <form onSubmit={handleSubmit}>
-            {/* Location Input with Google Maps */}
-            <AddressPicker onLocationSelect={handleLocationSelect} />
+            {/* Location Input */}
+            <HomepageLocationInput
+              value={formData.address}
+              onChange={(value) => setFormData(prev => ({ ...prev, address: value }))}
+              error={errors.address}
+              onLocationSelect={handleLocationSelect}
+            />
 
             {/* Car Selector */}
             <div className="mb-4 w-full">
