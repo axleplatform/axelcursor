@@ -235,8 +235,6 @@ export default function MechanicSchedule({
                             {/* Location Pin */}
                             <GoogleMapsLink 
                               address={appointment.location}
-                              latitude={appointment.latitude}
-                              longitude={appointment.longitude}
                             />
                             {/* Quote */}
                             {myQuote && (

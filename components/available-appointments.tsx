@@ -116,8 +116,6 @@ export default function AvailableAppointments({
                   </div>
                   <GoogleMapsLink 
                     address={appointments[currentIndex].location}
-                    latitude={appointments[currentIndex].latitude}
-                    longitude={appointments[currentIndex].longitude}
                     variant="dark"
                   />
                 </div>

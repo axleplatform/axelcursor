@@ -449,8 +449,6 @@ export default function AppointmentConfirmationPage() {
                   <div className="flex items-start gap-3">
                     <GoogleMapsLink 
                       address={appointmentData.location}
-                      latitude={appointmentData.latitude}
-                      longitude={appointmentData.longitude}
                     />
                     <div>
                       <h3 className="font-medium text-gray-700">Location</h3>
