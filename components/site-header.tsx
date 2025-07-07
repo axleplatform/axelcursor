@@ -143,7 +143,7 @@ function FeedbackButton() {
   };
 
   return (
-    <>
+    <div className="relative">
       <button
         onClick={() => setIsOpen(true)}
         className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
@@ -152,8 +152,8 @@ function FeedbackButton() {
       </button>
       
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex justify-center" style={{ paddingTop: '4rem' }}>
-          <div className="w-fit bg-white/5 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-4 max-w-sm">
+        <div className="absolute top-full right-0 mt-2 z-50">
+          <div className="w-80 bg-white/50 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold">What would you like to share?</h3>
               <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600 p-1">
@@ -208,7 +208,7 @@ function FeedbackButton() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
