@@ -45,15 +45,22 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
             const lng = place.geometry.location.lng();
             const address = place.formatted_address || '';
 
-            setAddress(address);
-            setCenter({ lat, lng });
-            setMarkerPosition({ lat, lng });
+            // Validate coordinates before proceeding
+            if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+              setAddress(address);
+              setCenter({ lat, lng });
+              setMarkerPosition({ lat, lng });
 
-            onLocationSelect({
-              address,
-              coordinates: { lat, lng },
-              placeId: place.place_id
-            });
+              onLocationSelect({
+                address,
+                coordinates: { lat, lng },
+                placeId: place.place_id
+              });
+            } else {
+              console.error('Invalid coordinates received from place:', { lat, lng });
+            }
+          } else {
+            console.warn('Place selected but no geometry available:', place);
           }
         });
 
@@ -91,6 +98,13 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
 
   const reverseGeocode = async (location: { lat: number; lng: number }) => {
     try {
+      // Validate coordinates before reverse geocoding
+      if (typeof location.lat !== 'number' || typeof location.lng !== 'number' || 
+          isNaN(location.lat) || isNaN(location.lng)) {
+        console.error('Invalid coordinates for reverse geocoding:', location);
+        return;
+      }
+
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
       

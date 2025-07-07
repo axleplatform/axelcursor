@@ -53,16 +53,23 @@ export default function HomepageLocationInput({
             const lng = place.geometry.location.lng()
             const address = place.formatted_address || value
 
-            setCoordinates({ lat, lng })
-            onChange(address)
+            // Validate coordinates before proceeding
+            if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+              setCoordinates({ lat, lng })
+              onChange(address)
 
-            if (onLocationSelect) {
-              onLocationSelect({ 
-                address, 
-                coordinates: { lat, lng }, 
-                placeId: place.place_id 
-              })
+              if (onLocationSelect) {
+                onLocationSelect({ 
+                  address, 
+                  coordinates: { lat, lng }, 
+                  placeId: place.place_id 
+                })
+              }
+            } else {
+              console.error('Invalid coordinates received from place:', { lat, lng })
             }
+          } else {
+            console.warn('Place selected but no geometry available:', place)
           }
         })
 
@@ -85,6 +92,13 @@ export default function HomepageLocationInput({
 
   // Handle map location selection
   const handleMapLocationSelect = (location: { lat: number; lng: number; address: string }) => {
+    // Validate coordinates before proceeding
+    if (typeof location.lat !== 'number' || typeof location.lng !== 'number' || 
+        isNaN(location.lat) || isNaN(location.lng)) {
+      console.error('Invalid coordinates from map selection:', location);
+      return;
+    }
+
     setCoordinates({ lat: location.lat, lng: location.lng })
     onChange(location.address)
     

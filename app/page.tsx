@@ -474,8 +474,15 @@ function HomePageContent(): React.JSX.Element {
         // The pick-mechanic page will handle access control based on appointment ID in URL
         console.log('✅ Temporary user created, proceeding without authentication (guest flow)')
         
+        // Validate location data before creating appointment
+        if (selectedLocation && selectedLocation.coordinates) {
+          console.log('✅ Using validated location data:', selectedLocation);
+        } else {
+          console.log('⚠️ No location coordinates available, proceeding with address only');
+        }
+
         // Create appointment with real user_id (never NULL!)
-        const initialAppointmentData = {
+        const appointmentData = {
           user_id: tempUserId, // ALWAYS has a user_id
           status: "pending",
           appointment_date: appointmentDate.toISOString(),
@@ -483,21 +490,18 @@ function HomePageContent(): React.JSX.Element {
           issue_description: formData.issueDescription,
           selected_services: formData.selectedServices,
           car_runs: formData.carRuns,
-          source: 'web_guest_booking'
+          source: 'web_guest_booking',
+          // Add location coordinates if available
+          ...(selectedLocation?.coordinates && {
+            latitude: selectedLocation.coordinates.lat,
+            longitude: selectedLocation.coordinates.lng,
+            place_id: selectedLocation.placeId || null
+          })
         }
 
         const { data: createdAppointment, error: appointmentError } = await supabase
           .from('appointments')
-          .insert({
-            user_id: tempUserId, // ALWAYS has a user_id
-            status: "pending",
-            appointment_date: appointmentDate.toISOString(),
-            location: formData.address,
-            issue_description: formData.issueDescription,
-            selected_services: formData.selectedServices,
-            car_runs: formData.carRuns,
-            source: 'web_guest_booking'
-          })
+          .insert(appointmentData)
           .select('id')
           .single()
 
@@ -698,13 +702,24 @@ function HomePageContent(): React.JSX.Element {
     coordinates: { lat: number; lng: number };
     placeId?: string;
   }) => {
+    // Add null checks and validation
+    if (!location || !location.coordinates) {
+      console.error('Invalid location data received:', location);
+      return;
+    }
+
+    if (typeof location.coordinates.lat !== 'number' || typeof location.coordinates.lng !== 'number') {
+      console.error('Invalid coordinates received:', location.coordinates);
+      return;
+    }
+
     setSelectedLocation(location);
     setFormData((prev) => ({
       ...prev,
       address: location.address,
       latitude: location.coordinates.lat,
       longitude: location.coordinates.lng,
-      place_id: location.placeId,
+      place_id: location.placeId || '',
     }));
   };
 
