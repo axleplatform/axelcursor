@@ -26,7 +26,7 @@ export function SiteHeader() {
     
     checkAuth()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: any) => {
       setIsLoggedIn(!!session)
     })
 
