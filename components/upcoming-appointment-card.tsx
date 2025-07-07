@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Check, MapPin, X } from "lucide-react"
 import type { Appointment } from "@/hooks/use-appointments"
-import { formatDate } from "@/lib/utils"
+import { formatDate, formatCarIssue } from "@/lib/utils"
 
 interface UpcomingAppointmentCardProps {
   appointment: Appointment
@@ -157,7 +157,7 @@ export default function UpcomingAppointmentCard({
             <div className="font-semibold mb-1">Reported Issues:</div>
             <ul className="list-disc pl-5 space-y-1">
               {appointment.selected_car_issues.map((issue, index) => (
-                <li key={index}>{issue}</li>
+                <li key={index}>{formatCarIssue(issue)}</li>
               ))}
             </ul>
           </div>

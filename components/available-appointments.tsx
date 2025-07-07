@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { MapPin, X, Check, ChevronLeft, ChevronRight, Clock } from "lucide-react"
-import { formatDate } from "@/lib/utils"
+import { formatDate, formatCarIssue } from "@/lib/utils"
 import type { Appointment } from "@/hooks/use-mechanic-appointments"
 
 interface AvailableAppointmentsProps {
@@ -177,7 +177,12 @@ export default function AvailableAppointments({
                       <div className="font-semibold mb-1">Reported Issues:</div>
                       <ul className="list-disc pl-5 space-y-1">
                         {appointments[currentIndex].selected_car_issues!.map((issue, index) => (
-                          <li key={index}>{issue}</li>
+                          <span
+                            key={index}
+                            className="bg-orange-200/30 text-orange-100 text-xs px-3 py-1 rounded-full whitespace-nowrap"
+                          >
+                            {formatCarIssue(issue)}
+                          </span>
                         ))}
                       </ul>
                     </div>

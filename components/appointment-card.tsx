@@ -3,6 +3,7 @@
 import React from 'react'
 import { Clock, MapPin, Check, X } from "lucide-react"
 import type { Appointment, MechanicQuote } from "@/types/index"
+import { formatCarIssue } from "@/lib/utils"
 
 interface AppointmentCardProps {
   appointment: Appointment
@@ -185,7 +186,7 @@ export default function AppointmentCard({
             </div>
             <ul className={`list-disc pl-5 space-y-1 ${isUpcoming ? 'text-gray-600' : 'text-white/80'}`}>
               {appointment.selected_car_issues.map((issue, index) => (
-                <li key={index}>{issue}</li>
+                <li key={index}>{formatCarIssue(issue)}</li>
               ))}
             </ul>
           </div>

@@ -16,7 +16,7 @@ import {
   createOrUpdateQuote,
   selectQuoteForAppointment,
 } from "@/lib/mechanic-quotes"
-import { formatDate, validateMechanicId } from "@/lib/utils"
+import { formatDate, validateMechanicId, formatCarIssue } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { ProfileDropdown } from "@/components/profile-dropdown"
@@ -2159,7 +2159,7 @@ export default function MechanicDashboard() {
                                     key={index}
                                     className="bg-orange-100 text-orange-700 text-xs px-3 py-1 rounded-full text-center"
                                   >
-                                    {issue}
+                                    {formatCarIssue(issue)}
                                   </span>
                                 ))}
                               </div>
@@ -2529,7 +2529,7 @@ export default function MechanicDashboard() {
                               key={index}
                               className="bg-orange-200/30 text-orange-100 text-xs px-3 py-1 rounded-full text-center"
                             >
-                              {issue}
+                              {formatCarIssue(issue)}
                             </span>
                           ))}
                         </div>

@@ -12,6 +12,7 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
 import { getQuotesForAppointment } from "@/lib/mechanic-quotes"
+import { formatCarIssue } from "@/lib/utils"
 
 function PickMechanicContent() {
  const router = useRouter()
@@ -765,8 +766,9 @@ function PickMechanicContent() {
              <ul className="mt-1 space-y-1">
               {appointment.selected_car_issues.map((issue, index) => (
                <li key={index} className="flex items-center">
-                <div className="h-1.5 w-1.5 rounded-full bg-red-500 mr-2"></div>
-                <span className="text-xs text-gray-600">{issue}</span>
+                <div className="h-1.5 w-1.5 rounded-full bg-orange-200/30 text-orange-100 text-xs px-3 py-1 rounded-full whitespace-nowrap">
+                  {formatCarIssue(issue)}
+                </div>
                </li>
               ))}
              </ul>

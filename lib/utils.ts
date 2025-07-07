@@ -86,3 +86,31 @@ export function validateMechanicId(mechanicId: string | null): { isValid: boolea
   
   return { isValid: true }
 }
+
+// Car issue mapping for display
+const carIssueLabels: Record<string, string> = {
+  "warning_lights": "Warning Lights On",
+  "battery_issues": "Battery Issues",
+  "engine_performance": "Engine Performance",
+  "overheating": "Overheating",
+  "fluid_leaks": "Fluid Leaks",
+  "mechanical_damage": "Mechanical Damage",
+  "electrical_problems": "Electrical Problems",
+  "needs_towing": "Needs Towing",
+  "unusual_noises": "Unusual Noises",
+  "vibration": "Vibration"
+}
+
+/**
+ * Convert car issue ID to proper display label
+ */
+export function formatCarIssue(issueId: string): string {
+  return carIssueLabels[issueId] || issueId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+}
+
+/**
+ * Format car issues array for display
+ */
+export function formatCarIssues(issues: string[]): string[] {
+  return issues.map(issue => formatCarIssue(issue))
+}
