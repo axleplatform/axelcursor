@@ -780,6 +780,32 @@ export default function MechanicDashboard() {
     )
     .subscribe()
 
+   // Subscribe to appointment updates for editing notifications
+   const appointmentUpdatesSubscription = supabase
+    .channel('appointment-updates')
+    .on(
+     'postgres_changes',
+     {
+      event: 'INSERT', // Listen to new appointment updates
+      schema: 'public',
+      table: 'appointment_updates'
+     },
+     (payload: RealtimePostgresChangesPayload<any>) => {
+      console.log('📡 Appointment update detected:', payload)
+      
+      // Show notification to mechanic
+      toast({
+       title: "Appointment Updated",
+       description: `Appointment ${payload.new.appointment_id} was updated. Please re-quote if interested.`,
+       variant: "default",
+      })
+      
+      // Refresh appointments list
+      fetchInitialAppointments()
+     }
+    )
+    .subscribe()
+
    console.log('✅ Real-time subscriptions established')
 
    return () => {
@@ -787,6 +813,7 @@ export default function MechanicDashboard() {
     appointmentsSubscription.unsubscribe()
     quotesSubscription.unsubscribe()
     skipsSubscription.unsubscribe()
+    appointmentUpdatesSubscription.unsubscribe()
    }
   }, [mechanicId])
 
@@ -2109,11 +2136,11 @@ export default function MechanicDashboard() {
                           {appointment.selected_services && (
                             <div className="mb-6">
                               <h4 className="text-sm font-medium mb-2 text-gray-900">Selected Services</h4>
-                              <div className="flex flex-wrap gap-2">
+                              <div className="flex flex-col gap-2">
                                 {appointment.selected_services.map((service: string, index: number) => (
                                   <span
                                     key={index}
-                                    className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full"
+                                    className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full w-fit"
                                   >
                                     {service}
                                   </span>
@@ -2126,11 +2153,11 @@ export default function MechanicDashboard() {
                           {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 ? (
                             <div className="mb-6">
                               <h4 className="text-sm font-medium mb-2 text-gray-900">Car Issues</h4>
-                              <div className="flex flex-wrap gap-2">
+                              <div className="grid grid-cols-2 gap-2">
                                 {appointment.selected_car_issues.map((issue: string, index: number) => (
                                   <span
                                     key={index}
-                                    className="bg-orange-100 text-orange-700 text-xs px-3 py-1 rounded-full"
+                                    className="bg-orange-100 text-orange-700 text-xs px-3 py-1 rounded-full text-center"
                                   >
                                     {issue}
                                   </span>
@@ -2374,6 +2401,24 @@ export default function MechanicDashboard() {
                 {/* Current appointment details */}
                 {filteredAvailableAppointments[currentAvailableIndex] && (
                   <div className="bg-white/10 rounded-lg p-6">
+                    {/* Editing Protection Warning */}
+                    {filteredAvailableAppointments[currentAvailableIndex].is_being_edited && (
+                      <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-3 py-2 rounded mb-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">⚠️</span>
+                          <span className="text-sm font-medium">Customer is currently editing this appointment</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recently Updated Badge */}
+                    {filteredAvailableAppointments[currentAvailableIndex].last_edited_at && 
+                     new Date().getTime() - new Date(filteredAvailableAppointments[currentAvailableIndex].last_edited_at).getTime() < 3600000 && (
+                      <div className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded mb-4 inline-block">
+                        Recently Updated
+                      </div>
+                    )}
+
                     {/* Location and Date */}
                     <div className="flex items-center gap-4 mb-6">
                       <div className="flex items-center gap-2">
@@ -2445,11 +2490,11 @@ export default function MechanicDashboard() {
                       {filteredAvailableAppointments[currentAvailableIndex].selected_services && (
                         <div className="flex-1">
                           <h4 className="text-sm font-medium mb-2">Selected Services</h4>
-                          <div className="flex flex-nowrap gap-2 overflow-x-auto">
+                          <div className="flex flex-col gap-2">
                             {filteredAvailableAppointments[currentAvailableIndex].selected_services.map((service: string, index: number) => (
                               <span
                                 key={index}
-                                className="bg-white/20 text-xs px-3 py-1 rounded-full whitespace-nowrap"
+                                className="bg-white/20 text-xs px-3 py-1 rounded-full w-fit"
                               >
                                 {service}
                               </span>
@@ -2478,11 +2523,11 @@ export default function MechanicDashboard() {
                     {filteredAvailableAppointments[currentAvailableIndex].selected_car_issues && filteredAvailableAppointments[currentAvailableIndex].selected_car_issues.length > 0 ? (
                       <div className="mb-6">
                         <h4 className="text-sm font-medium mb-2">Car Issues</h4>
-                        <div className="flex flex-nowrap gap-2 overflow-x-auto">
+                        <div className="grid grid-cols-2 gap-2">
                           {filteredAvailableAppointments[currentAvailableIndex].selected_car_issues.map((issue: string, index: number) => (
                             <span
                               key={index}
-                              className="bg-orange-200/30 text-orange-100 text-xs px-3 py-1 rounded-full whitespace-nowrap"
+                              className="bg-orange-200/30 text-orange-100 text-xs px-3 py-1 rounded-full text-center"
                             >
                               {issue}
                             </span>
@@ -2599,6 +2644,10 @@ export default function MechanicDashboard() {
                           (currentAppointment?.issue_description || 
                            (currentAppointment?.selected_services && currentAppointment.selected_services.length > 0));
                         
+                        // Check if appointment is being edited
+                        const isBeingEdited = currentAppointment?.is_being_edited;
+                        const isQuotable = !isBeingEdited;
+                        
                         if (!hasCompletedBooking) {
                           return (
                             <button
@@ -2609,6 +2658,21 @@ export default function MechanicDashboard() {
                               <div className="flex items-center justify-center">
                                 <span className="mr-2">⏳</span>
                                 Cannot Quote Yet
+                              </div>
+                            </button>
+                          );
+                        }
+                        
+                        if (!isQuotable) {
+                          return (
+                            <button
+                              disabled={true}
+                              className="flex-1 bg-gray-300 text-gray-500 font-medium text-lg py-2 px-4 rounded-full cursor-not-allowed"
+                              title="Cannot quote - customer is currently editing this appointment"
+                            >
+                              <div className="flex items-center justify-center">
+                                <span className="mr-2">⚠️</span>
+                                Appointment Being Edited
                               </div>
                             </button>
                           );
