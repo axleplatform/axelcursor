@@ -118,6 +118,7 @@ export default function AvailableAppointments({
                     address={appointments[currentIndex].location}
                     latitude={appointments[currentIndex].latitude}
                     longitude={appointments[currentIndex].longitude}
+                    variant="dark"
                   />
                 </div>
                 <button

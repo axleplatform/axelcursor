@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Check, MapPin, X } from "lucide-react"
+import { Check, X } from "lucide-react"
 import type { Appointment } from "@/hooks/use-appointments"
 import { formatDate, formatCarIssue } from "@/lib/utils"
 import { GoogleMapsLink } from "@/components/google-maps-link"
