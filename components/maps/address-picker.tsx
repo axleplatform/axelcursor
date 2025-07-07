@@ -63,10 +63,10 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
     }
   }, [onLocationSelect]);
 
-  // Initialize Google Maps Autocomplete
+  // Initialize Google Maps Autocomplete with modern approach
   useEffect(() => {
     const initializeAutocomplete = async () => {
-      if (!inputRef.current || isUpdating) return;
+      if (!inputRef.current || isUpdating || !isLoaded) return;
 
       try {
         setIsLoading(true);
@@ -75,11 +75,11 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
         const { loadGoogleMaps } = await import('@/lib/google-maps');
         const google = await loadGoogleMaps();
 
-        // Create autocomplete instance
+        // Create autocomplete instance with modern configuration
         const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
           types: ['address'],
           componentRestrictions: { country: 'us' },
-          fields: ['address_components', 'geometry', 'formatted_address']
+          fields: ['address_components', 'geometry', 'formatted_address', 'place_id']
         });
 
         // Handle place selection
@@ -96,7 +96,7 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
     };
 
     initializeAutocomplete();
-  }, [handlePlaceSelection, isUpdating]);
+  }, [handlePlaceSelection, isUpdating, isLoaded]);
 
   // Get user's current location on mount with guard
   useEffect(() => {

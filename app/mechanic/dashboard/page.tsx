@@ -3246,12 +3246,12 @@ export default function MechanicDashboard() {
 
       {/* Refer a Friend Modal */}
       <Dialog open={showReferModal} onOpenChange={setShowReferModal}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" aria-describedby="refer-dialog-description">
           <DialogHeader>
             <DialogTitle className="text-center text-xl font-bold text-gray-900">
               Refer a Friend
             </DialogTitle>
-            <DialogDescription className="text-center text-gray-600">
+            <DialogDescription id="refer-dialog-description" className="text-center text-gray-600">
               Thank you for helping us grow! Share the link below with your friends.
             </DialogDescription>
           </DialogHeader>
