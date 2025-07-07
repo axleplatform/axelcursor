@@ -21,6 +21,7 @@ import { Card } from "@/components/ui/card"
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { ProfileDropdown } from "@/components/profile-dropdown"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { GoogleMapsLink } from "@/components/google-maps-link"
 import {
   Dialog,
   DialogContent,
@@ -2234,7 +2235,11 @@ export default function MechanicDashboard() {
                           <div className="flex items-center gap-4 mb-6">
                             <div className="flex items-center gap-2">
                               <MapPin className="h-4 w-4 text-gray-500" />
-                              <span className="text-sm text-gray-600">{appointment.location}</span>
+                              <GoogleMapsLink 
+                                address={appointment.location}
+                                latitude={appointment.latitude}
+                                longitude={appointment.longitude}
+                              />
                             </div>
                             <div className="flex items-center gap-2">
                               <Clock className="h-4 w-4 text-gray-500" />
