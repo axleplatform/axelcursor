@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { MapPin, Loader2 } from 'lucide-react'
-import GoogleMapsMap from './google-maps-map'
+import SimpleMap from './simple-map'
 
 interface HomepageLocationInputProps {
   value: string
@@ -144,10 +144,9 @@ export default function HomepageLocationInput({
 
       {/* Always Show Map */}
       <div className="mt-3">
-        <GoogleMapsMap
+        <SimpleMap
           center={coordinates || { lat: 37.7749, lng: -122.4194 }}
           onLocationSelect={handleMapLocationSelect}
-          height="220px"
           address={value}
           isLoading={isLoading}
         />
