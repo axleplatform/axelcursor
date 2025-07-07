@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { MapPin, Loader2 } from 'lucide-react';
+import GoogleMapsMap from '../google-maps-map';
 
 interface AddressPickerProps { 
   onLocationSelect: (location: { 
@@ -13,13 +14,12 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [address, setAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showMap, setShowMap] = useState(false);
-  const [center, setCenter] = useState({ lat: 40.7128, lng: -74.0060 });
+  const [center, setCenter] = useState({ lat: 40.7128, lng: -74.0060 }); // NYC default
   const [markerPosition, setMarkerPosition] = useState(center);
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Memoize the place selection handler to prevent infinite loops
-  const handlePlaceSelection = useCallback((place: google.maps.places.PlaceResult) => {
+  const handlePlaceSelection = useCallback((place: any) => {
     if (place.geometry && place.geometry.location) {
       const lat = place.geometry.location.lat();
       const lng = place.geometry.location.lng();
@@ -79,7 +79,7 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
     };
 
     initializeAutocomplete();
-  }, [handlePlaceSelection, isUpdating]); // Remove onLocationSelect from dependencies
+  }, [handlePlaceSelection, isUpdating]);
 
   // Get user's current location on mount with guard
   useEffect(() => {
@@ -99,7 +99,7 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
           reverseGeocode(userLocation);
         },
         (error) => {
-          console.log('Error getting location:', error);
+          console.log('Location access denied, using default');
         }
       );
     }
@@ -118,8 +118,8 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
       const google = await loadGoogleMaps();
       
       const geocoder = new google.maps.Geocoder();
-      geocoder.geocode({ location }, (results: google.maps.GeocoderResult[], status: google.maps.GeocoderStatus) => {
-        if (status === 'OK' && results[0]) {
+      geocoder.geocode({ location }, (results: any[], status: any) => {
+        if (status === 'OK' && results && results[0]) {
           const address = results[0].formatted_address;
           setAddress(address);
           onLocationSelect({
@@ -140,51 +140,71 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
     // Don't call onLocationSelect here - only on actual place selection
   }, []);
 
+  // Handle map location selection
+  const handleMapLocationSelect = useCallback((location: { lat: number; lng: number; address: string }) => {
+    // Validate coordinates before proceeding
+    if (typeof location.lat !== 'number' || typeof location.lng !== 'number' || 
+        isNaN(location.lat) || isNaN(location.lng)) {
+      console.error('Invalid coordinates from map selection:', location);
+      return;
+    }
+
+    setIsUpdating(true);
+    setAddress(location.address);
+    setMarkerPosition({ lat: location.lat, lng: location.lng });
+    
+    if (onLocationSelect) {
+      onLocationSelect({
+        address: location.address,
+        coordinates: { lat: location.lat, lng: location.lng },
+        placeId: undefined
+      });
+    }
+    setIsUpdating(false);
+  }, [onLocationSelect]);
+
   return (
-    <div className="mb-3">
-      <h2 className="text-lg font-medium mb-1">Enter your location</h2>
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-20">
-          {isLoading ? (
-            <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
-          ) : (
-            <MapPin className="h-5 w-5 text-gray-400" />
-          )}
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Enter your service address
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-20">
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
+            ) : (
+              <MapPin className="h-5 w-5 text-gray-400" />
+            )}
+          </div>
+          <input
+            ref={inputRef}
+            type="text"
+            name="address"
+            value={address}
+            onChange={handleInputChange}
+            placeholder="Start typing your address..."
+            className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+          />
         </div>
-        <input
-          ref={inputRef}
-          type="text"
-          name="address"
-          value={address}
-          onChange={handleInputChange}
-          placeholder="Enter complete address (123 Main St, City, State)"
-          autoFocus={true}
-          className="block w-full p-4 pl-10 pr-16 text-sm text-gray-900 border border-gray-300 rounded-lg bg-white relative z-10 transition-all duration-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-        />
-      </div>
-      <div className="flex items-center justify-between text-xs mt-1">
-        <p className="text-gray-500">Start typing to see address suggestions</p>
-        <button
-          type="button"
-          onClick={() => setShowMap(!showMap)}
-          className="text-blue-600 hover:text-blue-800 transition-colors"
-        >
-          {showMap ? 'Hide' : 'Show'} Map
-        </button>
       </div>
 
-      {/* Optional Map View */}
-      {showMap && (
-        <div className="mt-3">
-          <div className="h-[220px] bg-gray-100 rounded-lg flex items-center justify-center">
-            <div className="text-gray-500 flex flex-col items-center">
-              <MapPin className="h-10 w-10 mb-2" />
-              <span>Interactive Map View</span>
-              <p className="text-xs mt-1">Google Maps integration coming soon</p>
-            </div>
-          </div>
-        </div>
-      )}
+      <div className="rounded-lg overflow-hidden shadow-lg border border-gray-200">
+        <GoogleMapsMap
+          center={center}
+          onLocationSelect={handleMapLocationSelect}
+          height="400px"
+          address={address}
+          isLoading={isLoading}
+          showMarker={true}
+          draggable={true}
+        />
+      </div>
+
+      <div className="flex items-center text-sm text-gray-600 bg-blue-50 p-3 rounded">
+        <span className="mr-2">📍</span>
+        Drag the pin to adjust your exact location
+      </div>
     </div>
   );
 } 
