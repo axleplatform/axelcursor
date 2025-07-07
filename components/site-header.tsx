@@ -81,7 +81,7 @@ export function SiteHeader() {
             <Button 
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="text-sm font-medium text-gray-700 hover:text-[#294a46] px-3 py-2 rounded-md border border-transparent hover:border-gray-200 hover:bg-gray-50 transition-all duration-200"
+              className="text-sm font-medium text-red-600/90 hover:text-red-700 px-3 py-2 rounded-md border border-transparent hover:border-red-200 hover:bg-red-50 transition-all duration-200"
             >
               {isLoggingOut ? "Logging out..." : "Logout"}
             </Button>
@@ -143,7 +143,7 @@ export function SiteHeader() {
                     <button
                       onClick={handleLogout}
                       disabled={isLoggingOut}
-                      className="text-sm font-medium text-gray-700/90 hover:text-[#294a46] px-3 py-2 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-center whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-sm font-medium text-red-600/90 hover:text-red-700 px-3 py-2 rounded-md border border-red-200 hover:border-red-300 hover:bg-red-50 transition-all duration-200 text-center whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isLoggingOut ? "Logging out..." : "Logout"}
                     </button>

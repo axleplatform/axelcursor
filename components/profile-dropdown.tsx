@@ -63,7 +63,7 @@ export function ProfileDropdown() {
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              className="w-full text-left px-4 py-2 text-sm text-red-600/90 hover:text-red-700 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               role="menuitem"
             >
               <span className="truncate">{isLoggingOut ? "Logging out..." : "Logout"}</span>

@@ -1963,8 +1963,16 @@ export default function MechanicDashboard() {
       {/* Dashboard Title and Actions */}
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <h1 className="text-3xl font-bold text-gray-900">Mechanic Dashboard</h1>
-          {mechanicProfile && <p className="text-lg text-gray-600 mt-1">Welcome back, {mechanicProfile.first_name}!</p>}
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <h1 className="text-3xl font-bold text-gray-900">Mechanic Dashboard</h1>
+            <div className="flex items-center gap-3">
+              {mechanicProfile && <p className="text-lg text-gray-600">Welcome back, {mechanicProfile.first_name}!</p>}
+              {/* Profile dropdown on mobile - next to welcome message */}
+              <div className="md:hidden">
+                <ProfileDropdown />
+              </div>
+            </div>
+          </div>
 
           <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             <div className="relative">
@@ -1992,7 +2000,10 @@ export default function MechanicDashboard() {
             >
               Refer a friend
             </button>
-            <ProfileDropdown />
+            {/* Profile dropdown on desktop - in the actions area */}
+            <div className="hidden md:block">
+              <ProfileDropdown />
+            </div>
           </div>
         </div>
       </div>
