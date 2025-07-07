@@ -544,31 +544,31 @@ function PickMechanicContent() {
            {mechanicQuotes.map((quote) => (
             <div 
               key={quote.id} 
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-[#294a46] hover:bg-[#e6eeec]/50 transition-all duration-200 cursor-pointer active:scale-[0.99]"
+              className="bg-[#294a46]/95 backdrop-blur-[2px] rounded-lg shadow-sm border border-[#1e3632] p-6 hover:shadow-md hover:border-[#1e3632] hover:bg-[#1e3632]/95 transition-all duration-200 cursor-pointer active:scale-[0.99]"
               onClick={() => handleSelectMechanic(quote.mechanic_id, quote.id)}
             >
              {/* Top row: Mechanic info on left, price and availability on right */}
              <div className="flex justify-between items-start mb-4">
               {/* Left side: Mechanic name, rating, reviews */}
               <div className="flex-1">
-               <h3 className="font-semibold text-lg text-gray-900">
+               <h3 className="font-semibold text-lg text-white">
                 {quote.mechanic_profiles?.business_name || `${quote.mechanic_profiles?.first_name} ${quote.mechanic_profiles?.last_name}`}
                </h3>
                {/* Rating on one line */}
                <div className="flex items-center gap-2 mt-1">
                 <span className="text-yellow-400">⭐</span>
-                <span className="text-sm text-gray-700">{quote.mechanic_profiles?.rating || 'N/A'}</span>
+                <span className="text-sm text-gray-200">{quote.mechanic_profiles?.rating || 'N/A'}</span>
                </div>
                {/* Reviews on next line */}
-               <div className="text-sm text-gray-600 mt-1">
+               <div className="text-sm text-gray-300 mt-1">
                 {quote.mechanic_profiles?.review_count || 0} reviews
                </div>
               </div>
               
               {/* Right side: Price and availability */}
               <div className="text-right">
-               <div className="text-2xl font-bold text-[#294a46] mb-2">${quote.price}</div>
-               <div className="text-sm text-gray-600">
+               <div className="text-2xl font-bold text-white mb-2">${quote.price}</div>
+               <div className="text-sm text-gray-300">
                 <div className="font-medium">Available:</div>
                 <div>{new Date(quote.eta).toLocaleDateString('en-US', {
                  weekday: 'short',
@@ -591,35 +591,35 @@ function PickMechanicContent() {
                 className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
                />
               ) : (
-               <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-300">
-                <span className="text-lg text-gray-500 font-semibold">
-                 {quote.mechanic_profiles?.first_name?.charAt(0) || 'M'}
-                </span>
-               </div>
+                               <div className="w-12 h-12 rounded-full bg-gray-600 flex items-center justify-center border-2 border-gray-500">
+                 <span className="text-lg text-gray-300 font-semibold">
+                  {quote.mechanic_profiles?.first_name?.charAt(0) || 'M'}
+                 </span>
+                </div>
               )}
               
               {/* Mechanic details */}
               <div className="flex-1">
                {/* Profile descriptions - enhanced display */}
                {quote.mechanic_profiles?.bio && (
-                <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
-                 <p className="text-sm font-semibold text-[#294a46] mb-1 flex items-center">
+                <div className="bg-[#1e3632]/80 backdrop-blur-[1px] rounded-lg p-2 border border-[#1e3632]">
+                 <p className="text-sm font-semibold text-white mb-1 flex items-center">
                   <User className="h-3 w-3 mr-1" />
                   About This Mechanic
                  </p>
                  
                  {/* Bio */}
                  <div className="mb-1">
-                  <p className="text-xs text-gray-700 leading-relaxed line-clamp-2">{quote.mechanic_profiles.bio}</p>
+                  <p className="text-xs text-gray-200 leading-relaxed line-clamp-2">{quote.mechanic_profiles.bio}</p>
                  </div>
                  
                  {/* Specialties if available */}
                  {quote.mechanic_profiles?.specialties && quote.mechanic_profiles.specialties.length > 0 && (
                   <div>
-                   <p className="text-xs font-medium text-gray-600 mb-1">Specialties:</p>
+                   <p className="text-xs font-medium text-gray-300 mb-1">Specialties:</p>
                    <div className="flex flex-wrap gap-1">
                     {quote.mechanic_profiles.specialties.map((specialty, index) => (
-                     <span key={index} className="bg-[#e6eeec] text-[#294a46] text-xs px-2 py-1 rounded-full">
+                     <span key={index} className="bg-[#294a46] text-white text-xs px-2 py-1 rounded-full">
                       {specialty}
                      </span>
                     ))}
@@ -631,9 +631,9 @@ function PickMechanicContent() {
                
                {/* Quote notes */}
                {quote.notes && (
-                <div className="bg-blue-50 rounded-lg p-2 border border-blue-200 mt-1">
-                 <p className="text-xs font-medium text-blue-800 mb-1">Quote Details:</p>
-                 <p className="text-xs text-blue-700">{quote.notes}</p>
+                <div className="bg-[#1e3632]/80 backdrop-blur-[1px] rounded-lg p-2 border border-[#1e3632] mt-1">
+                 <p className="text-xs font-medium text-white mb-1">Quote Details:</p>
+                 <p className="text-xs text-gray-200">{quote.notes}</p>
                 </div>
                )}
               </div>
