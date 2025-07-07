@@ -135,8 +135,8 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
       const google = await loadGoogleMaps();
       
       const geocoder = new google.maps.Geocoder();
-      geocoder.geocode({ location }, (results: any[], status: any) => {
-        if (status === 'OK' && results && results[0]) {
+      geocoder.geocode({ location }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
+        if (status === google.maps.GeocoderStatus.OK && results && results[0]) {
           const address = results[0].formatted_address;
           setAddress(address);
           onLocationSelect({
@@ -211,7 +211,7 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
           center={center}
           onLocationSelect={handleMapLocationSelect}
           height="400px"
-          address={address}
+          location={address}
           isLoading={isLoading}
           showMarker={true}
           draggable={true}
