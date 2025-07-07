@@ -185,7 +185,7 @@ export function SiteHeader() {
           </Link>
         </div>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Navigation - Center */}
         <div className="hidden md:flex items-center space-x-6">
           {isLoggedIn ? (
             <Button 
@@ -207,7 +207,7 @@ export function SiteHeader() {
           )}
         </div>
 
-        {/* Desktop Right Navigation */}
+        {/* Desktop Right Side - Navigation Links + Feedback */}
         <div className="hidden md:flex items-center space-x-6">
           <Link
             href="/about"
