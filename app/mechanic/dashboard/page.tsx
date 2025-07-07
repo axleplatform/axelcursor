@@ -1459,17 +1459,19 @@ export default function MechanicDashboard() {
 
   // Handle appointment click from schedule
   const handleScheduleAppointmentClick = (appointment: AppointmentWithRelations) => {
-    // Special handling for cancelled appointments - toggle visibility and navigate
     if (appointment.status === 'cancelled') {
-      handleToggleCancelledAppointment(appointment);
-      
-      // Also navigate to the appointment after toggling visibility
-      setTimeout(() => {
+      if (!isRestoredToday(appointment.id)) {
+        // Restore (show) the appointment, then scroll to it after state update
+        handleRestoreAppointment(appointment);
+        setTimeout(() => {
+          navigateToAppointmentFromSchedule(appointment);
+        }, 100); // Wait for state update
+      } else {
+        // Already shown, just scroll to it
         navigateToAppointmentFromSchedule(appointment);
-      }, 100); // Small delay to ensure state update completes
+      }
       return;
     }
-    
     // Use the helper function to navigate to the appointment
     navigateToAppointmentFromSchedule(appointment);
   }
