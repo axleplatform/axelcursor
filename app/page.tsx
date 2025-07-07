@@ -1323,3 +1323,28 @@ export default function HomePage(): React.JSX.Element {
     </Suspense>
   )
 }
+
+// Loading fallback component
+function HomePageLoading(): React.JSX.Element {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <SiteHeader />
+      <main className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294a46] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  )
+}
+
+// Main export with Suspense wrapper
+export default function HomePage(): React.JSX.Element {
+  return (
+    <Suspense fallback={<HomePageLoading />}>
+      <HomePageContent />
+    </Suspense>
+  )
+}
