@@ -26,6 +26,7 @@
   "git": {
     "deploymentEnabled": {
       "main": true,
+      "version-441": true,
       "axle-cursor": true,
       "restore-v113": true
     },
