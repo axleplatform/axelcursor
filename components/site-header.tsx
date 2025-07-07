@@ -10,7 +10,99 @@ import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 
-// Feedback Button Component
+// Mobile Feedback Form Component
+function MobileFeedbackForm({ onClose }: { onClose: () => void }) {
+  const [feedbackType, setFeedbackType] = useState<'issue' | 'idea' | null>(null);
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!message.trim() || !feedbackType) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('feedback')
+        .insert({
+          type: feedbackType,
+          message: message.trim(),
+          url: window.location.href,
+          user_id: user?.id || null
+        });
+
+      if (error) throw error;
+      
+      // Success - close modal
+      onClose();
+      setFeedbackType(null);
+      setMessage('');
+      alert('Thank you for your feedback!');
+      
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to submit feedback. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {!feedbackType ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={() => setFeedbackType('issue')}
+              className="p-6 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 transition-all min-h-[100px]"
+            >
+              <div className="text-3xl mb-3">⚠️</div>
+              <span className="block text-sm font-medium">Issue</span>
+            </button>
+            <button
+              onClick={() => setFeedbackType('idea')}
+              className="p-6 border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all min-h-[100px]"
+            >
+              <div className="text-3xl mb-3">💡</div>
+              <span className="block text-sm font-medium">Idea</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <h4 className="text-base font-medium">
+            {feedbackType === 'issue' ? 'Report an issue' : 'Share your idea'}
+          </h4>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder={feedbackType === 'issue' ? "Describe the issue..." : "Tell us about your idea..."}
+            className="w-full h-32 p-3 border border-gray-300 rounded-md text-sm resize-none"
+          />
+          <div className="flex justify-end gap-3">
+            <button 
+              onClick={() => setFeedbackType(null)} 
+              className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+            >
+              Back
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!message.trim() || isSubmitting}
+              className="px-4 py-2 text-sm text-white bg-[#294a46] hover:bg-[#1e3632] rounded-md disabled:opacity-50"
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Desktop Feedback Button Component
 function FeedbackButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'issue' | 'idea' | null>(null);
@@ -122,6 +214,7 @@ function FeedbackButton() {
 
 export function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const pathname = usePathname()
@@ -143,13 +236,20 @@ export function SiteHeader() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Close mobile menu when pathname changes (navigation occurs)
+  // Close mobile menu and feedback when pathname changes (navigation occurs)
   useEffect(() => {
     setIsMenuOpen(false)
+    setIsFeedbackOpen(false)
   }, [pathname])
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
+    setIsFeedbackOpen(false) // Close feedback when opening menu
+  }
+
+  const toggleFeedback = () => {
+    setIsFeedbackOpen(!isFeedbackOpen)
+    setIsMenuOpen(false) // Close menu when opening feedback
   }
 
   const handleLogout = async () => {
@@ -298,11 +398,37 @@ export function SiteHeader() {
                   </Link>
                 </div>
                 
-                {/* Feedback widget for mobile */}
+                {/* Feedback button for mobile */}
                 <div className="flex justify-end">
-                  <FeedbackButton />
+                  <button
+                    onClick={toggleFeedback}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Feedback
+                  </button>
                 </div>
               </nav>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Feedback Dropdown */}
+      {isFeedbackOpen && (
+        <div className="md:hidden absolute top-16 right-0 left-0 z-50">
+          <div className="flex justify-end px-4">
+            <div className="w-80 bg-white/5 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">What would you like to share?</h3>
+                <button 
+                  onClick={() => setIsFeedbackOpen(false)} 
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <MobileFeedbackForm onClose={() => setIsFeedbackOpen(false)} />
             </div>
           </div>
         </div>
