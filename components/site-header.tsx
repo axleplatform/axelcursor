@@ -307,7 +307,7 @@ export function SiteHeader() {
           )}
         </div>
 
-        {/* Desktop Right Side - Navigation Links + Feedback */}
+        {/* Desktop Navigation Links */}
         <div className="hidden md:flex items-center space-x-6">
           <Link
             href="/about"
@@ -327,6 +327,10 @@ export function SiteHeader() {
           >
             Help
           </Link>
+        </div>
+
+        {/* Desktop Feedback Button - Far Right */}
+        <div className="hidden md:flex items-center">
           <FeedbackButton />
         </div>
 
