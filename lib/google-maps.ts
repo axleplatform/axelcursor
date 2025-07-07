@@ -1,23 +1,37 @@
 import { Loader } from '@googlemaps/js-api-loader'
 
-// Google Maps API configuration
-const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+let cachedApiKey: string | null = null;
 
-if (!GOOGLE_MAPS_API_KEY) {
-  console.warn('Google Maps API key not found. Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY environment variable.')
+export async function getGoogleMapsApiKey(): Promise<string> {
+  if (cachedApiKey) return cachedApiKey;
+  
+  try {
+    const response = await fetch('/api/maps-config');
+    const data = await response.json();
+    cachedApiKey = data.apiKey;
+    return cachedApiKey;
+  } catch (error) {
+    console.error('Failed to fetch Google Maps API key:', error);
+    throw error;
+  }
 }
-
-// Initialize Google Maps loader
-export const googleMapsLoader = new Loader({
-  apiKey: GOOGLE_MAPS_API_KEY || '',
-  version: 'weekly',
-  libraries: ['places', 'geometry']
-})
 
 // Load Google Maps API
 export async function loadGoogleMaps(): Promise<typeof google> {
   try {
-    return await googleMapsLoader.load()
+    const apiKey = await getGoogleMapsApiKey();
+    
+    if (!apiKey) {
+      throw new Error('Google Maps API key not found. Please set GOOGLE_MAPS_API_KEY environment variable.');
+    }
+
+    const loader = new Loader({
+      apiKey,
+      version: 'weekly',
+      libraries: ['places', 'geometry']
+    });
+
+    return await loader.load();
   } catch (error) {
     console.error('Failed to load Google Maps API:', error)
     throw error
