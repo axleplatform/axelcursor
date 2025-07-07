@@ -2690,7 +2690,7 @@ export default function MechanicDashboard() {
                                 Processing...
                               </span>
                             ) : (
-                              "Submit Quote"
+                              "Send"
                             )}
                           </button>
                         );

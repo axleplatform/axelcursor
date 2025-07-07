@@ -357,7 +357,7 @@ export default function AppointmentCard({
               onClick={() => onSubmit?.(appointment.id)}
               className="flex-1 bg-white text-[#294a46] px-3 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors"
             >
-              Submit Quote
+              Send
             </button>
             <button
               onClick={() => onEdit?.(null)}
