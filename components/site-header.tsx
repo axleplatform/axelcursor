@@ -60,56 +60,56 @@ function FeedbackButton() {
       </button>
       
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold">What would you like to share?</h3>
-              <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 md:p-6 border-b">
+              <h3 className="text-lg md:text-xl font-semibold">What would you like to share?</h3>
+              <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600 p-2">
                 ✕
               </button>
             </div>
             
             {!feedbackType ? (
-              <div className="p-6">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 md:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <button
                     onClick={() => setFeedbackType('issue')}
-                    className="p-6 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 transition-all"
+                    className="p-6 md:p-8 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 transition-all min-h-[120px] md:min-h-[140px]"
                   >
-                    <div className="text-3xl mb-2">⚠️</div>
-                    <span className="block text-sm font-medium">Issue</span>
+                    <div className="text-4xl md:text-5xl mb-3 md:mb-4">⚠️</div>
+                    <span className="block text-base md:text-lg font-medium">Issue</span>
                   </button>
                   <button
                     onClick={() => setFeedbackType('idea')}
-                    className="p-6 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all"
+                    className="p-6 md:p-8 border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all min-h-[120px] md:min-h-[140px]"
                   >
-                    <div className="text-3xl mb-2">💡</div>
-                    <span className="block text-sm font-medium">Idea</span>
+                    <div className="text-4xl md:text-5xl mb-3 md:mb-4">💡</div>
+                    <span className="block text-base md:text-lg font-medium">Idea</span>
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="p-6">
-                <button onClick={() => setFeedbackType(null)} className="text-sm text-gray-500 hover:text-gray-700 mb-4">
+              <div className="p-4 md:p-6">
+                <button onClick={() => setFeedbackType(null)} className="text-sm md:text-base text-gray-500 hover:text-gray-700 mb-4 md:mb-6 flex items-center">
                   ← Back
                 </button>
-                <h4 className="text-lg font-medium mb-2">
+                <h4 className="text-lg md:text-xl font-medium mb-3 md:mb-4">
                   {feedbackType === 'issue' ? 'Report an issue' : 'Share your idea'}
                 </h4>
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder={feedbackType === 'issue' ? "Describe the issue..." : "Tell us about your idea..."}
-                  className="w-full h-32 p-3 border border-gray-300 rounded-md mb-4"
+                  className="w-full h-32 md:h-40 p-3 md:p-4 border border-gray-300 rounded-md mb-4 md:mb-6 text-sm md:text-base"
                 />
-                <div className="flex justify-end gap-3">
-                  <button onClick={() => setIsOpen(false)} className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                <div className="flex flex-col sm:flex-row justify-end gap-3">
+                  <button onClick={() => setIsOpen(false)} className="px-4 py-3 md:py-2 text-sm md:text-base text-gray-700 hover:bg-gray-100 rounded-md order-2 sm:order-1">
                     Cancel
                   </button>
                   <button
                     onClick={handleSubmit}
                     disabled={!message.trim() || isSubmitting}
-                    className="px-4 py-2 text-sm text-white bg-teal-600 hover:bg-teal-700 rounded-md disabled:opacity-50"
+                    className="px-4 py-3 md:py-2 text-sm md:text-base text-white bg-teal-600 hover:bg-teal-700 rounded-md disabled:opacity-50 order-1 sm:order-2"
                   >
                     {isSubmitting ? 'Submitting...' : 'Submit'}
                   </button>
