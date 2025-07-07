@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { MapPin, Loader2 } from 'lucide-react'
+import GoogleMapsMap from './google-maps-map'
 
 interface HomepageLocationInputProps {
   value: string
@@ -18,7 +19,7 @@ export default function HomepageLocationInput({
 }: HomepageLocationInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [showMap, setShowMap] = useState(false)
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
 
   // Initialize Google Maps Autocomplete
   useEffect(() => {
@@ -48,6 +49,7 @@ export default function HomepageLocationInput({
             const lng = place.geometry.location.lng()
             const address = place.formatted_address || value
 
+            setCoordinates({ lat, lng })
             onChange(address)
 
             if (onLocationSelect) {
@@ -69,6 +71,18 @@ export default function HomepageLocationInput({
   // Handle manual input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value)
+    // Clear coordinates when user manually types
+    setCoordinates(null)
+  }
+
+  // Handle map location selection
+  const handleMapLocationSelect = (location: { lat: number; lng: number; address: string }) => {
+    setCoordinates({ lat: location.lat, lng: location.lng })
+    onChange(location.address)
+    
+    if (onLocationSelect) {
+      onLocationSelect(location)
+    }
   }
 
   return (
@@ -99,28 +113,19 @@ export default function HomepageLocationInput({
       </div>
       {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
       <div className="flex items-center justify-between text-xs mt-1">
-        <p className="text-gray-500">Start typing to see address suggestions</p>
-        <button
-          type="button"
-          onClick={() => setShowMap(!showMap)}
-          className="text-blue-600 hover:text-blue-800 transition-colors"
-        >
-          {showMap ? 'Hide' : 'Show'} Map
-        </button>
+        <p className="text-gray-500">Drag Pin to Exact Location</p>
       </div>
 
-      {/* Optional Map View */}
-      {showMap && (
-        <div className="mt-3">
-          <div className="h-[220px] bg-gray-100 rounded-lg flex items-center justify-center">
-            <div className="text-gray-500 flex flex-col items-center">
-              <MapPin className="h-10 w-10 mb-2" />
-              <span>Interactive Map View</span>
-              <p className="text-xs mt-1">Google Maps integration coming soon</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Always Show Map */}
+      <div className="mt-3">
+        <GoogleMapsMap
+          center={coordinates || { lat: 37.7749, lng: -122.4194 }}
+          onLocationSelect={handleMapLocationSelect}
+          height="220px"
+          address={value}
+          isLoading={isLoading}
+        />
+      </div>
     </div>
   )
 } 

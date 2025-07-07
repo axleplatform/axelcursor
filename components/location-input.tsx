@@ -139,7 +139,7 @@ export default function LocationInput({
       {showMap && (
         <div className="space-y-2">
           <p className="text-xs text-gray-500">
-            Click on the map or drag the pin to set your exact location
+            Drag Pin to Exact Location
           </p>
           <GoogleMapsMap
             center={coordinates || { lat: 37.7749, lng: -122.4194 }}
