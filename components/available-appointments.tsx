@@ -137,7 +137,7 @@ export default function AvailableAppointments({
                     value={priceInput}
                     onChange={(e) => setPriceInput(e.target.value)}
                     placeholder="Enter price"
-                    className="border-none outline-none text-2xl font-bold bg-transparent w-32 text-gray-900"
+                    className="border-none outline-none text-2xl font-bold bg-transparent w-32 text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     disabled={isProcessing}
                   />
                 </div>
@@ -160,17 +160,21 @@ export default function AvailableAppointments({
                   <span className="ml-1">{appointments[currentIndex].car_runs ? "Yes" : "No"}</span>
                 </div>
 
-                {appointments[currentIndex].selected_services &&
-                  appointments[currentIndex].selected_services!.length > 0 && (
-                    <div className="mb-3">
-                      <div className="font-semibold mb-1">Recommended Services:</div>
-                      <ul className="list-disc pl-5 space-y-1">
-                        {appointments[currentIndex].selected_services!.map((service, index) => (
-                          <li key={index}>{service}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                {appointments[currentIndex].selected_services && appointments[currentIndex].selected_services!.length > 0 ? (
+                  <div className="mb-3">
+                    <div className="font-semibold mb-1">Recommended Services:</div>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {appointments[currentIndex].selected_services!.map((service, index) => (
+                        <li key={index}>{service}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <div className="mb-3">
+                    <div className="font-semibold mb-1">Recommended Services:</div>
+                    <p className="text-sm text-gray-500 italic">No services selected</p>
+                  </div>
+                )}
 
                 {appointments[currentIndex].selected_car_issues &&
                   appointments[currentIndex].selected_car_issues!.length > 0 && (
