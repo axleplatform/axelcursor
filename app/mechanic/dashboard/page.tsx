@@ -131,10 +131,17 @@ export default function MechanicDashboard() {
 
   // Schedule-specific handlers
   const handleScheduleCancel = (appointment: AppointmentWithRelations) => {
+    // First navigate to the appointment to show it to the user
+    navigateToAppointmentFromSchedule(appointment);
+    
+    // Then open the cancel modal
     setShowScheduleCancelModal(true);
   };
 
   const handleScheduleEdit = (appointment: AppointmentWithRelations) => {
+    // First navigate to the appointment to show it to the user
+    navigateToAppointmentFromSchedule(appointment);
+    
     // Initialize form fields with current appointment data
     const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
     if (myQuote) {
@@ -153,7 +160,120 @@ export default function MechanicDashboard() {
       setNotes(myQuote.notes || '');
     }
     
+    // Then open the edit modal
     setShowScheduleEditModal(true);
+  };
+
+  // Helper function to navigate to appointment from schedule
+  const navigateToAppointmentFromSchedule = (appointment: AppointmentWithRelations) => {
+    // Set flag to indicate this appointment was accessed from schedule
+    setIsFromSchedule(true);
+    
+    // Check if this is a past-ETA appointment that needs to be restored
+    if (isPastETA(appointment) && !isRestoredToday(appointment.id)) {
+      handleRestoreAppointment(appointment);
+      toast({
+        title: "Appointment Restored",
+        description: "This appointment has been restored to your upcoming appointments for today.",
+      });
+    }
+    
+    // Find the appointment in available appointments
+    const availableIndex = availableAppointments.findIndex(apt => apt.id === appointment.id)
+    if (availableIndex !== -1) {
+      setCurrentAvailableIndex(availableIndex)
+      
+      // For mobile, scroll to available appointments section
+      if (isMobile) {
+        const availableSection = document.querySelector('[data-section="available-appointments"]')
+        if (availableSection) {
+          availableSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          
+          // Add visual feedback
+          availableSection.classList.add('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
+          setTimeout(() => {
+            availableSection.classList.remove('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
+          }, 2000)
+          
+          toast({
+            title: "Appointment Found",
+            description: "Scrolled to available appointments section",
+          });
+        }
+      }
+      return
+    }
+    
+    // Find the appointment in the FILTERED upcoming appointments (not the original array)
+    const filteredUpcomingIndex = filteredUpcomingAppointments.findIndex(apt => apt.id === appointment.id)
+    if (filteredUpcomingIndex !== -1) {
+      // Set the clicked appointment as the active one in upcoming appointments
+      setCurrentUpcomingIndex(filteredUpcomingIndex)
+      
+      // Enhanced scrolling for mobile devices
+      const upcomingSection = document.querySelector('[data-section="upcoming-appointments"]')
+      if (upcomingSection) {
+        if (isMobile) {
+          // For mobile, scroll with better positioning and add visual feedback
+          upcomingSection.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          })
+          
+          // Add a brief highlight effect to the section
+          upcomingSection.classList.add('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
+          setTimeout(() => {
+            upcomingSection.classList.remove('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
+          }, 2000)
+          
+          toast({
+            title: "Appointment Found",
+            description: "Scrolled to upcoming appointments section",
+          });
+        } else {
+          // Desktop behavior - smooth scroll
+          upcomingSection.scrollIntoView({ behavior: 'smooth' })
+        }
+      }
+      return
+    }
+    
+    // If not found in filtered appointments, it might be filtered out
+    // Try to find it in the original upcoming appointments and restore it if needed
+    const originalUpcomingIndex = upcomingAppointments.findIndex(apt => apt.id === appointment.id)
+    if (originalUpcomingIndex !== -1) {
+      // This appointment exists but is filtered out - restore it and set as current
+      handleRestoreAppointment(appointment);
+      // After restoration, it should appear in filtered appointments
+      // We'll need to wait for the next render cycle to find the correct index
+      setTimeout(() => {
+        const newFilteredIndex = filteredUpcomingAppointments.findIndex(apt => apt.id === appointment.id);
+        if (newFilteredIndex !== -1) {
+          setCurrentUpcomingIndex(newFilteredIndex);
+          
+          // Scroll to the section after restoration
+          const upcomingSection = document.querySelector('[data-section="upcoming-appointments"]')
+          if (upcomingSection && isMobile) {
+            upcomingSection.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start' 
+            })
+            
+            // Add visual feedback
+            upcomingSection.classList.add('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
+            setTimeout(() => {
+              upcomingSection.classList.remove('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
+            }, 2000)
+          }
+        }
+      }, 100);
+      
+      toast({
+        title: "Appointment Restored",
+        description: "This appointment has been restored to your upcoming appointments.",
+      });
+      return;
+    }
   };
 
   const handleScheduleCancelSubmit = async () => {
@@ -1339,113 +1459,14 @@ export default function MechanicDashboard() {
 
   // Handle appointment click from schedule
   const handleScheduleAppointmentClick = (appointment: AppointmentWithRelations) => {
-    // Set flag to indicate this appointment was accessed from schedule
-    setIsFromSchedule(true);
-    
     // Special handling for cancelled appointments - toggle visibility
     if (appointment.status === 'cancelled') {
       handleToggleCancelledAppointment(appointment);
       return;
     }
     
-    // Check if this is a past-ETA appointment that needs to be restored
-    if (isPastETA(appointment) && !isRestoredToday(appointment.id)) {
-      handleRestoreAppointment(appointment);
-      toast({
-        title: "Appointment Restored",
-        description: "This appointment has been restored to your upcoming appointments for today.",
-      });
-    }
-    
-    // Find the appointment in available appointments
-    const availableIndex = availableAppointments.findIndex(apt => apt.id === appointment.id)
-    if (availableIndex !== -1) {
-      setCurrentAvailableIndex(availableIndex)
-      
-      // For mobile, scroll to available appointments section
-      if (isMobile) {
-        const availableSection = document.querySelector('[data-section="available-appointments"]')
-        if (availableSection) {
-          availableSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          toast({
-            title: "Appointment Found",
-            description: "Scrolled to available appointments section",
-          });
-        }
-      }
-      return
-    }
-    
-    // Find the appointment in the FILTERED upcoming appointments (not the original array)
-    const filteredUpcomingIndex = filteredUpcomingAppointments.findIndex(apt => apt.id === appointment.id)
-    if (filteredUpcomingIndex !== -1) {
-      // Set the clicked appointment as the active one in upcoming appointments
-      setCurrentUpcomingIndex(filteredUpcomingIndex)
-      
-      // Enhanced scrolling for mobile devices
-      const upcomingSection = document.querySelector('[data-section="upcoming-appointments"]')
-      if (upcomingSection) {
-        if (isMobile) {
-          // For mobile, scroll with better positioning and add visual feedback
-          upcomingSection.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start' 
-          })
-          
-          // Add a brief highlight effect to the section
-          upcomingSection.classList.add('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
-          setTimeout(() => {
-            upcomingSection.classList.remove('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
-          }, 2000)
-          
-          toast({
-            title: "Appointment Found",
-            description: "Scrolled to upcoming appointments section",
-          });
-        } else {
-          // Desktop behavior - smooth scroll
-          upcomingSection.scrollIntoView({ behavior: 'smooth' })
-        }
-      }
-      return
-    }
-    
-    // If not found in filtered appointments, it might be filtered out
-    // Try to find it in the original upcoming appointments and restore it if needed
-    const originalUpcomingIndex = upcomingAppointments.findIndex(apt => apt.id === appointment.id)
-    if (originalUpcomingIndex !== -1) {
-      // This appointment exists but is filtered out - restore it and set as current
-      handleRestoreAppointment(appointment);
-      // After restoration, it should appear in filtered appointments
-      // We'll need to wait for the next render cycle to find the correct index
-      setTimeout(() => {
-        const newFilteredIndex = filteredUpcomingAppointments.findIndex(apt => apt.id === appointment.id);
-        if (newFilteredIndex !== -1) {
-          setCurrentUpcomingIndex(newFilteredIndex);
-          
-          // Scroll to the section after restoration
-          const upcomingSection = document.querySelector('[data-section="upcoming-appointments"]')
-          if (upcomingSection && isMobile) {
-            upcomingSection.scrollIntoView({ 
-              behavior: 'smooth', 
-              block: 'start' 
-            })
-            
-            // Add visual feedback
-            upcomingSection.classList.add('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
-            setTimeout(() => {
-              upcomingSection.classList.remove('ring-2', 'ring-[#294a46]', 'ring-opacity-50')
-            }, 2000)
-          }
-        }
-      }, 100);
-      
-      toast({
-        title: "Appointment Restored",
-        description: "This appointment has been restored to your upcoming appointments.",
-      });
-      return;
-    }
+    // Use the helper function to navigate to the appointment
+    navigateToAppointmentFromSchedule(appointment);
   }
 
   // Update handleUpdateQuote function
