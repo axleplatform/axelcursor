@@ -557,7 +557,7 @@ function PickMechanicContent() {
                {/* Rating on one line */}
                <div className="flex items-center gap-2 mt-1">
                 <span className="text-yellow-400">⭐</span>
-                <span className="text-sm text-gray-700">{quote.mechanic_profiles?.rating || 'N/A'}</span>
+                <span className="text-sm text-gray-700">{quote.mechanic_profiles?.rating || 'N/A'} rating</span>
                </div>
                {/* Reviews on next line */}
                <div className="text-sm text-gray-600 mt-1">
