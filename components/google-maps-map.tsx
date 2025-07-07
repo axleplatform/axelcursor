@@ -174,9 +174,30 @@ export default function GoogleMapsMap({
     return reverseGeocode(lat, lng)
   }
 
-  const formatAddress = async (result: any) => {
-    const { formatAddress } = await import('@/lib/google-maps')
-    return formatAddress(result)
+  const formatAddress = (result: any) => {
+    // Import formatAddress from the lib - it's a synchronous function
+    const addressComponents = result.address_components
+    const streetNumber = addressComponents.find((component: any) => 
+      component.types.includes('street_number')
+    )?.long_name || ''
+    
+    const route = addressComponents.find((component: any) => 
+      component.types.includes('route')
+    )?.long_name || ''
+    
+    const locality = addressComponents.find((component: any) => 
+      component.types.includes('locality')
+    )?.long_name || ''
+    
+    const administrativeArea = addressComponents.find((component: any) => 
+      component.types.includes('administrative_area_level_1')
+    )?.short_name || ''
+    
+    const postalCode = addressComponents.find((component: any) => 
+      component.types.includes('postal_code')
+    )?.long_name || ''
+    
+    return `${streetNumber} ${route}, ${locality}, ${administrativeArea} ${postalCode}`.trim()
   }
 
   if (isLoading || isMapLoading) {
