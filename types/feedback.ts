@@ -17,4 +17,4 @@ export interface FeedbackResponse {
   success: boolean;
   error?: string;
   data?: Feedback;
-} 
+}

@@ -142,4 +142,4 @@ export default function SimpleMap({
       </LoadScript>
     </div>
   )
-} 
+}

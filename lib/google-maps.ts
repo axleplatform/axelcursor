@@ -107,4 +107,4 @@ export function extractCoordinates(result: google.maps.GeocoderResult): { lat: n
     lat: location.lat(),
     lng: location.lng()
   }
-} 
+}

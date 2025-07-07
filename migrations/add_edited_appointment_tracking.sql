@@ -35,4 +35,4 @@ CREATE INDEX IF NOT EXISTS idx_appointment_edit_notifications_appointment_id ON 
 CREATE INDEX IF NOT EXISTS idx_appointment_edit_notifications_mechanic_id ON appointment_edit_notifications(mechanic_id);
 CREATE INDEX IF NOT EXISTS idx_appointment_edit_notifications_created_at ON appointment_edit_notifications(created_at);
 CREATE INDEX IF NOT EXISTS idx_appointments_edited_after_quotes ON appointments(edited_after_quotes);
-CREATE INDEX IF NOT EXISTS idx_appointments_mechanic_notified_of_edit ON appointments(mechanic_notified_of_edit); 
+CREATE INDEX IF NOT EXISTS idx_appointments_mechanic_notified_of_edit ON appointments(mechanic_notified_of_edit);

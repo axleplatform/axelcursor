@@ -35,4 +35,4 @@ CREATE INDEX IF NOT EXISTS idx_appointments_cancelled_at ON appointments(cancell
 CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments(status);
 
 -- Force refresh the schema cache
-SELECT pg_reload_conf(); 
+SELECT pg_reload_conf();

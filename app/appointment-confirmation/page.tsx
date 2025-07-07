@@ -622,4 +622,4 @@ export default function AppointmentConfirmationPage() {
       <Footer />
     </div>
   )
-} 
+}

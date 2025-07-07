@@ -32,4 +32,4 @@ CREATE POLICY "Service role can read all feedback" ON feedback
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback(user_id);
 CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback(type);
-CREATE INDEX IF NOT EXISTS idx_feedback_created_at ON feedback(created_at); 
+CREATE INDEX IF NOT EXISTS idx_feedback_created_at ON feedback(created_at);

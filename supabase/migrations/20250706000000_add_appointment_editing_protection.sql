@@ -31,4 +31,4 @@ CREATE POLICY "Users can insert appointment updates" ON appointment_updates
 
 -- Create index for better performance
 CREATE INDEX IF NOT EXISTS idx_appointment_updates_appointment_id ON appointment_updates(appointment_id);
-CREATE INDEX IF NOT EXISTS idx_appointment_updates_created_at ON appointment_updates(created_at); 
+CREATE INDEX IF NOT EXISTS idx_appointment_updates_created_at ON appointment_updates(created_at);

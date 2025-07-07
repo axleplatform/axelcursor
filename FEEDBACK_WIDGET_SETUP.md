@@ -15,9 +15,9 @@ This document explains how to set up and use the feedback widget that has been a
 ### Option 1: Using Supabase CLI
 
 1. Run the migration using Supabase CLI:
-```bash
+\`\`\`bash
 supabase db push
-```
+\`\`\`
 
 ### Option 2: Manual SQL Execution
 
@@ -27,14 +27,14 @@ supabase db push
 ### Option 3: Using the Script
 
 1. Make the script executable:
-```bash
+\`\`\`bash
 chmod +x scripts/create-feedback-table.sh
-```
+\`\`\`
 
 2. Run the script:
-```bash
+\`\`\`bash
 ./scripts/create-feedback-table.sh
-```
+\`\`\`
 
 ## Features
 
@@ -76,9 +76,9 @@ The feedback widget is automatically included in the site header and appears on 
 
 To view all feedback submissions, you can query the database with the service role:
 
-```sql
+\`\`\`sql
 SELECT * FROM feedback ORDER BY created_at DESC;
-```
+\`\`\`
 
 ## Customization
 
@@ -103,4 +103,4 @@ If you see TypeScript linter errors related to React or JSX, these are likely co
 Ensure your Supabase connection is properly configured in `lib/supabase.ts`.
 
 ### RLS Policies
-If users can't submit feedback, check that the RLS policies are correctly applied to the feedback table. 
+If users can't submit feedback, check that the RLS policies are correctly applied to the feedback table.

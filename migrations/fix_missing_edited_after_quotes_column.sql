@@ -3,4 +3,4 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS edited_after_quotes BOOLEAN DE
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS mechanic_notified_of_edit BOOLEAN DEFAULT false;
 
 -- Create index for better performance
-CREATE INDEX IF NOT EXISTS idx_appointments_edited_after_quotes ON appointments(edited_after_quotes); 
+CREATE INDEX IF NOT EXISTS idx_appointments_edited_after_quotes ON appointments(edited_after_quotes);
