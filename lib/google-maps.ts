@@ -8,8 +8,13 @@ export async function getGoogleMapsApiKey(): Promise<string> {
   try {
     const response = await fetch('/api/maps-config');
     const data = await response.json();
+    
+    if (!data.apiKey) {
+      throw new Error('No API key returned from server');
+    }
+    
     cachedApiKey = data.apiKey;
-    return cachedApiKey;
+    return data.apiKey; // Return data.apiKey directly, not cachedApiKey
   } catch (error) {
     console.error('Failed to fetch Google Maps API key:', error);
     throw error;
