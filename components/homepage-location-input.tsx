@@ -134,7 +134,7 @@ export default function HomepageLocationInput({
         <input
           ref={inputRef}
           type="text"
-          name="address"
+          name="location"
           value={value}
           onChange={handleInputChange}
           placeholder="Enter complete address (123 Main St, City, State)"
@@ -159,7 +159,7 @@ export default function HomepageLocationInput({
           showMarker={true}
           draggable={true}
           onLocationSelect={handleMapLocationSelect}
-          address={value}
+          location={value}
           isLoading={isLoading}
         />
       </div>

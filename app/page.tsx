@@ -16,7 +16,7 @@ import HomepageLocationInput from "@/components/homepage-location-input"
 
 // Define types for form data
 interface AppointmentFormData {
-  address: string
+  location: string
   vin: string
   year: string
   make: string
@@ -45,7 +45,7 @@ function HomePageContent(): React.JSX.Element {
   const [isLoadingExistingData, setIsLoadingExistingData] = useState<boolean>(false)
   const [errors, setErrors] = useState<Partial<AppointmentFormData & { general?: string }>>({})
   const [formData, setFormData] = useState<AppointmentFormData>({
-    address: "",
+    location: "",
     vin: "",
     year: "",
     make: "",
@@ -103,7 +103,7 @@ function HomePageContent(): React.JSX.Element {
         // Restore form data from existing appointment
         setFormData(prev => ({
           ...prev,
-          address: data.location || "",
+          location: data.location || "",
           vin: data.vehicles?.vin || "",
           year: data.vehicles?.year?.toString() || "",
           make: data.vehicles?.make || "",
@@ -156,7 +156,7 @@ function HomePageContent(): React.JSX.Element {
 
   // Save form data to sessionStorage whenever it changes
   useEffect(() => {
-    if (formData.address || formData.year || formData.make || formData.model) {
+    if (formData.location || formData.year || formData.make || formData.model) {
       sessionStorage.setItem('axle-landing-form-data', JSON.stringify(formData))
     }
   }, [formData])
@@ -252,8 +252,8 @@ function HomePageContent(): React.JSX.Element {
   const validateForm = React.useCallback((): boolean => {
     const newErrors: { [key: string]: string } = {}
 
-    if (!formData.address.trim()) {
-      newErrors.address = "Address is required"
+    if (!formData.location.trim()) {
+      newErrors.location = "Location is required"
     }
 
     if (!formData.year.trim()) {
@@ -486,7 +486,7 @@ function HomePageContent(): React.JSX.Element {
           user_id: tempUserId, // ALWAYS has a user_id
           status: "pending",
           appointment_date: appointmentDate.toISOString(),
-          location: formData.address,
+          location: formData.location,
           issue_description: formData.issueDescription,
           selected_services: formData.selectedServices,
           car_runs: formData.carRuns,
@@ -564,7 +564,7 @@ function HomePageContent(): React.JSX.Element {
   // Check if all required fields are filled (for button state)
   const isFormComplete = React.useMemo((): boolean => {
     return !!(
-      formData.address.trim() &&
+      formData.location.trim() &&
       formData.year.trim() &&
       formData.make.trim() &&
       formData.model.trim() &&
@@ -576,7 +576,7 @@ function HomePageContent(): React.JSX.Element {
   // Get missing required fields for UX guidance
   const missingFields = React.useMemo((): string[] => {
     const missing: string[] = []
-    if (!formData.address.trim()) missing.push('address')
+    if (!formData.location.trim()) missing.push('location')
     if (!formData.year.trim()) missing.push('year')
     if (!formData.make.trim()) missing.push('make')
     if (!formData.model.trim()) missing.push('model')
@@ -595,8 +595,8 @@ function HomePageContent(): React.JSX.Element {
         let targetElement: HTMLElement | null = null
         
         switch (fieldName) {
-          case 'address':
-            targetElement = document.querySelector('input[name="address"]')
+          case 'location':
+            targetElement = document.querySelector('input[name="location"]')
             break
           case 'year':
             targetElement = document.querySelector('select[name="year"]')
@@ -631,8 +631,8 @@ function HomePageContent(): React.JSX.Element {
           let targetElement: HTMLElement | null = null
           
           switch (fieldName) {
-            case 'address':
-              targetElement = document.querySelector('input[name="address"]')
+            case 'location':
+              targetElement = document.querySelector('input[name="location"]')
               break
             case 'year':
               targetElement = document.querySelector('select[name="year"]')
@@ -716,7 +716,7 @@ function HomePageContent(): React.JSX.Element {
     setSelectedLocation(location);
     setFormData((prev) => ({
       ...prev,
-      address: location.address,
+      location: location.address,
       latitude: location.coordinates.lat,
       longitude: location.coordinates.lng,
       place_id: location.placeId || '',
@@ -762,9 +762,9 @@ function HomePageContent(): React.JSX.Element {
           <form onSubmit={handleSubmit}>
             {/* Location Input */}
             <HomepageLocationInput
-              value={formData.address}
-              onChange={(value) => setFormData(prev => ({ ...prev, address: value }))}
-              error={errors.address}
+              value={formData.location}
+              onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
+              error={errors.location}
               onLocationSelect={handleLocationSelect}
             />
 

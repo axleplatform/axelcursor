@@ -11,7 +11,7 @@ interface GoogleMapsMapProps {
   onLocationSelect?: (location: { lat: number; lng: number; address: string }) => void
   draggable?: boolean
   showMarker?: boolean
-  address?: string
+  location?: string
   isLoading?: boolean
 }
 
@@ -23,7 +23,7 @@ export default function GoogleMapsMap({
   onLocationSelect,
   draggable = true,
   showMarker = true,
-  address,
+  location,
   isLoading = false
 }: GoogleMapsMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
@@ -131,10 +131,10 @@ export default function GoogleMapsMap({
         }
       }
 
-      // If address is provided, geocode it and center the map
-      if (address) {
+      // If location is provided, geocode it and center the map
+      if (location) {
         try {
-          const results = await geocodeAddress(address)
+          const results = await geocodeAddress(location)
           if (results && results[0]) {
             const coordinates = extractCoordinates(results[0])
             map.setCenter(coordinates)
@@ -143,7 +143,7 @@ export default function GoogleMapsMap({
             }
           }
         } catch (error) {
-          console.error('Error geocoding address:', error)
+          console.error('Error geocoding location:', error)
         }
       }
 
@@ -153,7 +153,7 @@ export default function GoogleMapsMap({
     } finally {
       setIsMapLoading(false)
     }
-  }, [center, zoom, showMarker, draggable, onLocationSelect, address])
+  }, [center, zoom, showMarker, draggable, onLocationSelect, location])
 
   // Initialize map on mount
   useEffect(() => {
