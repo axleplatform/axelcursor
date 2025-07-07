@@ -583,7 +583,7 @@ function PickMechanicContent() {
              </div>
 
              {/* Profile image and description */}
-             <div className="flex items-center gap-3 mb-4">
+             <div className="flex items-center gap-3 mb-3">
               {quote.mechanic_profiles?.profile_image_url ? (
                <img 
                 src={quote.mechanic_profiles.profile_image_url} 
@@ -602,14 +602,14 @@ function PickMechanicContent() {
               <div className="flex-1">
                {/* Profile descriptions - enhanced display */}
                {quote.mechanic_profiles?.bio && (
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                 <p className="text-sm font-semibold text-[#294a46] mb-2 flex items-center">
+                <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
+                 <p className="text-sm font-semibold text-[#294a46] mb-1 flex items-center">
                   <User className="h-3 w-3 mr-1" />
                   About This Mechanic
                  </p>
                  
                  {/* Bio */}
-                 <div className="mb-2">
+                 <div className="mb-1">
                   <p className="text-xs text-gray-700 leading-relaxed line-clamp-2">{quote.mechanic_profiles.bio}</p>
                  </div>
                  
@@ -631,7 +631,7 @@ function PickMechanicContent() {
                
                {/* Quote notes */}
                {quote.notes && (
-                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 mt-2">
+                <div className="bg-blue-50 rounded-lg p-2 border border-blue-200 mt-1">
                  <p className="text-xs font-medium text-blue-800 mb-1">Quote Details:</p>
                  <p className="text-xs text-blue-700">{quote.notes}</p>
                 </div>
