@@ -8,7 +8,11 @@ interface HomepageLocationInputProps {
   value: string
   onChange: (value: string) => void
   error?: string
-  onLocationSelect?: (location: { lat: number; lng: number; address: string }) => void
+  onLocationSelect?: (location: { 
+    address: string; 
+    coordinates: { lat: number; lng: number }; 
+    placeId?: string; 
+  }) => void
 }
 
 export default function HomepageLocationInput({
@@ -53,7 +57,11 @@ export default function HomepageLocationInput({
             onChange(address)
 
             if (onLocationSelect) {
-              onLocationSelect({ lat, lng, address })
+              onLocationSelect({ 
+                address, 
+                coordinates: { lat, lng }, 
+                placeId: place.place_id 
+              })
             }
           }
         })
@@ -81,7 +89,11 @@ export default function HomepageLocationInput({
     onChange(location.address)
     
     if (onLocationSelect) {
-      onLocationSelect(location)
+      onLocationSelect({
+        address: location.address,
+        coordinates: { lat: location.lat, lng: location.lng },
+        placeId: undefined
+      })
     }
   }
 
