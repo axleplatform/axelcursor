@@ -285,7 +285,7 @@ export function SiteHeader() {
           </Link>
         </div>
 
-        {/* Desktop Navigation - Center */}
+        {/* Desktop Auth Buttons - Center */}
         <div className="hidden md:flex items-center space-x-6">
           {isLoggedIn ? (
             <Button 
@@ -307,7 +307,7 @@ export function SiteHeader() {
           )}
         </div>
 
-        {/* Desktop Navigation Links */}
+        {/* Desktop Right Side - Navigation Links + Feedback */}
         <div className="hidden md:flex items-center space-x-6">
           <Link
             href="/about"
@@ -327,10 +327,6 @@ export function SiteHeader() {
           >
             Help
           </Link>
-        </div>
-
-        {/* Desktop Feedback Button - Far Right */}
-        <div className="hidden md:flex items-center">
           <FeedbackButton />
         </div>
 
