@@ -711,7 +711,7 @@ function PickMechanicContent() {
           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
            <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
            <div className="flex-1">
-            <h3 className="font-semibold text-gray-800 text-sm">Appointment Details</h3>
+            <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Appointment Details</h3>
             <p className="text-xs text-gray-600 mt-1">{formatDate(appointment.appointment_date)}</p>
             <div className="flex items-start mt-1">
              <MapPin className="h-3 w-3 text-gray-400 mt-0.5 mr-1 flex-shrink-0" />
@@ -724,7 +724,7 @@ function PickMechanicContent() {
            <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
             <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
             <div className="flex-1">
-             <h3 className="font-semibold text-gray-800 text-sm">Vehicle</h3>
+             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Vehicle</h3>
              <p className="text-xs text-gray-600 mt-1 font-medium">
               {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
              </p>
@@ -745,7 +745,7 @@ function PickMechanicContent() {
            <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
             <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
             <div className="flex-1">
-             <h3 className="font-semibold text-gray-800 text-sm">Requested Services</h3>
+             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Requested Services</h3>
              <ul className="mt-1 space-y-1">
               {appointment.selected_services.map((service, index) => (
                <li key={index} className="flex items-center">
@@ -762,13 +762,12 @@ function PickMechanicContent() {
            <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
             <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">⚠️</span>
             <div className="flex-1">
-             <h3 className="font-semibold text-gray-800 text-sm">Reported Issues</h3>
+             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Reported Issues</h3>
              <ul className="mt-1 space-y-1">
               {appointment.selected_car_issues.map((issue, index) => (
                <li key={index} className="flex items-center">
-                <div className="h-1.5 w-1.5 rounded-full bg-orange-200/30 text-orange-100 text-xs px-3 py-1 rounded-full whitespace-nowrap">
-                  {formatCarIssue(issue)}
-                </div>
+                <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
+                <span className="text-xs text-gray-600">{formatCarIssue(issue)}</span>
                </li>
               ))}
              </ul>
@@ -780,7 +779,7 @@ function PickMechanicContent() {
            <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
             <FileText className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-             <h3 className="font-semibold text-gray-800 text-sm">Description</h3>
+             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Description</h3>
              <p className="text-xs text-gray-600 mt-1 leading-relaxed">{appointment.issue_description}</p>
             </div>
            </div>
@@ -789,7 +788,7 @@ function PickMechanicContent() {
           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
            <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔋</span>
            <div className="flex-1">
-            <h3 className="font-semibold text-gray-800 text-sm">Car Status</h3>
+            <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Car Status</h3>
             <p className="text-xs text-gray-600 mt-1">
              {appointment.car_runs !== null
               ? appointment.car_runs
