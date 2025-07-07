@@ -16,7 +16,7 @@ import {
   createOrUpdateQuote,
   selectQuoteForAppointment,
 } from "@/lib/mechanic-quotes"
-import { formatDate, validateMechanicId, formatCarIssue } from "@/lib/utils"
+import { formatDate, validateMechanicId, formatCarIssue, formatRelativeTime } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { ProfileDropdown } from "@/components/profile-dropdown"
@@ -95,6 +95,11 @@ export default function MechanicDashboard() {
     // For cancelled appointments, only show if they've been restored today
     if (appointment.status === 'cancelled') {
       return isRestoredToday(appointment.id);
+    }
+    
+    // Don't show edited appointments in upcoming - they should be in available
+    if (appointment.edited_after_quotes) {
+      return false;
     }
     
     // Otherwise, show it normally
@@ -1173,6 +1178,30 @@ export default function MechanicDashboard() {
       }
 
       console.log('✅ Quote submitted successfully!');
+
+      // Clear edit flag if appointment was edited after quotes
+      const { data: appointmentData } = await supabase
+        .from('appointments')
+        .select('edited_after_quotes')
+        .eq('id', appointmentId)
+        .single();
+
+      if (appointmentData?.edited_after_quotes) {
+        console.log('📝 Clearing edit flag for appointment that was edited after quotes');
+        const { error: clearError } = await supabase
+          .from('appointments')
+          .update({ 
+            edited_after_quotes: false,
+            mechanic_notified_of_edit: false 
+          })
+          .eq('id', appointmentId);
+        
+        if (clearError) {
+          console.error('⚠️ Warning: Could not clear edit flag:', clearError);
+        } else {
+          console.log('✅ Edit flag cleared successfully');
+        }
+      }
 
       // Verify the quote was actually created
       const { data: verifyQuote, error: verifyError } = await supabase
@@ -2500,6 +2529,19 @@ export default function MechanicDashboard() {
                       </div>
                     )}
 
+                    {/* Edited After Quotes Warning */}
+                    {filteredAvailableAppointments[currentAvailableIndex].edited_after_quotes && (
+                      <div className="bg-amber-100 border border-amber-400 text-amber-700 px-3 py-2 rounded mb-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🔄</span>
+                          <div>
+                            <div className="font-semibold">Appointment Updated</div>
+                            <div className="text-sm">Customer modified details. Previous quotes removed.</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Recently Updated Badge */}
                     {filteredAvailableAppointments[currentAvailableIndex].last_edited_at && 
                      new Date().getTime() - new Date(filteredAvailableAppointments[currentAvailableIndex].last_edited_at).getTime() < 3600000 && (
@@ -2635,8 +2677,17 @@ export default function MechanicDashboard() {
                       <h4 className="text-sm font-medium mb-2">Issue Description</h4>
                       <p className="text-sm text-white/70 bg-white/5 p-3 rounded-md">
                         {availableAppointments[currentAvailableIndex].issue_description || "No description provided"}
-                          </p>
+                      </p>
+                    </div>
+
+                    {/* Edit Timestamp */}
+                    {filteredAvailableAppointments[currentAvailableIndex].last_edited_at && (
+                      <div className="mb-6">
+                        <div className="text-xs text-white/50 text-center">
+                          Edited {formatRelativeTime(filteredAvailableAppointments[currentAvailableIndex].last_edited_at)}
                         </div>
+                      </div>
+                    )}
 
                     {/* Quote Input */}
                     <div className="mb-6">

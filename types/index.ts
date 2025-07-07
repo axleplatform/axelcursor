@@ -60,6 +60,9 @@ export interface Appointment {
   // Editing protection fields
   is_being_edited?: boolean
   last_edited_at?: string
+  // Edit tracking fields
+  edited_after_quotes?: boolean
+  mechanic_notified_of_edit?: boolean
 }
 
 // Mechanic Profile interface
@@ -150,4 +153,7 @@ export interface AppointmentWithRelations {
   // Editing protection fields
   is_being_edited?: boolean
   last_edited_at?: string
+  // Edit tracking fields
+  edited_after_quotes?: boolean
+  mechanic_notified_of_edit?: boolean
 }

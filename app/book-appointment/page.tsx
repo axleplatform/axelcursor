@@ -506,6 +506,7 @@ function BookAppointmentContent() {
   const [hasInteractedWithTextArea, setHasInteractedWithTextArea] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [appointmentData, setAppointmentData] = useState<AppointmentData | null>(null)
+  const [hadPreviousQuotes, setHadPreviousQuotes] = useState(false)
   
 
   
@@ -576,6 +577,33 @@ function BookAppointmentContent() {
 
     fetchAppointmentData()
   }, [appointmentId])
+
+  // Check if appointment had quotes before editing
+  useEffect(() => {
+    if (searchParams.get('edit') === 'true' && appointmentId) {
+      const checkExistingQuotes = async () => {
+        try {
+          const { data: quotes, error } = await supabase
+            .from('mechanic_quotes')
+            .select('id')
+            .eq('appointment_id', appointmentId);
+          
+          if (error) {
+            console.error('Error checking existing quotes:', error);
+            return;
+          }
+          
+          if (quotes && quotes.length > 0) {
+            console.log('📝 Appointment had previous quotes, marking for edit tracking');
+            setHadPreviousQuotes(true);
+          }
+        } catch (error) {
+          console.error('Error checking existing quotes:', error);
+        }
+      };
+      checkExistingQuotes();
+    }
+  }, [appointmentId, searchParams]);
   // Format phone number as user types
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Remove all non-numeric characters
@@ -724,6 +752,26 @@ function BookAppointmentContent() {
       if (isEditMode) {
         console.log('🔄 Edit mode detected - clearing existing quotes and notifying mechanics')
         
+        if (hadPreviousQuotes) {
+          console.log('📝 Appointment had previous quotes - implementing edit tracking')
+          
+          // Reset appointment to "quotable" state with edit tracking
+          const { error: updateError } = await supabase
+            .from('appointments')
+            .update({
+              edited_after_quotes: true,
+              mechanic_notified_of_edit: true,
+              last_edited_at: now
+            })
+            .eq('id', appointmentId)
+          
+          if (updateError) {
+            console.error('⚠️ Warning: Could not update edit tracking:', updateError)
+          } else {
+            console.log('✅ Edit tracking updated')
+          }
+        }
+        
         // Delete all existing quotes for this appointment (prices are now invalid)
         const { error: quotesError } = await supabase
           .from('mechanic_quotes')
@@ -737,8 +785,24 @@ function BookAppointmentContent() {
           console.log('✅ All existing quotes cleared')
         }
         
-        // Notify mechanics via real-time
-        const { error: notificationError } = await supabase
+        // Create notifications for mechanics who quoted
+        if (hadPreviousQuotes) {
+          const { error: notificationError } = await supabase
+            .from('appointment_edit_notifications')
+            .insert({
+              appointment_id: appointmentId,
+              message: 'Customer edited appointment details. Please submit a new quote.'
+            })
+          
+          if (notificationError) {
+            console.error('⚠️ Warning: Could not create edit notifications:', notificationError)
+          } else {
+            console.log('✅ Edit notifications created for mechanics')
+          }
+        }
+        
+        // Also notify via real-time for backward compatibility
+        const { error: realtimeError } = await supabase
           .from('appointment_updates')
           .insert({
             appointment_id: appointmentId,
@@ -746,11 +810,11 @@ function BookAppointmentContent() {
             message: 'Customer updated appointment details. Previous quotes have been cleared.'
           })
         
-        if (notificationError) {
-          console.error('⚠️ Warning: Could not send notification to mechanics:', notificationError)
+        if (realtimeError) {
+          console.error('⚠️ Warning: Could not send real-time notification to mechanics:', realtimeError)
           // Don't throw error for this - it's not critical
         } else {
-          console.log('✅ Mechanics notified of appointment update')
+          console.log('✅ Mechanics notified of appointment update via real-time')
         }
       }
 
