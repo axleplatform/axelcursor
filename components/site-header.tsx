@@ -270,7 +270,7 @@ export function SiteHeader() {
 
   return (
     <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="container mx-auto px-4 h-16 flex items-center relative">
         {/* Logo */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center">
@@ -285,8 +285,8 @@ export function SiteHeader() {
           </Link>
         </div>
 
-        {/* Desktop Auth Buttons - Center */}
-        <div className="hidden md:flex items-center space-x-6">
+        {/* Desktop Auth Buttons - Absolutely Centered */}
+        <div className="hidden md:flex items-center space-x-6 absolute left-1/2 transform -translate-x-1/2">
           {isLoggedIn ? (
             <Button 
               onClick={handleLogout}
@@ -308,7 +308,7 @@ export function SiteHeader() {
         </div>
 
         {/* Desktop Right Side - Navigation Links + Feedback */}
-        <div className="hidden md:flex items-center space-x-6">
+        <div className="hidden md:flex items-center space-x-6 ml-auto">
           <Link
             href="/about"
             className={cn(
