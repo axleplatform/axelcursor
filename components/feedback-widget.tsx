@@ -69,10 +69,10 @@ export function FeedbackWidget() {
       {/* Feedback modal */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex justify-center" style={{ paddingTop: '4rem' }}>
-          <div className="w-fit bg-white/65 backdrop-blur-[8px] rounded-md shadow-lg border border-gray-200 p-4 max-w-sm relative">
+          <div className="w-fit bg-white/65 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-4 max-w-sm relative">
             {/* Header */}
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-base font-semibold">What would you like to share?</h3>
+              <h3 className="text-base font-semibold backdrop-blur-[8px]">What would you like to share?</h3>
               <button
                 onClick={() => setIsOpen(false)}
                 className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-gray-700 hover:text-red-600 hover:bg-red-100 rounded-full transition-all duration-200 font-bold text-lg"
@@ -87,7 +87,7 @@ export function FeedbackWidget() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setFeedbackType('issue')}
-                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 transition-all min-h-[80px]"
+                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 transition-all min-h-[80px] backdrop-blur-[8px]"
                   >
                     <div className="text-2xl mb-2">⚠️</div>
                     <span className="block text-sm font-medium">Issue</span>
@@ -95,7 +95,7 @@ export function FeedbackWidget() {
                   
                   <button
                     onClick={() => setFeedbackType('idea')}
-                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all min-h-[80px]"
+                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all min-h-[80px] backdrop-blur-[8px]"
                   >
                     <div className="text-2xl mb-2">💡</div>
                     <span className="block text-sm font-medium">Idea</span>
@@ -107,7 +107,7 @@ export function FeedbackWidget() {
             {/* Feedback form */}
             {feedbackType && (
               <div className="space-y-3">
-                <h4 className="text-base font-medium">
+                <h4 className="text-base font-medium backdrop-blur-[8px]">
                   {feedbackType === 'issue' ? 'Report an issue' : 'Share your idea'}
                 </h4>
                 
@@ -117,13 +117,13 @@ export function FeedbackWidget() {
                   placeholder={feedbackType === 'issue' 
                     ? "Describe the issue you're experiencing..." 
                     : "Tell us about your idea..."}
-                  className="w-full h-24 p-3 border border-gray-300 rounded-md text-sm resize-none"
+                  className="w-full h-24 p-3 border border-gray-300 rounded-md text-sm resize-none backdrop-blur-[8px]"
                 />
                 
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => setFeedbackType(null)}
-                    className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                    className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md backdrop-blur-[8px]"
                     disabled={isSubmitting}
                   >
                     Back
@@ -131,7 +131,7 @@ export function FeedbackWidget() {
                   <button
                     onClick={handleSubmit}
                     disabled={!message.trim() || isSubmitting}
-                    className="px-3 py-2 text-sm text-white bg-[#294a46] hover:bg-[#1e3632] rounded-md disabled:opacity-50"
+                    className="px-3 py-2 text-sm text-white bg-[#294a46] hover:bg-[#1e3632] rounded-md disabled:opacity-50 backdrop-blur-[8px]"
                   >
                     {isSubmitting ? 'Submitting...' : 'Submit'}
                   </button>
