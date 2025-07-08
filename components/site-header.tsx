@@ -346,7 +346,7 @@ export function SiteHeader() {
       {isMenuOpen && (
         <div className="md:hidden absolute top-16 right-0 left-0 z-50">
           <div className="flex justify-end px-4">
-            <div className="w-fit bg-white/65 backdrop-blur-[8px] rounded-md shadow-lg border border-gray-200 p-4">
+            <div className="w-fit bg-white/65 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-4">
               <nav className="space-y-4">
                 {/* Sign Up and Log In buttons stacked */}
                 <div className="flex flex-col space-y-2">
