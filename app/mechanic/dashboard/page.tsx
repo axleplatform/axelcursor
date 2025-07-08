@@ -18,6 +18,21 @@ import type {
   MechanicSkip,
 } from "@/types/index"
 
+// Server-side safe text function
+function serverSafeText(content: any): string {
+  if (!content) return '';
+  if (typeof content !== 'string') return String(content);
+  
+  return content
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/{/g, '&#123;')
+    .replace(/}/g, '&#125;');
+}
+
 // Global fix - intercept all text rendering
 if (typeof window !== 'undefined') {
   const originalCreateElement = React.createElement;
