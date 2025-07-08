@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect } from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
@@ -73,6 +73,27 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Global error handler
+      window.addEventListener('error', (event) => {
+        if (event.message?.includes('Unexpected token')) {
+          console.error('🚨 JSX PARSE ERROR DETECTED');
+          console.error('URL:', window.location.pathname);
+          console.error('Error:', event.message);
+          console.error('Stack:', event.error?.stack);
+          
+          // Try to identify the source
+          const stack = event.error?.stack || '';
+          const componentMatch = stack.match(/at (\w+) \(/);
+          if (componentMatch) {
+            console.error('Likely component:', componentMatch[1]);
+          }
+        }
+      });
+    }
+  }, []);
+
   return (
     <html lang="en">
       <body className={inter.className}>
