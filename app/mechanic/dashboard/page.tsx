@@ -2713,7 +2713,7 @@ export default function MechanicDashboard() {
                           value={priceInput}
                           onChange={(e: ChangeEvent<HTMLInputElement>) => setPriceInput(e.target.value)}
                           placeholder="Enter your price"
-                          className="w-full bg-white/10 border border-white/20 rounded-md pl-8 pr-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 text-center text-2xl font-bold"
+                          className="w-full bg-white/10 border border-white/20 rounded-md pl-8 pr-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 text-center text-2xl font-bold [appearance:textfield] [className="w-full bg-white/10 border border-white/20 rounded-md pl-8 pr-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 text-center text-2xl font-bold"::-webkit-outer-spin-button]:appearance-none [className="w-full bg-white/10 border border-white/20 rounded-md pl-8 pr-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 text-center text-2xl font-bold"::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                           disabled={isProcessing}
                           min="10"
                           max="10000"
