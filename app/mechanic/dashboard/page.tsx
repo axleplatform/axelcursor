@@ -18,6 +18,31 @@ import type {
   MechanicSkip,
 } from "@/types/index"
 
+// Global fix - intercept all text rendering
+if (typeof window !== 'undefined') {
+  const originalCreateElement = React.createElement;
+  
+  React.createElement = function(type: any, props: any, ...children: any[]) {
+    // Intercept text nodes
+    const processedChildren = children.map(child => {
+      if (typeof child === 'string') {
+        // Escape ALL special characters in strings
+        return child
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;')
+          .replace(/{/g, '&#123;')
+          .replace(/}/g, '&#125;');
+      }
+      return child;
+    });
+    
+    return originalCreateElement.call(React, type, props, ...processedChildren);
+  };
+}
+
 export default function MechanicDashboard() {
   // Utility to safely render text content
   const safeText = (content: any): string => {
