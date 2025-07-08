@@ -69,13 +69,13 @@ export function FeedbackWidget() {
       {/* Feedback modal */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex justify-center" style={{ paddingTop: '4rem' }}>
-          <div className="w-fit bg-white/65 backdrop-blur-[8px] rounded-md shadow-lg border border-gray-200 p-4 max-w-sm">
+          <div className="w-fit bg-white/65 backdrop-blur-[8px] rounded-md shadow-lg border border-gray-200 p-4 max-w-sm relative">
             {/* Header */}
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-base font-semibold">What would you like to share?</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-700 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition-all duration-200 font-bold text-lg"
+                className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-gray-700 hover:text-red-600 hover:bg-red-100 rounded-full transition-all duration-200 font-bold text-lg"
               >
                 ✕
               </button>
