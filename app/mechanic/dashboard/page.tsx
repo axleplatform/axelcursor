@@ -1032,6 +1032,37 @@ export default function MechanicDashboard() {
     loadMechanicProfile();
   }, [userId, isAuthLoading, router]); // CRITICAL: Add mechanicId dependency if needed for re-runs
 
+  // Debug: Log all data that will be rendered
+  useEffect(() => {
+    console.log('=== DASHBOARD DATA DEBUG ===');
+    console.log('Mechanic Profile:', mechanicProfile);
+    console.log('Appointments:', appointments);
+    console.log('Available Appointments:', availableAppointments);
+    console.log('Notifications:', notifications);
+    
+    // Check for problematic characters
+    const checkForProblematicChars = (obj: any, path: string = '') => {
+      if (!obj) return;
+      
+      Object.entries(obj).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          if (value.includes('&gt;') || value.includes('&lt;')) {
+            console.error(`🚨 FOUND PROBLEMATIC CHAR in ${path}.${key}:`, value);
+          }
+        } else if (typeof value === 'object' && value !== null) {
+          checkForProblematicChars(value, `${path}.${key}`);
+        }
+      });
+    };
+    
+    checkForProblematicChars(mechanicProfile, 'mechanicProfile');
+    appointments?.forEach((apt, i) => checkForProblematicChars(apt, `appointments[${i}]`));
+    availableAppointments?.forEach((apt, i) => checkForProblematicChars(apt, `availableAppointments[${i}]`));
+    notifications?.forEach((notif, i) => checkForProblematicChars(notif, `notifications[${i}]`));
+    
+    console.log('===========================');
+  }, [mechanicProfile, appointments, availableAppointments, notifications]);
+
   // Add debug function for mechanic profile
   const debugMechanicProfile = async (): Promise<any> => {
     const { data: { user } } = await supabase.auth.getUser();
