@@ -1,12 +1,13 @@
 "use client"
 
-import React from 'react'
+import React, { Component, ErrorInfo } from 'react'
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 
 interface ErrorBoundaryState {
   hasError: boolean
   error?: Error
+  errorInfo?: React.ErrorInfo
 }
 
 interface ErrorBoundaryProps {
@@ -25,13 +26,28 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary details:', {
-      message: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-      // Log the actual error content
-      errorString: error.toString()
+    // Enhanced logging to find the exact component
+    console.error('=== JSX PARSING ERROR DETAILS ===');
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
+    // Parse component stack to find the specific component
+    const componentStack = errorInfo.componentStack.split('\n');
+    const relevantComponents = componentStack
+      .filter((line: string) => line.includes('at '))
+      .slice(0, 10)
+      .map((line: string) => line.trim());
+      
+    console.error('Component hierarchy:');
+    relevantComponents.forEach((comp: string, index: number) => {
+      console.error(`  ${index + 1}. ${comp}`);
     });
+    
+    console.error('URL:', window.location.pathname);
+    console.error('Time:', new Date().toISOString());
+    console.error('=================================');
+    
+    this.setState({ hasError: true, error, errorInfo });
   }
 
   resetError = () => {
