@@ -28,6 +28,8 @@ export default function MechanicDashboard() {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;")
+      .replace(/{/g, "&#123;")  // Add this for opening brace
+      .replace(/}/g, "&#125;")  // Add this for closing brace
   }
 
   const { toast } = useToast()
