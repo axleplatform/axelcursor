@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import type React from "react"
 import { useState, useEffect, useMemo } from "react"
@@ -17,6 +17,24 @@ import type {
   AppointmentWithRelations,
   MechanicSkip,
 } from "@/types/index"
+
+// Server and client safe text escaping
+function universalSafeText(content: any): string {
+  if (!content) return '';
+  const str = typeof content === 'string' ? content : String(content);
+  
+  // Escape all problematic characters
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/{/g, '&#123;')
+    .replace(/}/g, '&#125;')
+    .replace(/\//g, '&#47;')  // Also escape forward slash
+    .replace(/\\/g, '&#92;');  // And backslash
+}
 
 // Server-side safe text function
 function serverSafeText(content: any): string {
@@ -678,15 +696,49 @@ export default function MechanicDashboard() {
     const dates: DateOption[] = []
     const today = new Date()
 
-    for (let i = 0; i = 0 && newIndex < filteredUpcomingAppointments.length ? newIndex : 0;
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today)
+      date.setDate(today.getDate() + i)
+      dates.push({
+        value: date.toISOString().split('T')[0],
+        label: formatDate(date.toISOString())
+      })
+    }
+    return dates
   }
-  )
-  \
-      setIsFromSchedule(false) // Reset flag when navigating normally
-}
-}
-\
-// Handle appointment click from schedule
+
+  const getTimeSlots = (date: string): DateOption[] => {
+    const slots: DateOption[] = []
+    const startHour = 8 // 8 AM
+    const endHour = 20 // 8 PM
+    
+    for (let hour = startHour; hour < endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const timeString = `${pad(hour)}:${pad(minute)}`
+        slots.push({
+          value: timeString,
+          label: timeString
+        })
+      }
+    }
+    return slots
+  }
+
+  const navigateToNextUpcoming = () => {
+    const newIndex = currentUpcomingIndex + 1
+    setCurrentUpcomingIndex(newIndex >= 0 && newIndex < filteredUpcomingAppointments.length ? newIndex : 0)
+  }
+
+  const navigateToPreviousUpcoming = () => {
+    const newIndex = currentUpcomingIndex - 1
+    setCurrentUpcomingIndex(newIndex >= 0 && newIndex < filteredUpcomingAppointments.length ? newIndex : 0)
+  }
+
+  const navigateToAppointmentFromSchedule = (appointment: AppointmentWithRelations) => {
+    setIsFromSchedule(false) // Reset flag when navigating normally
+  }
+
+  // Handle appointment click from schedule
 const handleScheduleAppointmentClick = (appointment: AppointmentWithRelations) => {
   if (appointment.status === "cancelled") {
     if (!isRestoredToday(appointment.id)) {
@@ -729,122 +781,8 @@ const handleUpdateQuote = async (appointmentId: string) => {
       Number.parseInt(minute),
     ).toISOString()
 
-<<<<<<< HEAD
-    const { error } = await supabase
-      .from("mechanic_quotes")
-      .update({
-        price: Number.parseFloat(price),
-=======
-    // Note: Real-time subscriptions are now handled in the useMechanicAppointments hook
-    // This eliminates duplicate subscriptions and improves performance
-    
-    // Initial setup
-    fetchInitialAppointments()
-
-    // Cleanup function for any local resources
-    return () => {
-      console.log("🧹 Dashboard cleanup")
-    }
-  }, [mechanicId])
-
-  // Real-time subscription for instant updates
-  useEffect(() => {
-   if (!mechanicId) return
-
-   console.log('🔄 Setting up real-time subscriptions for mechanic:', mechanicId)
-   
-   // Subscribe to appointments table changes
-   const appointmentsSubscription = supabase
-    .channel('appointments-changes')
-    .on(
-     'postgres_changes',
-     {
-      event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-      schema: 'public',
-      table: 'appointments'
-     },
-     (payload: RealtimePostgresChangesPayload<any>) => {
-      console.log('📡 Appointment change detected:', payload)
-      // Refresh appointments when any appointment changes
-      fetchInitialAppointments()
-     }
-    )
-    .subscribe()
-
-   // Subscribe to mechanic quotes changes
-   const quotesSubscription = supabase
-    .channel('quotes-changes')
-    .on(
-     'postgres_changes',
-     {
-      event: '*', // Listen to all events
-      schema: 'public',
-      table: 'mechanic_quotes'
-     },
-     (payload: RealtimePostgresChangesPayload<any>) => {
-      console.log('📡 Quote change detected:', payload)
-      // Refresh appointments when quotes change
-      fetchInitialAppointments()
-     }
-    )
-    .subscribe()
-
-   // Subscribe to mechanic skipped appointments changes
-   const skipsSubscription = supabase
-    .channel('skips-changes')
-    .on(
-     'postgres_changes',
-     {
-      event: '*',
-      schema: 'public',
-      table: 'mechanic_skipped_appointments'
-     },
-     (payload: RealtimePostgresChangesPayload<any>) => {
-      console.log('📡 Skip change detected:', payload)
-      // Refresh appointments when skips change
-      fetchInitialAppointments()
-     }
-    )
-    .subscribe()
-
-   // Subscribe to appointment updates for editing notifications
-   const appointmentUpdatesSubscription = supabase
-    .channel('appointment-updates')
-    .on(
-     'postgres_changes',
-     {
-      event: 'INSERT', // Listen to new appointment updates
-      schema: 'public',
-      table: 'appointment_updates'
-     },
-     (payload: RealtimePostgresChangesPayload<any>) => {
-      console.log('📡 Appointment update detected:', payload)
-      
-      // Show notification to mechanic
-      toast({
-       title: "Appointment Updated",
-       description: `Appointment ${payload.new.appointment_id} was updated. Please re-quote if interested.`,
-       variant: "default",
-      })
-      
-      // Refresh appointments list
-      fetchInitialAppointments()
-     }
-    )
-    .subscribe()
-
-   console.log('✅ Real-time subscriptions established')
-
-   return () => {
-    console.log('🔄 Cleaning up real-time subscriptions')
-    appointmentsSubscription.unsubscribe()
-    quotesSubscription.unsubscribe()
-    skipsSubscription.unsubscribe()
-    appointmentUpdatesSubscription.unsubscribe()
-   }
-  }, [mechanicId])
-
-  // Add useEffect to load mechanic profile ONLY after auth is complete
+    // This appears to be an incomplete function - removing it
+    // Add useEffect to load mechanic profile ONLY after auth is complete
   useEffect(() => {
     // Only run after auth is complete and user is authenticated
     if (isAuthLoading || !userId) {
@@ -1066,30 +1004,42 @@ const handleUpdateQuote = async (appointmentId: string) => {
         mechanic_id: mechanicId,
         appointment_id: appointmentId,
         price,
->>>>>>> main
         eta: etaDateTime,
         notes: notes || "",
         updated_at: new Date().toISOString(),
-      })
-      .eq("id", myQuote.id)
+      });
 
-    if (error) {
-      throw error
+      // Insert the quote
+      const { error } = await supabase
+        .from("mechanic_quotes")
+        .insert({
+          mechanic_id: mechanicId,
+          appointment_id: appointmentId,
+          price,
+          eta: etaDateTime,
+          notes: notes || "",
+          created_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      showNotification("Quote submitted successfully", "success");
+      await fetchInitialAppointments();
+      setSelectedAppointment(null);
+      // Reset form
+      setPrice("");
+      setSelectedDate("");
+      setSelectedTime("");
+      setNotes("");
+    } catch (error) {
+      console.error("Error submitting quote:", error);
+      showNotification("Failed to submit quote", "error");
+    } finally {
+      setIsProcessing(false);
     }
-
-    showNotification("Quote updated successfully", "info")
-    await fetchInitialAppointments()
-    setSelectedAppointment(null)
-    // Reset form
-    setPrice("")
-    setSelectedDate("")
-    setSelectedTime("")
-    setNotes("")
-  } catch (error) {
-    console.error("Error updating quote:", error)
-    showNotification("Failed to update quote", "error")
-  }
-}
+  };
 
 // Add handleCancelQuote function after handleUpdateQuote
 const handleCancelQuote = async (appointmentId: string) => {
@@ -1513,362 +1463,309 @@ if (isAuthLoading || isMechanicLoading) {
               
             
             
-              {isAuthLoading ? \"Loading your dashboard..." : \"Loading your mechanic profile..."}
-  \
-            
-          
-        
-
-        
-      
+              {isAuthLoading ? "Loading your dashboard..." : "Loading your mechanic profile..."}
+          </div>
+        </div>
+      </div>
     )
-}
+  }
 
 // Error state
 if (error) {
   return (
-      
-
-        
-          
-            
-              
-            
-            
-              Authentication
-  Error
-  \
-  safeText(error)
-
-  Return
-  to
-  Login
-  \
-            
-          
-        
-
-        
-      
-    )
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6">
+        <div className="text-center">
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">
+            Authentication Error
+          </h1>
+          <p className="text-gray-600 mb-4">
+            {safeText(error)}
+          </p>
+          <button
+            onClick={() => router.push('/login')}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+          >
+            Return to Login
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // Main dashboard content
 return (
-    
+  <div className="min-h-screen bg-gray-50">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {notification && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-blue-800">
+            {safeText(notification.message)}
+          </p>
+        </div>
+      )}
 
-      
-        {notification && (\
-\
-{
-  safeText(notification.message)
-}
+      <div className="bg-white shadow rounded-lg p-6 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Mechanic Dashboard
+            </h1>
+            {mechanicProfile && (
+              <p className="text-gray-600 mt-1">
+                Welcome back, {safeText(mechanicProfile.first_name)}!
+              </p>
+            )}
+          </div>
+          <div className="flex space-x-4">
+            <button
+              onClick={() => router.push('/book-appointment')}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            >
+              Find appointments
+            </button>
+            <button
+              onClick={copyLinkToClipboard}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+            >
+              Refer a friend
+            </button>
+          </div>
+        </div>
+      </div>
 
-)}
+      {/* Upcoming Appointments Section */}
+      <div className="bg-white shadow rounded-lg p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Upcoming Appointments
+            </h2>
+            <p className="text-gray-600 text-sm">
+              Your quoted & confirmed jobs
+            </p>
+          </div>
+        </div>
 
-        \
-          
-            
-              
-                Mechanic Dashboard
+        {isAppointmentsLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading appointments...</p>
+          </div>
+        ) : filteredUpcomingAppointments.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600 mb-2">
+              {searchQuery ? 'No Appointments Found' : 'No Upcoming Appointments'}
+            </p>
+            <p className="text-gray-500 text-sm">
+              {searchQuery 
+                ? `No upcoming appointments match "${safeText(searchQuery)}". Try a different search term.`
+                : 'You haven\'t quoted any appointments yet. New appointments will appear here when you submit a quote.'
+              }
+            </p>
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="mt-2 text-blue-600 hover:text-blue-800"
+              >
+                Clear Search
+              </button>
+            )}
+          </div>
+        ) : (
+          <div>
+            {/* Pagination controls */}
+            {filteredUpcomingAppointments.length > 1 && (
+              <div className="flex justify-between items-center mb-4">
+                <button
+                  onClick={navigateToPreviousUpcoming}
+                  className="p-2 text-gray-600 hover:text-gray-800"
+                >
+                  ← Previous
+                </button>
+                <button
+                  onClick={navigateToNextUpcoming}
+                  className="p-2 text-gray-600 hover:text-gray-800"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
 
-{
-  mechanicProfile && 
-                    \
-  Welcome
-  back, {safeText(mechanicProfile.first_name)}!
-  \
-}
-
-Find
-appointments
-\
-                    
-                    
-                      
-                    
+            {/* Appointment Card */}
+            {filteredUpcomingAppointments[currentUpcomingIndex] && (
+              <div className="border rounded-lg p-4">
+                {(() => {
+                  const appointment = filteredUpcomingAppointments[currentUpcomingIndex];
+                  const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
+                  const isSelected = appointment.selected_mechanic_id === mechanicId;
+                  const isEditing = selectedAppointment?.id === appointment.id;
+                  const isConfirmed = appointment.payment_status === 'paid' || appointment.status === 'confirmed';
                   
-                
-                
-                  Refer a friend
-                
-                
-                  
-                
-              
-            
-          
-        
-      
-
-      
-        
-          
-            
-              
-                Upcoming Appointments
-              
-              
-                Your quoted & confirmed jobs
-
-{
-  ;(() => {
-    console.log("🎯 UPCOMING APPOINTMENTS RENDER DEBUG:", {
-      isAppointmentsLoading,
-      upcomingAppointmentsLength: upcomingAppointments.length,
-      filteredUpcomingLength: filteredUpcomingAppointments.length,
-      searchQuery,
-      willShowCards: !isAppointmentsLoading && filteredUpcomingAppointments.length > 0,
-    })
-    return null
-  })()
-}
-{isAppointmentsLoading ? (
-              
-                
-                  
-                
-              
-            ) : filteredUpcomingAppointments.length === 0 ? (
-              
-                
-                  
-                
-                
-                  {searchQuery ? \'No Appointments Found' : \'No Upcoming Appointments'}\searchQuery 
-                    ? `No upcoming appointments match "${safeText(searchQuery)}". Try a different search term.`
-                    : 'You haven\'t quoted any appointments yet. New appointments will appear here when you submit a quote.'searchQuery && (
-                  
-                    Clear Search\
-                  
-                )
-              
-            ) : (\(() => {
-                  console.log('🎯 RENDERING UPCOMING APPOINTMENT CARDS:', upcomingAppointments.length);
-                  return null;
-                })()filteredUpcomingAppointments.length > 1 && (
-                  <>
-                    
-                      
+                  return (
+                    <>
+                      {/* Card Header with Price and Status */}
+                      <div className="flex justify-between items-start mb-4">
+                        {/* Price Quote */}
+                        {myQuote && (
+                          <div className="text-lg font-semibold text-green-600">
+                            {formatPrice(myQuote.price)}
+                          </div>
+                        )}
                         
-                          
-                        
-                      
-                    
-                    
-                      
-                        
-                          
-                        
-                      
-                    
-                  </>
-                )
-                {filteredUpcomingAppointments[currentUpcomingIndex] && (
-                  
-                    {(() => {\
-                      const appointment = filteredUpcomingAppointments[currentUpcomingIndex];\
-                      const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
-                      const isSelected = appointment.selected_mechanic_id === mechanicId;
-                      const isEditing = selectedAppointment?.id === appointment.id;
-                      const isConfirmed = appointment.payment_status === 'paid' || appointment.status === 'confirmed';
-                      
-                      return (
-                        <>
-                          {/* Card Header with Price and Status */}
-                          
-                            {/* Price Quote */}
-                            {myQuote && (
-                              
-                                {formatPrice(myQuote.price)}\
-                              
-                            )}
-                            
-                            {/* Status and ETA */}
-                            
-                              {appointment.status === 'cancelled' ? (
-                                
-                                  
-                                    ❌ Cancelled\
-                                  
-                                  
-                                    
-                                      
-                                    
-                                    
-                                      ETA: {new Date(myQuote?.eta || '').toLocaleString()}
-                                    
-                                  
-                                
-                              ) : isConfirmed ? (
-                                
-                                  
-                                    ✓ Confirmed
-                                  
-                                  
-                                    
-                                      
-                                    
-                                    
-                                      ETA: {new Date(myQuote?.eta || '').toLocaleString()}
-                                    
-                                  
-                                
-                              ) : isSelected ? (
-                                
-                                  ✓ Customer selected you
-                                
-                              ) : (
-                                
-                                  ⏳ Pending
-                                
-                              )}
-                            
-                          
-
-                          {/* Vehicle Details */}
-                          
-                            
-                              {/* Year, Make, Model Row */}
-                              
-                                {appointment.vehicles?.year && (
-                                  
-                                    {safeText(appointment.vehicles.year)}\
-                                  
-                                )}
-                                {appointment.vehicles?.make && (
-                                  
-                                    {safeText(appointment.vehicles.make)}\
-                                  
-                                )}
-                                {appointment.vehicles?.model && (
-                                  
-                                    {safeText(appointment.vehicles.model)}\
-                                  
-                                )}
-                              
-                              {/* VIN and Mileage Row */}
-                              
-                                {appointment.vehicles?.vin && (
-                                  \
-                                    VIN: {safeText(appointment.vehicles.vin)}
-                                  
-                                )}
-                                {appointment.vehicles?.mileage && (
-                                  \
-                                    {appointment.vehicles.mileage.toLocaleString()} miles
-                                  
-                                )}
-                              
-                            
-                          
-
-                          {/* Location and Date */}
-                          
-                            
-                              
-                                
-                                  
-                                
-                              
-                            
-                            
-                              
-                                
-                              
-                              
-                                {formatDate(appointment.appointment_date)}
-                              
-                            
-                          
-
-                          {/* Issue Description */}
-                          
-                            
-                              Issue Description
-                            
-                            
-                              {safeText(appointment.issue_description || "No description provided")}
-                            
-                          
-
-                          {/* Selected Services - UPCOMING APPOINTMENTS (around line 2257) */}
-                          
-                            
-                              Selected Services
-                            
-                            
-                              {(appointment.selected_services && appointment.selected_services.length > 0) ? (
-                                appointment.selected_services.map((service: string, index: number) => (
-                                  
-                                    {safeText(service)}\
-                                  
-                                ))
-                              ) : (\
-                                
-                                  None Selected
-                                
-                              )}
-                            
-                          
-
-                          {/* Car Issues */}
-                          {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 ? (
-                            
-                              
-                                Car Issues\
-                              
-                              
-                                {appointment.selected_car_issues.map((issue: string, index: number) => (
-                                  
-                                    {formatCarIssue(issue)}
-                                  
-                                ))}
-                              
-                            
+                        {/* Status and ETA */}
+                        <div className="text-right">
+                          {appointment.status === 'cancelled' ? (
+                            <div className="text-red-600 font-medium">
+                              ❌ Cancelled
+                            </div>
+                          ) : isConfirmed ? (
+                            <div className="text-green-600 font-medium">
+                              ✓ Confirmed
+                            </div>
+                          ) : isSelected ? (
+                            <div className="text-blue-600 font-medium">
+                              ✓ Customer selected you
+                            </div>
                           ) : (
-                            
-                              
-                                Car Issues
-                              
-                              
-                                No car issues selected
-                              
-                            
+                            <div className="text-yellow-600 font-medium">
+                              ⏳ Pending
+                            </div>
                           )}
+                          
+                          {myQuote?.eta && (
+                            <div className="text-sm text-gray-600">
+                              ETA: {new Date(myQuote.eta).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Vehicle Details */}
+                      <div className="mb-4">
+                        <h4 className="font-medium text-gray-900 mb-2">Vehicle Information</h4>
+                        
+                        {/* Year, Make, Model Row */}
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {appointment.vehicles?.year && (
+                            <span className="text-sm text-gray-600">
+                              {safeText(appointment.vehicles.year)}
+                            </span>
+                          )}
+                                                    {appointment.vehicles?.make && (
+                            <span className="text-sm text-gray-600">
+                              {safeText(appointment.vehicles.make)}
+                            </span>
+                          )}
+                          {appointment.vehicles?.model && (
+                            <span className="text-sm text-gray-600">
+                              {safeText(appointment.vehicles.model)}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* VIN and Mileage Row */}
+                        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                          {appointment.vehicles?.vin && (
+                            <span>
+                              VIN: {safeText(appointment.vehicles.vin)}
+                            </span>
+                          )}
+                          {appointment.vehicles?.mileage && (
+                            <span>
+                              {appointment.vehicles.mileage.toLocaleString()} miles
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Location and Date */}
+                      <div className="mb-4">
+                        <div className="flex justify-between items-center">
+                          <div className="text-sm text-gray-600">
+                            📍 {safeText(appointment.location || "Location not specified")}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            📅 {formatDate(appointment.appointment_date)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Issue Description */}
+                      <div className="mb-4">
+                        <h4 className="font-medium text-gray-900 mb-2">Issue Description</h4>
+                        <p className="text-sm text-gray-700">
+                          {safeText(appointment.issue_description || "No description provided")}
+                        </p>
+                      </div>
+
+                      {/* Selected Services */}
+                      <div className="mb-4">
+                        <h4 className="font-medium text-gray-900 mb-2">Selected Services</h4>
+                        {(appointment.selected_services && appointment.selected_services.length > 0) ? (
+                          <div className="flex flex-wrap gap-2">
+                            {appointment.selected_services.map((service: string, index: number) => (
+                              <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {safeText(service)}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">None Selected</p>
+                        )}
+                      </div>
+
+                      {/* Car Issues */}
+                      <div className="mb-4">
+                        <h4 className="font-medium text-gray-900 mb-2">Car Issues</h4>
+                        {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {appointment.selected_car_issues.map((issue: string, index: number) => (
+                              <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                {safeText(issue)}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">No car issues selected</p>
+                        )}
+                      </div>
 
                           {/* Car Status */}
                           {appointment.car_runs !== null && (
-                            
-                              
+                            <div className="mt-4">
+                              <h4 className="font-medium text-gray-900 mb-2">
                                 Car Status
-                              
-                              
-                                
-                                  
-                                
-                                
+                              </h4>
+                              <div className="flex items-center">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  appointment.car_runs ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                }`}>
                                   {appointment.car_runs ? "Car is running" : "Car is not running"}
-                                
-                              
-                            
+                                </span>
+                              </div>
+                            </div>
                           )}
 
                           {/* Action buttons */}
-                          
+                          <div className="mt-6 flex space-x-3">
                             {appointment.status === 'cancelled' ? (
-                              
+                              <div className="text-red-600 font-medium">
                                 Appointment Cancelled
-                              
+                              </div>
                             ) : isConfirmed ? (
                               <>
                                 {isFromSchedule ? (
                                   <>
                                     {isWithinTwoDays(appointment) ? (
                                       <>
-                                        
+                                        <button
+                                          onClick={() => handleScheduleEdit(appointment)}
+                                          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                                        >
                                           Edit
-                                        
+                                        </button>
                                         
                                           Cancel
                                         
