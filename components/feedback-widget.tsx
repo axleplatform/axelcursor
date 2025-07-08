@@ -69,7 +69,7 @@ export function FeedbackWidget() {
       {/* Feedback modal */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex justify-center" style={{ paddingTop: '4rem' }}>
-          <div className="w-fit bg-white/5 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-4 max-w-sm">
+          <div className="w-fit bg-white/65 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-4 max-w-sm">
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold">What would you like to share?</h3>

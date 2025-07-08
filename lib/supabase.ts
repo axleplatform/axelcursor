@@ -1,18 +1,11 @@
 import { createBrowserClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-// Create singleton instance
-let supabaseInstance: SupabaseClient | null = null;
-
 export function createClient() {
-  if (supabaseInstance) return supabaseInstance;
-  
-  supabaseInstance = createBrowserClient(
+  return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-  
-  return supabaseInstance;
+  )
 }
 
 // Export the singleton instance

@@ -2252,22 +2252,24 @@ export default function MechanicDashboard() {
                             </p>
                           </div>
 
-                          {/* Selected Services */}
-                          {appointment.selected_services && (
-                            <div className="mb-6">
-                              <h4 className="text-sm font-medium mb-2 text-gray-900">Selected Services</h4>
-                              <div className="flex flex-col gap-2">
-                                {appointment.selected_services.map((service: string, index: number) => (
+                          {/* Selected Services - UPCOMING APPOINTMENTS (around line 2257) */}
+                          <div className="mb-6">
+                            <h4 className="text-sm font-medium mb-2 text-gray-900">Selected Services</h4>
+                            <div className="flex flex-col gap-2">
+                              {(appointment.selected_services && appointment.selected_services.length > 0) ? (
+                                appointment.selected_services.map((service: string, index: number) => (
                                   <span
                                     key={index}
                                     className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full w-fit"
                                   >
                                     {service}
                                   </span>
-                                ))}
-                              </div>
+                                ))
+                              ) : (
+                                <p className="text-sm text-gray-500 italic">None Selected</p>
+                              )}
                             </div>
-                          )}
+                          </div>
 
                           {/* Car Issues */}
                           {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 ? (
@@ -2619,21 +2621,26 @@ export default function MechanicDashboard() {
                       </div>
                       </div>
 
-                    {/* Selected Services and Car Status Row */}
+                    {/* Selected Services - AVAILABLE APPOINTMENTS (around line 2626) */}
                     <div className="flex justify-between items-start mb-6">
                       {/* Selected Services */}
                       {filteredAvailableAppointments[currentAvailableIndex].selected_services && (
                         <div className="flex-1">
                           <h4 className="text-sm font-medium mb-2">Selected Services</h4>
                           <div className="flex flex-col gap-2">
-                            {filteredAvailableAppointments[currentAvailableIndex].selected_services.map((service: string, index: number) => (
-                              <span
-                                key={index}
-                                className="bg-white/20 text-xs px-3 py-1 rounded-full w-fit"
-                              >
-                                {service}
-                              </span>
-                            ))}
+                            {(filteredAvailableAppointments[currentAvailableIndex].selected_services && 
+                              filteredAvailableAppointments[currentAvailableIndex].selected_services.length > 0) ? (
+                              filteredAvailableAppointments[currentAvailableIndex].selected_services.map((service: string, index: number) => (
+                                <span
+                                  key={index}
+                                  className="bg-white/20 text-xs px-3 py-1 rounded-full w-fit"
+                                >
+                                  {service}
+                                </span>
+                              ))
+                            ) : (
+                              <p className="text-sm text-white/50 italic">None Selected</p>
+                            )}
                           </div>
                         </div>
                       )}
