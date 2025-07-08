@@ -41,6 +41,17 @@ import type {
 } from "@/types/index"
 
 export default function MechanicDashboard() {
+  // Safe render function to prevent JSX errors
+  const safe = (text: any): string => {
+    if (!text) return '';
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
   const { toast } = useToast()
   const router = useRouter()
   const isMobile = useIsMobile()
@@ -2015,7 +2026,7 @@ export default function MechanicDashboard() {
           notification.type === 'skip' ? 'bg-gray-50 text-gray-700 border border-gray-200' :
           'bg-gray-50 text-gray-800 border border-gray-200'
         }`}>
-          {notification.message}
+          {safe(notification.message)}
         </div>
       )}
 
@@ -2025,7 +2036,7 @@ export default function MechanicDashboard() {
           <div className="flex flex-col md:flex-row items-center gap-4">
             <h1 className="text-3xl font-bold text-gray-900">Mechanic Dashboard</h1>
             <div className="flex items-center gap-3">
-              {mechanicProfile && <p className="text-lg text-gray-600">Welcome back, {mechanicProfile.first_name}!</p>}
+              {mechanicProfile && <p className="text-lg text-gray-600">Welcome back, {safe(mechanicProfile.first_name)}!</p>}
               {/* Profile dropdown on mobile - next to welcome message */}
               <div className="md:hidden">
                 <ProfileDropdown />
@@ -2248,7 +2259,7 @@ export default function MechanicDashboard() {
                           <div className="mb-6">
                             <h4 className="text-sm font-medium mb-2 text-gray-900">Issue Description</h4>
                             <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-                              {appointment.issue_description || "No description provided"}
+                              {safe(appointment.issue_description || "No description provided")}
                             </p>
                           </div>
 
@@ -2687,7 +2698,7 @@ export default function MechanicDashboard() {
                     <div className="mb-6">
                       <h4 className="text-sm font-medium mb-2">Issue Description</h4>
                       <p className="text-sm text-white/70 bg-white/5 p-3 rounded-md">
-                        {availableAppointments[currentAvailableIndex].issue_description || "No description provided"}
+                        {safe(availableAppointments[currentAvailableIndex].issue_description || "No description provided")}
                       </p>
                     </div>
 
