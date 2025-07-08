@@ -14,4 +14,4 @@ export function sanitizeForJSX(content: any): string {
 
 export function SafeText({ children }: { children: any }) {
   return <>{sanitizeForJSX(children)}</>;
-} 
+}

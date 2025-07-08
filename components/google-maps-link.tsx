@@ -37,4 +37,4 @@ export function GoogleMapsLink({ address, variant = 'light', showIcon = true }: 
       <span className="group-hover:underline group-hover:font-medium">{address}</span>
     </a>
   );
-} 
+}
