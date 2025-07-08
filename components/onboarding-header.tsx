@@ -1,6 +1,24 @@
 import React from "react"
 import { cn } from "@/lib/utils"
 
+// Server and client safe text escaping
+function universalSafeText(content: any): string {
+  if (!content) return '';
+  const str = typeof content === 'string' ? content : String(content);
+  
+  // Escape all problematic characters
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/{/g, '&#123;')
+    .replace(/}/g, '&#125;')
+    .replace(/\//g, '&#47;')  // Also escape forward slash
+    .replace(/\\/g, '&#92;');  // And backslash
+}
+
 interface OnboardingHeaderProps {
   currentStep: number
   title?: string
@@ -16,8 +34,8 @@ export default function OnboardingHeader({
 }: OnboardingHeaderProps) {
   return (
     <div className="mb-8">
-      <h1 className="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-2">{title}</h1>
-      <p className="text-center text-gray-600 mb-4 md:mb-6">{subtitle}</p>
+      <h1 className="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-2">{universalSafeText(title)}</h1>
+      <p className="text-center text-gray-600 mb-4 md:mb-6">{universalSafeText(subtitle)}</p>
 
       <div className="flex items-center justify-center py-2 max-w-full overflow-hidden">
         <div className="flex items-center w-full justify-center">

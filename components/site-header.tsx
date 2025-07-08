@@ -10,6 +10,24 @@ import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 
+// Server and client safe text escaping
+function universalSafeText(content: any): string {
+  if (!content) return '';
+  const str = typeof content === 'string' ? content : String(content);
+  
+  // Escape all problematic characters
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/{/g, '&#123;')
+    .replace(/}/g, '&#125;')
+    .replace(/\//g, '&#47;')  // Also escape forward slash
+    .replace(/\\/g, '&#92;');  // And backslash
+}
+
 // Mobile Feedback Form Component
 function MobileFeedbackForm({ onClose }: { onClose: () => void }) {
   const [feedbackType, setFeedbackType] = useState<'issue' | 'idea' | null>(null);
@@ -72,15 +90,15 @@ function MobileFeedbackForm({ onClose }: { onClose: () => void }) {
         </div>
       ) : (
         <div className="space-y-4">
-          <h4 className="text-base font-medium">
-            {feedbackType === 'issue' ? 'Report an issue' : 'Share your idea'}
-          </h4>
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder={feedbackType === 'issue' ? "Describe the issue..." : "Tell us about your idea..."}
-            className="w-full h-32 p-3 border border-gray-300 rounded-md text-sm resize-none"
-          />
+                      <h4 className="text-base font-medium">
+              {universalSafeText(feedbackType === 'issue' ? 'Report an issue' : 'Share your idea')}
+            </h4>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder={universalSafeText(feedbackType === 'issue' ? "Describe the issue..." : "Tell us about your idea...")}
+              className="w-full h-32 p-3 border border-gray-300 rounded-md text-sm resize-none"
+            />
           <div className="flex justify-end gap-3">
             <button 
               onClick={() => setFeedbackType(null)} 
@@ -183,12 +201,12 @@ function FeedbackButton() {
             ) : (
               <div className="space-y-3">
                 <h4 className="text-base font-medium">
-                  {feedbackType === 'issue' ? 'Report an issue' : 'Share your idea'}
+                  {universalSafeText(feedbackType === 'issue' ? 'Report an issue' : 'Share your idea')}
                 </h4>
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder={feedbackType === 'issue' ? "Describe the issue..." : "Tell us about your idea..."}
+                  placeholder={universalSafeText(feedbackType === 'issue' ? "Describe the issue..." : "Tell us about your idea...")}
                   className="w-full h-24 p-3 border border-gray-300 rounded-md text-sm resize-none"
                 />
                 <div className="flex justify-end gap-2">
