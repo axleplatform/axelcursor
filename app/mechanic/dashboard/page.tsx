@@ -41,10 +41,10 @@ import type {
 } from "@/types/index"
 
 export default function MechanicDashboard() {
-  // Safe render function to prevent JSX errors
-  const safe = (text: any): string => {
-    if (!text) return '';
-    return String(text)
+  // Utility to safely render text content
+  const safeText = (content: any): string => {
+    if (!content) return '';
+    return String(content)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
@@ -2026,7 +2026,7 @@ export default function MechanicDashboard() {
           notification.type === 'skip' ? 'bg-gray-50 text-gray-700 border border-gray-200' :
           'bg-gray-50 text-gray-800 border border-gray-200'
         }`}>
-          {safe(notification.message)}
+          {safeText(notification.message)}
         </div>
       )}
 
@@ -2036,7 +2036,7 @@ export default function MechanicDashboard() {
           <div className="flex flex-col md:flex-row items-center gap-4">
             <h1 className="text-3xl font-bold text-gray-900">Mechanic Dashboard</h1>
             <div className="flex items-center gap-3">
-              {mechanicProfile && <p className="text-lg text-gray-600">Welcome back, {safe(mechanicProfile.first_name)}!</p>}
+              {mechanicProfile && <p className="text-lg text-gray-600">Welcome back, {safeText(mechanicProfile.first_name)}!</p>}
               {/* Profile dropdown on mobile - next to welcome message */}
               <div className="md:hidden">
                 <ProfileDropdown />
@@ -2221,19 +2221,19 @@ export default function MechanicDashboard() {
                               {/* Year, Make, Model Row */}
                               <div className="flex items-center gap-2 text-gray-900">
                                 {appointment.vehicles?.year && (
-                                  <span className="font-medium">{appointment.vehicles.year}</span>
+                                  <span className="font-medium">{safeText(appointment.vehicles.year)}</span>
                                 )}
                                 {appointment.vehicles?.make && (
-                                  <span className="font-medium">{appointment.vehicles.make}</span>
+                                  <span className="font-medium">{safeText(appointment.vehicles.make)}</span>
                                 )}
                                 {appointment.vehicles?.model && (
-                                  <span className="font-medium">{appointment.vehicles.model}</span>
+                                  <span className="font-medium">{safeText(appointment.vehicles.model)}</span>
                                 )}
                               </div>
                               {/* VIN and Mileage Row */}
                               <div className="flex items-center gap-4 text-gray-600 text-sm">
                                 {appointment.vehicles?.vin && (
-                                  <span>VIN: {appointment.vehicles.vin}</span>
+                                  <span>VIN: {safeText(appointment.vehicles.vin)}</span>
                                 )}
                                 {appointment.vehicles?.mileage && (
                                   <span>{appointment.vehicles.mileage.toLocaleString()} miles</span>
@@ -2259,7 +2259,7 @@ export default function MechanicDashboard() {
                           <div className="mb-6">
                             <h4 className="text-sm font-medium mb-2 text-gray-900">Issue Description</h4>
                             <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-                              {safe(appointment.issue_description || "No description provided")}
+                              {safeText(appointment.issue_description || "No description provided")}
                             </p>
                           </div>
 
@@ -2603,9 +2603,9 @@ export default function MechanicDashboard() {
                             
                             return (
                               <>
-                                {vehicle.year && <span className="font-medium">{vehicle.year}</span>}
-                                {vehicle.make && <span className="font-medium">{vehicle.make}</span>}
-                                {vehicle.model && <span className="font-medium">{vehicle.model}</span>}
+                                {vehicle.year && <span className="font-medium">{safeText(vehicle.year)}</span>}
+                                {vehicle.make && <span className="font-medium">{safeText(vehicle.make)}</span>}
+                                {vehicle.model && <span className="font-medium">{safeText(vehicle.model)}</span>}
                               </>
                             );
                           })()}
@@ -2621,7 +2621,7 @@ export default function MechanicDashboard() {
                             
                             return (
                               <>
-                                {vehicle.vin && <span>VIN: {vehicle.vin}</span>}
+                                {vehicle.vin && <span>VIN: {safeText(vehicle.vin)}</span>}
                                 {vehicle.mileage && (
                                   <span>{vehicle.mileage.toLocaleString()} miles</span>
                                 )}
@@ -2698,7 +2698,7 @@ export default function MechanicDashboard() {
                     <div className="mb-6">
                       <h4 className="text-sm font-medium mb-2">Issue Description</h4>
                       <p className="text-sm text-white/70 bg-white/5 p-3 rounded-md">
-                        {safe(availableAppointments[currentAvailableIndex].issue_description || "No description provided")}
+                        {safeText(availableAppointments[currentAvailableIndex].issue_description || "No description provided")}
                       </p>
                     </div>
 
