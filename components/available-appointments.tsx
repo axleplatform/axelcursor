@@ -137,7 +137,12 @@ export default function AvailableAppointments({
                     value={priceInput}
                     onChange={(e) => setPriceInput(e.target.value)}
                     placeholder="Enter price"
-                    className="border-none outline-none text-2xl font-bold bg-transparent w-32 text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="border-none outline-none text-2xl font-bold bg-transparent w-32 text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    style={{
+                      WebkitAppearance: 'textfield',
+                      MozAppearance: 'textfield',
+                      appearance: 'textfield'
+                    }}
                     disabled={isProcessing}
                   />
                 </div>
