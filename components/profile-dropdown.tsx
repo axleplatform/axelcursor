@@ -47,7 +47,7 @@ export function ProfileDropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 sm:w-56 rounded-md shadow-lg bg-white/95 backdrop-blur-[2px] ring-1 ring-black ring-opacity-5 z-50 max-w-[calc(100vw-2rem)]">
+        <div className="absolute right-0 mt-2 w-48 sm:w-56 rounded-md shadow-lg bg-white/65 backdrop-blur-[2px] ring-1 ring-black ring-opacity-5 z-50 max-w-[calc(100vw-2rem)]">
           <div className="py-1" role="menu" aria-orientation="vertical">
             <button
               onClick={() => {
