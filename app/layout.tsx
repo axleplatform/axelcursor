@@ -7,15 +7,52 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ErrorBoundary from "@/components/error-boundary"
 
-// Override React.createElement temporarily to catch the error
+// Server and client safe text escaping
+function universalSafeText(content: any): string {
+  if (!content) return '';
+  const str = typeof content === 'string' ? content : String(content);
+  
+  // Escape all problematic characters
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/{/g, '&#123;')
+    .replace(/}/g, '&#125;')
+    .replace(/\//g, '&#47;')  // Also escape forward slash
+    .replace(/\\/g, '&#92;');  // And backslash
+}
+
+// Global fix - intercept all text rendering
 if (typeof window !== 'undefined') {
   const originalCreateElement = React.createElement;
-  React.createElement = function(...args) {
+  
+  React.createElement = function(type: any, props: any, ...children: any[]) {
+    // Intercept text nodes
+    const processedChildren = children.map(child => {
+      if (typeof child === 'string') {
+        // Escape ALL special characters in strings
+        return child
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;')
+          .replace(/{/g, '&#123;')
+          .replace(/}/g, '&#125;')
+          .replace(/\//g, '&#47;')  // Also escape forward slash
+          .replace(/\\/g, '&#92;');  // And backslash
+      }
+      return child;
+    });
+    
     try {
-      return originalCreateElement.apply(React, args);
+      return originalCreateElement.call(React, type, props, ...processedChildren);
     } catch (error) {
-      if (error.message?.includes('Unexpected token')) {
-        console.error('JSX Parse Error in:', args);
+      if (error instanceof Error && error.message?.includes('Unexpected token')) {
+        console.error('JSX Parse Error in:', { type, props, children: processedChildren });
         return null;
       }
       throw error;
@@ -26,9 +63,9 @@ if (typeof window !== 'undefined') {
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Axle - Mobile Mechanic Service",
-  description: "Connect with trusted mobile mechanics in your area",
-    generator: 'v0.dev'
+  title: universalSafeText("Axle - Mobile Mechanic Service"),
+  description: universalSafeText("Connect with trusted mobile mechanics in your area"),
+  generator: universalSafeText('v0.dev')
 }
 
 export default function RootLayout({
