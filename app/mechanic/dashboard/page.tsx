@@ -77,6 +77,18 @@ if (typeof window !== 'undefined') {
 }
 
 export default function MechanicDashboard() {
+  // CATCH-ALL DEBUG LOG AT TOP OF COMPONENT
+  console.log('DASHBOARD RENDER DEBUG', {
+    // Add all main state/props that could contain dynamic content
+    mechanicProfile,
+    availableAppointments,
+    upcomingAppointments,
+    skippedAppointments,
+    notifications,
+    error,
+    searchQuery,
+  });
+
   // Utility to safely render text content
   const safeText = (content: any): string => {
     if (!content) return ""
@@ -1455,20 +1467,17 @@ const handleSubmitEdit = async (e: React.FormEvent) => {
 // Loading state - show loading while auth OR mechanic profile is loading
 if (isAuthLoading || isMechanicLoading) {
   return (
-      
-
-        
-          
-            
-              
-            
-            
-              {isAuthLoading ? "Loading your dashboard..." : "Loading your mechanic profile..."}
-          </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6">
+        <div className="text-center">
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">
+            {isAuthLoading ? "Loading your dashboard..." : "Loading your mechanic profile..."}
+          </h1>
         </div>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
 // Error state
 if (error) {
