@@ -687,10 +687,344 @@ const handleUpdateQuote = async (appointmentId: string) => {
       Number.parseInt(minute),
     ).toISOString()
 
+<<<<<<< HEAD
     const { error } = await supabase
       .from("mechanic_quotes")
       .update({
         price: Number.parseFloat(price),
+=======
+    // Note: Real-time subscriptions are now handled in the useMechanicAppointments hook
+    // This eliminates duplicate subscriptions and improves performance
+    
+    // Initial setup
+    fetchInitialAppointments()
+
+    // Cleanup function for any local resources
+    return () => {
+      console.log("🧹 Dashboard cleanup")
+    }
+  }, [mechanicId])
+
+  // Real-time subscription for instant updates
+  useEffect(() => {
+   if (!mechanicId) return
+
+   console.log('🔄 Setting up real-time subscriptions for mechanic:', mechanicId)
+   
+   // Subscribe to appointments table changes
+   const appointmentsSubscription = supabase
+    .channel('appointments-changes')
+    .on(
+     'postgres_changes',
+     {
+      event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+      schema: 'public',
+      table: 'appointments'
+     },
+     (payload: RealtimePostgresChangesPayload<any>) => {
+      console.log('📡 Appointment change detected:', payload)
+      // Refresh appointments when any appointment changes
+      fetchInitialAppointments()
+     }
+    )
+    .subscribe()
+
+   // Subscribe to mechanic quotes changes
+   const quotesSubscription = supabase
+    .channel('quotes-changes')
+    .on(
+     'postgres_changes',
+     {
+      event: '*', // Listen to all events
+      schema: 'public',
+      table: 'mechanic_quotes'
+     },
+     (payload: RealtimePostgresChangesPayload<any>) => {
+      console.log('📡 Quote change detected:', payload)
+      // Refresh appointments when quotes change
+      fetchInitialAppointments()
+     }
+    )
+    .subscribe()
+
+   // Subscribe to mechanic skipped appointments changes
+   const skipsSubscription = supabase
+    .channel('skips-changes')
+    .on(
+     'postgres_changes',
+     {
+      event: '*',
+      schema: 'public',
+      table: 'mechanic_skipped_appointments'
+     },
+     (payload: RealtimePostgresChangesPayload<any>) => {
+      console.log('📡 Skip change detected:', payload)
+      // Refresh appointments when skips change
+      fetchInitialAppointments()
+     }
+    )
+    .subscribe()
+
+   // Subscribe to appointment updates for editing notifications
+   const appointmentUpdatesSubscription = supabase
+    .channel('appointment-updates')
+    .on(
+     'postgres_changes',
+     {
+      event: 'INSERT', // Listen to new appointment updates
+      schema: 'public',
+      table: 'appointment_updates'
+     },
+     (payload: RealtimePostgresChangesPayload<any>) => {
+      console.log('📡 Appointment update detected:', payload)
+      
+      // Show notification to mechanic
+      toast({
+       title: "Appointment Updated",
+       description: `Appointment ${payload.new.appointment_id} was updated. Please re-quote if interested.`,
+       variant: "default",
+      })
+      
+      // Refresh appointments list
+      fetchInitialAppointments()
+     }
+    )
+    .subscribe()
+
+   console.log('✅ Real-time subscriptions established')
+
+   return () => {
+    console.log('🔄 Cleaning up real-time subscriptions')
+    appointmentsSubscription.unsubscribe()
+    quotesSubscription.unsubscribe()
+    skipsSubscription.unsubscribe()
+    appointmentUpdatesSubscription.unsubscribe()
+   }
+  }, [mechanicId])
+
+  // Add useEffect to load mechanic profile ONLY after auth is complete
+  useEffect(() => {
+    // Only run after auth is complete and user is authenticated
+    if (isAuthLoading || !userId) {
+          return
+        }
+
+    const loadMechanicProfile = async () => {
+      try {
+        console.log('🔄 Loading mechanic profile for user:', userId);
+        console.log('🔄 MECHANIC PROFILE LOAD START - Current state:', {
+          userId,
+          mechanicId: mechanicId,
+          mechanicProfile: mechanicProfile,
+          isMechanicLoading: isMechanicLoading
+        });
+        setIsMechanicLoading(true);
+        
+        const { data: profile, error: profileError } = await supabase
+          .from('mechanic_profiles')
+          .select('id, user_id, first_name, last_name')
+          .eq('user_id', userId)
+          .single();
+
+        console.log('🔄 MECHANIC PROFILE DB RESPONSE:', {
+          profile: profile,
+          error: profileError,
+          hasProfile: !!profile,
+          profileId: profile?.id,
+          profileUserId: profile?.user_id
+        });
+
+        if (profileError) {
+          console.error('❌ Error loading mechanic profile:', profileError);
+          if (profileError.code === 'PGRST116') {
+            // No mechanic profile found - redirect to onboarding
+            console.log('📝 No mechanic profile found, redirecting to onboarding');
+            router.push('/onboarding-mechanic-1');
+            return;
+          }
+          setError('Failed to load mechanic profile');
+          return;
+        }
+
+        if (!profile) {
+          console.error('❌ No mechanic profile found for user:', userId);
+          router.push('/onboarding-mechanic-1');
+          return;
+        }
+
+        console.log('✅ Mechanic profile loaded successfully:', {
+          userId: userId,
+          mechanicProfileId: profile.id,
+          mechanicName: `${profile.first_name} ${profile.last_name}`
+        });
+
+        console.log('🎯 SETTING MECHANIC ID TO:', profile.id);
+        
+        // CRITICAL FIX: Set both state values together
+        setMechanicId(profile.id);
+        setMechanicProfile(profile);
+        
+        console.log('🎯 AFTER setState - mechanicId should be:', profile.id);
+        
+      } catch (error) {
+        console.error('❌ Error in loadMechanicProfile:', error);
+        setError('Failed to load mechanic profile');
+      } finally {
+        setIsMechanicLoading(false);
+        console.log('🎯 MECHANIC LOADING: Set to false');
+      }
+    };
+
+    loadMechanicProfile();
+  }, [userId, isAuthLoading, router]); // CRITICAL: Add mechanicId dependency if needed for re-runs
+
+  // Debug: Log all data that will be rendered
+  useEffect(() => {
+    console.log('=== DASHBOARD DATA DEBUG ===');
+    console.log('Mechanic Profile:', mechanicProfile);
+    console.log('Appointments:', appointments);
+    console.log('Available Appointments:', availableAppointments);
+    console.log('Notifications:', notifications);
+    
+    // Check for problematic characters
+    const checkForProblematicChars = (obj: any, path: string = '') => {
+      if (!obj) return;
+      
+      Object.entries(obj).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          if (value.includes('&gt;') || value.includes('&lt;')) {
+            console.error(`🚨 FOUND PROBLEMATIC CHAR in ${path}.${key}:`, value);
+          }
+        } else if (typeof value === 'object' && value !== null) {
+          checkForProblematicChars(value, `${path}.${key}`);
+        }
+      });
+    };
+    
+    checkForProblematicChars(mechanicProfile, 'mechanicProfile');
+    appointments?.forEach((apt, i) => checkForProblematicChars(apt, `appointments[${i}]`));
+    availableAppointments?.forEach((apt, i) => checkForProblematicChars(apt, `availableAppointments[${i}]`));
+    notifications?.forEach((notif, i) => checkForProblematicChars(notif, `notifications[${i}]`));
+    
+    console.log('===========================');
+  }, [mechanicProfile, appointments, availableAppointments, notifications]);
+
+  // Add debug function for mechanic profile
+  const debugMechanicProfile = async (): Promise<any> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log('=== MECHANIC PROFILE DEBUG ===');
+    console.log('1. Current auth user ID:', user?.id);
+    
+    // Check if profile exists
+    const { data: profile, error } = await supabase
+      .from('mechanic_profiles')
+      .select('*')
+      .eq('user_id', user?.id);
+    
+    console.log('2. Profile query result:', { profile, error });
+    
+    if (!profile || profile.length === 0) {
+      console.error('❌ NO MECHANIC PROFILE FOUND FOR USER');
+      showNotification('No mechanic profile found. Please complete your profile setup.', 'error');
+      // Redirect to profile setup
+      router.push('/onboarding-mechanic-1');
+      return null;
+    }
+    
+    console.log('3. Mechanic profile ID:', profile[0].id);
+    console.log('4. Full profile:', profile[0]);
+    
+    return profile[0];
+  };
+
+  // Add function to create mechanic profile if needed
+  const createMechanicProfile = async (): Promise<any> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const { data: newProfile, error } = await supabase
+      .from('mechanic_profiles')
+      .insert({
+        user_id: user?.id,
+        first_name: user?.user_metadata?.first_name || 'Unknown',
+        last_name: user?.user_metadata?.last_name || 'Mechanic',
+        status: 'active'
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Failed to create mechanic profile:', error);
+      return null;
+    }
+    
+    console.log('Created new mechanic profile:', newProfile);
+    return newProfile;
+  };
+
+  // Update handleSubmitQuote with debugging
+  const handleSubmitQuote = async (appointmentId: string, price: number, eta: string, notes?: string): Promise<void> => {
+    try {
+      setIsProcessing(true);
+      console.log('🎯 === QUOTE SUBMISSION DEBUG ===');
+      console.log('1. Starting quote submission with:', {
+        appointmentId,
+        price,
+        eta,
+        notes,
+        mechanicId,
+        mechanicIdType: typeof mechanicId,
+        isMechanicLoading
+      });
+
+      // CRITICAL: Check if mechanicId is available
+      if (!mechanicId) {
+        console.error('❌ CRITICAL: mechanicId is undefined!', {
+          mechanicId,
+          mechanicProfile,
+          isMechanicLoading,
+          isAuthLoading
+        });
+        
+        if (isMechanicLoading) {
+            toast({
+            title: "Please wait",
+            description: "Loading your mechanic profile...",
+              variant: "destructive",
+          });
+          return;
+        } else {
+          toast({
+            title: "Profile Error",
+            description: "Unable to load your mechanic profile. Please refresh the page.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      console.log('2. mechanicId validation passed:', mechanicId);
+
+      // Validate ETA selection
+      if (!selectedDate || !selectedTime) {
+        setShowETAError(true);
+        toast({
+          title: "Error",
+          description: "Please select both date and time for when you can show up.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Combine date and time
+      const [year, month, day] = selectedDate.split('-');
+      const [hour, minute] = selectedTime.split(':');
+      const etaDateTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)).toISOString();
+      
+      console.log('3. Creating quote with validated mechanicId:', {
+        mechanic_id: mechanicId,
+        appointment_id: appointmentId,
+        price,
+>>>>>>> main
         eta: etaDateTime,
         notes: notes || "",
         updated_at: new Date().toISOString(),
