@@ -30,6 +30,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     console.error('=== JSX PARSING ERROR DETAILS ===');
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
+    console.error('Error name:', error.name);
+    console.error('Error constructor:', error.constructor.name);
     
     // Parse component stack to find the specific component
     const componentStack = errorInfo.componentStack.split('\n');
@@ -43,8 +45,19 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       console.error(`  ${index + 1}. ${comp}`);
     });
     
+    // Additional context
     console.error('URL:', window.location.pathname);
+    console.error('Full URL:', window.location.href);
+    console.error('User Agent:', navigator.userAgent);
     console.error('Time:', new Date().toISOString());
+    
+    // Check if it's a JSX parsing error specifically
+    if (error.message.includes('JSX') || error.message.includes('Unexpected token')) {
+      console.error('🔍 LIKELY JSX PARSING ERROR DETECTED');
+      console.error('This appears to be caused by unescaped dynamic content');
+      console.error('Check the component hierarchy above for the source');
+    }
+    
     console.error('=================================');
     
     this.setState({ hasError: true, error, errorInfo });
