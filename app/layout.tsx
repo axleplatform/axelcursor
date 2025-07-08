@@ -1,4 +1,4 @@
-import type React from "react"
+import React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
@@ -6,6 +6,22 @@ import { Toaster } from "@/components/ui/toaster"
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ErrorBoundary from "@/components/error-boundary"
+
+// Override React.createElement temporarily to catch the error
+if (typeof window !== 'undefined') {
+  const originalCreateElement = React.createElement;
+  React.createElement = function(...args) {
+    try {
+      return originalCreateElement.apply(React, args);
+    } catch (error) {
+      if (error.message?.includes('Unexpected token')) {
+        console.error('JSX Parse Error in:', args);
+        return null;
+      }
+      throw error;
+    }
+  };
+}
 
 const inter = Inter({ subsets: ["latin"] })
 
