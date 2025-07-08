@@ -23,4 +23,4 @@ USING (
     WHERE appointments.id = appointment_updates.appointment_id 
     AND appointments.mechanic_id = auth.uid()
   )
-); 
+);
