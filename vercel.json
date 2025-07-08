@@ -2,7 +2,7 @@
   "version": 2,
   "devCommand": "next dev",
   "framework": "nextjs",
-  "installCommand": "npm install",
+  "installCommand": "rm -rf node_modules && npm cache clean --force && npm install --legacy-peer-deps",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "regions": ["iad1"],
