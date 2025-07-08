@@ -200,7 +200,7 @@ export default function GoogleMapsMap({
     return `${streetNumber} ${route}, ${locality}, ${administrativeArea} ${postalCode}`.trim()
   }
 
-  if (isLoading || isMapLoading) {
+  if (isMapLoading) {
     return (
       <div 
         className={`flex items-center justify-center bg-gray-100 rounded-lg ${className}`}

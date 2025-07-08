@@ -160,7 +160,6 @@ export default function HomepageLocationInput({
           draggable={true}
           onLocationSelect={handleMapLocationSelect}
           location={value}
-          isLoading={isLoading}
         />
       </div>
     </div>
