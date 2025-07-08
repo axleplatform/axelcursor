@@ -19,6 +19,12 @@ export default function SchemaCheckPage() {
         const schemaResult = await examineSchema()
         setSchemaInfo(schemaResult)
 
+        // Check if supabase client is initialized
+        if (!supabase) {
+          setSchemaInfo("Supabase client not initialized");
+          return;
+        }
+
         // Get a sample appointment
         const { data: appointment, error: appointmentError } = await supabase.from("appointments").select("*").limit(1)
 
