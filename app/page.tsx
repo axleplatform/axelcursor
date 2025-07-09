@@ -770,14 +770,12 @@ function HomePageContent(): React.JSX.Element {
 
             {/* Car Selector */}
             <div className="mb-4 w-full">
-              <div className="mb-2">
-                <h3 className="text-sm font-medium text-gray-700">Vehicle Information</h3>
-              </div>
+
               {/* Desktop layout: All fields in one row */}
               <div className="hidden sm:flex gap-2">
                 <div className="relative w-[8ch]">
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Year <span className="text-red-500">*</span>
+                    Year
                   </label>
                   <select
                     name="year"
@@ -823,7 +821,7 @@ function HomePageContent(): React.JSX.Element {
 
                 <div className="relative w-[20%]">
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Make <span className="text-red-500">*</span>
+                    Make
                   </label>
                   <select
                     name="make"
@@ -858,7 +856,7 @@ function HomePageContent(): React.JSX.Element {
 
                 <div className="relative w-[20%]">
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Model <span className="text-red-500">*</span>
+                    Model
                   </label>
                   <input
                     ref={modelRef}
