@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prebuild": "node -e \"console.log('CWD:', process.cwd()); console.log('Files:', require('fs').readdirSync('.')); console.log('Components exists?', require('fs').existsSync('./components')); console.log('Components/ui exists?', require('fs').existsSync('./components/ui')); console.log('Components/ui/button.tsx exists?', require('fs').existsSync('./components/ui/button.tsx'))\"",
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
@@ -49,7 +50,7 @@
     "cmdk": "latest",
     "date-fns": "latest",
     "embla-carousel-react": "latest",
-    "https:": "latest",
+
     "input-otp": "latest",
     "lucide-react": "^0.454.0",
     "next": "14.2.16",
