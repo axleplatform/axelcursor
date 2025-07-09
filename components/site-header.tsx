@@ -291,7 +291,7 @@ export function SiteHeader() {
             <Button 
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="text-sm font-medium text-red-600/90 hover:text-red-700 px-3 py-2 rounded-md border border-transparent hover:border-red-200 hover:bg-red-50 transition-all duration-200"
+              className="text-sm font-medium text-white hover:text-white px-3 py-2 rounded-md border border-transparent hover:border-white/20 hover:bg-white/10 transition-all duration-200"
             >
               {isLoggingOut ? "Logging out..." : "Logout"}
             </Button>

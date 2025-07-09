@@ -555,7 +555,7 @@ function PickMechanicContent() {
            {mechanicQuotes.map((quote) => (
             <div 
               key={quote.id} 
-              className="bg-[#294a46]/95 backdrop-blur-[2px] rounded-lg shadow-sm border border-[#1e3632] p-6 hover:shadow-md hover:border-[#1e3632] hover:bg-[#1e3632]/95 transition-all duration-200 cursor-pointer active:scale-[0.99]"
+              className="bg-[#294a46] rounded-lg shadow-sm border border-[#1e3632] p-6 hover:shadow-md hover:border-[#1e3632] hover:bg-[#1e3632] transition-all duration-200 cursor-pointer active:scale-[0.99]"
               onClick={() => handleSelectMechanic(quote.mechanic_id, quote.id)}
             >
              {/* Top row: Mechanic info on left, price and availability on right */}
@@ -694,19 +694,19 @@ function PickMechanicContent() {
        </Card>
 
        {/* Order Summary */}
-       <Card className="p-0 bg-[#294a46] shadow-lg sticky top-8 h-fit">
-        <div className="p-4 border-b border-[#1e3632] bg-gradient-to-r from-[#294a46] to-[#1e3632]">
+       <Card className="p-0 bg-white shadow-lg sticky top-8 h-fit">
+        <div className="p-4 border-b bg-gradient-to-r from-[#294a46] to-[#1e3632]">
          <h2 className="text-lg font-semibold text-white">Order Summary</h2>
          <p className="text-gray-200 text-sm mt-1">Review your appointment details</p>
         </div>
 
         <div className="p-4">
          <div className="space-y-4">
-          <div className="flex items-start space-x-3 pb-3 border-b border-[#1e3632]">
-           <span className="text-base leading-none text-white mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
+          <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+           <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
            <div className="flex-1">
-            <h3 className="font-semibold text-white text-sm sm:ml-0 ml-2">Appointment Details</h3>
-            <p className="text-xs text-gray-200 mt-1">{formatDate(appointment.appointment_date)}</p>
+            <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Appointment Details</h3>
+            <p className="text-xs text-gray-600 mt-1">{formatDate(appointment.appointment_date)}</p>
             <div className="flex items-start mt-1">
              <GoogleMapsLink 
                address={appointment.location}
@@ -716,36 +716,36 @@ function PickMechanicContent() {
           </div>
 
           {appointment.vehicles && (
-           <div className="flex items-start space-x-3 pb-3 border-b border-[#1e3632]">
-            <span className="text-base leading-none text-white mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
+           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+            <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
             <div className="flex-1">
-             <h3 className="font-semibold text-white text-sm sm:ml-0 ml-2">Vehicle</h3>
-             <p className="text-xs text-gray-200 mt-1 font-medium">
+             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Vehicle</h3>
+             <p className="text-xs text-gray-600 mt-1 font-medium">
               {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
              </p>
              {appointment.vehicles.color && (
-              <p className="text-xs text-gray-300 mt-1">Color: {appointment.vehicles.color}</p>
+              <p className="text-xs text-gray-500 mt-1">Color: {appointment.vehicles.color}</p>
              )}
              {appointment.vehicles.vin && (
-              <p className="text-xs text-gray-300">VIN: {appointment.vehicles.vin}</p>
+              <p className="text-xs text-gray-500">VIN: {appointment.vehicles.vin}</p>
              )}
              {appointment.vehicles.mileage && (
-              <p className="text-xs text-gray-300">Mileage: {appointment.vehicles.mileage}</p>
+              <p className="text-xs text-gray-500">Mileage: {appointment.vehicles.mileage}</p>
              )}
             </div>
            </div>
           )}
 
           {appointment.selected_services && appointment.selected_services.length > 0 && (
-           <div className="flex items-start space-x-3 pb-3 border-b border-[#1e3632]">
-            <span className="text-base leading-none text-white mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
+           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+            <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
             <div className="flex-1">
-             <h3 className="font-semibold text-white text-sm sm:ml-0 ml-2">Requested Services</h3>
+             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Requested Services</h3>
              <ul className="mt-1 space-y-1">
               {appointment.selected_services.map((service, index) => (
                <li key={index} className="flex items-center">
-                <div className="h-1.5 w-1.5 rounded-full bg-white mr-2"></div>
-                <span className="text-xs text-gray-200">{service}</span>
+                <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
+                <span className="text-xs text-gray-600">{service}</span>
                </li>
               ))}
              </ul>
@@ -754,15 +754,15 @@ function PickMechanicContent() {
           )}
 
           {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
-           <div className="flex items-start space-x-3 pb-3 border-b border-[#1e3632]">
-            <span className="text-base leading-none text-white mt-0.5 flex-shrink-0 inline-flex items-center justify-center">⚠️</span>
+           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+            <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">⚠️</span>
             <div className="flex-1">
-             <h3 className="font-semibold text-white text-sm sm:ml-0 ml-2">Reported Issues</h3>
+             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Reported Issues</h3>
              <ul className="mt-1 space-y-1">
               {appointment.selected_car_issues.map((issue, index) => (
                <li key={index} className="flex items-center">
-                <div className="h-1.5 w-1.5 rounded-full bg-white mr-2"></div>
-                <span className="text-xs text-gray-200">{formatCarIssue(issue)}</span>
+                <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
+                <span className="text-xs text-gray-600">{formatCarIssue(issue)}</span>
                </li>
               ))}
              </ul>
@@ -771,20 +771,20 @@ function PickMechanicContent() {
           )}
 
           {appointment.issue_description && (
-           <div className="flex items-start space-x-3 pb-3 border-b border-[#1e3632]">
-            <FileText className="h-4 w-4 text-white mt-0.5 flex-shrink-0" />
+           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+            <FileText className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-             <h3 className="font-semibold text-white text-sm sm:ml-0 ml-2">Description</h3>
-             <p className="text-xs text-gray-200 mt-1 leading-relaxed">{appointment.issue_description}</p>
+             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Description</h3>
+             <p className="text-xs text-gray-600 mt-1 leading-relaxed">{appointment.issue_description}</p>
             </div>
            </div>
           )}
 
-          <div className="flex items-start space-x-3 pb-3 border-b border-[#1e3632]">
-           <span className="text-base leading-none text-white mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔋</span>
+          <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+           <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔋</span>
            <div className="flex-1">
-            <h3 className="font-semibold text-white text-sm sm:ml-0 ml-2">Car Status</h3>
-            <p className="text-xs text-gray-200 mt-1">
+            <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Car Status</h3>
+            <p className="text-xs text-gray-600 mt-1">
              {appointment.car_runs !== null
               ? appointment.car_runs
                ? "✅ Car is running"
