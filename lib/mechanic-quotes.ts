@@ -489,13 +489,12 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
     // NEW: Enhanced available appointments query with proper filtering
     console.log("🔍 Step 3: Building enhanced query for available appointments...");
     
-    // Available appointments query with proper filtering
+    // Available appointments query with proper filtering - using explicit joins
     let availableAppointmentsQuery = supabase
       .from('appointments')
       .select(`
         *,
-        vehicles!fk_appointment_id(*),
-        mechanic_quotes!left (*)
+        vehicles!fk_appointment_id(*)
       `)
       .eq('status', 'pending')  // Only pending status
       .is('selected_quote_id', null)  // No quote selected
@@ -531,19 +530,8 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
       fullData: appointments
     });
 
-    // Additional filtering to ensure no quotes from this mechanic
-    const finalAppointments = appointments?.filter((appointment: any) => {
-      const hasMyQuote = appointment.mechanic_quotes?.some((quote: any) => quote.mechanic_id === mechanicId);
-      
-      console.log("🔍 Final filtering appointment:", {
-        appointmentId: appointment.id,
-        hasMyQuote,
-        shouldInclude: !hasMyQuote
-      });
-      
-      // Include if no current quotes from this mechanic
-      return !hasMyQuote;
-    }) || [];
+    // Since we excluded quoted appointments at the database level, all returned appointments are available
+    const finalAppointments = appointments || [];
 
     console.log("🔍 === FINAL FILTERED RESULTS ===");
     console.log("✅ Final available appointments after filtering:", { 
@@ -597,44 +585,61 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
     // NEW: Enhanced upcoming appointments query with proper filtering
     console.log("🔍 Step 1: Building enhanced query for upcoming appointments...");
     
-    // Upcoming appointments query with proper filtering
-    const upcomingAppointmentsQuery = supabase
+    // First get appointments with basic relationships
+    const appointmentsQuery = supabase
       .from('appointments')
       .select(`
         *,
-        vehicles!fk_appointment_id(*),
-        mechanic_quotes!inner (
-          id,
-          price,
-          eta,
-          notes,
-          mechanic_id
-        )
+        vehicles!fk_appointment_id(*)
       `)
       .in('status', ['confirmed', 'in_progress'])  // Only confirmed/in_progress
-      .not('selected_quote_id', 'is', null)  // Has selected quote
-      .eq('mechanic_quotes.mechanic_id', mechanicId); // Only this mechanic's quotes
+      .not('selected_quote_id', 'is', null);  // Has selected quote
 
     console.log("🔍 Base query constructed with proper filters");
 
-    console.log("🔍 Step 2: Executing enhanced query...");
-    const { data: appointments, error } = await upcomingAppointmentsQuery;
+    console.log("🔍 Step 2: Executing appointments query...");
+    const { data: appointments, error } = await appointmentsQuery;
 
     if (error) {
       console.error("❌ Error fetching upcoming appointments:", error);
       return { success: false, error: error.message };
     }
 
-    console.log("🔍 === QUERY RESULTS ===");
-    console.log("✅ Found upcoming appointments:", { 
+    console.log("🔍 === APPOINTMENTS QUERY RESULTS ===");
+    console.log("✅ Found appointments:", { 
       count: appointments?.length || 0,
       appointmentIds: appointments?.map((apt: any) => apt.id) || [],
       appointmentStatuses: appointments?.map((apt: any) => ({ id: apt.id, status: apt.status })) || []
     });
 
-    // Transform the data to match expected format with proper typing
-    const transformedAppointments = appointments?.map((appointment: RawAppointment): AppointmentWithRelations => {
-      const myQuote = appointment.mechanic_quotes.find(q => q.mechanic_id === mechanicId);
+    // Step 3: Get quotes separately for this mechanic
+    console.log("🔍 Step 3: Fetching quotes for this mechanic...");
+    const appointmentIds = appointments?.map((apt: any) => apt.id) || [];
+    
+    let quotes: any[] = [];
+    if (appointmentIds.length > 0) {
+      const { data: quotesData, error: quotesError } = await supabase
+        .from('mechanic_quotes')
+        .select('*')
+        .in('appointment_id', appointmentIds)
+        .eq('mechanic_id', mechanicId);
+
+      if (quotesError) {
+        console.error("❌ Error fetching quotes:", quotesError);
+        return { success: false, error: quotesError.message };
+      }
+
+      quotes = quotesData || [];
+      console.log("🔍 Found quotes for mechanic:", {
+        count: quotes.length,
+        quoteIds: quotes.map((q: any) => q.id)
+      });
+    }
+
+    // Step 4: Combine appointments with quotes in JavaScript
+    console.log("🔍 Step 4: Combining appointments with quotes...");
+    const transformedAppointments = appointments?.map((appointment: any): AppointmentWithRelations => {
+      const myQuote = quotes.find(q => q.appointment_id === appointment.id);
       console.log("🔍 Processing appointment:", {
         appointmentId: appointment.id,
         status: appointment.status,
@@ -644,6 +649,7 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
       
       return {
         ...appointment,
+        mechanic_quotes: myQuote ? [myQuote] : [],
         quote: myQuote ? {
           id: myQuote.id,
           price: myQuote.price,
