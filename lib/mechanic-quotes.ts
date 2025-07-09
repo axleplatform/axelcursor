@@ -414,18 +414,18 @@ export async function autoCancelOverdueAppointments(): Promise<{ success: boolea
 
 /**
  * Gets all available appointments for a mechanic to quote
- * VERSION: 2.2.0 - Enhanced filtering with edited appointments
+ * VERSION: 3.0.0 - Enhanced filtering with proper database-level filtering
  */
 export async function getAvailableAppointmentsForMechanic(mechanicId: string): Promise<GetAppointmentsResponse> {
   try {
-    console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG START (v2.2.0) ===");
-    console.log("🔍 CODE VERSION CHECK: This is the FIXED version that includes edited appointments");
+    console.log("🔍 === AVAILABLE APPOINTMENTS DEBUG START (v3.0.0) ===");
+    console.log("🔍 CODE VERSION CHECK: This is the NEW version with proper database filtering");
     console.log("🔍 getAvailableAppointmentsForMechanic called with:", {
       mechanicId,
       type: typeof mechanicId,
       length: mechanicId?.length,
       timestamp: new Date().toISOString(),
-      version: "2.2.0"
+      version: "3.0.0"
     });
 
     // Validate mechanic ID
@@ -486,40 +486,38 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
       rawData: quotedAppointments
     });
 
-    // FIXED: Only exclude skipped appointments and currently quoted appointments
-    // Edited appointments that have been cleared of quotes should be included
-    const excludedAppointmentIds = [...skippedAppointmentIds, ...quotedAppointmentIds];
-    console.log("🔍 Step 3: Combined exclusion list:", {
-      totalExcluded: excludedAppointmentIds.length,
-      skippedCount: skippedAppointmentIds.length,
-      quotedCount: quotedAppointmentIds.length,
-      allExcludedIds: excludedAppointmentIds
-    });
-
-    // Get pending appointments, excluding both skipped and currently quoted appointments
-    // FIXED: Include edited appointments that have been cleared of quotes
-    console.log("🔍 Step 4: Building query for available appointments...");
-    let query = supabase
+    // NEW: Enhanced available appointments query with proper filtering
+    console.log("🔍 Step 3: Building enhanced query for available appointments...");
+    
+    // Available appointments query with proper filtering
+    let availableAppointmentsQuery = supabase
       .from('appointments')
       .select(`
         *,
         vehicles!fk_appointment_id(*),
-        mechanic_quotes!appointment_id(*)
+        mechanic_quotes!left (*)
       `)
-      .eq('status', 'pending');
+      .eq('status', 'pending')  // Only pending status
+      .is('selected_quote_id', null)  // No quote selected
+      .eq('is_being_edited', false)  // Not being edited
+      .gte('appointment_date', new Date().toISOString().split('T')[0]); // Only future appointments
 
-    console.log("🔍 Base query constructed for status = 'pending'");
+    console.log("🔍 Base query constructed with proper filters");
 
-    // Exclude appointments that this mechanic has skipped or currently has quotes for
-    if (excludedAppointmentIds.length > 0) {
-      query = query.not('id', 'in', `(${excludedAppointmentIds.join(',')})`);
-      console.log("🔍 Applied exclusion filter for IDs:", excludedAppointmentIds);
-    } else {
-      console.log("🔍 No exclusions applied - no skipped or quoted appointments");
+    // Exclude appointments that this mechanic has skipped
+    if (skippedAppointmentIds.length > 0) {
+      availableAppointmentsQuery = availableAppointmentsQuery.not('id', 'in', `(${skippedAppointmentIds.join(',')})`);
+      console.log("🔍 Applied skipped appointments exclusion filter");
     }
 
-    console.log("🔍 Step 5: Executing query...");
-    const { data: appointments, error } = await query;
+    // Exclude appointments that this mechanic has already quoted
+    if (quotedAppointmentIds.length > 0) {
+      availableAppointmentsQuery = availableAppointmentsQuery.not('id', 'in', `(${quotedAppointmentIds.join(',')})`);
+      console.log("🔍 Applied quoted appointments exclusion filter");
+    }
+
+    console.log("🔍 Step 4: Executing enhanced query...");
+    const { data: appointments, error } = await availableAppointmentsQuery;
 
     if (error) {
       console.error("❌ Error fetching appointments:", error);
@@ -533,21 +531,17 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
       fullData: appointments
     });
 
-    // FIXED: Additional filtering to ensure edited appointments are included
-    // Filter out appointments that still have quotes from this mechanic
+    // Additional filtering to ensure no quotes from this mechanic
     const finalAppointments = appointments?.filter((appointment: any) => {
       const hasMyQuote = appointment.mechanic_quotes?.some((quote: any) => quote.mechanic_id === mechanicId);
-      const isEdited = appointment.edited_after_quotes;
       
-      console.log("🔍 Filtering appointment:", {
+      console.log("🔍 Final filtering appointment:", {
         appointmentId: appointment.id,
         hasMyQuote,
-        isEdited,
         shouldInclude: !hasMyQuote
       });
       
       // Include if no current quotes from this mechanic
-      // This ensures edited appointments (which have no quotes) are included
       return !hasMyQuote;
     }) || [];
 
@@ -574,18 +568,18 @@ export async function getAvailableAppointmentsForMechanic(mechanicId: string): P
 
 /**
  * Gets all appointments a mechanic has quoted
- * VERSION: 2.0.0 - Enhanced querying with extensive debugging
+ * VERSION: 3.0.0 - Enhanced querying with proper database-level filtering
  */
 export async function getQuotedAppointmentsForMechanic(mechanicId: string): Promise<GetAppointmentsResponse> {
   try {
-    console.log("🔍 === QUOTED APPOINTMENTS DEBUG START (v2.0.0) ===");
-    console.log("🔍 CODE VERSION CHECK: This is the NEW enhanced querying code with extensive debugging");
+    console.log("🔍 === QUOTED APPOINTMENTS DEBUG START (v3.0.0) ===");
+    console.log("🔍 CODE VERSION CHECK: This is the NEW version with proper database filtering");
     console.log("🔍 getQuotedAppointmentsForMechanic called with:", {
       mechanicId,
       type: typeof mechanicId,
       length: mechanicId?.length,
       timestamp: new Date().toISOString(),
-      version: "2.0.0"
+      version: "3.0.0"
     });
 
     // Validate mechanic ID
@@ -600,54 +594,39 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
       isValid: validation.isValid
     });
 
-    // First, get the appointment IDs that this mechanic has quoted
-    console.log("🔍 Step 1: Fetching appointment IDs that mechanic has quoted...");
-    const { data: quotedAppointments, error: quotedError } = await supabase
-      .from('mechanic_quotes')
-      .select('appointment_id')
-      .eq('mechanic_id', mechanicId);
-
-    if (quotedError) {
-      console.error("❌ Error fetching quoted appointment IDs:", quotedError);
-      return { success: false, error: quotedError.message };
-    }
-
-    const quotedAppointmentIds = quotedAppointments?.map((quote: { appointment_id: string }) => quote.appointment_id) || [];
-    console.log("🔍 Step 2: Found quoted appointment IDs:", {
-      count: quotedAppointmentIds.length,
-      ids: quotedAppointmentIds,
-      rawQuotes: quotedAppointments
-    });
-
-    // If no quoted appointments, return empty array
-    if (quotedAppointmentIds.length === 0) {
-      console.log("✅ No quoted appointments found - returning empty array");
-      return { success: true, appointments: [] };
-    }
-
-    // Get the appointments where this mechanic has submitted quotes
-    console.log("🔍 Step 3: Fetching full appointment details for quoted appointments...");
-    const { data: appointments, error } = await supabase
+    // NEW: Enhanced upcoming appointments query with proper filtering
+    console.log("🔍 Step 1: Building enhanced query for upcoming appointments...");
+    
+    // Upcoming appointments query with proper filtering
+    const upcomingAppointmentsQuery = supabase
       .from('appointments')
       .select(`
         *,
         vehicles!fk_appointment_id(*),
-        mechanic_quotes!appointment_id(*)
+        mechanic_quotes!inner (
+          id,
+          price,
+          eta,
+          notes,
+          mechanic_id
+        )
       `)
-      .in('id', quotedAppointmentIds)
-      .in('status', ['pending', 'quoted', 'confirmed', 'in_progress', 'cancelled']);
+      .in('status', ['confirmed', 'in_progress'])  // Only confirmed/in_progress
+      .not('selected_quote_id', 'is', null)  // Has selected quote
+      .eq('mechanic_quotes.mechanic_id', mechanicId); // Only this mechanic's quotes
 
-    console.log("🔍 Step 4: Query executed with filters:", {
-      appointmentIds: quotedAppointmentIds,
-      statusFilters: ['pending', 'quoted', 'confirmed', 'in_progress', 'cancelled']
-    });
+    console.log("🔍 Base query constructed with proper filters");
+
+    console.log("🔍 Step 2: Executing enhanced query...");
+    const { data: appointments, error } = await upcomingAppointmentsQuery;
 
     if (error) {
-      console.error("❌ Error fetching quoted appointments:", error);
+      console.error("❌ Error fetching upcoming appointments:", error);
       return { success: false, error: error.message };
     }
 
-    console.log("🔍 Step 5: Raw appointment data retrieved:", {
+    console.log("🔍 === QUERY RESULTS ===");
+    console.log("✅ Found upcoming appointments:", { 
       count: appointments?.length || 0,
       appointmentIds: appointments?.map((apt: any) => apt.id) || [],
       appointmentStatuses: appointments?.map((apt: any) => ({ id: apt.id, status: apt.status })) || []
@@ -674,7 +653,7 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
     }) || [];
 
     console.log("🔍 === TRANSFORMATION RESULTS ===");
-    console.log("✅ Transformed quoted appointments:", {
+    console.log("✅ Transformed upcoming appointments:", {
       count: transformedAppointments.length,
       appointmentDetails: transformedAppointments.map((apt: AppointmentWithRelations) => ({
         id: apt.id,
@@ -688,7 +667,7 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
     return { success: true, appointments: transformedAppointments };
 
   } catch (error: unknown) {
-    console.error("❌ Error getting quoted appointments:", error);
+    console.error("❌ Error getting upcoming appointments:", error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return { success: false, error: errorMessage };
   }

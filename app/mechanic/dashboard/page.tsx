@@ -934,6 +934,31 @@ export default function MechanicDashboard() {
     )
     .subscribe()
 
+   // Subscribe to appointment edits by customers
+   const appointmentEditsSubscription = supabase
+    .channel('appointment-edits')
+    .on(
+     'postgres_changes',
+     {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'appointments',
+      filter: `edited_after_quotes=eq.true`
+     },
+     (payload: RealtimePostgresChangesPayload<any>) => {
+      console.log('📝 Appointment was edited by customer:', payload)
+      // Show notification to mechanic
+      toast({
+       title: "Appointment Edited",
+       description: "An appointment you quoted was edited by the customer",
+       variant: "default",
+      })
+      // Refresh both lists
+      fetchInitialAppointments()
+     }
+    )
+    .subscribe()
+
    console.log('✅ Real-time subscriptions established')
 
    return () => {
@@ -942,6 +967,7 @@ export default function MechanicDashboard() {
     quotesSubscription.unsubscribe()
     skipsSubscription.unsubscribe()
     appointmentUpdatesSubscription.unsubscribe()
+    appointmentEditsSubscription.unsubscribe()
    }
   }, [mechanicId])
 
@@ -3309,5 +3335,5 @@ export default function MechanicDashboard() {
 
       <Footer />
     </div>
-  )
+force   )
 }

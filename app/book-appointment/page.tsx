@@ -845,6 +845,240 @@ function BookAppointmentContent() {
   const isFormValid =
     formData.phoneNumber && // Phone number is required
     (formData.issueDescription || formData.selectedServices.length > 0) // Either description OR service selection
+
+  // Handle appointment updates (separate from initial submission)
+  const handleUpdateAppointment = async () => {
+    if (!appointmentId || !appointmentData) {
+      toast({
+        title: "Error",
+        description: "No appointment data found to update.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Validate required fields
+    if (!formData.phoneNumber) {
+      toast({
+        title: "Error",
+        description: "Phone number is required.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!formData.issueDescription && formData.selectedServices.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please provide either an issue description or select services.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      console.log('🔄 Starting appointment update process...')
+
+      // Check if ANY field has changed
+      const hasChanges = 
+        appointmentData.vehicles?.vin !== formData.vin ||
+        appointmentData.vehicles?.year?.toString() !== formData.year ||
+        appointmentData.vehicles?.make !== formData.make ||
+        appointmentData.vehicles?.model !== formData.model ||
+        appointmentData.vehicles?.mileage?.toString() !== formData.mileage ||
+        appointmentData.issue_description !== formData.issueDescription ||
+        JSON.stringify(appointmentData.selected_services) !== JSON.stringify(formData.selectedServices) ||
+        JSON.stringify(appointmentData.selected_car_issues) !== JSON.stringify(formData.selectedCarIssues) ||
+        appointmentData.phone_number !== formData.phoneNumber ||
+        appointmentData.car_runs !== formData.carRuns ||
+        appointmentData.location !== formData.location
+
+      console.log('🔍 Change detection:', {
+        hasChanges,
+        vinChanged: appointmentData.vehicles?.vin !== formData.vin,
+        yearChanged: appointmentData.vehicles?.year?.toString() !== formData.year,
+        makeChanged: appointmentData.vehicles?.make !== formData.make,
+        modelChanged: appointmentData.vehicles?.model !== formData.model,
+        mileageChanged: appointmentData.vehicles?.mileage?.toString() !== formData.mileage,
+        issueChanged: appointmentData.issue_description !== formData.issueDescription,
+        servicesChanged: JSON.stringify(appointmentData.selected_services) !== JSON.stringify(formData.selectedServices),
+        carIssuesChanged: JSON.stringify(appointmentData.selected_car_issues) !== JSON.stringify(formData.selectedCarIssues),
+        phoneChanged: appointmentData.phone_number !== formData.phoneNumber,
+        carRunsChanged: appointmentData.car_runs !== formData.carRuns,
+        locationChanged: appointmentData.location !== formData.location
+      })
+
+      if (hasChanges) {
+        console.log('🔄 Changes detected - resetting appointment completely')
+
+        // Always-Create-User System: Handle phone number merging
+        const currentUserId = appointmentData.user_id
+        
+        if (!currentUserId) {
+          throw new Error("Invalid appointment - no user ID found")
+        }
+        
+        // Normalize phone number for matching
+        const normalizedPhone = formData.phoneNumber.replace(/\D/g, '')
+        
+        // Use Supabase function to merge users by phone number
+        const { data: finalUserId, error: mergeError } = await supabase.rpc(
+          'merge_users_by_phone',
+          {
+            p_phone: normalizedPhone,
+            p_current_user_id: currentUserId
+          }
+        )
+        
+        if (mergeError) {
+          throw new Error(`Failed to process phone number: ${mergeError.message}`)
+        }
+        
+        if (!finalUserId) {
+          throw new Error("Failed to get final user ID")
+        }
+
+        // Update vehicle information
+        const vehicleUpdates = {
+          vin: formData.vin || null,
+          year: formData.year ? parseInt(formData.year) : null,
+          make: formData.make || null,
+          model: formData.model || null,
+          mileage: formData.mileage ? parseInt(formData.mileage) : null
+        }
+
+        // Update or create vehicle record
+        if (appointmentData.vehicles) {
+          // Update existing vehicle
+          const { error: vehicleError } = await supabase
+            .from('vehicles')
+            .update(vehicleUpdates)
+            .eq('appointment_id', appointmentId)
+
+          if (vehicleError) {
+            console.error('⚠️ Warning: Could not update vehicle:', vehicleError)
+          }
+        } else {
+          // Create new vehicle record
+          const { error: vehicleError } = await supabase
+            .from('vehicles')
+            .insert({
+              appointment_id: appointmentId,
+              ...vehicleUpdates
+            })
+
+          if (vehicleError) {
+            console.error('⚠️ Warning: Could not create vehicle:', vehicleError)
+          }
+        }
+
+        // RESET THE APPOINTMENT COMPLETELY
+        const appointmentUpdates = {
+          user_id: finalUserId,
+          status: 'pending',  // Reset to pending
+          selected_quote_id: null,  // Clear selected quote
+          mechanic_id: null,  // Clear assigned mechanic
+          is_being_edited: false,  // No longer being edited
+          edited_after_quotes: true,  // Mark as edited
+          car_runs: formData.carRuns,
+          issue_description: formData.issueDescription,
+          selected_services: formData.selectedServices,
+          selected_car_issues: formData.selectedCarIssues,
+          phone_number: formData.phoneNumber,
+          location: formData.location,
+          updated_at: new Date().toISOString()
+        }
+
+        // Update appointment
+        const { error: updateError } = await supabase
+          .from('appointments')
+          .update(appointmentUpdates)
+          .eq('id', appointmentId)
+
+        if (updateError) {
+          console.error('❌ Failed to update appointment:', updateError)
+          throw updateError
+        }
+
+        console.log('✅ Appointment updated successfully')
+
+        // DELETE ALL EXISTING QUOTES
+        const { error: deleteQuotesError } = await supabase
+          .from('mechanic_quotes')
+          .delete()
+          .eq('appointment_id', appointmentId)
+
+        if (deleteQuotesError) {
+          console.error('⚠️ Warning: Could not delete existing quotes:', deleteQuotesError)
+        } else {
+          console.log('✅ All existing quotes deleted')
+        }
+
+        // CLEAR ALL MECHANIC SKIPS (so they can quote again)
+        const { error: deleteSkipsError } = await supabase
+          .from('mechanic_skipped_appointments')
+          .delete()
+          .eq('appointment_id', appointmentId)
+
+        if (deleteSkipsError) {
+          console.error('⚠️ Warning: Could not clear mechanic skips:', deleteSkipsError)
+        } else {
+          console.log('✅ All mechanic skips cleared')
+        }
+
+        // Notify mechanics via real-time
+        const { error: realtimeError } = await supabase
+          .from('appointment_updates')
+          .insert({
+            appointment_id: appointmentId,
+            update_type: 'details_changed',
+            message: 'Customer updated appointment details. Previous quotes have been cleared.'
+          })
+
+        if (realtimeError) {
+          console.error('⚠️ Warning: Could not send real-time notification:', realtimeError)
+        } else {
+          console.log('✅ Mechanics notified of appointment update via real-time')
+        }
+
+        console.log('✅ Appointment edited and reset to available')
+        toast({
+          title: "Success!",
+          description: "Appointment updated! Mechanics will see your changes.",
+        })
+      } else {
+        console.log('✅ No changes detected, just clearing editing flag')
+        
+        // No changes made, just clear editing flag
+        const { error: clearError } = await supabase
+          .from('appointments')
+          .update({ is_being_edited: false })
+          .eq('id', appointmentId)
+
+        if (clearError) {
+          console.error('⚠️ Warning: Could not clear editing flag:', clearError)
+        }
+
+        toast({
+          title: "No Changes",
+          description: "No changes were made to the appointment.",
+        })
+      }
+
+      // Navigate to pick mechanic page
+      router.push(`/pick-mechanic?appointmentId=${appointmentId}`)
+    } catch (error) {
+      console.error('❌ Error updating appointment:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update appointment. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
   // Get all available services
   if (isLoading) {
     return (
@@ -886,7 +1120,16 @@ function BookAppointmentContent() {
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8 max-w-2xl">
           <h1 className="text-3xl font-bold text-center text-[#294a46] mb-6">Book An Appointment</h1>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={(e) => {
+            e.preventDefault()
+            // Check if we're in edit mode
+            const isEditMode = searchParams.get('edit') === 'true'
+            if (isEditMode) {
+              handleUpdateAppointment()
+            } else {
+              handleSubmit(e)
+            }
+          }} className="space-y-6">
             <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
               {/* Left half - Car issue description */}
               <div className="space-y-2 md:w-1/2">
@@ -1058,7 +1301,7 @@ or type Oil Change"
                     Processing...
                   </span>
                 ) : (
-                  "Continue"
+                  searchParams.get('edit') === 'true' ? "Update Appointment" : "Continue"
                 )}
               </button>
             </div>

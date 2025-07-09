@@ -383,37 +383,47 @@ function PickMechanicContent() {
 
  // Handle back button - comprehensive workflow management
  const handleBack = async () => {
+  if (!appointment) return
+
   try {
    console.log('🔄 === APPOINTMENT EDIT MODE ACTIVATION ===')
-   console.log('🔄 Marking appointment as being edited for appointment:', appointmentId)
+   console.log('🔄 Setting edit mode for appointment:', appointment.id)
 
-   // Mark appointment as being edited
-   const { error: editError } = await supabase
-    .from('appointments')
-    .update({ 
-      is_being_edited: true,
-      last_edited_at: new Date().toISOString(),
-      selected_quote_id: null // Clear any selected quote
-    })
-    .eq('id', appointmentId)
-
-   if (editError) {
-    console.error('❌ Failed to mark appointment as being edited:', editError)
-    toast({
-     title: "Error",
-     description: "Failed to enter edit mode. Please try again.",
-     variant: "destructive",
-    })
-    return
+   // Set editing flag AND reset status if there are quotes
+   const hasQuotes = mechanicQuotes && mechanicQuotes.length > 0
+   
+   const updates = {
+     is_being_edited: true,
+     last_edited_at: new Date().toISOString(),
+     ...(hasQuotes && {
+       status: 'pending',  // Reset to pending if quotes exist
+       selected_quote_id: null  // Clear any selection
+     })
    }
 
-   console.log('✅ Appointment marked as being edited')
+   console.log('🔍 Update payload:', updates)
 
-   // Navigate back to book-appointment with edit mode
-   router.push(`/book-appointment?appointment_id=${appointmentId}&edit=true`)
-   
+   const { error } = await supabase
+     .from('appointments')
+     .update(updates)
+     .eq('id', appointment.id)
+
+   if (error) {
+     console.error('❌ Failed to set edit mode:', error)
+     toast({
+      title: "Error",
+      description: "Failed to enter edit mode. Please try again.",
+      variant: "destructive",
+     })
+     return
+   }
+
+   console.log('✅ Appointment edit mode set successfully')
+
+   // Navigate to edit
+   router.push(`/book-appointment?edit=true&appointmentId=${appointment.id}`)
   } catch (error) {
-   console.error('❌ Error entering edit mode:', error)
+   console.error('❌ Error setting edit mode:', error)
    toast({
     title: "Error",
     description: "Failed to enter edit mode. Please try again.",
@@ -684,19 +694,19 @@ function PickMechanicContent() {
        </Card>
 
        {/* Order Summary */}
-       <Card className="p-0 bg-white shadow-lg sticky top-8 h-fit">
-        <div className="p-4 border-b bg-gradient-to-r from-[#294a46] to-[#1e3632]">
+       <Card className="p-0 bg-[#294a46] shadow-lg sticky top-8 h-fit">
+        <div className="p-4 border-b border-[#1e3632] bg-gradient-to-r from-[#294a46] to-[#1e3632]">
          <h2 className="text-lg font-semibold text-white">Order Summary</h2>
          <p className="text-gray-200 text-sm mt-1">Review your appointment details</p>
         </div>
 
         <div className="p-4">
          <div className="space-y-4">
-          <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
-           <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
+          <div className="flex items-start space-x-3 pb-3 border-b border-[#1e3632]">
+           <span className="text-base leading-none text-white mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
            <div className="flex-1">
-            <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Appointment Details</h3>
-            <p className="text-xs text-gray-600 mt-1">{formatDate(appointment.appointment_date)}</p>
+            <h3 className="font-semibold text-white text-sm sm:ml-0 ml-2">Appointment Details</h3>
+            <p className="text-xs text-gray-200 mt-1">{formatDate(appointment.appointment_date)}</p>
             <div className="flex items-start mt-1">
              <GoogleMapsLink 
                address={appointment.location}
@@ -706,36 +716,36 @@ function PickMechanicContent() {
           </div>
 
           {appointment.vehicles && (
-           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
-            <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
+           <div className="flex items-start space-x-3 pb-3 border-b border-[#1e3632]">
+            <span className="text-base leading-none text-white mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
             <div className="flex-1">
-             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Vehicle</h3>
-             <p className="text-xs text-gray-600 mt-1 font-medium">
+             <h3 className="font-semibold text-white text-sm sm:ml-0 ml-2">Vehicle</h3>
+             <p className="text-xs text-gray-200 mt-1 font-medium">
               {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
              </p>
              {appointment.vehicles.color && (
-              <p className="text-xs text-gray-500 mt-1">Color: {appointment.vehicles.color}</p>
+              <p className="text-xs text-gray-300 mt-1">Color: {appointment.vehicles.color}</p>
              )}
              {appointment.vehicles.vin && (
-              <p className="text-xs text-gray-500">VIN: {appointment.vehicles.vin}</p>
+              <p className="text-xs text-gray-300">VIN: {appointment.vehicles.vin}</p>
              )}
              {appointment.vehicles.mileage && (
-              <p className="text-xs text-gray-500">Mileage: {appointment.vehicles.mileage}</p>
+              <p className="text-xs text-gray-300">Mileage: {appointment.vehicles.mileage}</p>
              )}
             </div>
            </div>
           )}
 
           {appointment.selected_services && appointment.selected_services.length > 0 && (
-           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
-            <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
+           <div className="flex items-start space-x-3 pb-3 border-b border-[#1e3632]">
+            <span className="text-base leading-none text-white mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
             <div className="flex-1">
-             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Requested Services</h3>
+             <h3 className="font-semibold text-white text-sm sm:ml-0 ml-2">Requested Services</h3>
              <ul className="mt-1 space-y-1">
               {appointment.selected_services.map((service, index) => (
                <li key={index} className="flex items-center">
-                <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
-                <span className="text-xs text-gray-600">{service}</span>
+                <div className="h-1.5 w-1.5 rounded-full bg-white mr-2"></div>
+                <span className="text-xs text-gray-200">{service}</span>
                </li>
               ))}
              </ul>
@@ -744,15 +754,15 @@ function PickMechanicContent() {
           )}
 
           {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
-           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
-            <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">⚠️</span>
+           <div className="flex items-start space-x-3 pb-3 border-b border-[#1e3632]">
+            <span className="text-base leading-none text-white mt-0.5 flex-shrink-0 inline-flex items-center justify-center">⚠️</span>
             <div className="flex-1">
-             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Reported Issues</h3>
+             <h3 className="font-semibold text-white text-sm sm:ml-0 ml-2">Reported Issues</h3>
              <ul className="mt-1 space-y-1">
               {appointment.selected_car_issues.map((issue, index) => (
                <li key={index} className="flex items-center">
-                <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
-                <span className="text-xs text-gray-600">{formatCarIssue(issue)}</span>
+                <div className="h-1.5 w-1.5 rounded-full bg-white mr-2"></div>
+                <span className="text-xs text-gray-200">{formatCarIssue(issue)}</span>
                </li>
               ))}
              </ul>
@@ -761,20 +771,20 @@ function PickMechanicContent() {
           )}
 
           {appointment.issue_description && (
-           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
-            <FileText className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
+           <div className="flex items-start space-x-3 pb-3 border-b border-[#1e3632]">
+            <FileText className="h-4 w-4 text-white mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Description</h3>
-             <p className="text-xs text-gray-600 mt-1 leading-relaxed">{appointment.issue_description}</p>
+             <h3 className="font-semibold text-white text-sm sm:ml-0 ml-2">Description</h3>
+             <p className="text-xs text-gray-200 mt-1 leading-relaxed">{appointment.issue_description}</p>
             </div>
            </div>
           )}
 
-          <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
-           <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔋</span>
+          <div className="flex items-start space-x-3 pb-3 border-b border-[#1e3632]">
+           <span className="text-base leading-none text-white mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔋</span>
            <div className="flex-1">
-            <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Car Status</h3>
-            <p className="text-xs text-gray-600 mt-1">
+            <h3 className="font-semibold text-white text-sm sm:ml-0 ml-2">Car Status</h3>
+            <p className="text-xs text-gray-200 mt-1">
              {appointment.car_runs !== null
               ? appointment.car_runs
                ? "✅ Car is running"
