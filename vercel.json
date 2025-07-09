@@ -2,7 +2,7 @@
   "version": 2,
   "devCommand": "next dev",
   "framework": "nextjs",
-  "installCommand": "./install.sh",
+  "installCommand": "bash install.sh",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "regions": ["iad1"],
