@@ -86,6 +86,7 @@ interface AppointmentWithRelations {
     eta: string
     notes?: string
     created_at: string
+    status?: "pending" | "accepted" | "rejected"
   }>
   quote?: {
     id: string
@@ -126,6 +127,7 @@ interface RawAppointment {
     eta: string
     notes?: string
     created_at: string
+    status?: "pending" | "accepted" | "rejected"
   }>
 }
 
@@ -585,76 +587,63 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
     // NEW: Enhanced upcoming appointments query with proper filtering
     console.log("🔍 Step 1: Building enhanced query for upcoming appointments...");
     
-    // First get appointments with basic relationships
-    const appointmentsQuery = supabase
-      .from('appointments')
+    // For upcoming appointments, include BOTH confirmed AND quoted-but-pending
+    const upcomingAppointmentsQuery = supabase
+      .from('mechanic_quotes')
       .select(`
         *,
-        vehicles!fk_appointment_id(*)
+        appointments!inner (
+          *,
+          user_profiles:user_id (full_name),
+          vehicles!fk_appointment_id(*)
+        )
       `)
-      .in('status', ['confirmed', 'in_progress'])  // Only confirmed/in_progress
-      .not('selected_quote_id', 'is', null);  // Has selected quote
+      .eq('mechanic_id', mechanicId)
+      .in('appointments.status', ['pending', 'confirmed', 'in_progress'])
+      .order('appointments.preferred_date', { ascending: true });
 
     console.log("🔍 Base query constructed with proper filters");
 
-    console.log("🔍 Step 2: Executing appointments query...");
-    const { data: appointments, error } = await appointmentsQuery;
+    console.log("🔍 Step 2: Executing upcoming appointments query...");
+    const { data: upcomingData, error } = await upcomingAppointmentsQuery;
 
     if (error) {
       console.error("❌ Error fetching upcoming appointments:", error);
       return { success: false, error: error.message };
     }
 
-    console.log("🔍 === APPOINTMENTS QUERY RESULTS ===");
-    console.log("✅ Found appointments:", { 
-      count: appointments?.length || 0,
-      appointmentIds: appointments?.map((apt: any) => apt.id) || [],
-      appointmentStatuses: appointments?.map((apt: any) => ({ id: apt.id, status: apt.status })) || []
+    console.log("🔍 === UPCOMING APPOINTMENTS QUERY RESULTS ===");
+    console.log("✅ Found upcoming appointments:", { 
+      count: upcomingData?.length || 0,
+      appointmentIds: upcomingData?.map((item: any) => item.appointments?.id) || [],
+      appointmentStatuses: upcomingData?.map((item: any) => ({ 
+        id: item.appointments?.id, 
+        status: item.appointments?.status,
+        quoteStatus: item.status
+      })) || []
     });
 
-    // Step 3: Get quotes separately for this mechanic
-    console.log("🔍 Step 3: Fetching quotes for this mechanic...");
-    const appointmentIds = appointments?.map((apt: any) => apt.id) || [];
-    
-    let quotes: any[] = [];
-    if (appointmentIds.length > 0) {
-      const { data: quotesData, error: quotesError } = await supabase
-        .from('mechanic_quotes')
-        .select('*')
-        .in('appointment_id', appointmentIds)
-        .eq('mechanic_id', mechanicId);
-
-      if (quotesError) {
-        console.error("❌ Error fetching quotes:", quotesError);
-        return { success: false, error: quotesError.message };
-      }
-
-      quotes = quotesData || [];
-      console.log("🔍 Found quotes for mechanic:", {
-        count: quotes.length,
-        quoteIds: quotes.map((q: any) => q.id)
-      });
-    }
-
-    // Step 4: Combine appointments with quotes in JavaScript
-    console.log("🔍 Step 4: Combining appointments with quotes...");
-    const transformedAppointments = appointments?.map((appointment: any): AppointmentWithRelations => {
-      const myQuote = quotes.find(q => q.appointment_id === appointment.id);
-      console.log("🔍 Processing appointment:", {
+    // Step 3: Transform the data to match expected format
+    console.log("🔍 Step 3: Transforming upcoming appointments data...");
+    const transformedAppointments = upcomingData?.map((item: any): AppointmentWithRelations => {
+      const appointment = item.appointments;
+      const quote = item;
+      
+      console.log("🔍 Processing upcoming appointment:", {
         appointmentId: appointment.id,
         status: appointment.status,
-        hasMyQuote: !!myQuote,
-        myQuoteData: myQuote
+        quoteStatus: quote.status,
+        quotePrice: quote.price
       });
       
       return {
         ...appointment,
-        mechanic_quotes: myQuote ? [myQuote] : [],
-        quote: myQuote ? {
-          id: myQuote.id,
-          price: myQuote.price,
-          created_at: myQuote.created_at
-        } : undefined
+        mechanic_quotes: [quote],
+        quote: {
+          id: quote.id,
+          price: quote.price,
+          created_at: quote.created_at
+        }
       };
     }) || [];
 
@@ -665,11 +654,12 @@ export async function getQuotedAppointmentsForMechanic(mechanicId: string): Prom
         id: apt.id,
         status: apt.status,
         hasQuote: !!apt.quote,
-        quotePrice: apt.quote?.price
+        quotePrice: apt.quote?.price,
+        quoteStatus: apt.mechanic_quotes?.[0]?.status
       }))
     });
 
-    console.log("🔍 === QUOTED APPOINTMENTS DEBUG END ===");
+    console.log("🔍 === UPCOMING APPOINTMENTS DEBUG END ===");
     return { success: true, appointments: transformedAppointments };
 
   } catch (error: unknown) {

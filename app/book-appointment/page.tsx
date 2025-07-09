@@ -19,6 +19,8 @@ interface BookingFormData {
   selectedServices: string[]
   selectedCarIssues: string[]
   location: string
+  preferredDate: string
+  preferredTime: string
   vin: string
   year: string
   make: string
@@ -489,6 +491,8 @@ function BookAppointmentContent() {
     selectedServices: [],
     selectedCarIssues: [],
     location: "",
+    preferredDate: "",
+    preferredTime: "",
     vin: "",
     year: "",
     make: "",
@@ -604,6 +608,35 @@ function BookAppointmentContent() {
       checkExistingQuotes();
     }
   }, [appointmentId, searchParams]);
+
+  // When loading existing appointment for edit mode
+  useEffect(() => {
+    const editMode = searchParams.get('edit') === 'true';
+    if (editMode && appointmentData) {
+      console.log('📝 Loading existing appointment data for edit mode:', appointmentData);
+      
+      setFormData(prev => ({
+        ...prev,
+        // PRESERVE these values from existing appointment
+        location: appointmentData.location || prev.location,
+        preferredDate: appointmentData.appointment_date ? appointmentData.appointment_date.split('T')[0] : prev.preferredDate,
+        preferredTime: appointmentData.appointment_date ? appointmentData.appointment_date.split('T')[1]?.substring(0, 5) : prev.preferredTime,
+        issueDescription: appointmentData.issue_description || prev.issueDescription,
+        phoneNumber: appointmentData.phone_number || prev.phoneNumber,
+        carRuns: appointmentData.car_runs !== null ? appointmentData.car_runs : prev.carRuns,
+        selectedServices: appointmentData.selected_services || prev.selectedServices,
+        selectedCarIssues: appointmentData.selected_car_issues || prev.selectedCarIssues,
+        // Vehicle information
+        vin: appointmentData.vehicles?.vin || prev.vin,
+        year: appointmentData.vehicles?.year?.toString() || prev.year,
+        make: appointmentData.vehicles?.make || prev.make,
+        model: appointmentData.vehicles?.model || prev.model,
+        mileage: appointmentData.vehicles?.mileage?.toString() || prev.mileage,
+      }));
+      
+      console.log('✅ Form data updated for edit mode');
+    }
+  }, [searchParams, appointmentData]);
   // Format phone number as user types
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Remove all non-numeric characters
@@ -880,113 +913,155 @@ function BookAppointmentContent() {
       setIsSubmitting(true)
       console.log('🔄 Starting appointment update process...')
 
-      // Check if ANY field has changed
-      const hasChanges = 
-        appointmentData.vehicles?.vin !== formData.vin ||
-        appointmentData.vehicles?.year?.toString() !== formData.year ||
-        appointmentData.vehicles?.make !== formData.make ||
-        appointmentData.vehicles?.model !== formData.model ||
-        appointmentData.vehicles?.mileage?.toString() !== formData.mileage ||
-        appointmentData.issue_description !== formData.issueDescription ||
-        JSON.stringify(appointmentData.selected_services) !== JSON.stringify(formData.selectedServices) ||
-        JSON.stringify(appointmentData.selected_car_issues) !== JSON.stringify(formData.selectedCarIssues) ||
-        appointmentData.phone_number !== formData.phoneNumber ||
-        appointmentData.car_runs !== formData.carRuns ||
-        appointmentData.location !== formData.location
+      // Track actual changes
+      const actualChanges: any = {}
+      let hasRealChanges = false
+
+      // Check each field for actual changes
+      if (appointmentData.location !== formData.location) {
+        actualChanges.location = formData.location
+        hasRealChanges = true
+      }
+      
+      if (appointmentData.appointment_date !== (formData.preferredDate + 'T' + formData.preferredTime)) {
+        actualChanges.appointment_date = formData.preferredDate + 'T' + formData.preferredTime
+        hasRealChanges = true
+      }
+      
+      if (appointmentData.issue_description !== formData.issueDescription) {
+        actualChanges.issue_description = formData.issueDescription
+        hasRealChanges = true
+      }
+      
+      if (appointmentData.phone_number !== formData.phoneNumber) {
+        actualChanges.phone_number = formData.phoneNumber
+        hasRealChanges = true
+      }
+      
+      if (appointmentData.car_runs !== formData.carRuns) {
+        actualChanges.car_runs = formData.carRuns
+        hasRealChanges = true
+      }
+      
+      if (JSON.stringify(appointmentData.selected_services) !== JSON.stringify(formData.selectedServices)) {
+        actualChanges.selected_services = formData.selectedServices
+        hasRealChanges = true
+      }
+      
+      if (JSON.stringify(appointmentData.selected_car_issues) !== JSON.stringify(formData.selectedCarIssues)) {
+        actualChanges.selected_car_issues = formData.selectedCarIssues
+        hasRealChanges = true
+      }
+
+      // Check vehicle changes
+      const vehicleChanges: any = {}
+      let hasVehicleChanges = false
+      
+      if (appointmentData.vehicles?.vin !== formData.vin) {
+        vehicleChanges.vin = formData.vin || null
+        hasVehicleChanges = true
+      }
+      
+      if (appointmentData.vehicles?.year?.toString() !== formData.year) {
+        vehicleChanges.year = formData.year ? parseInt(formData.year) : null
+        hasVehicleChanges = true
+      }
+      
+      if (appointmentData.vehicles?.make !== formData.make) {
+        vehicleChanges.make = formData.make || null
+        hasVehicleChanges = true
+      }
+      
+      if (appointmentData.vehicles?.model !== formData.model) {
+        vehicleChanges.model = formData.model || null
+        hasVehicleChanges = true
+      }
+      
+      if (appointmentData.vehicles?.mileage?.toString() !== formData.mileage) {
+        vehicleChanges.mileage = formData.mileage ? parseInt(formData.mileage) : null
+        hasVehicleChanges = true
+      }
 
       console.log('🔍 Change detection:', {
-        hasChanges,
-        vinChanged: appointmentData.vehicles?.vin !== formData.vin,
-        yearChanged: appointmentData.vehicles?.year?.toString() !== formData.year,
-        makeChanged: appointmentData.vehicles?.make !== formData.make,
-        modelChanged: appointmentData.vehicles?.model !== formData.model,
-        mileageChanged: appointmentData.vehicles?.mileage?.toString() !== formData.mileage,
-        issueChanged: appointmentData.issue_description !== formData.issueDescription,
-        servicesChanged: JSON.stringify(appointmentData.selected_services) !== JSON.stringify(formData.selectedServices),
-        carIssuesChanged: JSON.stringify(appointmentData.selected_car_issues) !== JSON.stringify(formData.selectedCarIssues),
-        phoneChanged: appointmentData.phone_number !== formData.phoneNumber,
-        carRunsChanged: appointmentData.car_runs !== formData.carRuns,
-        locationChanged: appointmentData.location !== formData.location
+        hasRealChanges,
+        hasVehicleChanges,
+        actualChanges,
+        vehicleChanges
       })
 
-      if (hasChanges) {
+      if (hasRealChanges || hasVehicleChanges) {
         console.log('🔄 Changes detected - resetting appointment completely')
 
-        // Always-Create-User System: Handle phone number merging
-        const currentUserId = appointmentData.user_id
-        
-        if (!currentUserId) {
-          throw new Error("Invalid appointment - no user ID found")
-        }
-        
-        // Normalize phone number for matching
-        const normalizedPhone = formData.phoneNumber.replace(/\D/g, '')
-        
-        // Use Supabase function to merge users by phone number
-        const { data: finalUserId, error: mergeError } = await supabase.rpc(
-          'merge_users_by_phone',
-          {
-            p_phone: normalizedPhone,
-            p_current_user_id: currentUserId
+        // Always-Create-User System: Handle phone number merging if phone changed
+        if (actualChanges.phone_number) {
+          const currentUserId = appointmentData.user_id
+          
+          if (!currentUserId) {
+            throw new Error("Invalid appointment - no user ID found")
           }
-        )
-        
-        if (mergeError) {
-          throw new Error(`Failed to process phone number: ${mergeError.message}`)
-        }
-        
-        if (!finalUserId) {
-          throw new Error("Failed to get final user ID")
-        }
-
-        // Update vehicle information
-        const vehicleUpdates = {
-          vin: formData.vin || null,
-          year: formData.year ? parseInt(formData.year) : null,
-          make: formData.make || null,
-          model: formData.model || null,
-          mileage: formData.mileage ? parseInt(formData.mileage) : null
-        }
-
-        // Update or create vehicle record
-        if (appointmentData.vehicles) {
-          // Update existing vehicle
-          const { error: vehicleError } = await supabase
-            .from('vehicles')
-            .update(vehicleUpdates)
-            .eq('appointment_id', appointmentId)
-
-          if (vehicleError) {
-            console.error('⚠️ Warning: Could not update vehicle:', vehicleError)
+          
+          // Normalize phone number for matching
+          const normalizedPhone = formData.phoneNumber.replace(/\D/g, '')
+          
+          // Use Supabase function to merge users by phone number
+          const { data: finalUserId, error: mergeError } = await supabase.rpc(
+            'merge_users_by_phone',
+            {
+              p_phone: normalizedPhone,
+              p_current_user_id: currentUserId
+            }
+          )
+          
+          if (mergeError) {
+            throw new Error(`Failed to process phone number: ${mergeError.message}`)
           }
-        } else {
-          // Create new vehicle record
-          const { error: vehicleError } = await supabase
-            .from('vehicles')
-            .insert({
-              appointment_id: appointmentId,
-              ...vehicleUpdates
-            })
+          
+          if (!finalUserId) {
+            throw new Error("Failed to get final user ID")
+          }
+          
+          actualChanges.user_id = finalUserId
+        }
 
-          if (vehicleError) {
-            console.error('⚠️ Warning: Could not create vehicle:', vehicleError)
+        // Update vehicle information if changed
+        if (hasVehicleChanges) {
+          if (appointmentData.vehicles) {
+            // Update existing vehicle
+            const { error: vehicleError } = await supabase
+              .from('vehicles')
+              .update(vehicleChanges)
+              .eq('appointment_id', appointmentId)
+
+            if (vehicleError) {
+              console.error('⚠️ Warning: Could not update vehicle:', vehicleError)
+            } else {
+              console.log('✅ Vehicle updated successfully')
+            }
+          } else {
+            // Create new vehicle record
+            const { error: vehicleError } = await supabase
+              .from('vehicles')
+              .insert({
+                appointment_id: appointmentId,
+                ...vehicleChanges
+              })
+
+            if (vehicleError) {
+              console.error('⚠️ Warning: Could not create vehicle:', vehicleError)
+            } else {
+              console.log('✅ Vehicle created successfully')
+            }
           }
         }
 
-        // RESET THE APPOINTMENT COMPLETELY
+        // ONLY NOW reset the appointment with actual changes
         const appointmentUpdates = {
-          user_id: finalUserId,
+          ...actualChanges,
           status: 'pending',  // Reset to pending
           selected_quote_id: null,  // Clear selected quote
           mechanic_id: null,  // Clear assigned mechanic
           is_being_edited: false,  // No longer being edited
           edited_after_quotes: true,  // Mark as edited
-          car_runs: formData.carRuns,
-          issue_description: formData.issueDescription,
-          selected_services: formData.selectedServices,
-          selected_car_issues: formData.selectedCarIssues,
-          phone_number: formData.phoneNumber,
-          location: formData.location,
           updated_at: new Date().toISOString()
         }
 
@@ -1003,7 +1078,7 @@ function BookAppointmentContent() {
 
         console.log('✅ Appointment updated successfully')
 
-        // DELETE ALL EXISTING QUOTES
+        // Delete quotes only if changed
         const { error: deleteQuotesError } = await supabase
           .from('mechanic_quotes')
           .delete()
@@ -1015,7 +1090,7 @@ function BookAppointmentContent() {
           console.log('✅ All existing quotes deleted')
         }
 
-        // CLEAR ALL MECHANIC SKIPS (so they can quote again)
+        // Clear mechanic skips (so they can quote again)
         const { error: deleteSkipsError } = await supabase
           .from('mechanic_skipped_appointments')
           .delete()
