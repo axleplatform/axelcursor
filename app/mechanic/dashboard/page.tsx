@@ -749,7 +749,7 @@ export default function MechanicDashboard() {
           )
         `)
         .eq('mechanic_id', mechanicId)
-        .in('status', ['pending', 'accepted'])  // Only active quotes
+        .eq('status', 'active')  // Only active quotes
         .order('appointments.preferred_date', { ascending: true })
         .returns<MechanicQuoteWithAppointment[]>();
 
@@ -2154,7 +2154,7 @@ export default function MechanicDashboard() {
                 Upcoming Appointments
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                Your quoted & confirmed jobs
+                All appointments you've quoted on
               </p>
             </div>
             {(() => {
@@ -2257,10 +2257,10 @@ export default function MechanicDashboard() {
                                     </div>
                                   </div>
                                 </div>
-                              ) : isConfirmed ? (
+                              ) : appointment.status === 'pending' && !isSelected ? (
                                 <div className="flex flex-col items-end">
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2" style={{ backgroundColor: '#294A46', color: 'white' }}>
-                                    ✓ Confirmed
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2 bg-yellow-100 text-yellow-800">
+                                    ⏳ Awaiting Customer Selection
                                   </span>
                                   <div className="text-sm text-gray-600">
                                     <div className="flex items-center gap-2">
@@ -2269,13 +2269,45 @@ export default function MechanicDashboard() {
                                     </div>
                                   </div>
                                 </div>
-                              ) : isSelected ? (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                                  ✓ Customer selected you
-                                </span>
+                              ) : appointment.status === 'pending' && isSelected ? (
+                                <div className="flex flex-col items-end">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2 bg-blue-100 text-blue-800">
+                                    ✓ Customer Selected - Awaiting Confirmation
+                                  </span>
+                                  <div className="text-sm text-gray-600">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-4 w-4" />
+                                      <span>ETA: {new Date(myQuote?.eta || '').toLocaleString()}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : appointment.status === 'confirmed' ? (
+                                <div className="flex flex-col items-end">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2" style={{ backgroundColor: '#294A46', color: 'white' }}>
+                                    ✅ Confirmed
+                                  </span>
+                                  <div className="text-sm text-gray-600">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-4 w-4" />
+                                      <span>ETA: {new Date(myQuote?.eta || '').toLocaleString()}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : appointment.status === 'in_progress' ? (
+                                <div className="flex flex-col items-end">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2 bg-purple-100 text-purple-800">
+                                    🔧 In Progress
+                                  </span>
+                                  <div className="text-sm text-gray-600">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-4 w-4" />
+                                      <span>ETA: {new Date(myQuote?.eta || '').toLocaleString()}</span>
+                                    </div>
+                                  </div>
+                                </div>
                               ) : (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
-                                  ⏳ Pending
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-800">
+                                  {appointment.status}
                                 </span>
                               )}
                             </div>
@@ -2389,7 +2421,7 @@ export default function MechanicDashboard() {
                               <div className="flex-1 text-center text-gray-500 text-sm py-2 bg-gray-100 rounded-full">
                                 Appointment Cancelled
                               </div>
-                            ) : isConfirmed ? (
+                            ) : appointment.status === 'confirmed' || appointment.status === 'in_progress' ? (
                               <>
                                 {isFromSchedule ? (
                                   <>
@@ -2433,7 +2465,7 @@ export default function MechanicDashboard() {
                                   </>
                                 )}
                               </>
-                            ) : (
+                            ) : appointment.status === 'pending' ? (
                               <>
                                 {isEditing ? (
                                   <>
@@ -2462,19 +2494,21 @@ export default function MechanicDashboard() {
                                       onClick={() => handleEditAppointment(appointment)}
                                       className="flex-1 bg-[#294a46] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
                                     >
-                                      Edit
+                                      Edit Quote
                                     </button>
-                                    {appointment.payment_status !== 'paid' && (
-                                      <button
-                                        onClick={() => handleCancelQuote(appointment.id)}
-                                        className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
-                                      >
-                                        Cancel
-                                      </button>
-                                    )}
+                                    <button
+                                      onClick={() => handleCancelQuote(appointment.id)}
+                                      className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
+                                    >
+                                      Cancel Quote
+                                    </button>
                                   </div>
                                 )}
                               </>
+                            ) : (
+                              <div className="flex-1 text-center text-gray-500 text-sm py-2 bg-gray-100 rounded-full">
+                                {appointment.status}
+                              </div>
                             )}
                           </div>
                         </>

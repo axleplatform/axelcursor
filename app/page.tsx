@@ -771,7 +771,7 @@ function HomePageContent(): React.JSX.Element {
             {/* Car Selector */}
             <div className="mb-4 w-full">
               <div className="mb-2">
-                <h3 className="text-sm font-medium text-gray-700">Vehicle Information <span className="text-red-500">*</span></h3>
+                <h3 className="text-sm font-medium text-gray-700">Vehicle Information</h3>
               </div>
               {/* Desktop layout: All fields in one row */}
               <div className="hidden sm:flex gap-2">
