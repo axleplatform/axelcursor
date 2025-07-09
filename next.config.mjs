@@ -37,7 +37,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; connect-src 'self' https://maps.googleapis.com https://*.supabase.co https://wxamcdokkjkzhnryxsvd.supabase.co; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;"
+            value: "default-src 'self'; connect-src 'self' https://maps.googleapis.com https://*.supabase.co wss://*.supabase.co https://wxamcdokkjkzhnryxsvd.supabase.co wss://wxamcdokkjkzhnryxsvd.supabase.co; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maps.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;"
           }
         ],
       },
