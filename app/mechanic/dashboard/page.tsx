@@ -3335,5 +3335,5 @@ export default function MechanicDashboard() {
 
       <Footer />
     </div>
-force   )
+  )
 }
