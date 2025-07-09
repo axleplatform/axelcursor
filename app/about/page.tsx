@@ -2,9 +2,9 @@
 
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { SiteHeader } from "@/components/site-header"
-import Footer from "@/components/footer"
+import { Button } from "../../components/ui/button"
+import { SiteHeader } from "../../components/site-header"
+import Footer from "../../components/footer"
 import Image from "next/image"
 
 export default function AboutPage() {

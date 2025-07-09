@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { examineSchema } from "@/lib/examine-schema"
-import { supabase } from "@/lib/supabase"
+import { examineSchema } from "../../../lib/examine-schema"
+import { supabase } from "../../../lib/supabase"
 
 export default function SchemaCheckPage() {
   const [schemaInfo, setSchemaInfo] = useState<any>(null)
