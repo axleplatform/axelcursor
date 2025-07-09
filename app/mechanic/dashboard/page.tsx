@@ -40,6 +40,17 @@ import type {
   MechanicSkip
 } from "@/types/index"
 
+// Define the type for mechanic quotes with appointment data
+type MechanicQuoteWithAppointment = {
+  id: string
+  price: number
+  eta: string
+  notes: string | null
+  created_at: string
+  status: string
+  appointments: AppointmentWithRelations
+}
+
 export default function MechanicDashboard() {
   const { toast } = useToast()
   const router = useRouter()
@@ -739,13 +750,14 @@ export default function MechanicDashboard() {
         `)
         .eq('mechanic_id', mechanicId)
         .in('status', ['pending', 'accepted'])  // Only active quotes
-        .order('appointments.preferred_date', { ascending: true });
+        .order('appointments.preferred_date', { ascending: true })
+        .returns<MechanicQuoteWithAppointment[]>();
 
       console.log('Upcoming appointments query result:', { upcomingAppointments, upcomingError });
 
       if (!upcomingError && upcomingAppointments) {
-        // Transform to match expected format
-        const formattedAppointments = upcomingAppointments.map(quote => ({
+        // Transform to match expected format with proper TypeScript typing
+        const formattedAppointments = upcomingAppointments.map((quote: MechanicQuoteWithAppointment) => ({
           ...quote.appointments,
           mechanic_quotes: [{
             id: quote.id,
