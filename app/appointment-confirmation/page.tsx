@@ -385,7 +385,7 @@ export default function AppointmentConfirmationPage() {
           {/* Two Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Column - Order Summary */}
-            <div className="bg-white rounded-lg shadow-md p-0 overflow-hidden">
+            <div className="bg-white rounded-lg shadow-md p-0 overflow-hidden order-2 lg:order-1">
               <div className={`p-4 border-b bg-gradient-to-r ${
                 isCancelled 
                   ? 'from-red-600 to-red-700' 
@@ -450,15 +450,12 @@ export default function AppointmentConfirmationPage() {
                     <GoogleMapsLink 
                       address={appointmentData.location}
                     />
-                    <div>
-                      <h3 className="font-medium text-gray-700">Location</h3>
-                    </div>
                   </div>
 
                   <div className="flex items-start gap-3">
                     <Clock className="h-5 w-5 text-gray-500 mt-1" />
                     <div>
-                      <h3 className="font-medium text-gray-700">Appointment Date</h3>
+                      <h3 className="font-medium text-gray-700">Appointment Placed On</h3>
                       <p className="text-gray-600">{formatDate(appointmentData.appointment_date)}</p>
                     </div>
                   </div>
@@ -495,6 +492,54 @@ export default function AppointmentConfirmationPage() {
                     </div>
                   )}
 
+                  {appointmentData.selected_services && appointmentData.selected_services.length > 0 && (
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 text-gray-500 mt-1">🔧</div>
+                      <div>
+                        <h3 className="font-medium text-gray-700">Requested Services</h3>
+                        <ul className="mt-1 space-y-1">
+                          {appointmentData.selected_services.map((service, index) => (
+                            <li key={index} className="flex items-center">
+                              <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
+                              <span className="text-sm text-gray-600">{service}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+
+                  {appointmentData.selected_car_issues && appointmentData.selected_car_issues.length > 0 && (
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 text-gray-500 mt-1">⚠️</div>
+                      <div>
+                        <h3 className="font-medium text-gray-700">Reported Issues</h3>
+                        <ul className="mt-1 space-y-1">
+                          {appointmentData.selected_car_issues.map((issue, index) => (
+                            <li key={index} className="flex items-center">
+                              <div className="h-1.5 w-1.5 rounded-full bg-[#294a46] mr-2"></div>
+                              <span className="text-sm text-gray-600">{issue}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-start gap-3">
+                    <div className="h-5 w-5 text-gray-500 mt-1">🔋</div>
+                    <div>
+                      <h3 className="font-medium text-gray-700">Car Status</h3>
+                      <p className="text-gray-600">
+                        {appointmentData.car_runs !== null
+                          ? appointmentData.car_runs
+                            ? "✅ Car is running"
+                            : "❌ Car is not running"
+                          : "❓ Car status not specified"}
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Mechanic Notes */}
                   {hasQuoteData && quote?.notes && (
                     <div className="flex items-start gap-3">
@@ -522,7 +567,7 @@ export default function AppointmentConfirmationPage() {
             </div>
 
             {/* Right Column - Account Creation */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-white rounded-lg shadow-md p-6 order-1 lg:order-2">
               {accountCreated ? (
                 <div className="text-center py-8">
                   <div className="w-16 h-16 rounded-full bg-[#e6eeec] flex items-center justify-center mx-auto mb-4">

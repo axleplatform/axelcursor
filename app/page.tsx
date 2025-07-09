@@ -770,9 +770,15 @@ function HomePageContent(): React.JSX.Element {
 
             {/* Car Selector */}
             <div className="mb-4 w-full">
+              <div className="mb-2">
+                <h3 className="text-sm font-medium text-gray-700">Vehicle Information <span className="text-red-500">*</span></h3>
+              </div>
               {/* Desktop layout: All fields in one row */}
               <div className="hidden sm:flex gap-2">
                 <div className="relative w-[8ch]">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Year <span className="text-red-500">*</span>
+                  </label>
                   <select
                     name="year"
                     value={formData.year}
@@ -816,6 +822,9 @@ function HomePageContent(): React.JSX.Element {
                 </div>
 
                 <div className="relative w-[20%]">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Make <span className="text-red-500">*</span>
+                  </label>
                   <select
                     name="make"
                     value={formData.make}
@@ -848,6 +857,9 @@ function HomePageContent(): React.JSX.Element {
                 </div>
 
                 <div className="relative w-[20%]">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Model <span className="text-red-500">*</span>
+                  </label>
                   <input
                     ref={modelRef}
                     type="text"
@@ -1101,6 +1113,18 @@ function HomePageContent(): React.JSX.Element {
                       <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
                       Processing...
                     </div>
+                  ) : !formData.appointmentTime.trim() ? (
+                    <span>Please select a time</span>
+                  ) : !formData.location.trim() ? (
+                    <span>Please enter location</span>
+                  ) : !formData.year.trim() ? (
+                    <span>Please select year</span>
+                  ) : !formData.make.trim() ? (
+                    <span>Please select make</span>
+                  ) : !formData.model.trim() ? (
+                    <span>Please enter model</span>
+                  ) : !formData.appointmentDate.trim() ? (
+                    <span>Please select date</span>
                   ) : (
                     <span>Continue</span>
                   )}
