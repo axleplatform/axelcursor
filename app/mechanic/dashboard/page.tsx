@@ -715,24 +715,44 @@ export default function MechanicDashboard() {
       console.log('🔄 Setting loading state to true...');
       setIsAppointmentsLoading(true);
 
-      // Fetch available appointments (pending appointments without quotes from this mechanic)
-      const availableResult = await getAvailableAppointmentsForMechanic(mechanicId);
-      console.log('Available appointments result:', availableResult);
+      // AVAILABLE: Appointments I haven't quoted on yet
+      console.log('🔍 Fetching available appointments...');
+      const { data: availableAppointments, error: availableError } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          user_profiles:user_id (full_name),
+          vehicles!fk_appointment_id(*)
+        `)
+        .eq('status', 'pending')
+        .is('selected_quote_id', null)
+        .not('id', 'in', `(
+          SELECT appointment_id 
+          FROM mechanic_quotes 
+          WHERE mechanic_id = '${mechanicId}' 
+          AND status = 'active'
+        )`)  // Exclude appointments I already quoted on
+        .not('id', 'in', `(
+          SELECT appointment_id 
+          FROM mechanic_skipped_appointments 
+          WHERE mechanic_id = '${mechanicId}'
+        )`)  // Exclude skipped
+        .order('created_at', { ascending: false });
 
-      if (availableResult.success && availableResult.appointments) {
-        // Filter out overdue pending appointments from available and upcoming
-        const filteredAvailable = availableResult.appointments?.filter(
+      if (availableError) {
+        console.error('Error fetching available appointments:', availableError);
+        setAvailableAppointments([]);
+      } else {
+        // Filter out overdue pending appointments
+        const filteredAvailable = availableAppointments?.filter(
           (apt: AppointmentWithRelations) => !isPendingAndOverdue(apt)
         ) || [];
         setAvailableAppointments(filteredAvailable);
         console.log('Query results (available):', filteredAvailable);
-      } else {
-        console.error('Error fetching available appointments:', availableResult.error);
-        setAvailableAppointments([]);
       }
 
-      // FIX: Upcoming appointments should include ANY appointment you quoted on
-      console.log('🔍 Fetching upcoming appointments with direct query...');
+      // UPCOMING: ALL appointments I quoted on (pending, confirmed, in_progress)
+      console.log('🔍 Fetching upcoming appointments...');
       const { data: upcomingAppointments, error: upcomingError } = await supabase
         .from('mechanic_quotes')
         .select(`
@@ -744,12 +764,15 @@ export default function MechanicDashboard() {
           status,
           appointments!inner (
             *,
+            status,
+            selected_quote_id,
             user_profiles:user_id (full_name),
             vehicles!fk_appointment_id(*)
           )
         `)
         .eq('mechanic_id', mechanicId)
         .eq('status', 'active')  // Only active quotes
+        // NO STATUS FILTER - we want ALL statuses
         .order('appointments.preferred_date', { ascending: true })
         .returns<MechanicQuoteWithAppointment[]>();
 
