@@ -720,19 +720,58 @@ export default function MechanicDashboard() {
         setAvailableAppointments([]);
       }
 
-      // Fetch upcoming appointments (confirmed/quoted appointments for this mechanic)  
-      const upcomingResult = await getQuotedAppointmentsForMechanic(mechanicId);
-      console.log('Upcoming appointments result:', upcomingResult);
+      // FIX: Upcoming appointments should include ANY appointment you quoted on
+      console.log('🔍 Fetching upcoming appointments with direct query...');
+      const { data: upcomingAppointments, error: upcomingError } = await supabase
+        .from('mechanic_quotes')
+        .select(`
+          id,
+          price,
+          eta,
+          notes,
+          created_at,
+          status,
+          appointments!inner (
+            *,
+            user_profiles:user_id (full_name),
+            vehicles!fk_appointment_id(*)
+          )
+        `)
+        .eq('mechanic_id', mechanicId)
+        .in('status', ['pending', 'accepted'])  // Only active quotes
+        .order('appointments.preferred_date', { ascending: true });
 
-      if (upcomingResult.success && upcomingResult.appointments) {
-        // Filter out overdue pending appointments from available and upcoming
-        const filteredUpcoming = upcomingResult.appointments?.filter(
+      console.log('Upcoming appointments query result:', { upcomingAppointments, upcomingError });
+
+      if (!upcomingError && upcomingAppointments) {
+        // Transform to match expected format
+        const formattedAppointments = upcomingAppointments.map(quote => ({
+          ...quote.appointments,
+          mechanic_quotes: [{
+            id: quote.id,
+            mechanic_id: mechanicId,
+            price: quote.price,
+            eta: quote.eta,
+            notes: quote.notes,
+            created_at: quote.created_at,
+            status: quote.status
+          }],
+          quote: {
+            id: quote.id,
+            price: quote.price,
+            created_at: quote.created_at
+          }
+        }));
+
+        // Filter out overdue pending appointments
+        const filteredUpcoming = formattedAppointments.filter(
           (apt: AppointmentWithRelations) => !isPendingAndOverdue(apt)
-        ) || [];
+        );
+        
         setUpcomingAppointments(filteredUpcoming);
         console.log('Query results (upcoming):', filteredUpcoming);
       } else {
-        console.error('Error fetching upcoming appointments:', upcomingResult.error);
+        console.error('Error fetching upcoming appointments:', upcomingError);
         setUpcomingAppointments([]);
       }
       
