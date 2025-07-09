@@ -1,5 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': './',
+    }
+    return config
+  },
   eslint: {
     // Enable ESLint during builds - do not ignore errors
     ignoreDuringBuilds: false,
