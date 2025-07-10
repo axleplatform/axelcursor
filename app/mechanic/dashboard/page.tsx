@@ -792,53 +792,60 @@ export default function MechanicDashboard() {
       // ADD THIS MISSING SECTION FOR UPCOMING APPOINTMENTS
       console.log('🔍 Fetching UPCOMING appointments for mechanic...');
 
-      // STEP 1: First, let's see what quotes exist
-      const { data: debugQuotes } = await supabase
-        .from('mechanic_quotes')
-        .select('*')
-        .eq('mechanic_id', mechanicId)
+      // The problem: Multiple relationships between mechanic_quotes and appointments
+      // The solution: Specify WHICH relationship to use
 
-      console.log('🔍 DEBUG: All quotes for this mechanic:', debugQuotes);
-
-      // STEP 2: Get the quotes with proper status filter
+      // REPLACE the upcoming appointments query with this:
       const { data: upcomingQuotes, error: upcomingError } = await supabase
         .from('mechanic_quotes')
         .select(`
           *,
-          appointments!inner (*)
+          appointments!mechanic_quotes_appointment_id_fkey (*)
         `)
         .eq('mechanic_id', mechanicId)
-        // REMOVE any status filter that might be filtering them out
-        // .eq('status', 'active')  // REMOVE THIS IF IT EXISTS
+        .eq('status', 'active')
 
-      if (upcomingError) {
-        console.error('❌ Error fetching upcoming appointments:', upcomingError);
-        // Try a simpler query if the complex one fails
-        const { data: simpleQuotes } = await supabase
-          .from('mechanic_quotes')
-          .select('*')
-          .eq('mechanic_id', mechanicId)
+      // If that still fails, use the two-step approach:
+      // STEP 1: Get quotes
+      const { data: myQuotes } = await supabase
+        .from('mechanic_quotes')
+        .select('*')
+        .eq('mechanic_id', mechanicId)
+        .eq('status', 'active')
+
+      console.log('📊 My quotes:', myQuotes);
+
+      // STEP 2: Get appointment details separately
+      if (myQuotes && myQuotes.length > 0) {
+        const appointmentIds = myQuotes.map((q: any) => q.appointment_id);
         
-        console.log('📊 Simple quotes query result:', simpleQuotes);
-      } else {
-        console.log(`✅ Found ${upcomingQuotes?.length || 0} upcoming appointments`);
-        console.log('📊 Upcoming quotes data:', upcomingQuotes);
+        const { data: appointments } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            users!appointments_user_id_fkey (email, phone),
+            vehicles!vehicles_appointment_id_fkey (*)
+          `)
+          .in('id', appointmentIds)
         
-        // Format the appointments
-        const formattedUpcoming = upcomingQuotes?.map((quote: any) => ({
-          ...quote.appointments,
-          mechanic_quote: {
-            id: quote.id,
-            price: quote.price,
-            eta: quote.eta,
-            notes: quote.notes,
-            created_at: quote.created_at,
-            status: quote.status
-          }
-        })) || [];
+        // STEP 3: Combine them
+        const upcomingWithDetails = appointments?.map((apt: any) => {
+          const quote = myQuotes.find((q: any) => q.appointment_id === apt.id);
+          return {
+            ...apt,
+            mechanic_quote: {
+              id: quote.id,
+              price: quote.price,
+              eta: quote.eta,
+              notes: quote.notes,
+              status: quote.status,
+              created_at: quote.created_at
+            }
+          };
+        }) || [];
         
-        setUpcomingAppointments(formattedUpcoming);
-        console.log('📊 Set upcoming appointments:', formattedUpcoming);
+        console.log('✅ Upcoming appointments with details:', upcomingWithDetails);
+        setUpcomingAppointments(upcomingWithDetails);
       }
 
     } catch (error) {
