@@ -715,29 +715,56 @@ export default function MechanicDashboard() {
       console.log('🔄 Setting loading state to true...');
       setIsAppointmentsLoading(true);
 
-      // AVAILABLE: Appointments I haven't quoted on yet
+      // AVAILABLE APPOINTMENTS - Simplified
       console.log('🔍 Fetching available appointments...');
       const { data: availableAppointments, error: availableError } = await supabase
         .from('appointments')
         .select(`
           *,
-          user_profiles:user_id (full_name),
-          vehicles!fk_appointment_id(*)
+          users!appointments_user_id_fkey (email, phone),
+          vehicles!vehicles_appointment_id_fkey (*)
         `)
         .eq('status', 'pending')
         .is('selected_quote_id', null)
-        .not('id', 'in', `(
-          SELECT appointment_id 
-          FROM mechanic_quotes 
-          WHERE mechanic_id = '${mechanicId}' 
-          AND status = 'active'
-        )`)  // Exclude appointments I already quoted on
-        .not('id', 'in', `(
-          SELECT appointment_id 
-          FROM mechanic_skipped_appointments 
-          WHERE mechanic_id = '${mechanicId}'
-        )`)  // Exclude skipped
-        .order('created_at', { ascending: false });
+        .eq('is_being_edited', false)
+        .order('appointment_date', { ascending: true });
+
+      if (availableError) {
+        console.error('Error fetching available appointments:', availableError);
+        setAvailableAppointments([]);
+      } else if (availableAppointments) {
+        // Get appointments this mechanic already quoted on
+        const { data: myQuotes } = await supabase
+          .from('mechanic_quotes')
+          .select('appointment_id')
+          .eq('mechanic_id', mechanicId)
+          .in('status', ['pending', 'accepted']);
+        
+        const quotedAppointmentIds = myQuotes?.map((q: { appointment_id: string }) => q.appointment_id) || [];
+        
+        // Get appointments this mechanic has skipped
+        const { data: mySkips } = await supabase
+          .from('mechanic_skipped_appointments')
+          .select('appointment_id')
+          .eq('mechanic_id', mechanicId);
+        
+        const skippedAppointmentIds = mySkips?.map((s: { appointment_id: string }) => s.appointment_id) || [];
+        
+        // Filter out appointments I already quoted on or skipped
+        const filteredAppointments = availableAppointments.filter(
+          (apt: any) => !quotedAppointmentIds.includes(apt.id) && !skippedAppointmentIds.includes(apt.id)
+        );
+        
+        // Filter out overdue pending appointments
+        const finalFiltered = filteredAppointments.filter(
+          (apt: AppointmentWithRelations) => !isPendingAndOverdue(apt)
+        );
+        
+        setAvailableAppointments(finalFiltered);
+        console.log('Query results (available):', finalFiltered);
+      } else {
+        setAvailableAppointments([]);
+      }
 
       if (availableError) {
         console.error('Error fetching available appointments:', availableError);
@@ -751,36 +778,28 @@ export default function MechanicDashboard() {
         console.log('Query results (available):', filteredAvailable);
       }
 
-      // UPCOMING: ALL appointments I quoted on (pending, confirmed, in_progress)
+      // UPCOMING APPOINTMENTS - Simplified  
       console.log('🔍 Fetching upcoming appointments...');
       const { data: upcomingAppointments, error: upcomingError } = await supabase
         .from('mechanic_quotes')
         .select(`
-          id,
-          price,
-          eta,
-          notes,
-          created_at,
-          status,
-          appointments!inner (
+          *,
+          appointments!mechanic_quotes_appointment_id_fkey (
             *,
-            status,
-            selected_quote_id,
-            user_profiles:user_id (full_name),
-            vehicles!fk_appointment_id(*)
+            users!appointments_user_id_fkey (email, phone),
+            vehicles!vehicles_appointment_id_fkey (*)
           )
         `)
         .eq('mechanic_id', mechanicId)
-        .eq('status', 'active')  // Only active quotes
-        // NO STATUS FILTER - we want ALL statuses
-        .order('appointments.preferred_date', { ascending: true })
+        .in('status', ['pending', 'accepted'])
+        .order('appointments.appointment_date', { ascending: true })
         .returns<MechanicQuoteWithAppointment[]>();
 
       console.log('Upcoming appointments query result:', { upcomingAppointments, upcomingError });
 
       if (!upcomingError && upcomingAppointments) {
         // Transform to match expected format with proper TypeScript typing
-        const formattedAppointments = upcomingAppointments.map((quote: MechanicQuoteWithAppointment) => ({
+        const formattedAppointments = upcomingAppointments.map((quote: any) => ({
           ...quote.appointments,
           mechanic_quotes: [{
             id: quote.id,
