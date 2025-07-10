@@ -51,6 +51,14 @@ type MechanicQuoteWithAppointment = {
   appointments: AppointmentWithRelations
 }
 
+// Define the type for edited appointments query results
+interface EditedAppointmentResult {
+  id: string
+  edited_after_quotes: boolean
+  mechanic_quotes: MechanicQuote[]
+  // Add other appointment fields as needed
+}
+
 export default function MechanicDashboard() {
   const { toast } = useToast()
   const router = useRouter()
@@ -721,7 +729,7 @@ export default function MechanicDashboard() {
 
       // DEBUG: Check for edited appointments that should be available
       console.log('🔍 Checking for edited appointments that should be available...');
-      const { data: editedAppointments } = await supabase
+      const { data: editedAppointments }: { data: EditedAppointmentResult[] | null } = await supabase
         .from('appointments')
         .select('id, status, edited_after_quotes, is_being_edited')
         .eq('status', 'pending')
