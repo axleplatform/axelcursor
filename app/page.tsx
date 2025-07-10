@@ -774,9 +774,7 @@ function HomePageContent(): React.JSX.Element {
               {/* Desktop layout: All fields in one row */}
               <div className="hidden sm:flex gap-2">
                 <div className="relative w-[8ch]">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Year
-                  </label>
+
                   <select
                     name="year"
                     value={formData.year}
@@ -820,9 +818,7 @@ function HomePageContent(): React.JSX.Element {
                 </div>
 
                 <div className="relative w-[20%]">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Make
-                  </label>
+
                   <select
                     name="make"
                     value={formData.make}
@@ -855,9 +851,7 @@ function HomePageContent(): React.JSX.Element {
                 </div>
 
                 <div className="relative w-[20%]">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Model
-                  </label>
+
                   <input
                     ref={modelRef}
                     type="text"
