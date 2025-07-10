@@ -827,27 +827,26 @@ export default function MechanicDashboard() {
         // Step 3: Combine them properly
         const upcomingWithQuotes = appointments?.map((apt: any) => {
           const quote = validQuotes.find((q: any) => q.appointment_id === apt.id);
-          console.log(`Matching quote for appointment ${apt.id}:`, quote);
-          
+          // LOG WHAT WE'RE ATTACHING
+          if (quote) {
+            console.log(`📊 Attaching quote to appointment ${apt.id}:`, {
+              quote_id: quote.id,
+              price: quote.price,
+              eta: quote.eta
+            });
+          }
           return {
             ...apt,
-            mechanic_quote: quote ? {
-              id: quote.id,
-              price: quote.price,        // Make sure this is included
-              eta: quote.eta,            // Make sure this is included
-              notes: quote.notes,
-              status: quote.status,
-              created_at: quote.created_at
-            } : null
+            mechanic_quotes: quote ? [quote] : [] // Always attach as array
           };
         }) || [];
 
         console.log('✅ Combined appointments with quotes:', 
           upcomingWithQuotes.map((a: any) => ({
             appointment_id: a.id,
-            has_quote: !!a.mechanic_quote,
-            quote_price: a.mechanic_quote?.price,
-            quote_eta: a.mechanic_quote?.eta
+            has_quote: !!a.mechanic_quotes,
+            quote_price: a.mechanic_quotes?.[0]?.price,
+            quote_eta: a.mechanic_quotes?.[0]?.eta
           }))
         );
         
@@ -858,10 +857,10 @@ export default function MechanicDashboard() {
         console.log('🔍 UPCOMING APPOINTMENTS DATA STRUCTURE:', 
           upcomingWithQuotes.slice(0, 2).map((apt: any) => ({
             id: apt.id,
-            mechanic_quote: apt.mechanic_quote,
-            price: apt.mechanic_quote?.price,
-            eta: apt.mechanic_quote?.eta,
-            hasQuoteData: !!apt.mechanic_quote
+            mechanic_quotes: apt.mechanic_quotes,
+            price: apt.mechanic_quotes?.[0]?.price,
+            eta: apt.mechanic_quotes?.[0]?.eta,
+            hasQuoteData: !!apt.mechanic_quotes
           }))
         );
       }
@@ -2158,12 +2157,12 @@ export default function MechanicDashboard() {
                       
                       // Debug log for each appointment
                       console.log(`Rendering appointment ${appointment.id}:`, {
-                        has_quote: !!appointment.mechanic_quote,
-                        price: appointment.mechanic_quote?.price,
-                        eta: appointment.mechanic_quote?.eta
+                        has_quote: !!appointment.mechanic_quotes,
+                        price: appointment.mechanic_quotes?.[0]?.price,
+                        eta: appointment.mechanic_quotes?.[0]?.eta
                       });
                       
-                      const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
+                      const myQuote = appointment.mechanic_quotes?.[0];
                       const isSelected = appointment.selected_mechanic_id === mechanicId;
                       const isEditing = selectedAppointment?.id === appointment.id;
                       const isConfirmed = appointment.payment_status === 'paid' || appointment.status === 'confirmed';
@@ -2171,17 +2170,22 @@ export default function MechanicDashboard() {
                       return (
                         <>
                           {/* Make sure you're displaying the quote data */}
-                          {appointment.mechanic_quote && (
+                          {myQuote && (
                             <div className="bg-green-50 p-3 rounded-lg mb-4">
                               <div className="flex justify-between items-center">
                                 <span className="font-semibold">Your Quote:</span>
                                 <span className="text-xl font-bold text-green-600">
-                                  ${appointment.mechanic_quote.price || 'No price'}
+                                  ${myQuote.price || 'No price'}
                                 </span>
                               </div>
-                              {appointment.mechanic_quote.eta && (
+                              {myQuote.eta && (
                                 <div className="text-sm text-gray-600 mt-1">
-                                  ETA: {appointment.mechanic_quote.eta} minutes
+                                  ETA: {myQuote.eta} minutes
+                                </div>
+                              )}
+                              {myQuote.notes && (
+                                <div className="text-sm text-gray-600 mt-1">
+                                  Notes: {myQuote.notes}
                                 </div>
                               )}
                             </div>
@@ -3392,10 +3396,10 @@ export default function MechanicDashboard() {
         onClick={() => {
           console.log('UPCOMING DATA:', upcomingAppointments.slice(0, 2).map(apt => ({
             id: apt.id,
-            has_quote: !!apt.mechanic_quote,
-            quote_data: apt.mechanic_quote,
-            price: apt.mechanic_quote?.price,
-            eta: apt.mechanic_quote?.eta
+            has_quote: !!apt.mechanic_quotes,
+            quote_data: apt.mechanic_quotes?.[0],
+            price: apt.mechanic_quotes?.[0]?.price,
+            eta: apt.mechanic_quotes?.[0]?.eta
           })));
         }}
         className="bg-blue-500 text-white p-2 rounded mb-4"
