@@ -1343,201 +1343,45 @@ export default function MechanicDashboard() {
   };
 
   // Handle skipping an appointment
-  const handleSkipAppointment = async (appointment: AppointmentWithRelations): Promise<void> => {
-    if (!appointment.id) {
-      console.error('❌ Skip failed: No appointment ID');
-      showNotification('Invalid appointment', 'error');
-      return;
-    }
-
-    if (!mechanicId) {
-      console.error('❌ Skip failed: No mechanic ID');
-      showNotification('Please log in as a mechanic', 'error');
-      return;
-    }
-
-    console.log('🔄 Starting skip process:', {
-      appointmentId: appointment.id,
-      mechanicId,
-      timestamp: new Date().toISOString()
-    });
-
+  const handleSkipAppointment = async (appointmentId: string) => {
     try {
-      setIsProcessing(true);
-
-      // Debug auth flow
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) {
-        console.error('❌ Auth error:', userError);
-        throw new Error('Authentication error');
-      }
-
-      console.log('👤 Current user:', {
-        userId: user?.id,
-        mechanicId,
-        timestamp: new Date().toISOString()
-      });
-
-      // Verify the mechanic profile belongs to current user
-      const { data: profile, error: profileError } = await supabase
-        .from('mechanic_profiles')
-        .select('*')
-        .eq('id', mechanicId)
-        .eq('user_id', user?.id)
-        .single();
-
-      if (profileError) {
-        console.error('❌ Profile verification failed:', profileError);
-        throw new Error('Failed to verify mechanic profile');
-      }
-
-      if (!profile) {
-        console.error('❌ Mechanic profile not found or unauthorized:', {
-          mechanicId,
-          userId: user?.id
-        });
-        throw new Error('Mechanic profile not found or unauthorized');
-      }
-
-      console.log('✅ Mechanic profile verified:', {
-        profileId: profile.id,
-        userId: profile.user_id,
-        timestamp: new Date().toISOString()
-      });
-      
-      // First verify the appointment exists and is pending
-      const { data: appointmentData, error: appointmentError } = await supabase
-        .from('appointments')
-        .select('status')
-        .eq('id', appointment.id)
-        .single();
-
-      if (appointmentError) {
-        console.error('❌ Appointment verification failed:', appointmentError);
-        throw new Error(`Failed to verify appointment: ${appointmentError.message}`);
-      }
-
-      if (!appointmentData) {
-        console.error('❌ Appointment not found:', appointment.id);
-        throw new Error('Appointment not found');
-      }
-
-      if (appointmentData.status !== 'pending') {
-        console.error('❌ Appointment is not pending:', appointmentData.status);
-        throw new Error(`Appointment is ${appointmentData.status}`);
-      }
-
-      // Check if mechanic has already skipped
-      console.log('🔍 Checking if mechanic has already skipped...');
-      const { data: existingSkip, error: skipCheckError } = await supabase
+      // Check if already skipped
+      const { data: existingSkip } = await supabase
         .from('mechanic_skipped_appointments')
         .select('id')
+        .eq('appointment_id', appointmentId)
         .eq('mechanic_id', mechanicId)
-        .eq('appointment_id', appointment.id)
-        .maybeSingle(); // Use maybeSingle instead of single to handle no results
-
-      console.log('🔍 Skip check result:', {
-        existingSkip,
-        skipCheckError,
-        errorCode: skipCheckError?.code,
-        hasPreviousSkip: !!existingSkip
-      });
-
-      if (skipCheckError) {
-        console.error('❌ Skip check failed:', skipCheckError);
-        throw new Error(`Failed to check existing skips: ${skipCheckError.message}`);
-      }
+        .single();
 
       if (existingSkip) {
-        console.error('❌ Mechanic already skipped:', {
-          mechanicId,
-          appointmentId: appointment.id,
-          existingSkipId: existingSkip.id
-        });
-        throw new Error('You have already skipped this appointment');
+        toast.error('You have already skipped this appointment');
+        return;
       }
 
-      // Record the skip with minimal return
+      // Create skip record
       const { error: skipError } = await supabase
         .from('mechanic_skipped_appointments')
         .insert({
+          appointment_id: appointmentId,
           mechanic_id: mechanicId,
-          appointment_id: appointment.id,
           skipped_at: new Date().toISOString()
-        }, { returning: 'minimal' });
-
-      if (skipError) {
-        console.error('❌ Skip recording failed:', {
-          error: skipError,
-          mechanicId,
-          appointmentId: appointment.id
-        });
-        throw new Error(`Failed to record skip: ${skipError.message}`);
-      }
-
-      console.log('✅ Skip recorded successfully');
-
-      // Check if all mechanics have skipped
-      const { data: allSkipped, error: checkError } = await supabase
-        .rpc('check_all_mechanics_skipped', {
-          p_appointment_id: appointment.id
         });
 
-      if (checkError) {
-        console.error('❌ Failed to check if all mechanics skipped:', checkError);
-        throw new Error(`Failed to check mechanics: ${checkError.message}`);
-      }
+      if (skipError) throw skipError;
 
-      if (allSkipped) {
-        console.log('🔄 All mechanics skipped, cancelling appointment');
-        
-        // Cancel the appointment
-        const { error: cancelError } = await supabase
-          .from('appointments')
-          .update({
-            status: 'cancelled',
-            cancelled_at: new Date().toISOString(),
-            cancelled_by: 'system',
-            cancellation_reason: 'All mechanics skipped'
-          })
-          .eq('id', appointment.id);
-
-        if (cancelError) {
-          console.error('❌ Failed to cancel appointment:', cancelError);
-          throw new Error(`Failed to cancel appointment: ${cancelError.message}`);
-        }
-
-        console.log('✅ Appointment cancelled successfully');
-      }
-
-      // Calculate the new index before updating state
-      const newAvailableAppointments = availableAppointments.filter((a) => a.id !== appointment.id);
-      const newLength = newAvailableAppointments.length;
+      toast.success('Appointment skipped');
       
-      // Reset index to 0 if current index would be out of bounds, otherwise keep current position
-      let newIndex = currentAvailableIndex;
-      if (currentAvailableIndex >= newLength && newLength > 0) {
-        newIndex = 0; // Reset to first appointment
-      } else if (newLength === 0) {
-        newIndex = 0; // No appointments left
-      }
-
-      // Update local state - immediately remove the skipped appointment
-      setAvailableAppointments(newAvailableAppointments);
-      setCurrentAvailableIndex(newIndex);
-
-      // Show success message
-      showNotification('Appointment skipped successfully', 'skip');
-
-      // Refetch appointments to ensure UI is in sync
+      // IMPORTANT: Remove from local state immediately for instant feedback
+      setAvailableAppointments((prev: AppointmentWithRelations[]) => 
+        prev.filter((apt: AppointmentWithRelations) => apt.id !== appointmentId)
+      );
+      
+      // Then fetch fresh data
       await fetchInitialAppointments();
-
-    } catch (error: unknown) {
-      console.error('❌ Skip process failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      showNotification(errorMessage, 'error');
-      } finally {
-      setIsProcessing(false);
+      
+    } catch (error) {
+      console.error('Error skipping appointment:', error);
+      toast.error('Failed to skip appointment');
     }
   };
 
@@ -2973,7 +2817,7 @@ export default function MechanicDashboard() {
                         );
                       })()}
                       <button
-                        onClick={() => handleSkipAppointment(availableAppointments[currentAvailableIndex])}
+                        onClick={() => handleSkipAppointment(availableAppointments[currentAvailableIndex].id)}
                         disabled={isProcessing}
                         className="border border-white text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99] flex-1 disabled:opacity-70 disabled:cursor-not-allowed"
                       >
@@ -3434,6 +3278,20 @@ export default function MechanicDashboard() {
       </Dialog>
 
       <Footer />
+
+      {/* Debug: Show all skipped appointments for this mechanic */}
+      <button
+        onClick={async () => {
+          const { data: skips } = await supabase
+            .from('mechanic_skipped_appointments')
+            .select('*')
+            .eq('mechanic_id', mechanicId);
+          console.log('All my skipped appointments:', skips);
+        }}
+        style={{ margin: '16px 0', padding: '8px 16px', background: '#eee', borderRadius: 4 }}
+      >
+        Debug Skipped Appointments
+      </button>
     </div>
   )
 }
