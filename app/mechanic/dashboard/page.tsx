@@ -789,45 +789,47 @@ export default function MechanicDashboard() {
       console.log(`✅ Available appointments after filtering: ${availableAppointments.length}`);
       setAvailableAppointments(availableAppointments);
 
-      // STEP 5: Get upcoming appointments (mechanic's quotes)
-      const { data: upcomingAppointments, error: upcomingError } = await supabase
-        .from('mechanic_quotes')
-        .select(`
-          *,
-          appointments!mechanic_quotes_appointment_id_fkey (
+      // ADD THIS MISSING SECTION FOR UPCOMING APPOINTMENTS
+      console.log('🔍 Fetching UPCOMING appointments for mechanic...');
+      
+      try {
+        const { data: upcomingQuotes, error: upcomingError } = await supabase
+          .from('mechanic_quotes')
+          .select(`
             *,
-            users!appointments_user_id_fkey (email, phone),
-            vehicles!vehicles_appointment_id_fkey (*)
-          )
-        `)
-        .eq('mechanic_id', mechanicId)
-        .eq('status', 'active') // Get ALL active quotes regardless of status
-        .order('created_at', { ascending: false }); // Order by quote creation instead
+            appointments!mechanic_quotes_appointment_id_fkey (
+              *,
+              users!appointments_user_id_fkey (email, phone),
+              vehicles!vehicles_appointment_id_fkey (*)
+            )
+          `)
+          .eq('mechanic_id', mechanicId)
+          .eq('status', 'active')
+          .order('created_at', { descending: true });
 
-      if (upcomingError) {
-        console.error('Error fetching upcoming appointments:', upcomingError);
-      }
-
-      // Format upcoming appointments
-      const formattedUpcoming = upcomingAppointments?.map((quote: any) => ({
-        ...quote.appointments,
-        mechanic_quotes: [{
-          id: quote.id,
-          mechanic_id: mechanicId,
-          price: quote.price,
-          eta: quote.eta,
-          notes: quote.notes,
-          created_at: quote.created_at,
-          status: quote.status
-        }],
-        quote: {
-          id: quote.id,
-          price: quote.price,
-          created_at: quote.created_at
+        if (upcomingError) {
+          console.error('❌ Error fetching upcoming appointments:', upcomingError);
+        } else {
+          console.log(`✅ Found ${upcomingQuotes?.length || 0} upcoming appointments`);
+          
+          // Format the appointments
+          const formattedUpcoming = upcomingQuotes?.map((quote: any) => ({
+            ...quote.appointments,
+            mechanic_quote: {
+              id: quote.id,
+              price: quote.price,
+              eta: quote.eta,
+              notes: quote.notes,
+              created_at: quote.created_at
+            }
+          })) || [];
+          
+          setUpcomingAppointments(formattedUpcoming);
+          console.log('📊 Set upcoming appointments:', formattedUpcoming);
         }
-      })) || [];
-
-      setUpcomingAppointments(formattedUpcoming);
+      } catch (error) {
+        console.error('❌ Exception in upcoming appointments fetch:', error);
+      }
 
     } catch (error) {
       console.error('Error in fetchInitialAppointments:', error);
