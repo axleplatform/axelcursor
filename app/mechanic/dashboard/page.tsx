@@ -699,25 +699,14 @@ export default function MechanicDashboard() {
     return now - appointmentTime > 15 * 60 * 1000; // 15 minutes in ms
   }
 
-  // OPTIMIZED: Simplified fetch using database filters (performance fix applied to hook)
-  // VERSION: 2.0.0 - Enhanced with extensive debugging
-  const fetchInitialAppointments = async (): Promise<void> => {
-    try {
-      console.log('🔄 === FETCH INITIAL APPOINTMENTS START (v2.0.0) ===');
-      console.log('🔄 CODE VERSION CHECK: This is the NEW enhanced appointment fetching code');
-      console.log('Fetching appointments for mechanic:', mechanicId);
-      
-      if (!mechanicId) {
-        console.log('⏳ No mechanicId available, skipping appointments fetch');
-        return;
-      }
+  const fetchInitialAppointments = async () => {
+    if (!mechanicId) return;
 
-      console.log('🔄 Setting loading state to true...');
+    try {
       setIsAppointmentsLoading(true);
 
-      // AVAILABLE APPOINTMENTS - Simplified
-      console.log('🔍 Fetching available appointments...');
-      const { data: availableAppointments, error: availableError } = await supabase
+      // STEP 1: Get all pending appointments first
+      const { data: allPendingAppointments, error: appointmentsError } = await supabase
         .from('appointments')
         .select(`
           *,
@@ -729,57 +718,57 @@ export default function MechanicDashboard() {
         .eq('is_being_edited', false)
         .order('appointment_date', { ascending: true });
 
-      if (availableError) {
-        console.error('Error fetching available appointments:', availableError);
-        setAvailableAppointments([]);
-      } else if (availableAppointments) {
-        // Get appointments this mechanic already quoted on
-        const { data: myQuotes } = await supabase
-          .from('mechanic_quotes')
-          .select('appointment_id')
-          .eq('mechanic_id', mechanicId)
-          .in('status', ['pending', 'accepted']);
-        
-        const quotedAppointmentIds = myQuotes?.map((q: { appointment_id: string }) => q.appointment_id) || [];
-        
-        // Get appointments this mechanic has skipped
-        const { data: mySkips } = await supabase
-          .from('mechanic_skipped_appointments')
-          .select('appointment_id')
-          .eq('mechanic_id', mechanicId);
-        
-        const skippedAppointmentIds = mySkips?.map((s: { appointment_id: string }) => s.appointment_id) || [];
-        
-        // Filter out appointments I already quoted on or skipped
-        const filteredAppointments = availableAppointments.filter(
-          (apt: any) => !quotedAppointmentIds.includes(apt.id) && !skippedAppointmentIds.includes(apt.id)
-        );
-        
-        // Filter out overdue pending appointments
-        const finalFiltered = filteredAppointments.filter(
-          (apt: AppointmentWithRelations) => !isPendingAndOverdue(apt)
-        );
-        
-        setAvailableAppointments(finalFiltered);
-        console.log('Query results (available):', finalFiltered);
-      } else {
-        setAvailableAppointments([]);
+      if (appointmentsError) {
+        console.error('Error fetching appointments:', appointmentsError);
+        return;
       }
 
-      if (availableError) {
-        console.error('Error fetching available appointments:', availableError);
-        setAvailableAppointments([]);
-      } else {
-        // Filter out overdue pending appointments
-        const filteredAvailable = availableAppointments?.filter(
-          (apt: AppointmentWithRelations) => !isPendingAndOverdue(apt)
-        ) || [];
-        setAvailableAppointments(filteredAvailable);
-        console.log('Query results (available):', filteredAvailable);
+      // STEP 2: Get appointments this mechanic has SKIPPED
+      const { data: skippedAppointments, error: skippedError } = await supabase
+        .from('mechanic_skipped_appointments')
+        .select('appointment_id')
+        .eq('mechanic_id', mechanicId);
+
+      if (skippedError) {
+        console.error('Error fetching skipped appointments:', skippedError);
       }
 
-      // UPCOMING APPOINTMENTS - Simplified  
-      console.log('🔍 Fetching upcoming appointments...');
+      const skippedIds = skippedAppointments?.map((s: { appointment_id: string }) => s.appointment_id) || [];
+      console.log('🚫 Mechanic has skipped these appointments:', skippedIds);
+
+      // STEP 3: Get appointments this mechanic has QUOTED on
+      const { data: quotedAppointments, error: quotedError } = await supabase
+        .from('mechanic_quotes')
+        .select('appointment_id')
+        .eq('mechanic_id', mechanicId)
+        .in('status', ['pending', 'accepted']);
+
+      if (quotedError) {
+        console.error('Error fetching quoted appointments:', quotedError);
+      }
+
+      const quotedIds = quotedAppointments?.map((q: { appointment_id: string }) => q.appointment_id) || [];
+      console.log('💬 Mechanic has quoted on these appointments:', quotedIds);
+
+      // STEP 4: Filter out BOTH skipped AND quoted appointments
+      const availableAppointments = allPendingAppointments?.filter((apt: any) => {
+        const isSkipped = skippedIds.includes(apt.id);
+        const isQuoted = quotedIds.includes(apt.id);
+        
+        if (isSkipped) {
+          console.log(`⏭️ Filtering out skipped appointment: ${apt.id}`);
+        }
+        if (isQuoted) {
+          console.log(`💬 Filtering out quoted appointment: ${apt.id}`);
+        }
+        
+        return !isSkipped && !isQuoted; // Only show if NOT skipped AND NOT quoted
+      }) || [];
+
+      console.log(`✅ Available appointments after filtering: ${availableAppointments.length}`);
+      setAvailableAppointments(availableAppointments);
+
+      // STEP 5: Get upcoming appointments (mechanic's quotes)
       const { data: upcomingAppointments, error: upcomingError } = await supabase
         .from('mechanic_quotes')
         .select(`
@@ -792,55 +781,39 @@ export default function MechanicDashboard() {
         `)
         .eq('mechanic_id', mechanicId)
         .in('status', ['pending', 'accepted'])
-        .order('appointments.appointment_date', { ascending: true })
-        .returns<MechanicQuoteWithAppointment[]>();
+        .order('appointments.appointment_date', { ascending: true });
 
-      console.log('Upcoming appointments query result:', { upcomingAppointments, upcomingError });
-
-      if (!upcomingError && upcomingAppointments) {
-        // Transform to match expected format with proper TypeScript typing
-        const formattedAppointments = upcomingAppointments.map((quote: any) => ({
-          ...quote.appointments,
-          mechanic_quotes: [{
-            id: quote.id,
-            mechanic_id: mechanicId,
-            price: quote.price,
-            eta: quote.eta,
-            notes: quote.notes,
-            created_at: quote.created_at,
-            status: quote.status
-          }],
-          quote: {
-            id: quote.id,
-            price: quote.price,
-            created_at: quote.created_at
-          }
-        }));
-
-        // Filter out overdue pending appointments
-        const filteredUpcoming = formattedAppointments.filter(
-          (apt: AppointmentWithRelations) => !isPendingAndOverdue(apt)
-        );
-        
-        setUpcomingAppointments(filteredUpcoming);
-        console.log('Query results (upcoming):', filteredUpcoming);
-      } else {
+      if (upcomingError) {
         console.error('Error fetching upcoming appointments:', upcomingError);
-        setUpcomingAppointments([]);
       }
-      
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      console.error('❌ Error fetching appointments:', errorMessage)
-      setAvailableAppointments([]);
-      setUpcomingAppointments([]);
+
+      // Format upcoming appointments
+      const formattedUpcoming = upcomingAppointments?.map((quote: any) => ({
+        ...quote.appointments,
+        mechanic_quotes: [{
+          id: quote.id,
+          mechanic_id: mechanicId,
+          price: quote.price,
+          eta: quote.eta,
+          notes: quote.notes,
+          created_at: quote.created_at,
+          status: quote.status
+        }],
+        quote: {
+          id: quote.id,
+          price: quote.price,
+          created_at: quote.created_at
+        }
+      })) || [];
+
+      setUpcomingAppointments(formattedUpcoming);
+
+    } catch (error) {
+      console.error('Error in fetchInitialAppointments:', error);
     } finally {
-      console.log('🔄 Setting loading state to false...');
       setIsAppointmentsLoading(false);
-      console.log('✅ DASHBOARD: Loading state set to FALSE');
-      console.log('🔄 === FETCH INITIAL APPOINTMENTS COMPLETE ===');
     }
-  }
+  };
 
   useEffect(() => {
     const checkAuth = async (): Promise<void> => {
