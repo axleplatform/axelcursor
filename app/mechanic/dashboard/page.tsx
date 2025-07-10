@@ -1354,7 +1354,11 @@ export default function MechanicDashboard() {
         .single();
 
       if (existingSkip) {
-        toast.error('You have already skipped this appointment');
+        toast({
+          title: "Error",
+          description: "You have already skipped this appointment",
+          variant: "destructive"
+        });
         return;
       }
 
@@ -1367,9 +1371,12 @@ export default function MechanicDashboard() {
           skipped_at: new Date().toISOString()
         });
 
-      if (skipError) throw skipError;
+          if (skipError) throw skipError;
 
-      toast.success('Appointment skipped');
+    toast({
+      title: "Success",
+      description: "Appointment skipped"
+    });
       
       // IMPORTANT: Remove from local state immediately for instant feedback
       setAvailableAppointments((prev: AppointmentWithRelations[]) => 
@@ -1379,10 +1386,14 @@ export default function MechanicDashboard() {
       // Then fetch fresh data
       await fetchInitialAppointments();
       
-    } catch (error) {
-      console.error('Error skipping appointment:', error);
-      toast.error('Failed to skip appointment');
-    }
+      } catch (error) {
+    console.error('Error skipping appointment:', error);
+    toast({
+      title: "Error",
+      description: "Failed to skip appointment",
+      variant: "destructive"
+    });
+  }
   };
 
   // Navigate through available appointments
