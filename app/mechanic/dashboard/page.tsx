@@ -824,17 +824,46 @@ export default function MechanicDashboard() {
           `)
           .in('id', appointmentIds)
         
-        // Step 3: Combine them
+        // Step 3: Combine them properly
         const upcomingWithQuotes = appointments?.map((apt: any) => {
           const quote = validQuotes.find((q: any) => q.appointment_id === apt.id);
+          console.log(`Matching quote for appointment ${apt.id}:`, quote);
+          
           return {
             ...apt,
-            mechanic_quote: quote
+            mechanic_quote: quote ? {
+              id: quote.id,
+              price: quote.price,        // Make sure this is included
+              eta: quote.eta,            // Make sure this is included
+              notes: quote.notes,
+              status: quote.status,
+              created_at: quote.created_at
+            } : null
           };
         }) || [];
+
+        console.log('✅ Combined appointments with quotes:', 
+          upcomingWithQuotes.map((a: any) => ({
+            appointment_id: a.id,
+            has_quote: !!a.mechanic_quote,
+            quote_price: a.mechanic_quote?.price,
+            quote_eta: a.mechanic_quote?.eta
+          }))
+        );
         
         console.log('✅ Upcoming appointments:', upcomingWithQuotes);
         setUpcomingAppointments(upcomingWithQuotes);
+        
+        // Add this debug log to see what data structure we have
+        console.log('🔍 UPCOMING APPOINTMENTS DATA STRUCTURE:', 
+          upcomingWithQuotes.slice(0, 2).map((apt: any) => ({
+            id: apt.id,
+            mechanic_quote: apt.mechanic_quote,
+            price: apt.mechanic_quote?.price,
+            eta: apt.mechanic_quote?.eta,
+            hasQuoteData: !!apt.mechanic_quote
+          }))
+        );
       }
 
     } catch (error) {
@@ -2126,6 +2155,14 @@ export default function MechanicDashboard() {
                   <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
                     {(() => {
                       const appointment = filteredUpcomingAppointments[currentUpcomingIndex];
+                      
+                      // Debug log for each appointment
+                      console.log(`Rendering appointment ${appointment.id}:`, {
+                        has_quote: !!appointment.mechanic_quote,
+                        price: appointment.mechanic_quote?.price,
+                        eta: appointment.mechanic_quote?.eta
+                      });
+                      
                       const myQuote = appointment.mechanic_quotes?.find((q: MechanicQuote) => q.mechanic_id === mechanicId);
                       const isSelected = appointment.selected_mechanic_id === mechanicId;
                       const isEditing = selectedAppointment?.id === appointment.id;
@@ -2133,6 +2170,23 @@ export default function MechanicDashboard() {
                       
                       return (
                         <>
+                          {/* Make sure you're displaying the quote data */}
+                          {appointment.mechanic_quote && (
+                            <div className="bg-green-50 p-3 rounded-lg mb-4">
+                              <div className="flex justify-between items-center">
+                                <span className="font-semibold">Your Quote:</span>
+                                <span className="text-xl font-bold text-green-600">
+                                  ${appointment.mechanic_quote.price || 'No price'}
+                                </span>
+                              </div>
+                              {appointment.mechanic_quote.eta && (
+                                <div className="text-sm text-gray-600 mt-1">
+                                  ETA: {appointment.mechanic_quote.eta} minutes
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
                           {/* Card Header with Price and Status */}
                           <div className="flex justify-between items-start mb-6">
                             {/* Price Quote */}
