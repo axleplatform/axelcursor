@@ -3386,6 +3386,22 @@ export default function MechanicDashboard() {
       >
         Debug Skipped Appointments
       </button>
+
+      {/* Debug: Add a button to log upcoming appointments and their quote data */}
+      <button
+        onClick={() => {
+          console.log('UPCOMING DATA:', upcomingAppointments.slice(0, 2).map(apt => ({
+            id: apt.id,
+            has_quote: !!apt.mechanic_quote,
+            quote_data: apt.mechanic_quote,
+            price: apt.mechanic_quote?.price,
+            eta: apt.mechanic_quote?.eta
+          })));
+        }}
+        className="bg-blue-500 text-white p-2 rounded mb-4"
+      >
+        Debug Quote Data
+      </button>
     </div>
   )
 }
