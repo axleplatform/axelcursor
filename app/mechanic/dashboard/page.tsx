@@ -747,29 +747,44 @@ export default function MechanicDashboard() {
       const skippedIds = skippedAppointments?.map((s: { appointment_id: string }) => s.appointment_id) || [];
       console.log('🚫 Mechanic has skipped these appointments:', skippedIds);
 
-      // STEP 3: Get appointments this mechanic has QUOTED on
+      // STEP 3: Get appointments that were edited AFTER mechanic quoted
+      const { data: editedAppointments } = await supabase
+        .from('appointments')
+        .select('id, edited_after_quotes')
+        .eq('edited_after_quotes', true)
+        .eq('status', 'pending');
+
+      const editedIds = editedAppointments?.map(a => a.id) || [];
+      console.log('✏️ Edited appointments that need to be shown:', editedIds);
+
+      // STEP 4: Get appointments this mechanic has QUOTED on
       const { data: quotedAppointments, error: quotedError } = await supabase
         .from('mechanic_quotes')
         .select('appointment_id')
         .eq('mechanic_id', mechanicId)
-        .in('status', ['pending', 'accepted']);
+        .eq('status', 'active');
 
       if (quotedError) {
         console.error('Error fetching quoted appointments:', quotedError);
       }
 
-      const quotedIds = quotedAppointments?.map((q: { appointment_id: string }) => q.appointment_id) || [];
-      console.log('💬 Mechanic has quoted on these appointments:', quotedIds);
+      // Filter out quotes for edited appointments
+      const validQuotedIds = quotedAppointments
+        ?.filter(q => !editedIds.includes(q.appointment_id))
+        .map(q => q.appointment_id) || [];
 
-      // STEP 4: Filter out BOTH skipped AND quoted appointments
+      console.log('💬 Mechanic has quoted on these appointments (excluding edited):', validQuotedIds);
+
+      // STEP 5: Show edited appointments even if previously quoted
       console.log('🔍 Starting filtering process...');
       console.log('📊 Total pending appointments:', allPendingAppointments?.length || 0);
       console.log('🚫 Skipped appointment IDs:', skippedIds);
-      console.log('💬 Quoted appointment IDs:', quotedIds);
+      console.log('💬 Valid quoted appointment IDs:', validQuotedIds);
+      console.log('✏️ Edited appointment IDs:', editedIds);
       
       const availableAppointments = allPendingAppointments?.filter((apt: any) => {
         const isSkipped = skippedIds.includes(apt.id);
-        const isQuoted = quotedIds.includes(apt.id);
+        const isQuoted = validQuotedIds.includes(apt.id) && !apt.edited_after_quotes;
         
         if (isSkipped) {
           console.log(`⏭️ Filtering out skipped appointment: ${apt.id}`);
@@ -778,12 +793,16 @@ export default function MechanicDashboard() {
           console.log(`💬 Filtering out quoted appointment: ${apt.id}`);
         }
         
+        if (apt.edited_after_quotes) {
+          console.log(`✏️ Including edited appointment: ${apt.id}`);
+        }
+        
         const shouldInclude = !isSkipped && !isQuoted;
         if (shouldInclude) {
           console.log(`✅ Including appointment: ${apt.id} (edited: ${apt.edited_after_quotes})`);
         }
         
-        return shouldInclude; // Only show if NOT skipped AND NOT quoted
+        return shouldInclude; // Only show if NOT skipped AND NOT quoted (unless edited)
       }) || [];
 
       console.log(`✅ Available appointments after filtering: ${availableAppointments.length}`);
@@ -2169,28 +2188,6 @@ export default function MechanicDashboard() {
                       
                       return (
                         <>
-                          {/* Make sure you're displaying the quote data */}
-                          {myQuote && (
-                            <div className="bg-green-50 p-3 rounded-lg mb-4">
-                              <div className="flex justify-between items-center">
-                                <span className="font-semibold">Your Quote:</span>
-                                <span className="text-xl font-bold text-green-600">
-                                  ${myQuote.price || 'No price'}
-                                </span>
-                              </div>
-                              {myQuote.eta && (
-                                <div className="text-sm text-gray-600 mt-1">
-                                  ETA: {myQuote.eta} minutes
-                                </div>
-                              )}
-                              {myQuote.notes && (
-                                <div className="text-sm text-gray-600 mt-1">
-                                  Notes: {myQuote.notes}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          
                           {/* Card Header with Price and Status */}
                           <div className="flex justify-between items-start mb-6">
                             {/* Price Quote */}
