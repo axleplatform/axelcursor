@@ -792,32 +792,28 @@ export default function MechanicDashboard() {
       // ADD THIS MISSING SECTION FOR UPCOMING APPOINTMENTS
       console.log('🔍 Fetching UPCOMING appointments for mechanic...');
 
-      // The problem: Multiple relationships between mechanic_quotes and appointments
-      // The solution: Specify WHICH relationship to use
+      // WRONG - 'active' might not exist
+      // .eq('status', 'active')
 
-      // REPLACE the upcoming appointments query with this:
-      const { data: upcomingQuotes, error: upcomingError } = await supabase
-        .from('mechanic_quotes')
-        .select(`
-          *,
-          appointments!mechanic_quotes_appointment_id_fkey (*)
-        `)
-        .eq('mechanic_id', mechanicId)
-        .eq('status', 'active')
-
-      // If that still fails, use the two-step approach:
-      // STEP 1: Get quotes
+      // CORRECT - Use the actual status values
+      // Step 1: Get all quotes (no status filter)
       const { data: myQuotes } = await supabase
         .from('mechanic_quotes')
         .select('*')
         .eq('mechanic_id', mechanicId)
-        .eq('status', 'active')
 
-      console.log('📊 My quotes:', myQuotes);
+      console.log(`Found ${myQuotes?.length} total quotes`);
+      console.log('📊 All my quotes (no status filter):', myQuotes);
+      console.log('📊 Quote statuses:', myQuotes?.map((q: any) => ({ id: q.id, status: q.status })));
 
-      // STEP 2: Get appointment details separately
-      if (myQuotes && myQuotes.length > 0) {
-        const appointmentIds = myQuotes.map((q: any) => q.appointment_id);
+      // Then use the correct statuses
+      const validQuotes = myQuotes?.filter((q: any) => 
+        ['pending', 'submitted', 'accepted'].indexOf(q.status) !== -1
+      );
+
+      // Step 2: Get appointments for those quotes
+      if (validQuotes && validQuotes.length > 0) {
+        const appointmentIds = validQuotes.map((q: any) => q.appointment_id);
         
         const { data: appointments } = await supabase
           .from('appointments')
@@ -828,24 +824,17 @@ export default function MechanicDashboard() {
           `)
           .in('id', appointmentIds)
         
-        // STEP 3: Combine them
-        const upcomingWithDetails = appointments?.map((apt: any) => {
-          const quote = myQuotes.find((q: any) => q.appointment_id === apt.id);
+        // Step 3: Combine them
+        const upcomingWithQuotes = appointments?.map((apt: any) => {
+          const quote = validQuotes.find((q: any) => q.appointment_id === apt.id);
           return {
             ...apt,
-            mechanic_quote: {
-              id: quote.id,
-              price: quote.price,
-              eta: quote.eta,
-              notes: quote.notes,
-              status: quote.status,
-              created_at: quote.created_at
-            }
+            mechanic_quote: quote
           };
         }) || [];
         
-        console.log('✅ Upcoming appointments with details:', upcomingWithDetails);
-        setUpcomingAppointments(upcomingWithDetails);
+        console.log('✅ Upcoming appointments:', upcomingWithQuotes);
+        setUpcomingAppointments(upcomingWithQuotes);
       }
 
     } catch (error) {
