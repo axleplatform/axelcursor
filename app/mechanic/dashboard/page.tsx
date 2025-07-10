@@ -706,6 +706,7 @@ export default function MechanicDashboard() {
       setIsAppointmentsLoading(true);
 
       // STEP 1: Get all pending appointments first
+      console.log('🔍 Fetching all pending appointments before filtering...');
       const { data: allPendingAppointments, error: appointmentsError } = await supabase
         .from('appointments')
         .select(`
@@ -717,6 +718,16 @@ export default function MechanicDashboard() {
         .is('selected_quote_id', null)
         .eq('is_being_edited', false)
         .order('appointment_date', { ascending: true });
+
+      // DEBUG: Check for edited appointments that should be available
+      console.log('🔍 Checking for edited appointments that should be available...');
+      const { data: editedAppointments } = await supabase
+        .from('appointments')
+        .select('id, status, edited_after_quotes, is_being_edited')
+        .eq('status', 'pending')
+        .eq('edited_after_quotes', true);
+
+      console.log('📝 Found edited appointments:', editedAppointments);
 
       if (appointmentsError) {
         console.error('Error fetching appointments:', appointmentsError);
@@ -751,6 +762,11 @@ export default function MechanicDashboard() {
       console.log('💬 Mechanic has quoted on these appointments:', quotedIds);
 
       // STEP 4: Filter out BOTH skipped AND quoted appointments
+      console.log('🔍 Starting filtering process...');
+      console.log('📊 Total pending appointments:', allPendingAppointments?.length || 0);
+      console.log('🚫 Skipped appointment IDs:', skippedIds);
+      console.log('💬 Quoted appointment IDs:', quotedIds);
+      
       const availableAppointments = allPendingAppointments?.filter((apt: any) => {
         const isSkipped = skippedIds.includes(apt.id);
         const isQuoted = quotedIds.includes(apt.id);
@@ -762,7 +778,12 @@ export default function MechanicDashboard() {
           console.log(`💬 Filtering out quoted appointment: ${apt.id}`);
         }
         
-        return !isSkipped && !isQuoted; // Only show if NOT skipped AND NOT quoted
+        const shouldInclude = !isSkipped && !isQuoted;
+        if (shouldInclude) {
+          console.log(`✅ Including appointment: ${apt.id} (edited: ${apt.edited_after_quotes})`);
+        }
+        
+        return shouldInclude; // Only show if NOT skipped AND NOT quoted
       }) || [];
 
       console.log(`✅ Available appointments after filtering: ${availableAppointments.length}`);
@@ -780,8 +801,8 @@ export default function MechanicDashboard() {
           )
         `)
         .eq('mechanic_id', mechanicId)
-        .in('status', ['pending', 'accepted'])
-        .order('appointments.appointment_date', { ascending: true });
+        .eq('status', 'active') // Get ALL active quotes regardless of status
+        .order('created_at', { ascending: false }); // Order by quote creation instead
 
       if (upcomingError) {
         console.error('Error fetching upcoming appointments:', upcomingError);
