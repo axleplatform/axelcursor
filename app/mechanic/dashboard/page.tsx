@@ -747,13 +747,7 @@ export default function MechanicDashboard() {
       const skippedIds = skippedAppointments?.map((s: { appointment_id: string }) => s.appointment_id) || [];
       console.log('🚫 Mechanic has skipped these appointments:', skippedIds);
 
-      // STEP 3: Get appointments that were edited AFTER mechanic quoted
-      const { data: editedAppointments } = await supabase
-        .from('appointments')
-        .select('id, edited_after_quotes')
-        .eq('edited_after_quotes', true)
-        .eq('status', 'pending');
-
+      // STEP 3: Use the edited appointments data from the first query
       const editedIds = editedAppointments?.map(a => a.id) || [];
       console.log('✏️ Edited appointments that need to be shown:', editedIds);
 
