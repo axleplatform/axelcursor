@@ -51,7 +51,7 @@ export default function MechanicLocationInput({
         autocompleteElement.setAttribute('fields', 'address_components,geometry,formatted_address')
 
         // Handle place selection
-        autocompleteElement.addEventListener('gmp-placeselect', (event: PlaceSelectEvent) => {
+        autocompleteElement.addEventListener('gmp-placeselect', (event: any) => {
           const place = event.place
           
           if (place.geometry && place.geometry.location) {
