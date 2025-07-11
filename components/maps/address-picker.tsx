@@ -91,7 +91,7 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
         autocompleteElement.setAttribute('fields', 'address_components,geometry,formatted_address,place_id');
 
         // Handle place selection
-        autocompleteElement.addEventListener('gmp-placeselect', (event: PlaceSelectEvent) => {
+        autocompleteElement.addEventListener('gmp-placeselect', (event: any) => {
           const place = event.place;
           handlePlaceSelection(place);
         });
