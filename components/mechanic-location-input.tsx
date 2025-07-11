@@ -42,7 +42,7 @@ export default function MechanicLocationInput({
         const google = await loadGoogleMaps()
 
         // Create autocomplete element using new API
-        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement()
+        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement({ componentRestrictions: { country: 'us' } })
         
         // Configure the autocomplete element
         autocompleteElement.setAttribute('placeholder', 'Enter your full address')
