@@ -1015,7 +1015,7 @@ function HomePageContent(): React.JSX.Element {
               value={formData.location}
               onChange={val => setFormData(f => ({ ...f, location: val }))}
               onLocationSelect={loc => setSelectedLocation(loc)}
-              label="Where do you need service?"
+              label="Enter your location"
               required
             />
             <div className="relative w-full h-[400px] rounded-lg overflow-hidden mt-4">

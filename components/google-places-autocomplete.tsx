@@ -90,8 +90,7 @@ export function GooglePlacesAutocomplete({
             <input 
               type="text" 
               placeholder="${placeholder}" 
-              class="w-full px-3 py-2 border rounded-lg"
-              disabled
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg"
             />
           `
         }
@@ -116,7 +115,6 @@ export function GooglePlacesAutocomplete({
           type="text"
           placeholder={placeholder}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          disabled
         />
       )}
     </div>

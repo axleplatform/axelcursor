@@ -82,7 +82,7 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
         const google = await loadGoogleMaps();
 
         // Create autocomplete element using new API
-        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement();
+        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement({});
         
         // Configure the autocomplete element
         autocompleteElement.setAttribute('placeholder', 'Enter your service address');
