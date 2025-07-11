@@ -14,13 +14,17 @@ interface HomepageLocationInputProps {
     coordinates: { lat: number; lng: number }; 
     placeId?: string; 
   }) => void
+  label?: string
+  required?: boolean
 }
 
 export default function HomepageLocationInput({
   value,
   onChange,
   error,
-  onLocationSelect
+  onLocationSelect,
+  label = "Enter your location",
+  required = false
 }: HomepageLocationInputProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
@@ -105,7 +109,7 @@ export default function HomepageLocationInput({
 
   return (
     <div className="mb-3">
-      <h2 className="text-lg font-medium mb-1">Enter your location</h2>
+      <h2 className="text-lg font-medium mb-1">{label} {required && <span className="text-red-500">*</span>}</h2>
       <div className="relative">
         <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-20">
           {isLoading ? (
