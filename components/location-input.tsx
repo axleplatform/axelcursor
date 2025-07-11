@@ -4,25 +4,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { MapPin, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import GoogleMapsMap from './google-maps-map'
-
-// At the top of the file, add these type definitions:
-interface PlaceSelectEvent extends Event {
-  place: {
-    geometry?: {
-      location?: google.maps.LatLng | google.maps.LatLngLiteral;
-    };
-    displayName?: string;
-    formattedAddress?: string;
-    id?: string;
-  };
-}
-
-// Extend the HTMLElement event map
-declare global {
-  interface HTMLElementEventMap {
-    'gmp-placeselect': PlaceSelectEvent;
-  }
-}
+import { GooglePlacesAutocomplete } from './google-places-autocomplete'
 
 interface LocationInputProps {
   value: string
@@ -49,103 +31,43 @@ export default function LocationInput({
   className = "",
   required = false
 }: LocationInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const autocompleteRef = useRef<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
 
-  // Initialize Google Maps Autocomplete
-  useEffect(() => {
-    let mounted = true;
-    let wrapper: HTMLDivElement | null = null;
+  const handlePlaceSelect = (place: any) => {
+    // Handle both new and old API formats
+    if (place.location) {
+      // New API format
+      place.location.then((loc: any) => {
+        const lat = loc.lat()
+        const lng = loc.lng()
+        const address = place.displayName || place.formattedAddress || value
 
-    const initializeAutocomplete = async () => {
-      if (!mounted || !inputRef.current) return;
+        if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+          setCoordinates({ lat, lng })
+          onChange(address)
 
-      try {
-        setIsLoading(true)
-        
-        // Dynamic import to avoid SSR issues
-        const { loadGoogleMaps } = await import('@/lib/google-maps')
-        const google = await loadGoogleMaps()
-
-        if (!mounted || !inputRef.current) return;
-
-        // Try new PlaceAutocompleteElement API first
-        if (google.maps.places.PlaceAutocompleteElement) {
-          const autocompleteElement = new google.maps.places.PlaceAutocompleteElement({
-            componentRestrictions: { country: 'us' }
-          })
-
-          // Safer DOM manipulation: wrap input, hide it, insert autocomplete
-          if (inputRef.current && inputRef.current.parentNode) {
-            const parent = inputRef.current.parentNode;
-            wrapper = document.createElement('div');
-            wrapper.className = inputRef.current.className;
-            parent.insertBefore(wrapper, inputRef.current);
-            inputRef.current.style.display = 'none';
-            wrapper.appendChild(autocompleteElement);
+          if (onLocationSelect) {
+            onLocationSelect({ lat, lng, address })
           }
+        }
+      })
+    } else if (place.geometry) {
+      // Old API format
+      const lat = place.geometry.location.lat()
+      const lng = place.geometry.location.lng()
+      const address = place.formatted_address || value
 
-          autocompleteElement.addEventListener('gmp-placeselect', (event: PlaceSelectEvent) => {
-            const place = event.place
-            if (place.geometry && place.geometry.location) {
-              const lat = place.geometry.location.lat()
-              const lng = place.geometry.location.lng()
-              const address = place.formatted_address || value
-              setCoordinates({ lat, lng })
-              onChange(address)
-              if (onLocationSelect) {
-                onLocationSelect({ lat, lng, address })
-              }
-            }
-          })
-        } else {
-          // Fallback to old API
-          const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-            types: ['address'],
-            componentRestrictions: { country: 'us' },
-            fields: ['address_components', 'geometry', 'formatted_address']
-          })
-          autocompleteRef.current = autocomplete
-          autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace()
-            if (place.geometry && place.geometry.location) {
-              const lat = place.geometry.location.lat()
-              const lng = place.geometry.location.lng()
-              const address = place.formatted_address || value
-              setCoordinates({ lat, lng })
-              onChange(address)
-              if (onLocationSelect) {
-                onLocationSelect({ lat, lng, address })
-              }
-            }
-          })
+      if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+        setCoordinates({ lat, lng })
+        onChange(address)
+
+        if (onLocationSelect) {
+          onLocationSelect({ lat, lng, address })
         }
-      } catch (error) {
-        console.error('Autocomplete error:', error)
-        // Keep original input visible
-        if (inputRef.current) {
-          inputRef.current.style.display = 'block';
-        }
-      } finally {
-        setIsLoading(false)
       }
     }
-
-    initializeAutocomplete()
-
-    return () => {
-      mounted = false;
-      // Clean up Google Maps elements and restore input
-      if (inputRef.current) {
-        inputRef.current.style.display = 'block';
-      }
-      if (wrapper && wrapper.parentNode) {
-        wrapper.parentNode.removeChild(wrapper);
-      }
-    };
-  }, [onChange, onLocationSelect, value, placeholder])
+  }
 
   // Handle manual input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -182,14 +104,10 @@ export default function LocationInput({
             <MapPin className="h-5 w-5 text-gray-400" />
           )}
         </div>
-        <Input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={handleInputChange}
+        <GooglePlacesAutocomplete
+          onPlaceSelect={handlePlaceSelect}
           placeholder={placeholder}
-          className={`pl-10 ${error ? 'border-red-500 focus:border-red-500' : ''}`}
-          required={required}
+          className="pl-10"
         />
       </div>
 
