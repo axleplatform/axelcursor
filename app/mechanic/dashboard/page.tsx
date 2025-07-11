@@ -764,11 +764,15 @@ export default function MechanicDashboard() {
         .from('mechanic_quotes')
         .select('appointment_id')
         .eq('mechanic_id', mechanicId)
-        .eq('status', 'active');
+        // Remove any status filter that might be causing issues
+        // .eq('status', 'active')  
 
       if (quotedError) {
         console.error('Error fetching quoted appointments:', quotedError);
       }
+
+      // Add debug logging
+      console.log('🔍 DEBUG: Quoted appointments query result:', quotedAppointments);
 
       // Filter out quotes for edited appointments
       const validQuotedIds = quotedAppointments
@@ -1401,7 +1405,12 @@ export default function MechanicDashboard() {
       setSelectedTime(getDefaultTime());
       setShowETAError(false);
 
-      // Refresh appointments after successful quote
+      // IMMEDIATELY remove from available appointments
+      setAvailableAppointments(prev => 
+        prev.filter(apt => apt.id !== appointmentId)
+      );
+      
+      // Then fetch fresh data
       console.log('🔄 === REFRESHING APPOINTMENTS AFTER QUOTE SUBMISSION ===');
       console.log('6. About to call fetchInitialAppointments() to refresh lists...');
       await fetchInitialAppointments();
