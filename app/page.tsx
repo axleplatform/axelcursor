@@ -95,6 +95,83 @@ function HomePageContent(): React.JSX.Element {
     placeId?: string;
   } | null>(null)
 
+  // Add map state and refs
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const mapRef = useRef<HTMLDivElement | null>(null);
+
+  // Professional map styles
+  const mapStyles = [
+    { featureType: "poi.business", stylers: [{ visibility: "off" }] },
+    { featureType: "transit", elementType: "labels.icon", stylers: [{ visibility: "off" }] }
+  ];
+
+  // Initialize map on mount
+  useEffect(() => {
+    const loadMap = () => {
+      if (!window.google?.maps) {
+        setTimeout(loadMap, 100);
+        return;
+      }
+      const mapElement = document.getElementById('landing-map');
+      if (!mapElement) return;
+      const map = new window.google.maps.Map(mapElement, {
+        center: { lat: 40.7128, lng: -74.0060 },
+        zoom: 11,
+        styles: mapStyles,
+        disableDefaultUI: false,
+        zoomControl: true,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: true
+      });
+      window.mapInstance = map;
+      setMapLoaded(true);
+      // Optionally center on user location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+          const userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          map.setCenter(userLocation);
+          new window.google.maps.Marker({
+            position: userLocation,
+            map: map,
+            icon: {
+              path: window.google.maps.SymbolPath.CIRCLE,
+              scale: 10,
+              fillColor: '#4285F4',
+              fillOpacity: 0.8,
+              strokeColor: 'white',
+              strokeWeight: 2
+            }
+          });
+        });
+      }
+    };
+    loadMap();
+  }, []);
+
+  // Update map when location changes
+  useEffect(() => {
+    if (selectedLocation && window.mapInstance) {
+      const map = window.mapInstance;
+      // Clear existing marker
+      if (window.locationMarker) {
+        window.locationMarker.setMap(null);
+      }
+      // Add new marker
+      window.locationMarker = new window.google.maps.Marker({
+        position: selectedLocation.coordinates,
+        map: map,
+        title: selectedLocation.address,
+        animation: window.google.maps.Animation.DROP
+      });
+      map.setCenter(selectedLocation.coordinates);
+      map.setZoom(15);
+    }
+  }, [selectedLocation]);
+
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
     if (!appointmentId) return
@@ -907,15 +984,29 @@ function HomePageContent(): React.JSX.Element {
             )}
           </div>
 
-          <form onSubmit={handleSubmit}>
-            {/* Location Input */}
+          <div className="mb-8">
             <HomepageLocationInput
               value={formData.location}
-              onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
-              error={errors.location}
-              onLocationSelect={handleLocationSelect}
+              onChange={val => setFormData(f => ({ ...f, location: val }))}
+              onLocationSelect={loc => setSelectedLocation(loc)}
+              label="Where do you need service?"
+              required
             />
+            <div className="relative w-full h-[400px] rounded-lg overflow-hidden mt-4">
+              <div id="landing-map" className="w-full h-full">
+                {!mapLoaded && (
+                  <div className="flex items-center justify-center h-full bg-gray-100">
+                    <div className="text-center">
+                      <span className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#294a46] mb-2"></span>
+                      <p className="text-gray-600">Loading map...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
+          <form onSubmit={handleSubmit}>
             {/* Car Selector */}
             <div className="mb-4 w-full">
 
