@@ -865,24 +865,15 @@ export default function MechanicDashboard() {
             mechanic_quotes: quote ? [quote] : [] // Always attach as array
           };
         }).filter((apt: any) => {
-          // FILTER OUT EDITED APPOINTMENTS
+          // EXCLUDE appointments that were edited after quotes
           if (apt.edited_after_quotes === true) {
-            console.log(`🚫 Hiding edited appointment from upcoming: ${apt.id}`);
+            console.log(`🚫 Excluding edited appointment from upcoming: ${apt.id}`);
             return false;
           }
           return true;
         }) || [];
 
-        console.log('✅ Combined appointments with quotes:', 
-          upcomingWithQuotes.map((a: any) => ({
-            appointment_id: a.id,
-            has_quote: !!a.mechanic_quotes,
-            quote_price: a.mechanic_quotes?.[0]?.price,
-            quote_eta: a.mechanic_quotes?.[0]?.eta
-          }))
-        );
-        
-        console.log('✅ Upcoming appointments:', upcomingWithQuotes);
+        console.log(`📊 Upcoming appointments after filtering edited: ${upcomingWithQuotes.length}`);
         setUpcomingAppointments(upcomingWithQuotes);
         
         // Add this debug log to see what data structure we have

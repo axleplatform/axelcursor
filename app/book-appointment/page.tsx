@@ -637,6 +637,13 @@ function BookAppointmentContent() {
       console.log('✅ Form data updated for edit mode');
     }
   }, [searchParams, appointmentData]);
+  // Save phone number to session storage
+  const savePhoneToSession = (phone: string) => {
+    if (phone) {
+      sessionStorage.setItem('customer_phone', phone);
+    }
+  };
+
   // Format phone number as user types
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Remove all non-numeric characters
@@ -651,6 +658,9 @@ function BookAppointmentContent() {
       formatted = `(${cleaned.slice(0, 3)})-${cleaned.slice(3, 6)} ${cleaned.slice(6, 10)}`
     }
     setFormData((prev) => ({ ...prev, phoneNumber: formatted }))
+    
+    // Save phone to session storage
+    savePhoneToSession(formatted);
   }
   // Toggle service selection
   const toggleService = (service: string) => {
@@ -715,6 +725,14 @@ function BookAppointmentContent() {
       sessionStorage.setItem('axle-book-appointment-form-data', JSON.stringify(formData))
     }
   }, [formData])
+
+  // Load phone number from session storage on page load
+  useEffect(() => {
+    const savedPhone = sessionStorage.getItem('customer_phone');
+    if (savedPhone && !formData.phoneNumber) {
+      setFormData(prev => ({ ...prev, phoneNumber: savedPhone }));
+    }
+  }, []);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {

@@ -390,6 +390,40 @@ function HomePageContent(): React.JSX.Element {
     }
   }
 
+  // Handle editing appointments from landing page
+  const handleEditFromLanding = async (appointmentId: string, updates: any) => {
+    try {
+      // Check if appointment has quotes
+      const { data: quotes } = await supabase
+        .from('mechanic_quotes')
+        .select('id')
+        .eq('appointment_id', appointmentId)
+        .eq('status', 'active');
+      
+      // If has quotes, set edited_after_quotes
+      if (quotes && quotes.length > 0) {
+        updates.edited_after_quotes = true;
+        console.log('🔄 Setting edited_after_quotes=true for appointment with quotes');
+      }
+      
+      // Update appointment
+      const { error } = await supabase
+        .from('appointments')
+        .update(updates)
+        .eq('id', appointmentId);
+
+      if (error) {
+        console.error('Error updating appointment:', error);
+        throw error;
+      }
+
+      console.log('✅ Appointment updated successfully');
+    } catch (error) {
+      console.error('❌ Error in handleEditFromLanding:', error);
+      throw error;
+    }
+  };
+
   // Handle form submission
   const handleSubmit = React.useCallback(async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     try {
