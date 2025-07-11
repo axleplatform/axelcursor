@@ -31,7 +31,7 @@ interface AppointmentFormData {
   longitude?: number
   place_id?: string
   phone?: string
-  email?: string
+  email?: string | null | undefined
 }
 
 interface SupabaseQueryResult {
@@ -172,7 +172,7 @@ function HomePageContent(): React.JSX.Element {
         setFormData(prev => ({ 
           ...prev, 
           phone: savedPhone,
-          email: savedEmail 
+          email: savedEmail || undefined
         }));
       }
     }

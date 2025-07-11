@@ -73,40 +73,64 @@ export default function HomepageLocationInput({
         const { loadGoogleMaps } = await import('@/lib/google-maps')
         const google = await loadGoogleMaps()
 
-        // Create autocomplete element using new API
-        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement()
-        
-        // Configure the autocomplete element
-        autocompleteElement.setAttribute('placeholder', 'Enter complete address (123 Main St, City, State)')
-        autocompleteElement.setAttribute('types', 'address')
-        autocompleteElement.setAttribute('component-restrictions', 'us')
-        autocompleteElement.setAttribute('fields', 'address_components,geometry,formatted_address')
-
-        // Handle place selection
-        autocompleteElement.addEventListener('gmp-placeselect', (event: PlaceSelectEvent) => {
-          const place = event.place
-          handlePlaceSelection(place)
+        // Create autocomplete element using new API with configuration
+        const autocomplete = new google.maps.places.PlaceAutocompleteElement({
+          types: ['geocode'],
+          componentRestrictions: { country: 'us' }
         })
 
-        // Replace the input element with the autocomplete element
-        const inputContainer = inputRef.current.parentElement
-        if (inputContainer) {
-          // Remove the old input
-          inputRef.current.remove()
-          // Append the new autocomplete element
-          inputContainer.appendChild(autocompleteElement)
-          autocompleteRef.current = autocompleteElement
+        // Replace the input with the autocomplete element
+        const inputParent = inputRef.current.parentNode
+        if (inputParent) {
+          inputParent.replaceChild(autocomplete, inputRef.current)
+          autocompleteRef.current = autocomplete
         }
 
+        // Listen for place selection
+        autocomplete.addEventListener('gmp-placeselect', async (event: PlaceSelectEvent) => {
+          const place = event.place
+          if (place && place.location) {
+            try {
+              const location = await place.location
+              const lat = location.lat()
+              const lng = location.lng()
+              const address = place.displayName || value
+
+              // Validate coordinates before proceeding
+              if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+                setIsUpdating(true)
+                setCoordinates({ lat, lng })
+                onChange(address)
+
+                if (onLocationSelect) {
+                  onLocationSelect({ 
+                    address, 
+                    coordinates: { lat, lng }, 
+                    placeId: place.id 
+                  })
+                }
+                setIsUpdating(false)
+              } else {
+                console.error('Invalid coordinates received from place:', { lat, lng })
+              }
+            } catch (error) {
+              console.error('Error getting location from place:', error)
+            }
+          } else {
+            console.warn('Place selected but no location available:', place)
+          }
+        })
+
       } catch (error) {
-        console.error('Error initializing autocomplete:', error)
+        console.error('Failed to initialize PlaceAutocompleteElement:', error)
+        // Fallback to manual input - keep the original input
       } finally {
         setIsLoading(false)
       }
     }
 
     initializeAutocomplete()
-  }, [handlePlaceSelection, isUpdating]) // Remove onChange and value from dependencies
+  }, [handlePlaceSelection, isUpdating, onChange, onLocationSelect, value])
 
   // Handle manual input changes - ONLY update local state, don't trigger callbacks
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
