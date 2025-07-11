@@ -851,12 +851,6 @@ export default function MechanicDashboard() {
         
         // Step 3: Combine them properly and exclude edited appointments
         const upcomingWithQuotes = appointments?.map((apt: any) => {
-          // Skip if this appointment was edited after quotes
-          if (apt.edited_after_quotes === true) {
-            console.log(`🚫 Excluding edited appointment from upcoming: ${apt.id}`);
-            return null;
-          }
-          
           const quote = validQuotes.find((q: any) => q.appointment_id === apt.id);
           // LOG WHAT WE'RE ATTACHING
           if (quote) {
@@ -870,7 +864,14 @@ export default function MechanicDashboard() {
             ...apt,
             mechanic_quotes: quote ? [quote] : [] // Always attach as array
           };
-        }).filter(Boolean) || []; // Remove nulls
+        }).filter((apt: any) => {
+          // FILTER OUT EDITED APPOINTMENTS
+          if (apt.edited_after_quotes === true) {
+            console.log(`🚫 Hiding edited appointment from upcoming: ${apt.id}`);
+            return false;
+          }
+          return true;
+        }) || [];
 
         console.log('✅ Combined appointments with quotes:', 
           upcomingWithQuotes.map((a: any) => ({
