@@ -73,96 +73,112 @@ export default function HomepageLocationInput({
         const { loadGoogleMaps } = await import('@/lib/google-maps')
         const google = await loadGoogleMaps()
 
-        // Check if new PlaceAutocompleteElement is available
-        if (google.maps.places.PlaceAutocompleteElement) {
-          // Use new API
-          const autocomplete = new google.maps.places.PlaceAutocompleteElement({
-            componentRestrictions: { country: 'us' },
-            fields: ['displayName', 'formattedAddress', 'location', 'placeId']
-          })
-          
-          // Replace the input with the autocomplete element
-          const inputParent = inputRef.current.parentNode
-          if (inputParent) {
-            inputParent.replaceChild(autocomplete, inputRef.current)
-            autocompleteRef.current = autocomplete
-          }
-          
-          autocomplete.addEventListener('gmp-placeselect', async (event: PlaceSelectEvent) => {
-            const place = event.place
-            if (place && place.location) {
-              try {
-                const location = await place.location
-                const lat = location.lat()
-                const lng = location.lng()
-                const address = place.displayName || place.formattedAddress || value
+        const initializeAutocompleteFunction = (inputRef: React.RefObject<HTMLInputElement>) => {
+          if (!inputRef.current || !google?.maps?.places) return
 
-                // Validate coordinates before proceeding
-                if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
-                  setIsUpdating(true)
-                  setCoordinates({ lat, lng })
-                  onChange(address)
+          try {
+            // Try new PlaceAutocompleteElement API first
+            if (google.maps.places.PlaceAutocompleteElement) {
+              console.log('Using new PlaceAutocompleteElement API')
+              
+              const autocomplete = new google.maps.places.PlaceAutocompleteElement({
+                componentRestrictions: { country: 'us' }
+                // NO fields property here
+              })
+              
+              // Replace input with autocomplete element
+              inputRef.current.parentNode?.replaceChild(autocomplete, inputRef.current)
+              autocompleteRef.current = autocomplete
+              
+              // Listen for selection
+              autocomplete.addEventListener('gmp-placeselect', async (event: any) => {
+                const place = event.place
+                console.log('Place selected (new API):', place)
+                
+                if (place) {
+                  try {
+                    // The new API returns place details differently
+                    const location = await place.location
+                    const lat = location?.lat()
+                    const lng = location?.lng()
+                    const address = place.formattedAddress || place.displayName || value
 
-                  if (onLocationSelect) {
-                    onLocationSelect({ 
-                      address, 
-                      coordinates: { lat, lng }, 
-                      placeId: place.placeId 
-                    })
+                    // Validate coordinates before proceeding
+                    if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+                      setIsUpdating(true)
+                      setCoordinates({ lat, lng })
+                      onChange(address)
+
+                      if (onLocationSelect) {
+                        onLocationSelect({ 
+                          address, 
+                          coordinates: { lat, lng }, 
+                          placeId: place.id 
+                        })
+                      }
+                      setIsUpdating(false)
+                    } else {
+                      console.error('Invalid coordinates received from place:', { lat, lng })
+                    }
+                  } catch (error) {
+                    console.error('Error processing place:', error)
                   }
-                  setIsUpdating(false)
+                }
+              })
+            } else {
+              // Fallback to old API
+              console.log('Falling back to old Autocomplete API')
+              
+              const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
+                types: ['geocode'],
+                componentRestrictions: { country: 'us' },
+                fields: ['address_components', 'geometry', 'formatted_address', 'place_id']
+              })
+              
+              autocompleteRef.current = autocomplete
+
+              autocomplete.addListener('place_changed', () => {
+                const place = autocomplete.getPlace()
+                console.log('Place selected (old API):', place)
+                
+                if (place.geometry && place.geometry.location) {
+                  const lat = place.geometry.location.lat()
+                  const lng = place.geometry.location.lng()
+                  const address = place.formatted_address || value
+
+                  // Validate coordinates before proceeding
+                  if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+                    setIsUpdating(true)
+                    setCoordinates({ lat, lng })
+                    onChange(address)
+
+                    if (onLocationSelect) {
+                      onLocationSelect({ 
+                        address, 
+                        coordinates: { lat, lng }, 
+                        placeId: place.place_id 
+                      })
+                    }
+                    setIsUpdating(false)
+                  } else {
+                    console.error('Invalid coordinates received from place:', { lat, lng })
+                  }
                 } else {
-                  console.error('Invalid coordinates received from place:', { lat, lng })
+                  console.warn('Place selected but no geometry available:', place)
                 }
-              } catch (error) {
-                console.error('Error getting location from place:', error)
-              }
-            } else {
-              console.warn('Place selected but no location available:', place)
+              })
             }
-          })
-        } else {
-          // Fallback to old API
-          const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-            types: ['geocode'],
-            componentRestrictions: { country: 'us' },
-            fields: ['address_components', 'geometry', 'formatted_address', 'place_id']
-          })
-
-          autocompleteRef.current = autocomplete
-
-          autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace()
-            if (place.geometry && place.geometry.location) {
-              const lat = place.geometry.location.lat()
-              const lng = place.geometry.location.lng()
-              const address = place.formatted_address || value
-
-              // Validate coordinates before proceeding
-              if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
-                setIsUpdating(true)
-                setCoordinates({ lat, lng })
-                onChange(address)
-
-                if (onLocationSelect) {
-                  onLocationSelect({ 
-                    address, 
-                    coordinates: { lat, lng }, 
-                    placeId: place.place_id 
-                  })
-                }
-                setIsUpdating(false)
-              } else {
-                console.error('Invalid coordinates received from place:', { lat, lng })
-              }
-            } else {
-              console.warn('Place selected but no geometry available:', place)
-            }
-          })
+          } catch (error) {
+            console.error('Autocomplete initialization failed:', error)
+            // Keep the original input functional
+          }
         }
 
+        // Initialize the autocomplete
+        initializeAutocompleteFunction(inputRef)
+
       } catch (error) {
-        console.error('Autocomplete initialization failed:', error)
+        console.error('Failed to load Google Maps:', error)
         // Fallback to manual input - keep the original input
       } finally {
         setIsLoading(false)
@@ -170,7 +186,7 @@ export default function HomepageLocationInput({
     }
 
     initializeAutocomplete()
-  }, [handlePlaceSelection, isUpdating, onChange, onLocationSelect, value])
+  }, [onChange, onLocationSelect, value])
 
   // Handle manual input changes - ONLY update local state, don't trigger callbacks
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
