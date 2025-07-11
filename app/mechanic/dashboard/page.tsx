@@ -772,8 +772,8 @@ export default function MechanicDashboard() {
 
       // Filter out quotes for edited appointments
       const validQuotedIds = quotedAppointments
-        ?.filter(q => !editedIds.includes(q.appointment_id))
-        .map(q => q.appointment_id) || [];
+        ?.filter((q: { appointment_id: string }) => !editedIds.includes(q.appointment_id))
+        .map((q: { appointment_id: string }) => q.appointment_id) || [];
 
       console.log('💬 Mechanic has quoted on these appointments (excluding edited):', validQuotedIds);
 
