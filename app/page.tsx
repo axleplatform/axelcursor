@@ -14,6 +14,15 @@ import { DateTimeSelector } from "@/components/date-time-selector"
 import { toast } from "@/components/ui/use-toast"
 import HomepageLocationInput from "@/components/homepage-location-input"
 
+// Global type declarations
+declare global {
+  interface Window {
+    mapInstance?: google.maps.Map;
+    locationMarker?: google.maps.Marker;
+    initMap?: () => void;
+  }
+}
+
 // Define types for form data
 interface AppointmentFormData {
   location: string
@@ -107,13 +116,22 @@ function HomePageContent(): React.JSX.Element {
 
   // Initialize map on mount
   useEffect(() => {
+    let mapInitialized = false;
+    
     const loadMap = () => {
-      if (!window.google?.maps) {
+      if (mapInitialized || !document.getElementById('landing-map')) return;
+      
+      if (!window.google?.maps?.Map) {
+        console.log('Google Maps not loaded yet');
+        // Wait and retry
         setTimeout(loadMap, 100);
         return;
       }
+      
+      mapInitialized = true;
       const mapElement = document.getElementById('landing-map');
       if (!mapElement) return;
+      
       const map = new window.google.maps.Map(mapElement, {
         center: { lat: 40.7128, lng: -74.0060 },
         zoom: 11,
@@ -124,8 +142,10 @@ function HomePageContent(): React.JSX.Element {
         streetViewControl: false,
         fullscreenControl: true
       });
+      
       window.mapInstance = map;
       setMapLoaded(true);
+      
       // Optionally center on user location
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
@@ -149,7 +169,13 @@ function HomePageContent(): React.JSX.Element {
         });
       }
     };
+    
     loadMap();
+    
+    // Cleanup
+    return () => {
+      mapInitialized = true;
+    };
   }, []);
 
   // Update map when location changes
