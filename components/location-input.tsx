@@ -5,6 +5,25 @@ import { MapPin, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import GoogleMapsMap from './google-maps-map'
 
+// At the top of the file, add these type definitions:
+interface PlaceSelectEvent extends Event {
+  place: {
+    geometry?: {
+      location?: google.maps.LatLng | google.maps.LatLngLiteral;
+    };
+    displayName?: string;
+    formattedAddress?: string;
+    id?: string;
+  };
+}
+
+// Extend the HTMLElement event map
+declare global {
+  interface HTMLElementEventMap {
+    'gmp-placeselect': PlaceSelectEvent;
+  }
+}
+
 interface LocationInputProps {
   value: string
   onChange: (value: string) => void
@@ -16,11 +35,6 @@ interface LocationInputProps {
   mapHeight?: string
   className?: string
   required?: boolean
-}
-
-// Define the event type for the new PlaceAutocompleteElement
-interface PlaceSelectEvent {
-  place: google.maps.places.PlaceResult
 }
 
 export default function LocationInput({
@@ -58,13 +72,13 @@ export default function LocationInput({
         })
 
         // Handle place selection
-        autocompleteElement.addEventListener('gmp-placeselect', (event: PlaceSelectEvent) => {
+        autocompleteElement.addEventListener('gmp-placeselect', (event: any) => {
           const place = event.place
           
           if (place.geometry && place.geometry.location) {
             const lat = place.geometry.location.lat()
             const lng = place.geometry.location.lng()
-            const address = place.formatted_address || value
+            const address = place.formattedAddress || value
 
             setCoordinates({ lat, lng })
             onChange(address)
