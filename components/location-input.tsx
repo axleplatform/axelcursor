@@ -53,13 +53,9 @@ export default function LocationInput({
         const google = await loadGoogleMaps()
 
         // Create autocomplete element using new API
-        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement()
-        
-        // Configure the autocomplete element
-        autocompleteElement.setAttribute('placeholder', placeholder)
-        autocompleteElement.setAttribute('types', 'address')
-        autocompleteElement.setAttribute('component-restrictions', 'us')
-        autocompleteElement.setAttribute('fields', 'address_components,geometry,formatted_address')
+        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement({
+          componentRestrictions: { country: 'us' }
+        })
 
         // Handle place selection
         autocompleteElement.addEventListener('gmp-placeselect', (event: PlaceSelectEvent) => {
