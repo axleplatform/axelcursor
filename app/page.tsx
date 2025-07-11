@@ -34,6 +34,24 @@ interface AppointmentFormData {
   email?: string | null | undefined
 }
 
+// Define the update data type
+interface AppointmentUpdateData {
+  updated_at: string;
+  is_being_edited: boolean;
+  edited_after_quotes?: boolean;
+  latitude?: number;
+  longitude?: number;
+  place_id?: string | null;
+  user_id: string;
+  status: string;
+  appointment_date: string;
+  location: string;
+  issue_description?: string;
+  selected_services?: string[];
+  car_runs?: boolean;
+  source: string;
+}
+
 interface SupabaseQueryResult {
   data: unknown
   error: unknown
@@ -564,7 +582,7 @@ function HomePageContent(): React.JSX.Element {
             .eq('status', 'active');
           
           // Prepare update data
-          const updateData = {
+          const updateData: AppointmentUpdateData = {
             ...appointmentData,
             updated_at: new Date().toISOString(),
             is_being_edited: false
