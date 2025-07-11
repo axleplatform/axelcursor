@@ -30,6 +30,8 @@ interface AppointmentFormData {
   latitude?: number
   longitude?: number
   place_id?: string
+  phone?: string
+  email?: string
 }
 
 interface SupabaseQueryResult {
@@ -160,6 +162,21 @@ function HomePageContent(): React.JSX.Element {
       sessionStorage.setItem('axle-landing-form-data', JSON.stringify(formData))
     }
   }, [formData])
+
+  // Load phone and email from sessionStorage on edit mode
+  useEffect(() => {
+    if (appointmentId && !formData.phone) {
+      const savedPhone = sessionStorage.getItem('customer_phone');
+      const savedEmail = sessionStorage.getItem('customer_email');
+      if (savedPhone) {
+        setFormData(prev => ({ 
+          ...prev, 
+          phone: savedPhone,
+          email: savedEmail 
+        }));
+      }
+    }
+  }, [appointmentId]);
 
   // Add debug logging
   useEffect(() => {
@@ -533,50 +550,129 @@ function HomePageContent(): React.JSX.Element {
           })
         }
 
-        const { data: createdAppointment, error: appointmentError } = await supabase
-          .from('appointments')
-          .insert(appointmentData)
-          .select('id')
-          .single()
+        let finalAppointmentId: string;
 
-        if (appointmentError) {
-          throw appointmentError
+        if (appointmentId) {
+          // EDIT MODE - Update existing appointment
+          console.log('📝 UPDATING existing appointment:', appointmentId);
+          
+          // Check if appointment has quotes
+          const { data: quotes } = await supabase
+            .from('mechanic_quotes')
+            .select('id')
+            .eq('appointment_id', appointmentId)
+            .eq('status', 'active');
+          
+          // Prepare update data
+          const updateData = {
+            ...appointmentData,
+            updated_at: new Date().toISOString(),
+            is_being_edited: false
+          };
+          
+          // If has quotes and significant changes, mark as edited
+          if (quotes && quotes.length > 0) {
+            updateData.edited_after_quotes = true;
+            console.log('🔄 Marking appointment as edited after quotes');
+          }
+          
+          // UPDATE the existing appointment
+          const { error } = await supabase
+            .from('appointments')
+            .update(updateData)
+            .eq('id', appointmentId);
+            
+          if (error) {
+            throw error;
+          }
+          
+          finalAppointmentId = appointmentId;
+          
+          // Navigate back to pick-mechanic page for edit mode
+          console.log('🚀 Navigation starting - appointmentId:', finalAppointmentId)
+          console.log('🚀 Navigating to:', `/pick-mechanic?appointment_id=${finalAppointmentId}`)
+          
+          // Save phone and email to sessionStorage when creating/updating appointment
+          if (formData.phone) {
+            sessionStorage.setItem('customer_phone', formData.phone);
+          }
+          if (formData.email) {
+            sessionStorage.setItem('customer_email', formData.email);
+          }
+          
+          // Clear sessionStorage since we're moving to the next step
+          sessionStorage.removeItem('axle-landing-form-data')
+          
+          router.push(`/pick-mechanic?appointment_id=${finalAppointmentId}`)
+          return;
+        } else {
+          // CREATE MODE - Create new appointment
+          const { data: createdAppointment, error: appointmentError } = await supabase
+            .from('appointments')
+            .insert(appointmentData)
+            .select('id')
+            .single()
+
+          if (appointmentError) {
+            throw appointmentError
+          }
+
+          if (!createdAppointment?.id) {
+            throw new Error("Failed to create appointment")
+          }
+
+          finalAppointmentId = createdAppointment.id
         }
 
-        if (!createdAppointment?.id) {
-          throw new Error("Failed to create appointment")
+        // Handle vehicle data
+        if (appointmentId) {
+          // EDIT MODE - Update existing vehicle
+          const vehicleData = {
+            year: formData.year,
+            make: formData.make,
+            model: formData.model,
+            mileage: parseInt(formData.mileage) || 0,
+            vin: formData.vin || null
+          }
+
+          const { error: vehicleError } = await supabase
+            .from('vehicles')
+            .update(vehicleData)
+            .eq('appointment_id', finalAppointmentId)
+
+          if (vehicleError) {
+            throw vehicleError
+          }
+        } else {
+          // CREATE MODE - Create new vehicle
+          const vehicleData = {
+            appointment_id: finalAppointmentId, // Foreign key to appointment
+            year: formData.year,
+            make: formData.make,
+            model: formData.model,
+            mileage: parseInt(formData.mileage) || 0,
+            vin: formData.vin || null
+          }
+
+          const { error: vehicleError } = await supabase
+            .from('vehicles')
+            .insert(vehicleData)
+
+          if (vehicleError) {
+            // If vehicle creation fails, clean up the appointment
+            await supabase.from('appointments').delete().eq('id', finalAppointmentId)
+            throw vehicleError
+          }
+
+          // Success - redirect to book appointment page for new appointments
+          console.log('🚀 Navigation starting - appointmentId:', finalAppointmentId)
+          console.log('🚀 Navigating to:', `/book-appointment?appointment_id=${finalAppointmentId}`)
+          
+          // Clear sessionStorage since we're moving to the next step
+          sessionStorage.removeItem('axle-landing-form-data')
+          
+          router.push(`/book-appointment?appointment_id=${finalAppointmentId}`)
         }
-
-        const appointmentId = createdAppointment.id
-
-        // Create vehicle with foreign key
-        const vehicleData = {
-          appointment_id: appointmentId, // Foreign key to appointment
-          year: formData.year,
-          make: formData.make,
-          model: formData.model,
-          mileage: parseInt(formData.mileage) || 0,
-          vin: formData.vin || null
-        }
-
-        const { error: vehicleError } = await supabase
-          .from('vehicles')
-          .insert(vehicleData)
-
-        if (vehicleError) {
-          // If vehicle creation fails, clean up the appointment
-          await supabase.from('appointments').delete().eq('id', appointmentId)
-          throw vehicleError
-        }
-
-        // Success - redirect to book appointment page
-        console.log('🚀 Navigation starting - appointmentId:', appointmentId)
-        console.log('🚀 Navigating to:', `/book-appointment?appointment_id=${appointmentId}`)
-        
-        // Clear sessionStorage since we're moving to the next step
-        sessionStorage.removeItem('axle-landing-form-data')
-        
-        router.push(`/book-appointment?appointment_id=${appointmentId}`)
         
       } catch (error: unknown) {
         console.log('❌ Error caught in handleSubmit:', error)

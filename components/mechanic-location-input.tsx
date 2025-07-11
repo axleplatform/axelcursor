@@ -12,6 +12,11 @@ interface MechanicLocationInputProps {
   required?: boolean
 }
 
+// Define the event type for the new PlaceAutocompleteElement
+interface PlaceSelectEvent {
+  place: any
+}
+
 export default function MechanicLocationInput({
   value,
   onChange,
@@ -21,6 +26,7 @@ export default function MechanicLocationInput({
   required = false
 }: MechanicLocationInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const autocompleteRef = useRef<any>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   // Initialize Google Maps Autocomplete
@@ -35,16 +41,18 @@ export default function MechanicLocationInput({
         const { loadGoogleMaps } = await import('@/lib/google-maps')
         const google = await loadGoogleMaps()
 
-        // Create autocomplete instance
-        const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-          types: ['address'],
-          componentRestrictions: { country: 'us' },
-          fields: ['address_components', 'geometry', 'formatted_address']
-        })
+        // Create autocomplete element using new API
+        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement()
+        
+        // Configure the autocomplete element
+        autocompleteElement.setAttribute('placeholder', 'Enter your full address')
+        autocompleteElement.setAttribute('types', 'address')
+        autocompleteElement.setAttribute('component-restrictions', 'us')
+        autocompleteElement.setAttribute('fields', 'address_components,geometry,formatted_address')
 
         // Handle place selection
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace()
+        autocompleteElement.addEventListener('gmp-placeselect', (event: PlaceSelectEvent) => {
+          const place = event.place
           
           if (place.geometry && place.geometry.location) {
             const lat = place.geometry.location.lat()
@@ -58,6 +66,16 @@ export default function MechanicLocationInput({
             }
           }
         })
+
+        // Replace the input element with the autocomplete element
+        const inputContainer = inputRef.current.parentElement
+        if (inputContainer) {
+          // Remove the old input
+          inputRef.current.remove()
+          // Append the new autocomplete element
+          inputContainer.appendChild(autocompleteElement)
+          autocompleteRef.current = autocompleteElement
+        }
 
       } catch (error) {
         console.error('Error initializing autocomplete:', error)

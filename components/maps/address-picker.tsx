@@ -11,8 +11,14 @@ interface AddressPickerProps {
   }) => void; 
 }
 
+// Define the event type for the new PlaceAutocompleteElement
+interface PlaceSelectEvent {
+  place: any
+}
+
 export function AddressPicker({ onLocationSelect }: AddressPickerProps) { 
   const inputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<any>(null);
   const [address, setAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [center, setCenter] = useState({ lat: 40.7128, lng: -74.0060 }); // NYC default
@@ -75,18 +81,30 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
         const { loadGoogleMaps } = await import('@/lib/google-maps');
         const google = await loadGoogleMaps();
 
-        // Create autocomplete instance with modern configuration
-        const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-          types: ['address'],
-          componentRestrictions: { country: 'us' },
-          fields: ['address_components', 'geometry', 'formatted_address', 'place_id']
-        });
+        // Create autocomplete element using new API
+        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement();
+        
+        // Configure the autocomplete element
+        autocompleteElement.setAttribute('placeholder', 'Enter your service address');
+        autocompleteElement.setAttribute('types', 'address');
+        autocompleteElement.setAttribute('component-restrictions', 'us');
+        autocompleteElement.setAttribute('fields', 'address_components,geometry,formatted_address,place_id');
 
         // Handle place selection
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
+        autocompleteElement.addEventListener('gmp-placeselect', (event: PlaceSelectEvent) => {
+          const place = event.place;
           handlePlaceSelection(place);
         });
+
+        // Replace the input element with the autocomplete element
+        const inputContainer = inputRef.current.parentElement;
+        if (inputContainer) {
+          // Remove the old input
+          inputRef.current.remove();
+          // Append the new autocomplete element
+          inputContainer.appendChild(autocompleteElement);
+          autocompleteRef.current = autocompleteElement;
+        }
 
       } catch (error) {
         console.error('Error initializing autocomplete:', error);
@@ -135,7 +153,7 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
       const google = await loadGoogleMaps();
       
       const geocoder = new google.maps.Geocoder();
-      geocoder.geocode({ location }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
+      geocoder.geocode({ location }, (results: any[] | null, status: any) => {
         if (status === google.maps.GeocoderStatus.OK && results && results[0]) {
           const address = results[0].formatted_address;
           setAddress(address);
@@ -200,27 +218,25 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
             name="address"
             value={address}
             onChange={handleInputChange}
-            placeholder="Start typing your address..."
-            className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            placeholder="Enter your service address"
+            className="block w-full p-3 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-white relative z-10 focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
           />
         </div>
       </div>
 
-      <div className="rounded-lg overflow-hidden shadow-lg border border-gray-200">
+      {/* Map */}
+      <div className="space-y-2">
+        <p className="text-xs text-gray-500">
+          Drag Pin to Exact Location
+        </p>
         <GoogleMapsMap
           center={center}
-          onLocationSelect={handleMapLocationSelect}
-          height="400px"
-          location={address}
-          isLoading={isLoading}
+          height="300px"
           showMarker={true}
           draggable={true}
+          onLocationSelect={handleMapLocationSelect}
+          location={address}
         />
-      </div>
-
-      <div className="flex items-center text-sm text-gray-600 bg-blue-50 p-3 rounded">
-        <span className="mr-2">📍</span>
-        Drag the pin to adjust your exact location
       </div>
     </div>
   );

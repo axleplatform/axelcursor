@@ -15,6 +15,11 @@ interface HomepageLocationInputProps {
   }) => void
 }
 
+// Define the event type for the new PlaceAutocompleteElement
+interface PlaceSelectEvent {
+  place: any
+}
+
 export default function HomepageLocationInput({
   value,
   onChange,
@@ -22,12 +27,13 @@ export default function HomepageLocationInput({
   onLocationSelect
 }: HomepageLocationInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const autocompleteRef = useRef<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
 
   // Memoize the place selection handler to prevent infinite loops
-  const handlePlaceSelection = useCallback((place: google.maps.places.PlaceResult) => {
+  const handlePlaceSelection = useCallback((place: any) => {
     if (place.geometry && place.geometry.location) {
       const lat = place.geometry.location.lat()
       const lng = place.geometry.location.lng()
@@ -67,18 +73,30 @@ export default function HomepageLocationInput({
         const { loadGoogleMaps } = await import('@/lib/google-maps')
         const google = await loadGoogleMaps()
 
-        // Create autocomplete instance
-        const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-          types: ['address'],
-          componentRestrictions: { country: 'us' },
-          fields: ['address_components', 'geometry', 'formatted_address']
-        })
+        // Create autocomplete element using new API
+        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement()
+        
+        // Configure the autocomplete element
+        autocompleteElement.setAttribute('placeholder', 'Enter complete address (123 Main St, City, State)')
+        autocompleteElement.setAttribute('types', 'address')
+        autocompleteElement.setAttribute('component-restrictions', 'us')
+        autocompleteElement.setAttribute('fields', 'address_components,geometry,formatted_address')
 
         // Handle place selection
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace()
+        autocompleteElement.addEventListener('gmp-placeselect', (event: PlaceSelectEvent) => {
+          const place = event.place
           handlePlaceSelection(place)
         })
+
+        // Replace the input element with the autocomplete element
+        const inputContainer = inputRef.current.parentElement
+        if (inputContainer) {
+          // Remove the old input
+          inputRef.current.remove()
+          // Append the new autocomplete element
+          inputContainer.appendChild(autocompleteElement)
+          autocompleteRef.current = autocompleteElement
+        }
 
       } catch (error) {
         console.error('Error initializing autocomplete:', error)

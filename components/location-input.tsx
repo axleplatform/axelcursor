@@ -18,6 +18,11 @@ interface LocationInputProps {
   required?: boolean
 }
 
+// Define the event type for the new PlaceAutocompleteElement
+interface PlaceSelectEvent {
+  place: google.maps.places.PlaceResult
+}
+
 export default function LocationInput({
   value,
   onChange,
@@ -31,7 +36,7 @@ export default function LocationInput({
   required = false
 }: LocationInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
+  const autocompleteRef = useRef<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
 
@@ -47,18 +52,18 @@ export default function LocationInput({
         const { loadGoogleMaps } = await import('@/lib/google-maps')
         const google = await loadGoogleMaps()
 
-        // Create autocomplete instance
-        const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-          types: ['address'],
-          componentRestrictions: { country: 'us' },
-          fields: ['address_components', 'geometry', 'formatted_address']
-        })
-
-        autocompleteRef.current = autocomplete
+        // Create autocomplete element using new API
+        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement()
+        
+        // Configure the autocomplete element
+        autocompleteElement.setAttribute('placeholder', placeholder)
+        autocompleteElement.setAttribute('types', 'address')
+        autocompleteElement.setAttribute('component-restrictions', 'us')
+        autocompleteElement.setAttribute('fields', 'address_components,geometry,formatted_address')
 
         // Handle place selection
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace()
+        autocompleteElement.addEventListener('gmp-placeselect', (event: PlaceSelectEvent) => {
+          const place = event.place
           
           if (place.geometry && place.geometry.location) {
             const lat = place.geometry.location.lat()
@@ -74,6 +79,16 @@ export default function LocationInput({
           }
         })
 
+        // Replace the input element with the autocomplete element
+        const inputContainer = inputRef.current.parentElement
+        if (inputContainer) {
+          // Remove the old input
+          inputRef.current.remove()
+          // Append the new autocomplete element
+          inputContainer.appendChild(autocompleteElement)
+          autocompleteRef.current = autocompleteElement
+        }
+
       } catch (error) {
         console.error('Error initializing autocomplete:', error)
       } finally {
@@ -82,7 +97,7 @@ export default function LocationInput({
     }
 
     initializeAutocomplete()
-  }, [onChange, onLocationSelect, value])
+  }, [onChange, onLocationSelect, value, placeholder])
 
   // Handle manual input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
