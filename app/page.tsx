@@ -98,16 +98,49 @@ function HomePageContent(): React.JSX.Element {
   const appointmentId = searchParams?.get("appointment_id") || null
 
   // Add selectedLocation state
-  const [selectedLocation, setSelectedLocation] = useState<{
-    address: string;
-    coordinates: { lat: number; lng: number };
-    placeId?: string;
-  } | null>(null)
+  const [selectedLocation, setSelectedLocation] = useState<google.maps.places.PlaceResult | null>(null)
 
   // Add map state and refs
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const locationInputRef = useRef<HTMLInputElement | null>(null);
+  const autocompleteRef = useRef<any>(null);
+
+  // Initialize Google Maps Autocomplete
+  const initializeAutocomplete = useCallback(async () => {
+    if (!locationInputRef.current) return;
+
+    try {
+      const { loadGoogleMaps } = await import('@/lib/google-maps');
+      const google = await loadGoogleMaps();
+
+      const autocomplete = new google.maps.places.Autocomplete(locationInputRef.current, {
+        componentRestrictions: { country: 'us' },
+        fields: ['address_components', 'geometry', 'formatted_address', 'place_id']
+      });
+
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (place.geometry) {
+          const address = place.formatted_address || '';
+          handleLocationChange({ target: { value: address } } as any);
+          handleLocationSelect(place);
+        }
+      });
+
+      autocompleteRef.current = autocomplete;
+    } catch (error) {
+      console.error('Error initializing autocomplete:', error);
+    }
+  }, []);
+
+  // Initialize autocomplete on mount
+  useEffect(() => {
+    if (locationInputRef.current) {
+      initializeAutocomplete();
+    }
+  }, [initializeAutocomplete]);
 
   // Initialize map on mount
   const initializeMap = useCallback(async () => {
@@ -178,8 +211,8 @@ function HomePageContent(): React.JSX.Element {
       // Add new marker for selected location
       new window.google.maps.Marker({
         position: {
-          lat: selectedLocation.coordinates.lat,
-          lng: selectedLocation.coordinates.lng
+          lat: selectedLocation.geometry.location.lat(),
+          lng: selectedLocation.geometry.location.lng()
         },
         map: map,
         animation: window.google.maps.Animation.DROP
@@ -187,8 +220,8 @@ function HomePageContent(): React.JSX.Element {
 
       // Center map on new location
       map.setCenter({
-        lat: selectedLocation.coordinates.lat,
-        lng: selectedLocation.coordinates.lng
+        lat: selectedLocation.geometry.location.lat(),
+        lng: selectedLocation.geometry.location.lng()
       });
       map.setZoom(15);
     } catch (error) {
@@ -662,14 +695,14 @@ function HomePageContent(): React.JSX.Element {
         console.log('✅ Temporary user created, proceeding without authentication (guest flow)')
         
         // Validate location data before creating appointment
-        if (selectedLocation && selectedLocation.coordinates) {
+        if (selectedLocation && selectedLocation.geometry) {
           console.log('✅ Using validated location data:', selectedLocation);
         } else {
           console.log('⚠️ No location coordinates available, proceeding with address only');
         }
 
         // Create appointment with real user_id (never NULL!)
-        const appointmentData = {
+        let appointmentData = {
           user_id: tempUserId, // ALWAYS has a user_id
           status: "pending",
           appointment_date: appointmentDate.toISOString(),
@@ -679,10 +712,10 @@ function HomePageContent(): React.JSX.Element {
           car_runs: formData.carRuns,
           source: 'web_guest_booking',
           // Add location coordinates if available
-          ...(selectedLocation?.coordinates && {
-            latitude: selectedLocation.coordinates.lat,
-            longitude: selectedLocation.coordinates.lng,
-            place_id: selectedLocation.placeId || null
+          ...(selectedLocation?.geometry && {
+            latitude: selectedLocation.geometry.location.lat(),
+            longitude: selectedLocation.geometry.location.lng(),
+            place_id: selectedLocation.place_id || null
           })
         }
 
@@ -963,29 +996,25 @@ function HomePageContent(): React.JSX.Element {
   }, [])
 
   // Add handleLocationSelect function with useCallback to prevent infinite loops
-  const handleLocationSelect = useCallback((location: {
-    address: string;
-    coordinates: { lat: number; lng: number };
-    placeId?: string;
-  }) => {
+  const handleLocationSelect = useCallback((place: google.maps.places.PlaceResult) => {
     // Add null checks and validation
-    if (!location || !location.coordinates) {
-      console.error('Invalid location data received:', location);
+    if (!place || !place.geometry) {
+      console.error('Invalid place data received:', place);
       return;
     }
 
-    if (typeof location.coordinates.lat !== 'number' || typeof location.coordinates.lng !== 'number') {
-      console.error('Invalid coordinates received:', location.coordinates);
+    if (typeof place.geometry.location.lat !== 'number' || typeof place.geometry.location.lng !== 'number') {
+      console.error('Invalid coordinates received:', place.geometry.location);
       return;
     }
 
-    setSelectedLocation(location);
+    setSelectedLocation(place);
     setFormData((prev) => ({
       ...prev,
-      location: location.address,
-      latitude: location.coordinates.lat,
-      longitude: location.coordinates.lng,
-      place_id: location.placeId || '',
+      location: place.formatted_address || "",
+      latitude: place.geometry.location.lat,
+      longitude: place.geometry.location.lng,
+      place_id: place.place_id || '',
     }));
   }, []); // Empty deps array to prevent re-creation
 
@@ -1082,25 +1111,42 @@ function HomePageContent(): React.JSX.Element {
             )}
           </div>
 
-          <div className="mb-8">
+          <div className="mb-8 space-y-4">
+            {/* Location Label */}
+            <div>
+              <label className="block text-lg font-semibold text-gray-900 mb-2">
+                Enter your location
+              </label>
+            </div>
+
+            {/* Location Input */}
             <div className="relative">
-              <HomepageLocationInput
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+                <MapPin className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
                 value={formData.location}
                 onChange={handleLocationChange}
-                onLocationSelect={handleLocationSelect}
-                label="Enter your location"
-                required
+                placeholder="Type your address here..."
+                className="w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46] transition-all duration-200"
+                autoFocus
+                ref={locationInputRef}
               />
             </div>
-            <div ref={mapRef} className="w-full h-[400px] rounded-lg bg-gray-100 mt-4">
-              {!mapLoaded && (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-gray-400" />
-                    <p className="text-gray-500">Loading map...</p>
+
+            {/* Map Container */}
+            <div className="w-full h-[400px] rounded-lg border border-gray-200 overflow-hidden">
+              <div ref={mapRef} className="w-full h-full bg-gray-100">
+                {!mapLoaded && (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-gray-400" />
+                      <p className="text-gray-500">Loading map...</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
 
