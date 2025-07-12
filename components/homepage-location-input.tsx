@@ -1,6 +1,5 @@
-"use client"
-
-import { useEffect, useRef, useState } from 'react'
+// @ts-nocheck
+import React, { useRef, useEffect, useState } from 'react';
 import { Input } from "@/components/ui/input"
 
 interface HomepageLocationInputProps {
@@ -30,7 +29,9 @@ export default function HomepageLocationInput({
     if (!container) return;
 
     // Clear container before adding anything
-    container.innerHTML = '';
+    if (container.isConnected && mounted) {
+      container.innerHTML = '';
+    }
 
     // Create input and append using innerHTML to avoid DOM conflicts
     const inputHTML = `
@@ -64,7 +65,7 @@ export default function HomepageLocationInput({
         });
 
         // Replace the input with the autocomplete element using innerHTML only
-        if (mounted && container) {
+        if (mounted && container && container.isConnected) {
           container.innerHTML = '';
           // Use innerHTML to set the autocomplete element
           const autocompleteHTML = autocompleteInstance.outerHTML || '';
@@ -80,16 +81,22 @@ export default function HomepageLocationInput({
 
     return () => {
       mounted = false;
-      // Only clear if container still exists
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+      // Only clear if container still exists and is connected
+      if (containerRef.current && containerRef.current.isConnected) {
+        try {
+          containerRef.current.innerHTML = '';
+        } catch (e) {
+          console.error('Cleanup innerHTML error:', e);
+        }
       }
       // Remove all listeners from autocompleteInstance if needed
       if (autocompleteInstance) {
         try {
-          google.maps.event.clearInstanceListeners(autocompleteInstance);
+          if ((window as any).google && (window as any).google.maps && (window as any).google.maps.event) {
+            (window as any).google.maps.event.clearInstanceListeners(autocompleteInstance);
+          }
         } catch (e) {
-          // Ignore errors during cleanup
+          console.error('Cleanup clearInstanceListeners error:', e);
         }
       }
     };

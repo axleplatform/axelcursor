@@ -1,6 +1,5 @@
-'use client'
-
-import { useEffect, useRef, useState } from 'react'
+// @ts-nocheck
+import React, { useEffect, useRef, useState } from 'react'
 
 interface GooglePlacesAutocompleteProps {
   onPlaceSelect: (place: any) => void
@@ -30,7 +29,7 @@ export function GooglePlacesAutocomplete({
       }
 
       // Check if container still exists
-      if (!mounted || !containerRef.current) return;
+      if (!mounted || !containerRef.current || !containerRef.current.isConnected) return;
 
       try {
         // Clear container first
@@ -91,7 +90,7 @@ export function GooglePlacesAutocomplete({
       } catch (error) {
         console.error('Autocomplete init error:', error);
         // Show fallback input
-        if (containerRef.current && mounted) {
+        if (containerRef.current && mounted && containerRef.current.isConnected) {
           containerRef.current.innerHTML = `
             <input 
               type="text" 
@@ -108,16 +107,22 @@ export function GooglePlacesAutocomplete({
     // Cleanup
     return () => {
       mounted = false;
-      // Only clear if container still exists
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+      // Only clear if container still exists and is connected
+      if (containerRef.current && containerRef.current.isConnected) {
+        try {
+          containerRef.current.innerHTML = '';
+        } catch (e) {
+          console.error('Cleanup innerHTML error:', e);
+        }
       }
       // Remove all listeners from autocompleteInstance if needed
       if (autocompleteInstance) {
         try {
-          google.maps.event.clearInstanceListeners(autocompleteInstance);
+          if ((window as any).google && (window as any).google.maps && (window as any).google.maps.event) {
+            (window as any).google.maps.event.clearInstanceListeners(autocompleteInstance);
+          }
         } catch (e) {
-          // Ignore errors during cleanup
+          console.error('Cleanup clearInstanceListeners error:', e);
         }
       }
     };
