@@ -1056,8 +1056,9 @@ function HomePageContent(): React.JSX.Element {
   }, []); // Empty deps array to prevent re-creation
 
   // Add handleLocationChange function with useCallback to prevent infinite loops
-  const handleLocationChange = useCallback((val: string) => {
-    setFormData(f => ({ ...f, location: val }));
+  const handleLocationChange = useCallback((val: string | React.ChangeEvent<HTMLInputElement>) => {
+    const value = typeof val === 'string' ? val : val.target.value;
+    setFormData(f => ({ ...f, location: value }));
   }, []); // Empty deps array to prevent re-creation
 
   // Memoized event handlers to prevent infinite loops
