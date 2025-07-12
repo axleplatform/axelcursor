@@ -1083,14 +1083,16 @@ function HomePageContent(): React.JSX.Element {
           </div>
 
           <div className="mb-8">
-            <HomepageLocationInput
-              value={formData.location}
-              onChange={handleLocationChange}
-              onLocationSelect={handleLocationSelect}
-              label="Enter your location"
-              required
-            />
-            <div ref={mapRef} className="w-full h-[400px] rounded-lg bg-gray-100">
+            <div className="relative">
+              <HomepageLocationInput
+                value={formData.location}
+                onChange={handleLocationChange}
+                onLocationSelect={handleLocationSelect}
+                label="Enter your location"
+                required
+              />
+            </div>
+            <div ref={mapRef} className="w-full h-[400px] rounded-lg bg-gray-100 mt-4">
               {!mapLoaded && (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
