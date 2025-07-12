@@ -114,6 +114,18 @@ function HomePageContent(): React.JSX.Element {
     if (!mapRef.current || mapInstanceRef.current) return;
 
     try {
+      // Clean up any existing Google Maps elements that might interfere
+      const pacElements = document.querySelectorAll('.pac-container, .pac-item');
+      pacElements.forEach(el => {
+        try {
+          if (el.parentNode) {
+            el.parentNode.removeChild(el);
+          }
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      });
+
       // Load Google Maps using the safe loader
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();

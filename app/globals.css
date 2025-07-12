@@ -95,3 +95,49 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Google Maps input visibility fixes */
+.location-input-container {
+  position: relative !important;
+  z-index: 1000 !important;
+}
+
+.location-input-container input {
+  position: relative !important;
+  z-index: 1001 !important;
+  background-color: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.375rem !important;
+  padding: 0.5rem 0.75rem 0.5rem 2.5rem !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+  width: 100% !important;
+  height: 46px !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.location-input-container input:focus {
+  outline: 2px solid #294a46 !important;
+  outline-offset: 2px !important;
+  border-color: #294a46 !important;
+}
+
+/* Ensure Google Maps autocomplete doesn't hide our input */
+.pac-container {
+  z-index: 999 !important;
+  position: absolute !important;
+}
+
+/* Force input visibility */
+input[type="text"][placeholder*="address"],
+input[type="text"][placeholder*="location"] {
+  position: relative !important;
+  z-index: 1001 !important;
+  background-color: white !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+}
