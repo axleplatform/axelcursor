@@ -1245,12 +1245,13 @@ function HomePageContent(): React.JSX.Element {
                 value={formData.location}
                 onChange={handleLocationChange}
                 placeholder="Type your address here..."
-                className="w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46] transition-all duration-200"
+                className="w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46] transition-all duration-200 relative z-50"
                 autoFocus
                 ref={locationInputRef}
-                style={{ display: 'none' }} // Hide our input since Google's will replace it
+                onClick={() => console.log('📍 Location input clicked')}
+                onFocus={() => console.log('📍 Location input focused')}
               />
-              <div id="google-autocomplete-container" className="w-full h-[50px]"></div>
+              <div id="google-autocomplete-container" className="w-full h-[50px] absolute top-0 left-0 opacity-0 pointer-events-none"></div>
             </div>
 
             {/* Spacer for autocomplete dropdown */}
@@ -1364,11 +1365,13 @@ function HomePageContent(): React.JSX.Element {
                     onChange={handleChange}
                     onKeyDown={handleKeyDown}
                     placeholder="Model"
-                    className={`w-full h-[46px] px-2 text-sm border rounded-md bg-gray-50 transition-all duration-300 ${
+                    className={`w-full h-[46px] px-2 text-sm border rounded-md bg-gray-50 transition-all duration-300 relative z-50 ${
                       errors.model 
                         ? "border-red-500" 
                         : "border-gray-200"
                     }`}
+                    onClick={() => console.log('🚗 Desktop Model input clicked')}
+                    onFocus={() => console.log('🚗 Desktop Model input focused')}
                   />
                   {errors.model && <p className="text-red-500 text-xs absolute -bottom-5">{errors.model}</p>}
                 </div>
@@ -1488,11 +1491,13 @@ function HomePageContent(): React.JSX.Element {
                       onChange={handleChange}
                       onKeyDown={handleKeyDown}
                       placeholder="Model"
-                      className={`w-full h-[46px] px-2 text-sm border rounded-md bg-gray-50 transition-all duration-300 ${
+                      className={`w-full h-[46px] px-2 text-sm border rounded-md bg-gray-50 transition-all duration-300 relative z-50 ${
                         errors.model 
                           ? "border-red-500" 
                           : "border-gray-200"
                       }`}
+                      onClick={() => console.log('🚗 Mobile Model input clicked')}
+                      onFocus={() => console.log('🚗 Mobile Model input focused')}
                     />
                     {errors.model && <p className="text-red-500 text-xs absolute -bottom-5">{errors.model}</p>}
                   </div>
