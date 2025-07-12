@@ -125,8 +125,9 @@ body {
   border-color: #294a46 !important;
 }
 
-/* Fix Google Maps autocomplete dropdown positioning */
-.pac-container {
+/* Fix Google Maps autocomplete dropdown positioning for new API */
+.pac-container,
+.gmpx-place-autocomplete-picker {
   z-index: 9999 !important;
   position: absolute !important;
   top: 100% !important;
@@ -141,8 +142,9 @@ body {
   overflow-y: auto !important;
 }
 
-/* Style autocomplete items */
-.pac-item {
+/* Style autocomplete items for new API */
+.pac-item,
+.gmpx-place-autocomplete-picker-item {
   padding: 8px 12px !important;
   cursor: pointer !important;
   border-bottom: 1px solid #f3f4f6 !important;
@@ -150,14 +152,17 @@ body {
   line-height: 1.25rem !important;
 }
 
-.pac-item:hover {
+.pac-item:hover,
+.gmpx-place-autocomplete-picker-item:hover {
   background-color: #f9fafb !important;
 }
 
-.pac-item:last-child {
+.pac-item:last-child,
+.gmpx-place-autocomplete-picker-item:last-child {
   border-bottom: none !important;
 }
 
-.pac-item-selected {
+.pac-item-selected,
+.gmpx-place-autocomplete-picker-item-selected {
   background-color: #e5e7eb !important;
 }

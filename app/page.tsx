@@ -115,7 +115,9 @@ function HomePageContent(): React.JSX.Element {
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
 
-      const autocomplete = new google.maps.places.Autocomplete(locationInputRef.current, {
+      // Use the new PlaceAutocompleteElement instead of deprecated Autocomplete
+      const autocomplete = new google.maps.places.PlaceAutocompleteElement({
+        inputElement: locationInputRef.current,
         componentRestrictions: { country: 'us' },
         fields: ['address_components', 'geometry', 'formatted_address', 'place_id']
       });
