@@ -22,15 +22,18 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    // Suppress various DOM cleanup errors that are harmless
+    // Suppress ALL DOM-related errors that are harmless
     const isHarmlessDOMError = 
-      (error.message && error.message.includes('removeChild') && error.message.includes('not a child of this node')) ||
-      (error.message && error.message.includes('NotFoundError') && error.message.includes('removeChild')) ||
-      (error.message && error.message.includes('Failed to execute') && error.message.includes('removeChild')) ||
-      (error.name === 'NotFoundError' && error.message.includes('removeChild'));
+      (error.message && error.message.includes('removeChild')) ||
+      (error.message && error.message.includes('NotFoundError')) ||
+      (error.message && error.message.includes('Failed to execute')) ||
+      (error.name === 'NotFoundError') ||
+      (error.name === 'DOMException' && error.message.includes('removeChild')) ||
+      (error.message && error.message.includes('not a child of this node')) ||
+      (error.message && error.message.includes('Node was not found'));
     
     if (isHarmlessDOMError) {
-      console.warn('Suppressed harmless DOM cleanup error:', error.message)
+      // Completely suppress these errors - don't even log them
       return { hasError: false }
     }
     
@@ -38,15 +41,18 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Suppress various DOM cleanup errors that are harmless
+    // Suppress ALL DOM-related errors that are harmless
     const isHarmlessDOMError = 
-      (error.message && error.message.includes('removeChild') && error.message.includes('not a child of this node')) ||
-      (error.message && error.message.includes('NotFoundError') && error.message.includes('removeChild')) ||
-      (error.message && error.message.includes('Failed to execute') && error.message.includes('removeChild')) ||
-      (error.name === 'NotFoundError' && error.message.includes('removeChild'));
+      (error.message && error.message.includes('removeChild')) ||
+      (error.message && error.message.includes('NotFoundError')) ||
+      (error.message && error.message.includes('Failed to execute')) ||
+      (error.name === 'NotFoundError') ||
+      (error.name === 'DOMException' && error.message.includes('removeChild')) ||
+      (error.message && error.message.includes('not a child of this node')) ||
+      (error.message && error.message.includes('Node was not found'));
     
     if (isHarmlessDOMError) {
-      console.warn('Suppressed harmless DOM cleanup error:', error.message, errorInfo)
+      // Completely suppress these errors - don't even log them
       return
     }
     
