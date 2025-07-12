@@ -52,8 +52,8 @@ export default function HomepageLocationInput({ value, onChange, onLocationSelec
         });
 
         // Replace the input with the autocomplete element
-        if (mounted && container && input) {
-          container.removeChild(input);
+        if (mounted && container) {
+          container.innerHTML = '';
           container.appendChild(autocompleteInstance);
           setAutocomplete(autocompleteInstance);
         }
