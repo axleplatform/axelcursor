@@ -42,7 +42,8 @@ export function GooglePlacesAutocomplete({
             componentRestrictions: { country: 'us' }
           });
           
-          // Add to container
+          // Add to container using innerHTML to avoid DOM conflicts
+          containerRef.current.innerHTML = '';
           containerRef.current.appendChild(autocompleteInstance);
           
           // Add placeholder
@@ -58,12 +59,16 @@ export function GooglePlacesAutocomplete({
             }
           });
         } else {
-          // Fallback to input field
-          const input = document.createElement('input');
-          input.type = 'text';
-          input.placeholder = placeholder;
-          input.className = 'w-full px-3 py-2 border rounded-lg';
-          containerRef.current.appendChild(input);
+          // Fallback to input field using innerHTML
+          const inputHTML = `
+            <input 
+              type="text" 
+              placeholder="${placeholder}" 
+              class="w-full px-3 py-2 border rounded-lg"
+            />
+          `;
+          containerRef.current.innerHTML = inputHTML;
+          const input = containerRef.current.querySelector('input');
 
           // Use old autocomplete
           autocompleteInstance = new window.google.maps.places.Autocomplete(input, {

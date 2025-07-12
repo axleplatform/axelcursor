@@ -101,11 +101,10 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
         });
 
         // Replace the input element with the autocomplete element
-        const inputContainer = inputRef.current.parentElement;
-        if (mounted && inputContainer && inputRef.current) {
+        if (mounted && inputRef.current) {
           // Clear the container and append the new autocomplete element
-          inputContainer.innerHTML = '';
-          inputContainer.appendChild(autocompleteInstance);
+          inputRef.current.innerHTML = '';
+          inputRef.current.appendChild(autocompleteInstance);
           autocompleteRef.current = autocompleteInstance;
         }
 

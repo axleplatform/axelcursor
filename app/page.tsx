@@ -111,6 +111,8 @@ function HomePageContent(): React.JSX.Element {
 
   // Initialize map on mount
   useEffect(() => {
+    let mounted = true;
+
     // Define the map initialization function
     window.initMap = () => {
       const mapElement = document.getElementById('map');
@@ -125,29 +127,32 @@ function HomePageContent(): React.JSX.Element {
         });
         
         window.mapInstance = map;
-        setMapLoaded(true);
+        if (mounted) {
+          setMapLoaded(true);
+        }
         console.log('Map initialized successfully');
       } catch (error) {
         console.error('Map initialization error:', error);
       }
     };
 
-    // Check if Google Maps is already loaded
-    if (window.google && window.google.maps) {
-      window.initMap();
-    }
+    // Load Google Maps using the safe loader
+    const loadMap = async () => {
+      try {
+        const { loadGoogleMaps } = await import('@/lib/google-maps');
+        await loadGoogleMaps();
+        if (mounted && window.initMap) {
+          window.initMap();
+        }
+      } catch (error) {
+        console.error('Error loading Google Maps:', error);
+      }
+    };
 
-    // Load Google Maps script if not already loaded
-    if (!document.getElementById('google-maps-script')) {
-      const script = document.createElement('script');
-      script.id = 'google-maps-script';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap`;
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-    }
+    loadMap();
 
     return () => {
+      mounted = false;
       // Cleanup
       delete window.initMap;
     };
