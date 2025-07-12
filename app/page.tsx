@@ -1232,6 +1232,15 @@ function HomePageContent(): React.JSX.Element {
                 <MapPin className="h-5 w-5 text-gray-400" />
               </div>
               <div id="google-autocomplete-container" className="w-full h-[50px] relative z-50"></div>
+              {/* Hidden input for form validation */}
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                readOnly
+                hidden
+                tabIndex={-1}
+              />
             </div>
 
             {/* Spacer for autocomplete dropdown */}
