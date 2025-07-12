@@ -29,7 +29,19 @@ export default function MechanicLocationInput({
     let autocompleteInstance: any = null;
 
     const initializeAutocomplete = async () => {
-      if (!inputRef.current || !mounted) return;
+      // Wait for the next tick to ensure the ref is properly attached
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      if (!inputRef.current || !mounted) {
+        console.log('Input ref not available or component unmounted');
+        return;
+      }
+
+      // Verify it's actually an HTMLInputElement
+      if (!(inputRef.current instanceof HTMLInputElement)) {
+        console.error('Ref is not an HTMLInputElement:', inputRef.current);
+        return;
+      }
 
       try {
         setIsLoading(true);
