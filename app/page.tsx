@@ -124,6 +124,7 @@ function HomePageContent(): React.JSX.Element {
       // Add event listener for place selection
       autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
+        console.log('📍 Place selected:', place);
         if (place && place.geometry) {
           const address = place.formatted_address || '';
           handleLocationChange(address);
@@ -131,8 +132,27 @@ function HomePageContent(): React.JSX.Element {
         }
       });
 
+      // Add debugging for autocomplete events
+      autocomplete.addListener('place_changed', () => {
+        console.log('🎯 place_changed event fired');
+      });
+
       autocompleteRef.current = autocomplete;
       console.log('✅ Autocomplete initialized successfully:', autocomplete);
+      
+      // Check if autocomplete container exists after initialization
+      setTimeout(() => {
+        const pacContainer = document.querySelector('.pac-container');
+        console.log('🔍 PAC container found:', pacContainer);
+        if (pacContainer) {
+          console.log('🔍 PAC container styles:', {
+            display: window.getComputedStyle(pacContainer).display,
+            visibility: window.getComputedStyle(pacContainer).visibility,
+            opacity: window.getComputedStyle(pacContainer).opacity,
+            zIndex: window.getComputedStyle(pacContainer).zIndex
+          });
+        }
+      }, 1000);
     } catch (error) {
       console.error('Error initializing autocomplete:', error);
     }
@@ -1164,7 +1184,7 @@ function HomePageContent(): React.JSX.Element {
             </div>
 
             {/* Location Input */}
-            <div className="relative">
+            <div className="relative location-input-wrapper">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                 <MapPin className="h-5 w-5 text-gray-400" />
               </div>
