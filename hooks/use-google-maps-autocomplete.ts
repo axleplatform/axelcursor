@@ -33,7 +33,6 @@ export function useGoogleMapsAutocomplete({
   // Memoize options to prevent unnecessary re-renders
   const memoizedOptions = useMemo(() => ({
     componentRestrictions: { country: 'us' },
-    fields: ['address_components', 'geometry', 'formatted_address', 'place_id'],
     ...options
   }), [options]);
 

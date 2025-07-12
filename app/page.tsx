@@ -118,13 +118,12 @@ function HomePageContent(): React.JSX.Element {
       // Use the new PlaceAutocompleteElement instead of deprecated Autocomplete
       const autocomplete = new google.maps.places.PlaceAutocompleteElement({
         inputElement: locationInputRef.current,
-        componentRestrictions: { country: 'us' },
-        fields: ['address_components', 'geometry', 'formatted_address', 'place_id']
+        componentRestrictions: { country: 'us' }
       });
 
       autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
-        if (place.geometry) {
+        if (place && place.geometry) {
           const address = place.formatted_address || '';
           handleLocationChange({ target: { value: address } } as any);
           handleLocationSelect(place);
