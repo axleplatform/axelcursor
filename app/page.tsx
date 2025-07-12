@@ -1606,8 +1606,6 @@ function HomePageContent(): React.JSX.Element {
                       <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
                       Processing...
                     </div>
-                  ) : !(typeof formData.appointmentTime === 'string' ? formData.appointmentTime : String(formData.appointmentTime || '')).trim() ? (
-                    <span>Please select a time</span>
                   ) : !(typeof formData.location === 'string' ? formData.location : String(formData.location || '')).trim() ? (
                     <span>Please enter location</span>
                   ) : !(typeof formData.year === 'string' ? formData.year : String(formData.year || '')).trim() ? (
@@ -1618,6 +1616,8 @@ function HomePageContent(): React.JSX.Element {
                     <span>Please enter model</span>
                   ) : !(typeof formData.appointmentDate === 'string' ? formData.appointmentDate : String(formData.appointmentDate || '')).trim() ? (
                     <span>Please select date</span>
+                  ) : !(typeof formData.appointmentTime === 'string' ? formData.appointmentTime : String(formData.appointmentTime || '')).trim() ? (
+                    <span>Please select a time</span>
                   ) : (
                     <span>Continue</span>
                   )}
