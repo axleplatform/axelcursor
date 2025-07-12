@@ -1,8 +1,8 @@
 // @ts-nocheck
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { MapPin, Loader2 } from 'lucide-react';
 import GoogleMapsMap from '../google-maps-map';
-import { useJsApiLoader } from '@react-google-maps/api';
+import { useGoogleMapsAutocomplete } from '@/hooks/use-google-maps-autocomplete';
 
 interface AddressPickerProps { 
   onLocationSelect: (location: { 
@@ -13,28 +13,9 @@ interface AddressPickerProps {
 }
 
 export function AddressPicker({ onLocationSelect }: AddressPickerProps) { 
-  const inputRef = useRef<HTMLInputElement>(null);
   const [address, setAddress] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [center, setCenter] = useState({ lat: 40.7128, lng: -74.0060 }); // NYC default
-  const [markerPosition, setMarkerPosition] = useState(center);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-
-  useEffect(() => {
-    fetch('/api/maps-config')
-      .then(res => res.json())
-      .then(data => setApiKey(data.apiKey || ''));
-  }, []);
-
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: apiKey,
-    libraries: ['places']
-  });
-
-  if (!apiKey) {
-    return <div className="h-[400px] bg-gray-100 animate-pulse flex items-center justify-center">Loading...</div>;
-  }
 
   // Memoize the place selection handler to prevent infinite loops
   const handlePlaceSelection = useCallback((place: any) => {
@@ -48,7 +29,6 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
         setIsUpdating(true);
         setAddress(address);
         setCenter({ lat, lng });
-        setMarkerPosition({ lat, lng });
 
         onLocationSelect({
           address,
@@ -64,151 +44,20 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
     }
   }, [onLocationSelect]);
 
-  // Initialize Google Maps Autocomplete with traditional approach
-  useEffect(() => {
-    let mounted = true;
-    let autocompleteInstance: any = null;
-
-    const initializeAutocomplete = async () => {
-      // Wait for the next tick to ensure the ref is properly attached
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      if (!inputRef.current || isUpdating || !isLoaded || !mounted) {
-        console.log('Input ref not available, updating, not loaded, or component unmounted');
-        return;
-      }
-
-      // Verify it's actually an HTMLInputElement
-      if (!(inputRef.current instanceof HTMLInputElement)) {
-        console.error('Ref is not an HTMLInputElement:', inputRef.current);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        
-        // Dynamic import to avoid SSR issues
-        const { loadGoogleMaps } = await import('@/lib/google-maps');
-        const google = await loadGoogleMaps();
-
-        // Use traditional Autocomplete instead of PlaceAutocompleteElement
-        autocompleteInstance = new google.maps.places.Autocomplete(inputRef.current, {
-          componentRestrictions: { country: 'us' },
-          fields: ['address_components', 'geometry', 'formatted_address', 'place_id']
-        });
-
-        autocompleteInstance.addListener('place_changed', () => {
-          if (!mounted) return;
-          const place = autocompleteInstance.getPlace();
-          handlePlaceSelection(place);
-        });
-
-      } catch (error) {
-        console.error('Error initializing autocomplete:', error);
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    initializeAutocomplete();
-
-    return () => {
-      mounted = false;
-      // Remove all listeners from autocompleteInstance if needed
-      if (autocompleteInstance) {
-        try {
-          if ((window as any).google && (window as any).google.maps && (window as any).google.maps.event) {
-            (window as any).google.maps.event.clearInstanceListeners(autocompleteInstance);
-          }
-        } catch (e) {
-          console.error('Cleanup clearInstanceListeners error:', e);
-        }
-      }
-    };
-  }, [handlePlaceSelection, isUpdating, isLoaded]);
-
-  // Get user's current location on mount with guard
-  useEffect(() => {
-    if (isUpdating) return; // Prevent multiple rapid updates
-    
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const userLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          setCenter(userLocation);
-          setMarkerPosition(userLocation);
-          
-          // Reverse geocode to get address
-          reverseGeocode(userLocation);
-        },
-        (error) => {
-          console.log('Location access denied, using default');
-        }
-      );
-    }
-  }, [isUpdating]);
-
-  const reverseGeocode = useCallback(async (location: { lat: number; lng: number }) => {
-    try {
-      // Validate coordinates before reverse geocoding
-      if (typeof location.lat !== 'number' || typeof location.lng !== 'number' || 
-          isNaN(location.lat) || isNaN(location.lng)) {
-        console.error('Invalid coordinates for reverse geocoding:', location);
-        return;
-      }
-
-      const { loadGoogleMaps } = await import('@/lib/google-maps');
-      const google = await loadGoogleMaps();
-      
-      const geocoder = new google.maps.Geocoder();
-      geocoder.geocode({ location }, (results: any[] | null, status: any) => {
-        if (status === google.maps.GeocoderStatus.OK && results && results[0]) {
-          const address = results[0].formatted_address;
-          setAddress(address);
-          onLocationSelect({
-            address,
-            coordinates: location,
-            placeId: results[0].place_id
-          });
-        }
-      });
-    } catch (error) {
-      console.error('Error reverse geocoding:', error);
-    }
-  }, [onLocationSelect]);
-
-  // Handle manual input changes - ONLY update local state, don't trigger callbacks
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setAddress(e.target.value);
-    // Don't call onLocationSelect here - only on actual place selection
-  }, []);
+  const { inputRef, isLoading, isLoaded, error } = useGoogleMapsAutocomplete({
+    onPlaceSelect: handlePlaceSelection,
+    onInputChange: setAddress
+  });
 
   // Handle map location selection
   const handleMapLocationSelect = useCallback((location: { lat: number; lng: number; address: string }) => {
-    // Validate coordinates before proceeding
-    if (typeof location.lat !== 'number' || typeof location.lng !== 'number' || 
-        isNaN(location.lat) || isNaN(location.lng)) {
-      console.error('Invalid coordinates from map selection:', location);
-      return;
-    }
-
-    setIsUpdating(true);
+    setCenter({ lat: location.lat, lng: location.lng });
     setAddress(location.address);
-    setMarkerPosition({ lat: location.lat, lng: location.lng });
     
-    if (onLocationSelect) {
-      onLocationSelect({
-        address: location.address,
-        coordinates: { lat: location.lat, lng: location.lng },
-        placeId: undefined
-      });
-    }
-    setIsUpdating(false);
+    onLocationSelect({
+      address: location.address,
+      coordinates: { lat: location.lat, lng: location.lng }
+    });
   }, [onLocationSelect]);
 
   return (
@@ -230,10 +79,13 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
             type="text"
             name="address"
             value={address}
-            onChange={handleInputChange}
             placeholder="Enter your service address"
             className="block w-full p-3 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-white relative z-10 focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+            disabled={isLoading}
           />
+          {error && (
+            <p className="text-sm text-red-600 mt-1">{error}</p>
+          )}
         </div>
       </div>
 

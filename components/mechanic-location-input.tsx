@@ -1,7 +1,8 @@
 // @ts-nocheck
-import React, { useRef, useEffect, useState } from 'react';
-import { Input } from "@/components/ui/input"
+import React from 'react'
+import { Input } from '@/components/ui/input'
 import { MapPin, Loader2 } from 'lucide-react'
+import { useGoogleMapsAutocomplete } from '@/hooks/use-google-maps-autocomplete';
 
 interface MechanicLocationInputProps {
   value: string
@@ -20,89 +21,24 @@ export default function MechanicLocationInput({
   label = "Location address",
   required = false
 }: MechanicLocationInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const handlePlaceSelect = (place: any) => {
+    if (place.geometry && place.geometry.location) {
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+      const address = place.formatted_address || value;
 
-  // Initialize Google Maps Autocomplete
-  useEffect(() => {
-    let mounted = true;
-    let autocompleteInstance: any = null;
+      onChange(address);
 
-    const initializeAutocomplete = async () => {
-      // Wait for the next tick to ensure the ref is properly attached
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      if (!inputRef.current || !mounted) {
-        console.log('Input ref not available or component unmounted');
-        return;
+      if (onLocationSelect) {
+        onLocationSelect({ lat, lng, address });
       }
+    }
+  };
 
-      // Verify it's actually an HTMLInputElement
-      if (!(inputRef.current instanceof HTMLInputElement)) {
-        console.error('Ref is not an HTMLInputElement:', inputRef.current);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        
-        // Dynamic import to avoid SSR issues
-        const { loadGoogleMaps } = await import('@/lib/google-maps');
-        const google = await loadGoogleMaps();
-
-        // Use traditional Autocomplete instead of PlaceAutocompleteElement
-        autocompleteInstance = new google.maps.places.Autocomplete(inputRef.current, {
-          componentRestrictions: { country: 'us' },
-          fields: ['address_components', 'geometry', 'formatted_address', 'place_id']
-        });
-
-        autocompleteInstance.addListener('place_changed', () => {
-          if (!mounted) return;
-          const place = autocompleteInstance.getPlace();
-          
-          if (place.geometry && place.geometry.location) {
-            const lat = place.geometry.location.lat();
-            const lng = place.geometry.location.lng();
-            const address = place.formatted_address || value;
-
-            onChange(address);
-
-            if (onLocationSelect) {
-              onLocationSelect({ lat, lng, address });
-            }
-          }
-        });
-
-      } catch (error) {
-        console.error('Error initializing autocomplete:', error);
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    initializeAutocomplete();
-
-    return () => {
-      mounted = false;
-      // Remove all listeners from autocompleteInstance if needed
-      if (autocompleteInstance) {
-        try {
-          if ((window as any).google && (window as any).google.maps && (window as any).google.maps.event) {
-            (window as any).google.maps.event.clearInstanceListeners(autocompleteInstance);
-          }
-        } catch (e) {
-          console.error('Cleanup clearInstanceListeners error:', e);
-        }
-      }
-    };
-  }, [onChange, onLocationSelect, value]);
-
-  // Handle manual input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value)
-  }
+  const { inputRef, isLoading, isLoaded, error: autocompleteError } = useGoogleMapsAutocomplete({
+    onPlaceSelect: handlePlaceSelect,
+    onInputChange: onChange
+  });
 
   return (
     <div className="space-y-2">
@@ -112,7 +48,7 @@ export default function MechanicLocationInput({
         </label>
       )}
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
           {isLoading ? (
             <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
           ) : (
@@ -123,14 +59,15 @@ export default function MechanicLocationInput({
           ref={inputRef}
           type="text"
           value={value}
-          onChange={handleInputChange}
-          placeholder="Enter your full address"
+          placeholder="Enter your address"
           className="pl-10"
+          required={required}
+          disabled={isLoading}
         />
       </div>
-      {error && (
-        <p className="text-sm text-red-600">{error}</p>
+      {(error || autocompleteError) && (
+        <p className="text-sm text-red-600">{error || autocompleteError}</p>
       )}
     </div>
-  )
+  );
 }

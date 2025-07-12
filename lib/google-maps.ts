@@ -1,6 +1,11 @@
+// @ts-nocheck
 import { Loader } from '@googlemaps/js-api-loader'
 
+// Global state management
 let cachedApiKey: string | null = null;
+let googleMapsInstance: any = null;
+let loadingPromise: Promise<any> | null = null;
+let autocompleteContainers = new Set<HTMLElement>();
 
 export async function getGoogleMapsApiKey(): Promise<string> {
   if (cachedApiKey) return cachedApiKey;
@@ -14,116 +19,185 @@ export async function getGoogleMapsApiKey(): Promise<string> {
     }
     
     cachedApiKey = data.apiKey;
-    return data.apiKey; // Return data.apiKey directly, not cachedApiKey
+    return data.apiKey;
   } catch (error) {
     console.error('Failed to fetch Google Maps API key:', error);
     throw error;
   }
 }
 
-// Load Google Maps API
-export async function loadGoogleMaps(): Promise<typeof google> {
-  try {
-    const apiKey = await getGoogleMapsApiKey();
-    
-    if (!apiKey) {
-      throw new Error('Google Maps API key not found. Please set GOOGLE_MAPS_API_KEY environment variable.');
+// Load Google Maps API only once
+export async function loadGoogleMaps(): Promise<any> {
+  // Return cached instance if already loaded
+  if (googleMapsInstance) {
+    return googleMapsInstance;
+  }
+
+  // Return existing promise if loading
+  if (loadingPromise) {
+    return loadingPromise;
+  }
+
+  // Create new loading promise
+  loadingPromise = (async () => {
+    try {
+      const apiKey = await getGoogleMapsApiKey();
+      
+      if (!apiKey) {
+        throw new Error('Google Maps API key not found. Please set GOOGLE_MAPS_API_KEY environment variable.');
+      }
+
+      const loader = new Loader({
+        apiKey,
+        version: 'weekly',
+        libraries: ['places', 'geometry']
+      });
+
+      const google = await loader.load();
+      googleMapsInstance = google;
+      return google;
+    } catch (error) {
+      console.error('Failed to load Google Maps API:', error);
+      loadingPromise = null; // Reset on error
+      throw error;
     }
+  })();
 
-    const loader = new Loader({
-      apiKey,
-      version: 'weekly',
-      libraries: ['places', 'geometry']
-    });
+  return loadingPromise;
+}
 
-    return await loader.load();
+// Safe autocomplete initialization with dedicated container
+export async function createSafeAutocomplete(
+  inputElement: HTMLInputElement,
+  options: any = {}
+): Promise<any> {
+  const google = await loadGoogleMaps();
+  
+  // Create a dedicated container for the autocomplete dropdown
+  const container = document.createElement('div');
+  container.style.position = 'absolute';
+  container.style.zIndex = '1000';
+  container.style.width = '100%';
+  container.style.top = '100%';
+  container.style.left = '0';
+  
+  // Insert container after the input
+  inputElement.parentElement?.appendChild(container);
+  
+  // Create autocomplete with container
+  const autocomplete = new google.maps.places.Autocomplete(inputElement, {
+    ...options,
+    container: container
+  });
+  
+  // Track container for cleanup
+  autocompleteContainers.add(container);
+  
+  return autocomplete;
+}
+
+// Cleanup autocomplete and its container
+export function cleanupAutocomplete(autocomplete: any): void {
+  try {
+    // Clear all listeners
+    if (window.google?.maps?.event) {
+      window.google.maps.event.clearInstanceListeners(autocomplete);
+    }
+    
+    // Remove container from DOM
+    const container = autocomplete.getContainer?.();
+    if (container && container.parentElement) {
+      container.parentElement.removeChild(container);
+      autocompleteContainers.delete(container);
+    }
   } catch (error) {
-    console.error('Failed to load Google Maps API:', error)
-    throw error
+    console.warn('Error during autocomplete cleanup:', error);
   }
 }
 
-// Geocoding utility functions
-export async function geocodeAddress(address: string): Promise<google.maps.GeocoderResult[]> {
-  const google = await loadGoogleMaps()
-  const geocoder = new google.maps.Geocoder()
+// Cleanup all autocomplete containers
+export function cleanupAllAutocompleteContainers(): void {
+  autocompleteContainers.forEach(container => {
+    try {
+      if (container.parentElement) {
+        container.parentElement.removeChild(container);
+      }
+    } catch (error) {
+      console.warn('Error removing autocomplete container:', error);
+    }
+  });
+  autocompleteContainers.clear();
+}
+
+// Geocoding functions
+export async function geocodeAddress(address: string): Promise<any[]> {
+  const google = await loadGoogleMaps();
+  const geocoder = new google.maps.Geocoder();
   
   return new Promise((resolve, reject) => {
-    geocoder.geocode({ address }, (results, status) => {
+    geocoder.geocode({ address }, (results: any, status: any) => {
       if (status === google.maps.GeocoderStatus.OK && results) {
-        resolve(results)
+        resolve(results);
       } else {
-        reject(new Error(`Geocoding failed: ${status}`))
+        reject(new Error(`Geocoding failed: ${status}`));
       }
-    })
-  })
+    });
+  });
 }
 
-// Reverse geocoding utility functions
-export async function reverseGeocode(lat: number, lng: number): Promise<google.maps.GeocoderResult[]> {
-  const google = await loadGoogleMaps()
-  const geocoder = new google.maps.Geocoder()
+export async function reverseGeocode(lat: number, lng: number): Promise<any[]> {
+  const google = await loadGoogleMaps();
+  const geocoder = new google.maps.Geocoder();
   
   return new Promise((resolve, reject) => {
-    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+    geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
       if (status === google.maps.GeocoderStatus.OK && results) {
-        resolve(results)
+        resolve(results);
       } else {
-        reject(new Error(`Reverse geocoding failed: ${status}`))
+        reject(new Error(`Reverse geocoding failed: ${status}`));
       }
-    })
-  })
+    });
+  });
 }
 
-// Calculate distance between two points
-export function calculateDistance(
-  lat1: number, 
-  lng1: number, 
-  lat2: number, 
-  lng2: number
-): number {
-  const R = 3959 // Earth's radius in miles
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLng = (lng2 - lng1) * Math.PI / 180
-  const a = 
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
-}
-
-// Format address from geocoding result
-export function formatAddress(result: google.maps.GeocoderResult): string {
-  const addressComponents = result.address_components
-  const streetNumber = addressComponents.find(component => 
-    component.types.includes('street_number')
-  )?.long_name || ''
-  
-  const route = addressComponents.find(component => 
-    component.types.includes('route')
-  )?.long_name || ''
-  
-  const locality = addressComponents.find(component => 
-    component.types.includes('locality')
-  )?.long_name || ''
-  
-  const administrativeArea = addressComponents.find(component => 
-    component.types.includes('administrative_area_level_1')
-  )?.short_name || ''
-  
-  const postalCode = addressComponents.find(component => 
-    component.types.includes('postal_code')
-  )?.long_name || ''
-  
-  return `${streetNumber} ${route}, ${locality}, ${administrativeArea} ${postalCode}`.trim()
-}
-
-// Extract coordinates from geocoding result
-export function extractCoordinates(result: google.maps.GeocoderResult): { lat: number; lng: number } {
-  const location = result.geometry.location
+export function extractCoordinates(result: any): { lat: number; lng: number } {
+  const location = result.geometry.location;
   return {
     lat: location.lat(),
     lng: location.lng()
-  }
+  };
+}
+
+// Format address from geocoding result
+export function formatAddress(result: any): string {
+  const addressComponents = result.address_components;
+  const streetNumber = addressComponents.find((component: any) => 
+    component.types.includes('street_number')
+  )?.long_name || '';
+  
+  const route = addressComponents.find((component: any) => 
+    component.types.includes('route')
+  )?.long_name || '';
+  
+  const locality = addressComponents.find((component: any) => 
+    component.types.includes('locality')
+  )?.long_name || '';
+  
+  const administrativeArea = addressComponents.find((component: any) => 
+    component.types.includes('administrative_area_level_1')
+  )?.short_name || '';
+  
+  const postalCode = addressComponents.find((component: any) => 
+    component.types.includes('postal_code')
+  )?.long_name || '';
+  
+  return `${streetNumber} ${route}, ${locality}, ${administrativeArea} ${postalCode}`.trim();
+}
+
+// Reset global state (useful for testing)
+export function resetGoogleMapsState(): void {
+  cachedApiKey = null;
+  googleMapsInstance = null;
+  loadingPromise = null;
+  cleanupAllAutocompleteContainers();
 }
