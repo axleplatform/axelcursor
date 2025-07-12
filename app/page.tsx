@@ -107,7 +107,7 @@ function HomePageContent(): React.JSX.Element {
   const locationInputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<any>(null);
 
-  // Initialize Google Maps Autocomplete
+  // Initialize Google Maps Autocomplete with new Places API
   const initializeAutocomplete = useCallback(async () => {
     const container = document.getElementById('google-autocomplete-container');
     if (!container) return;
@@ -116,99 +116,83 @@ function HomePageContent(): React.JSX.Element {
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
 
-      // Use the new PlaceAutocompleteElement API
-      const autocomplete = new google.maps.places.PlaceAutocompleteElement({
-        componentRestrictions: { country: 'us' }
-      });
+      // Clear any existing content
+      container.innerHTML = '';
 
-      // Append the autocomplete element to our container
-      container.appendChild(autocomplete);
-
-      // Add event listener for place selection
-      autocomplete.addEventListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        console.log('📍 Place selected:', place);
-        if (place && place.geometry) {
-          const address = place.formatted_address || '';
-          handleLocationChange(address);
-          handleLocationSelect(place);
-        }
-      });
-
-      // Add debugging for autocomplete events
-      autocomplete.addEventListener('place_changed', () => {
-        console.log('🎯 place_changed event fired');
-      });
-
-      autocompleteRef.current = autocomplete;
-      console.log('✅ PlaceAutocompleteElement initialized successfully:', autocomplete);
-      
-      // Add input event listener to detect typing
-      const googleInput = autocomplete.querySelector('input');
-      if (googleInput) {
-        googleInput.addEventListener('input', () => {
-          setTimeout(() => {
-            const allGmpxElements = document.querySelectorAll('[class*="gmpx"]');
-            const allAutocompleteElements = document.querySelectorAll('[class*="autocomplete"]');
-            const allDropdownElements = document.querySelectorAll('[class*="dropdown"], [class*="picker"], [class*="suggestions"]');
-            
-            console.log('🔍 After typing - GMPX elements:', allGmpxElements.length);
-            console.log('🔍 After typing - Autocomplete elements:', allAutocompleteElements.length);
-            console.log('🔍 After typing - Dropdown elements:', allDropdownElements.length);
-            
-            allGmpxElements.forEach((el, index) => {
-              console.log(`🔍 GMPX element ${index} after typing:`, el.className, el);
-            });
-            
-            allDropdownElements.forEach((el, index) => {
-              console.log(`🔍 Dropdown element ${index} after typing:`, el.className, el);
-            });
-          }, 500);
+      // Try to create the new PlaceAutocompleteElement
+      let autocomplete;
+      try {
+        autocomplete = new google.maps.places.PlaceAutocompleteElement({
+          componentRestrictions: { country: 'us' },
+          types: ['address', 'establishment']
         });
+
+        // Style the autocomplete element
+        autocomplete.style.cssText = `
+          width: 100% !important;
+          height: 50px !important;
+          border: 1px solid #d1d5db !important;
+          border-radius: 8px !important;
+          background-color: white !important;
+          font-size: 16px !important;
+          padding: 0 16px 0 40px !important;
+          box-sizing: border-box !important;
+        `;
+
+        // Append the autocomplete element to our container
+        container.appendChild(autocomplete);
+
+        // Add event listener for place selection
+        autocomplete.addEventListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          console.log('📍 Place selected:', place);
+          if (place && place.geometry) {
+            const address = place.formatted_address || '';
+            handleLocationChange(address);
+            handleLocationSelect(place);
+          }
+        });
+
+        autocompleteRef.current = autocomplete;
+        console.log('✅ PlaceAutocompleteElement initialized successfully:', autocomplete);
+        
+      } catch (placesApiError) {
+        console.warn('New Places API not available, falling back to traditional input:', placesApiError);
+        
+        // Fallback to traditional input with autocomplete
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Type your address here...';
+        input.className = 'w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46] transition-all duration-200';
+        input.value = formData.location;
+        input.addEventListener('input', (e) => handleLocationChange(e.target.value));
+        
+        container.appendChild(input);
+        
+        // Create traditional autocomplete
+        const traditionalAutocomplete = new google.maps.places.Autocomplete(input, {
+          componentRestrictions: { country: 'us' },
+          types: ['address', 'establishment']
+        });
+        
+        traditionalAutocomplete.addListener('place_changed', () => {
+          const place = traditionalAutocomplete.getPlace();
+          console.log('📍 Place selected (traditional):', place);
+          if (place && place.geometry) {
+            const address = place.formatted_address || '';
+            handleLocationChange(address);
+            handleLocationSelect(place);
+          }
+        });
+        
+        autocompleteRef.current = traditionalAutocomplete;
+        console.log('✅ Traditional Autocomplete initialized successfully');
       }
       
-      // Check if autocomplete container exists after initialization
-      setTimeout(() => {
-        const pacContainer = document.querySelector('.pac-container');
-        const gmpxContainer = document.querySelector('.gmpx-place-autocomplete-picker');
-        const allGmpxElements = document.querySelectorAll('[class*="gmpx"]');
-        const allAutocompleteElements = document.querySelectorAll('[class*="autocomplete"]');
-        
-        console.log('🔍 PAC container found:', pacContainer);
-        console.log('🔍 GMPX container found:', gmpxContainer);
-        console.log('🔍 All GMPX elements:', allGmpxElements);
-        console.log('🔍 All autocomplete elements:', allAutocompleteElements);
-        
-        // Log all elements with class names containing 'gmpx' or 'autocomplete'
-        allGmpxElements.forEach((el, index) => {
-          console.log(`🔍 GMPX element ${index}:`, el.className, el);
-        });
-        
-        allAutocompleteElements.forEach((el, index) => {
-          console.log(`🔍 Autocomplete element ${index}:`, el.className, el);
-        });
-        
-        if (pacContainer) {
-          console.log('🔍 PAC container styles:', {
-            display: window.getComputedStyle(pacContainer).display,
-            visibility: window.getComputedStyle(pacContainer).visibility,
-            opacity: window.getComputedStyle(pacContainer).opacity,
-            zIndex: window.getComputedStyle(pacContainer).zIndex
-          });
-        }
-        if (gmpxContainer) {
-          console.log('🔍 GMPX container styles:', {
-            display: window.getComputedStyle(gmpxContainer).display,
-            visibility: window.getComputedStyle(gmpxContainer).visibility,
-            opacity: window.getComputedStyle(gmpxContainer).opacity,
-            zIndex: window.getComputedStyle(gmpxContainer).zIndex
-          });
-        }
-      }, 1000);
     } catch (error) {
       console.error('Error initializing autocomplete:', error);
     }
-  }, []);
+  }, [formData.location]);
 
   // Initialize autocomplete on mount
   useEffect(() => {
@@ -308,6 +292,13 @@ function HomePageContent(): React.JSX.Element {
       console.error('Error updating map location:', error);
     }
   }, [selectedLocation]);
+
+  // Update map when selectedLocation changes
+  useEffect(() => {
+    if (selectedLocation && mapInstanceRef.current) {
+      updateMapLocation();
+    }
+  }, [selectedLocation, updateMapLocation]);
 
   useEffect(() => {
     if (selectedLocation && mapLoaded) {
@@ -1240,18 +1231,7 @@ function HomePageContent(): React.JSX.Element {
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                 <MapPin className="h-5 w-5 text-gray-400" />
               </div>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={handleLocationChange}
-                placeholder="Type your address here..."
-                className="w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46] transition-all duration-200 relative z-50"
-                autoFocus
-                ref={locationInputRef}
-                onClick={() => console.log('📍 Location input clicked')}
-                onFocus={() => console.log('📍 Location input focused')}
-              />
-              <div id="google-autocomplete-container" className="w-full h-[50px] absolute top-0 left-0 opacity-0 pointer-events-none"></div>
+              <div id="google-autocomplete-container" className="w-full h-[50px] relative z-50"></div>
             </div>
 
             {/* Spacer for autocomplete dropdown */}
