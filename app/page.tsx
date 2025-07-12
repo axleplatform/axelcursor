@@ -147,22 +147,22 @@ function HomePageContent(): React.JSX.Element {
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, []); // Empty dependency array to run only once
 
   // Update map when location is selected
   useEffect(() => {
-    if (selectedLocation && mapInstanceRef.current) {
+    if (selectedLocation && mapInstanceRef.current && window.google) {
       const map = mapInstanceRef.current;
 
       // Clear existing markers
       // Add new marker for selected location
-      new google.maps.Marker({
+      new window.google.maps.Marker({
         position: {
           lat: selectedLocation.coordinates.lat,
           lng: selectedLocation.coordinates.lng
         },
         map: map,
-        animation: google.maps.Animation.DROP
+        animation: window.google.maps.Animation.DROP
       });
 
       // Center map on new location
@@ -172,7 +172,7 @@ function HomePageContent(): React.JSX.Element {
       });
       map.setZoom(15);
     }
-  }, [selectedLocation]);
+  }, [selectedLocation]); // Only depend on selectedLocation
 
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {

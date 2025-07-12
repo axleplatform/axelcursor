@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { createSafeAutocomplete, cleanupAutocomplete } from '@/lib/google-maps';
 
 interface UseGoogleMapsAutocompleteOptions {
@@ -27,6 +27,13 @@ export function useGoogleMapsAutocomplete({
   const [isLoading, setIsLoading] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Memoize options to prevent unnecessary re-renders
+  const memoizedOptions = useMemo(() => ({
+    componentRestrictions: { country: 'us' },
+    fields: ['address_components', 'geometry', 'formatted_address', 'place_id'],
+    ...options
+  }), [options]);
 
   // Initialize autocomplete
   const initializeAutocomplete = useCallback(async () => {
@@ -58,11 +65,7 @@ export function useGoogleMapsAutocomplete({
       }
 
       // Create safe autocomplete with dedicated container
-      const autocomplete = await createSafeAutocomplete(inputRef.current, {
-        componentRestrictions: { country: 'us' },
-        fields: ['address_components', 'geometry', 'formatted_address', 'place_id'],
-        ...options
-      });
+      const autocomplete = await createSafeAutocomplete(inputRef.current, memoizedOptions);
 
       autocompleteRef.current = autocomplete;
 
@@ -81,7 +84,7 @@ export function useGoogleMapsAutocomplete({
     } finally {
       setIsLoading(false);
     }
-  }, [onPlaceSelect, options, disabled]);
+  }, [disabled, memoizedOptions, onPlaceSelect]);
 
   // Handle input changes
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
