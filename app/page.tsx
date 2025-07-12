@@ -458,6 +458,19 @@ function HomePageContent(): React.JSX.Element {
     )
   }, [])
 
+  // Debug: Log form field changes
+  useEffect(() => {
+    console.log('[DEBUG] formData:', formData);
+  }, [formData]);
+
+  useEffect(() => {
+    console.log('[DEBUG] missingFields:', missingFields);
+  }, [missingFields]);
+
+  useEffect(() => {
+    console.log('[DEBUG] isFormComplete:', isFormComplete);
+  }, [isFormComplete]);
+
   // Common car makes for the dropdown
   const makes = [
     "Acura",
@@ -1201,12 +1214,13 @@ function HomePageContent(): React.JSX.Element {
 
   const handleButtonClick = useCallback((e: React.MouseEvent) => {
     if (!isFormComplete && !isSubmitting) {
-      e.preventDefault()
-      e.stopPropagation()
-      handleDisabledContinueInteraction()
+      e.preventDefault();
+      e.stopPropagation();
+      handleDisabledContinueInteraction();
+      console.log('[DEBUG] Continue button clicked - missingFields:', missingFields, 'formData:', formData);
     }
-    console.log('🔘 Continue button onClick triggered - isSubmitting:', isSubmitting, 'isFormComplete:', isFormComplete)
-  }, [isFormComplete, isSubmitting, handleDisabledContinueInteraction]);
+    console.log('🔘 Continue button onClick triggered - isSubmitting:', isSubmitting, 'isFormComplete:', isFormComplete);
+  }, [isFormComplete, isSubmitting, handleDisabledContinueInteraction, missingFields, formData]);
 
   // Show loading state while restoring data
   if (isLoadingExistingData) {
