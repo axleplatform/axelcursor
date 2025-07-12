@@ -121,6 +121,11 @@ function HomePageContent(): React.JSX.Element {
         componentRestrictions: { country: 'us' }
       });
 
+      // The new API might need to be attached to the DOM
+      if (locationInputRef.current.parentElement) {
+        locationInputRef.current.parentElement.appendChild(autocomplete);
+      }
+
       // Add event listener for place selection
       autocomplete.addEventListener('place_changed', () => {
         const place = autocomplete.getPlace();
@@ -140,12 +145,48 @@ function HomePageContent(): React.JSX.Element {
       autocompleteRef.current = autocomplete;
       console.log('✅ PlaceAutocompleteElement initialized successfully:', autocomplete);
       
+      // Add input event listener to detect typing
+      locationInputRef.current.addEventListener('input', () => {
+        setTimeout(() => {
+          const allGmpxElements = document.querySelectorAll('[class*="gmpx"]');
+          const allAutocompleteElements = document.querySelectorAll('[class*="autocomplete"]');
+          const allDropdownElements = document.querySelectorAll('[class*="dropdown"], [class*="picker"], [class*="suggestions"]');
+          
+          console.log('🔍 After typing - GMPX elements:', allGmpxElements.length);
+          console.log('🔍 After typing - Autocomplete elements:', allAutocompleteElements.length);
+          console.log('🔍 After typing - Dropdown elements:', allDropdownElements.length);
+          
+          allGmpxElements.forEach((el, index) => {
+            console.log(`🔍 GMPX element ${index} after typing:`, el.className, el);
+          });
+          
+          allDropdownElements.forEach((el, index) => {
+            console.log(`🔍 Dropdown element ${index} after typing:`, el.className, el);
+          });
+        }, 500);
+      });
+      
       // Check if autocomplete container exists after initialization
       setTimeout(() => {
         const pacContainer = document.querySelector('.pac-container');
         const gmpxContainer = document.querySelector('.gmpx-place-autocomplete-picker');
+        const allGmpxElements = document.querySelectorAll('[class*="gmpx"]');
+        const allAutocompleteElements = document.querySelectorAll('[class*="autocomplete"]');
+        
         console.log('🔍 PAC container found:', pacContainer);
         console.log('🔍 GMPX container found:', gmpxContainer);
+        console.log('🔍 All GMPX elements:', allGmpxElements);
+        console.log('🔍 All autocomplete elements:', allAutocompleteElements);
+        
+        // Log all elements with class names containing 'gmpx' or 'autocomplete'
+        allGmpxElements.forEach((el, index) => {
+          console.log(`🔍 GMPX element ${index}:`, el.className, el);
+        });
+        
+        allAutocompleteElements.forEach((el, index) => {
+          console.log(`🔍 Autocomplete element ${index}:`, el.className, el);
+        });
+        
         if (pacContainer) {
           console.log('🔍 PAC container styles:', {
             display: window.getComputedStyle(pacContainer).display,
