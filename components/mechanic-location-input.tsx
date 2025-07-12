@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React, { useRef, useEffect, useState } from 'react';
+import { Input } from "@/components/ui/input"
 import { MapPin, Loader2 } from 'lucide-react'
 
 interface MechanicLocationInputProps {
@@ -11,11 +12,6 @@ interface MechanicLocationInputProps {
   required?: boolean
 }
 
-// Define the event type for the new PlaceAutocompleteElement
-interface PlaceSelectEvent {
-  place: any
-}
-
 export default function MechanicLocationInput({
   value,
   onChange,
@@ -25,7 +21,6 @@ export default function MechanicLocationInput({
   required = false
 }: MechanicLocationInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const autocompleteRef = useRef<any>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   // Initialize Google Maps Autocomplete
@@ -34,7 +29,7 @@ export default function MechanicLocationInput({
     let autocompleteInstance: any = null;
 
     const initializeAutocomplete = async () => {
-      if (!inputRef.current || !mounted || !inputRef.current.isConnected) return;
+      if (!inputRef.current || !mounted) return;
 
       try {
         setIsLoading(true);
@@ -43,21 +38,15 @@ export default function MechanicLocationInput({
         const { loadGoogleMaps } = await import('@/lib/google-maps');
         const google = await loadGoogleMaps();
 
-        // Create autocomplete element using new API
-        autocompleteInstance = new google.maps.places.PlaceAutocompleteElement({ 
-          componentRestrictions: { country: 'us' } 
+        // Use traditional Autocomplete instead of PlaceAutocompleteElement
+        autocompleteInstance = new google.maps.places.Autocomplete(inputRef.current, {
+          componentRestrictions: { country: 'us' },
+          fields: ['address_components', 'geometry', 'formatted_address', 'place_id']
         });
-        
-        // Configure the autocomplete element
-        autocompleteInstance.setAttribute('placeholder', 'Enter your full address');
-        autocompleteInstance.setAttribute('types', 'address');
-        autocompleteInstance.setAttribute('component-restrictions', 'us');
-        autocompleteInstance.setAttribute('fields', 'address_components,geometry,formatted_address');
 
-        // Handle place selection
-        autocompleteInstance.addEventListener('gmp-placeselect', (event: any) => {
+        autocompleteInstance.addListener('place_changed', () => {
           if (!mounted) return;
-          const place = event.place;
+          const place = autocompleteInstance.getPlace();
           
           if (place.geometry && place.geometry.location) {
             const lat = place.geometry.location.lat();
@@ -72,16 +61,6 @@ export default function MechanicLocationInput({
           }
         });
 
-        // Replace the container with the autocomplete element using innerHTML only
-        if (mounted && inputRef.current && inputRef.current.isConnected) {
-          // Only clear if container is empty
-          if (inputRef.current.childNodes.length === 0) {
-            inputRef.current.innerHTML = '';
-          }
-          inputRef.current.appendChild(autocompleteInstance);
-          autocompleteRef.current = autocompleteInstance;
-        }
-
       } catch (error) {
         console.error('Error initializing autocomplete:', error);
       } finally {
@@ -95,16 +74,6 @@ export default function MechanicLocationInput({
 
     return () => {
       mounted = false;
-      // Remove autocompleteInstance if present
-      if (inputRef.current && inputRef.current.isConnected && autocompleteInstance) {
-        try {
-          if (inputRef.current.contains(autocompleteInstance)) {
-            inputRef.current.removeChild(autocompleteInstance);
-          }
-        } catch (e) {
-          console.error('Cleanup removeChild error:', e);
-        }
-      }
       // Remove all listeners from autocompleteInstance if needed
       if (autocompleteInstance) {
         try {
@@ -124,32 +93,32 @@ export default function MechanicLocationInput({
   }
 
   return (
-    <div>
-      <label htmlFor="locationAddress" className="block text-sm font-medium text-gray-700">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <div className="mt-1 relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+    <div className="space-y-2">
+      {label && (
+        <label className="block text-sm font-medium text-gray-700">
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+      )}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           {isLoading ? (
             <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
           ) : (
-            <span className="text-lg sm:text-xl lg:text-2xl leading-none text-[#294a46] inline-flex items-center justify-center">📍</span>
+            <MapPin className="h-5 w-5 text-gray-400" />
           )}
         </div>
-        {/* Dedicated container that React never touches after initial render */}
-        <div 
+        <Input
           ref={inputRef}
-          className={`pl-10 shadow-sm focus:ring-[#294a46] focus:border-[#294a46] block w-full text-base border-gray-200 rounded-md h-10 ${
-            error ? "border-red-300 focus:border-red-500 focus:ring-red-500" : ""
-          }`}
+          type="text"
+          value={value}
+          onChange={handleInputChange}
+          placeholder="Enter your full address"
+          className="pl-10"
         />
       </div>
       {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
+        <p className="text-sm text-red-600">{error}</p>
       )}
-      <p className="mt-1 text-xs text-gray-500">
-        This will be used as your base location for service requests. Start typing to see address suggestions.
-      </p>
     </div>
   )
 }
