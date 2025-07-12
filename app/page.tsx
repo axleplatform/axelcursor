@@ -439,7 +439,9 @@ function HomePageContent(): React.JSX.Element {
   const validateForm = React.useCallback((): boolean => {
     const newErrors: { [key: string]: string } = {}
 
-    if (!formData.location.trim()) {
+    // Ensure location is a string before calling trim
+    const location = typeof formData.location === 'string' ? formData.location : String(formData.location || '');
+    if (!location.trim()) {
       newErrors.location = "Location is required"
     }
 
@@ -863,25 +865,41 @@ function HomePageContent(): React.JSX.Element {
 
   // Check if all required fields are filled (for button state)
   const isFormComplete = React.useMemo((): boolean => {
+    // Ensure all fields are strings before calling trim
+    const location = typeof formData.location === 'string' ? formData.location : String(formData.location || '');
+    const year = typeof formData.year === 'string' ? formData.year : String(formData.year || '');
+    const make = typeof formData.make === 'string' ? formData.make : String(formData.make || '');
+    const model = typeof formData.model === 'string' ? formData.model : String(formData.model || '');
+    const appointmentDate = typeof formData.appointmentDate === 'string' ? formData.appointmentDate : String(formData.appointmentDate || '');
+    const appointmentTime = typeof formData.appointmentTime === 'string' ? formData.appointmentTime : String(formData.appointmentTime || '');
+    
     return !!(
-      formData.location.trim() &&
-      formData.year.trim() &&
-      formData.make.trim() &&
-      formData.model.trim() &&
-      formData.appointmentDate.trim() &&
-      formData.appointmentTime.trim()
+      location.trim() &&
+      year.trim() &&
+      make.trim() &&
+      model.trim() &&
+      appointmentDate.trim() &&
+      appointmentTime.trim()
     )
   }, [formData])
 
   // Get missing required fields for UX guidance
   const missingFields = React.useMemo((): string[] => {
     const missing: string[] = []
-    if (!formData.location.trim()) missing.push('location')
-    if (!formData.year.trim()) missing.push('year')
-    if (!formData.make.trim()) missing.push('make')
-    if (!formData.model.trim()) missing.push('model')
-    if (!formData.appointmentDate.trim()) missing.push('appointmentDate')
-    if (!formData.appointmentTime.trim()) missing.push('appointmentTime')
+    // Ensure all fields are strings before calling trim
+    const location = typeof formData.location === 'string' ? formData.location : String(formData.location || '');
+    const year = typeof formData.year === 'string' ? formData.year : String(formData.year || '');
+    const make = typeof formData.make === 'string' ? formData.make : String(formData.make || '');
+    const model = typeof formData.model === 'string' ? formData.model : String(formData.model || '');
+    const appointmentDate = typeof formData.appointmentDate === 'string' ? formData.appointmentDate : String(formData.appointmentDate || '');
+    const appointmentTime = typeof formData.appointmentTime === 'string' ? formData.appointmentTime : String(formData.appointmentTime || '');
+    
+    if (!location.trim()) missing.push('location')
+    if (!year.trim()) missing.push('year')
+    if (!make.trim()) missing.push('make')
+    if (!model.trim()) missing.push('model')
+    if (!appointmentDate.trim()) missing.push('appointmentDate')
+    if (!appointmentTime.trim()) missing.push('appointmentTime')
     return missing
   }, [formData])
 
@@ -1455,17 +1473,17 @@ function HomePageContent(): React.JSX.Element {
                       <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
                       Processing...
                     </div>
-                  ) : !formData.appointmentTime.trim() ? (
+                  ) : !(typeof formData.appointmentTime === 'string' ? formData.appointmentTime : String(formData.appointmentTime || '')).trim() ? (
                     <span>Please select a time</span>
-                  ) : !formData.location.trim() ? (
+                  ) : !(typeof formData.location === 'string' ? formData.location : String(formData.location || '')).trim() ? (
                     <span>Please enter location</span>
-                  ) : !formData.year.trim() ? (
+                  ) : !(typeof formData.year === 'string' ? formData.year : String(formData.year || '')).trim() ? (
                     <span>Please select year</span>
-                  ) : !formData.make.trim() ? (
+                  ) : !(typeof formData.make === 'string' ? formData.make : String(formData.make || '')).trim() ? (
                     <span>Please select make</span>
-                  ) : !formData.model.trim() ? (
+                  ) : !(typeof formData.model === 'string' ? formData.model : String(formData.model || '')).trim() ? (
                     <span>Please enter model</span>
-                  ) : !formData.appointmentDate.trim() ? (
+                  ) : !(typeof formData.appointmentDate === 'string' ? formData.appointmentDate : String(formData.appointmentDate || '')).trim() ? (
                     <span>Please select date</span>
                   ) : (
                     <span>Continue</span>
