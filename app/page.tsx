@@ -1111,7 +1111,7 @@ function HomePageContent(): React.JSX.Element {
             )}
           </div>
 
-          <div className="mb-8 space-y-4">
+          <div className="mb-8 space-y-6">
             {/* Location Label */}
             <div>
               <label className="block text-lg font-semibold text-gray-900 mb-2">
@@ -1134,6 +1134,9 @@ function HomePageContent(): React.JSX.Element {
                 ref={locationInputRef}
               />
             </div>
+
+            {/* Spacer for autocomplete dropdown */}
+            <div className="h-[200px]"></div>
 
             {/* Map Container */}
             <div className="w-full h-[400px] rounded-lg border border-gray-200 overflow-hidden">
