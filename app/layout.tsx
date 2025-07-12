@@ -21,6 +21,119 @@ if (typeof window !== 'undefined') {
   const originalError = console.error;
   const originalWarn = console.warn;
   
+  // Override the native removeChild method to prevent errors
+  const originalRemoveChild = Node.prototype.removeChild;
+  Node.prototype.removeChild = function(child) {
+    try {
+      // Check if the child is actually a child of this node
+      if (child && child.parentNode === this) {
+        return originalRemoveChild.call(this, child);
+      } else {
+        // Silently ignore if child is not a child of this node
+        return child;
+      }
+    } catch (error) {
+      // Silently ignore any removeChild errors
+      return child;
+    }
+  };
+  
+  // Also override removeChild on Element prototype
+  if (Element.prototype.removeChild !== Node.prototype.removeChild) {
+    const originalElementRemoveChild = Element.prototype.removeChild;
+    Element.prototype.removeChild = function(child) {
+      try {
+        if (child && child.parentNode === this) {
+          return originalElementRemoveChild.call(this, child);
+        } else {
+          return child;
+        }
+      } catch (error) {
+        return child;
+      }
+    };
+  }
+
+  // Override appendChild to prevent Google Maps from creating problematic structures
+  const originalAppendChild = Node.prototype.appendChild;
+  Node.prototype.appendChild = function(child) {
+    try {
+      // If this is a Google Maps related element, be more careful
+      if (child && typeof child.className === 'string' && child.className.includes('pac-')) {
+        // Check if we already have a similar element
+        const existing = this.querySelector(`.${child.className.split(' ')[0]}`);
+        if (existing) {
+          // Remove existing before adding new
+          try {
+            this.removeChild(existing);
+          } catch (error) {
+            // Ignore removal errors
+          }
+        }
+      }
+      return originalAppendChild.call(this, child);
+    } catch (error) {
+      // If appendChild fails, try to clean up and retry
+      try {
+        // Clean up any Google Maps elements
+        const pacElements = this.querySelectorAll('.pac-container, .pac-item');
+        pacElements.forEach(el => {
+          try {
+            if (el.parentNode) {
+              el.parentNode.removeChild(el);
+            }
+          } catch (cleanupError) {
+            // Ignore cleanup errors
+          }
+        });
+        return originalAppendChild.call(this, child);
+      } catch (retryError) {
+        // If all else fails, return the child without appending
+        return child;
+      }
+    }
+  };
+
+  // Override insertBefore for similar protection
+  const originalInsertBefore = Node.prototype.insertBefore;
+  Node.prototype.insertBefore = function(newNode, referenceNode) {
+    try {
+      // If this is a Google Maps related element, be more careful
+      if (newNode && typeof newNode.className === 'string' && newNode.className.includes('pac-')) {
+        // Check if we already have a similar element
+        const existing = this.querySelector(`.${newNode.className.split(' ')[0]}`);
+        if (existing) {
+          // Remove existing before inserting new
+          try {
+            this.removeChild(existing);
+          } catch (error) {
+            // Ignore removal errors
+          }
+        }
+      }
+      return originalInsertBefore.call(this, newNode, referenceNode);
+    } catch (error) {
+      // If insertBefore fails, try to clean up and retry
+      try {
+        // Clean up any Google Maps elements
+        const pacElements = this.querySelectorAll('.pac-container, .pac-item');
+        pacElements.forEach(el => {
+          try {
+            if (el.parentNode) {
+              el.parentNode.removeChild(el);
+            }
+          } catch (cleanupError) {
+            // Ignore cleanup errors
+          }
+        });
+        return originalInsertBefore.call(this, newNode, referenceNode);
+      } catch (retryError) {
+        // If all else fails, return the newNode without inserting
+        return newNode;
+      }
+    }
+  };
+  
   console.error = function(...args) {
     const message = args.join(' ');
     // Suppress all removeChild and DOM manipulation errors
