@@ -140,6 +140,17 @@ body {
   background-color: white !important;
   max-height: 200px !important;
   overflow-y: auto !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure autocomplete container is visible */
+.pac-container {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 /* Style autocomplete items for new API */

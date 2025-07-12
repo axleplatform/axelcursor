@@ -115,23 +115,24 @@ function HomePageContent(): React.JSX.Element {
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
 
-      // Use the new PlaceAutocompleteElement instead of deprecated Autocomplete
-      const autocomplete = new google.maps.places.PlaceAutocompleteElement({
-        inputElement: locationInputRef.current,
-        componentRestrictions: { country: 'us' }
+      // Use the traditional Autocomplete API which is more reliable
+      const autocomplete = new google.maps.places.Autocomplete(locationInputRef.current, {
+        componentRestrictions: { country: 'us' },
+        fields: ['address_components', 'geometry', 'formatted_address', 'place_id']
       });
 
       // Add event listener for place selection
-      autocomplete.addEventListener('place_changed', () => {
+      autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
         if (place && place.geometry) {
           const address = place.formatted_address || '';
-          handleLocationChange({ target: { value: address } } as any);
+          handleLocationChange(address);
           handleLocationSelect(place);
         }
       });
 
       autocompleteRef.current = autocomplete;
+      console.log('✅ Autocomplete initialized successfully:', autocomplete);
     } catch (error) {
       console.error('Error initializing autocomplete:', error);
     }
@@ -140,7 +141,12 @@ function HomePageContent(): React.JSX.Element {
   // Initialize autocomplete on mount
   useEffect(() => {
     if (locationInputRef.current) {
+      console.log('🔍 Input element found, initializing autocomplete...');
+      console.log('🔍 Input element:', locationInputRef.current);
+      console.log('🔍 Input connected to DOM:', locationInputRef.current.isConnected);
       initializeAutocomplete();
+    } else {
+      console.log('❌ Input element not found');
     }
   }, [initializeAutocomplete]);
 
