@@ -42,9 +42,10 @@ export function GooglePlacesAutocomplete({
             componentRestrictions: { country: 'us' }
           });
           
-          // Add to container using innerHTML to avoid DOM conflicts
+          // Add to container using innerHTML only to avoid DOM conflicts
           containerRef.current.innerHTML = '';
-          containerRef.current.appendChild(autocompleteInstance);
+          const autocompleteHTML = autocompleteInstance.outerHTML || '';
+          containerRef.current.innerHTML = autocompleteHTML;
           
           // Add placeholder
           const input = autocompleteInstance.querySelector('input');

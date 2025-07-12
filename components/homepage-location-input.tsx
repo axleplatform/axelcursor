@@ -55,10 +55,12 @@ export default function HomepageLocationInput({ value, onChange, onLocationSelec
           if (onLocationSelect) onLocationSelect(place);
         });
 
-        // Replace the input with the autocomplete element using innerHTML
+        // Replace the input with the autocomplete element using innerHTML only
         if (mounted && container) {
           container.innerHTML = '';
-          container.appendChild(autocompleteInstance);
+          // Use innerHTML to set the autocomplete element
+          const autocompleteHTML = autocompleteInstance.outerHTML || '';
+          container.innerHTML = autocompleteHTML;
           setAutocomplete(autocompleteInstance);
         }
       } catch (error) {

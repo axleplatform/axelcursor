@@ -73,11 +73,12 @@ export default function MechanicLocationInput({
           }
         });
 
-        // Replace the container with the autocomplete element
+        // Replace the container with the autocomplete element using innerHTML only
         if (mounted && inputRef.current) {
-          // Clear the container and append the new autocomplete element
+          // Clear the container and set the autocomplete element using innerHTML
           inputRef.current.innerHTML = '';
-          inputRef.current.appendChild(autocompleteInstance);
+          const autocompleteHTML = autocompleteInstance.outerHTML || '';
+          inputRef.current.innerHTML = autocompleteHTML;
           autocompleteRef.current = autocompleteInstance;
         }
 
