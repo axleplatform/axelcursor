@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input"
 import { MapPin, Loader2 } from 'lucide-react'
 import { useGoogleMapsAutocomplete } from '@/hooks/use-google-maps-autocomplete';
@@ -19,6 +19,8 @@ export default function HomepageLocationInput({
   label,
   required
 }: HomepageLocationInputProps) {
+  const [retryKey, setRetryKey] = useState(0);
+
   const handlePlaceSelect = (place: any) => {
     if (place.geometry) {
       const address = place.formatted_address || '';
@@ -35,8 +37,19 @@ export default function HomepageLocationInput({
     onPlaceSelect: handlePlaceSelect
   });
 
+  // Retry mechanism if initialization fails
+  useEffect(() => {
+    if (error && !isLoading) {
+      const timer = setTimeout(() => {
+        setRetryKey(prev => prev + 1);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error, isLoading]);
+
   return (
-    <div className="relative">
+    <div className="relative" key={retryKey}>
       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
         {isLoading ? (
           <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />

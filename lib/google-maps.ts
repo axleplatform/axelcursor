@@ -73,6 +73,21 @@ export async function createSafeAutocomplete(
 ): Promise<any> {
   const google = await loadGoogleMaps();
   
+  // Check if element is still valid
+  if (!inputElement || !inputElement.isConnected) {
+    throw new Error('Input element is not connected to DOM');
+  }
+  
+  // Clean up any existing autocomplete on this element
+  const existingInstance = autocompleteInstances.get(inputElement);
+  if (existingInstance) {
+    try {
+      safeCleanupAutocomplete(existingInstance);
+    } catch (error) {
+      console.warn('Error cleaning up existing autocomplete:', error);
+    }
+  }
+  
   // Create autocomplete without container to avoid DOM conflicts
   const autocomplete = new google.maps.places.Autocomplete(inputElement, {
     ...options
@@ -116,6 +131,56 @@ export function cleanupAllAutocompleteInstances(): void {
     }
   });
   autocompleteInstances.clear();
+}
+
+// Enhanced cleanup function with DOM safety checks
+export function safeCleanupAutocomplete(autocomplete: any): void {
+  try {
+    // Check if autocomplete is still valid
+    if (!autocomplete || typeof autocomplete !== 'object') {
+      return;
+    }
+
+    // Clear all listeners safely
+    if (window.google?.maps?.event && typeof window.google.maps.event.clearInstanceListeners === 'function') {
+      try {
+        window.google.maps.event.clearInstanceListeners(autocomplete);
+      } catch (listenerError) {
+        console.warn('Error clearing autocomplete listeners:', listenerError);
+      }
+    }
+    
+    // Remove from tracking map
+    for (const [element, instance] of autocompleteInstances.entries()) {
+      if (instance === autocomplete) {
+        // Check if element is still in DOM before removing
+        if (element && element.isConnected) {
+          try {
+            // Remove any Google Maps DOM elements that might be attached
+            const parent = element.parentElement;
+            if (parent) {
+              const googleElements = parent.querySelectorAll('[data-google-maps-autocomplete]');
+              googleElements.forEach(el => {
+                try {
+                  if (el.parentNode) {
+                    el.parentNode.removeChild(el);
+                  }
+                } catch (domError) {
+                  console.warn('Error removing Google Maps DOM element:', domError);
+                }
+              });
+            }
+          } catch (domError) {
+            console.warn('Error cleaning up DOM elements:', domError);
+          }
+        }
+        autocompleteInstances.delete(element);
+        break;
+      }
+    }
+  } catch (error) {
+    console.warn('Error during safe autocomplete cleanup:', error);
+  }
 }
 
 // Geocoding functions
@@ -189,4 +254,49 @@ export function resetGoogleMapsState(): void {
   googleMapsInstance = null;
   loadingPromise = null;
   cleanupAllAutocompleteInstances();
+}
+
+// Global cleanup function for app-wide cleanup
+export function globalCleanup(): void {
+  try {
+    // Clean up all autocomplete instances
+    cleanupAllAutocompleteInstances();
+    
+    // Clear any Google Maps DOM elements that might be lingering
+    const googleElements = document.querySelectorAll('[data-google-maps-autocomplete], .pac-container');
+    googleElements.forEach(el => {
+      try {
+        if (el.parentNode) {
+          el.parentNode.removeChild(el);
+        }
+      } catch (error) {
+        console.warn('Error removing Google Maps DOM element:', error);
+      }
+    });
+    
+    // Reset global state
+    cachedApiKey = null;
+    googleMapsInstance = null;
+    loadingPromise = null;
+    
+  } catch (error) {
+    console.warn('Error during global cleanup:', error);
+  }
+}
+
+// Add global cleanup on page unload
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    globalCleanup();
+  });
+  
+  // Also cleanup on page visibility change (for SPA navigation)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      // Delay cleanup to avoid conflicts
+      setTimeout(() => {
+        globalCleanup();
+      }, 100);
+    }
+  });
 }

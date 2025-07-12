@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { MapPin, Loader2 } from 'lucide-react';
 import GoogleMapsMap from '../google-maps-map';
 import { useGoogleMapsAutocomplete } from '@/hooks/use-google-maps-autocomplete';
@@ -16,6 +16,7 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
   const [address, setAddress] = useState('');
   const [center, setCenter] = useState({ lat: 40.7128, lng: -74.0060 }); // NYC default
   const [isUpdating, setIsUpdating] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   // Memoize the place selection handler to prevent infinite loops
   const handlePlaceSelection = useCallback((place: any) => {
@@ -52,6 +53,17 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
     onPlaceSelect: handlePlaceSelection
   });
 
+  // Retry mechanism if initialization fails
+  useEffect(() => {
+    if (error && !isLoading) {
+      const timer = setTimeout(() => {
+        setRetryKey(prev => prev + 1);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error, isLoading]);
+
   // Handle map location selection
   const handleMapLocationSelect = useCallback((location: { lat: number; lng: number; address: string }) => {
     setCenter({ lat: location.lat, lng: location.lng });
@@ -64,7 +76,7 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
   }, [onLocationSelect]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" key={retryKey}>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Enter your service address

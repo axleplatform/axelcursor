@@ -167,17 +167,30 @@ export function useGoogleMaps({
     }
   }, [center]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount with better timing
   useEffect(() => {
     return () => {
-      // Cleanup map and marker instances
-      if (markerInstanceRef.current) {
-        markerInstanceRef.current.setMap(null);
-        markerInstanceRef.current = null;
-      }
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current = null;
-      }
+      // Delay cleanup to avoid DOM conflicts
+      setTimeout(() => {
+        try {
+          // Cleanup marker instance
+          if (markerInstanceRef.current) {
+            markerInstanceRef.current.setMap(null);
+            markerInstanceRef.current = null;
+          }
+          
+          // Cleanup map instance
+          if (mapInstanceRef.current) {
+            // Clear all listeners
+            if (window.google?.maps?.event) {
+              window.google.maps.event.clearInstanceListeners(mapInstanceRef.current);
+            }
+            mapInstanceRef.current = null;
+          }
+        } catch (error) {
+          console.warn('Error during map cleanup:', error);
+        }
+      }, 100);
     };
   }, []);
 

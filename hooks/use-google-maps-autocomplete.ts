@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { createSafeAutocomplete, cleanupAutocomplete } from '@/lib/google-maps';
+import { createSafeAutocomplete, safeCleanupAutocomplete } from '@/lib/google-maps';
 
 interface UseGoogleMapsAutocompleteOptions {
   onPlaceSelect?: (place: any) => void;
@@ -28,6 +28,7 @@ export function useGoogleMapsAutocomplete({
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const initializationAttempted = useRef(false);
+  const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Memoize options to prevent unnecessary re-renders
   const memoizedOptions = useMemo(() => ({
@@ -36,7 +37,7 @@ export function useGoogleMapsAutocomplete({
     ...options
   }), [options]);
 
-  // Initialize autocomplete
+  // Initialize autocomplete with better timing
   const initializeAutocomplete = useCallback(async () => {
     if (!inputRef.current || disabled || initializationAttempted.current) return;
 
@@ -46,17 +47,19 @@ export function useGoogleMapsAutocomplete({
       initializationAttempted.current = true;
 
       // Wait for the next tick to ensure the ref is properly attached
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Double-check ref is still valid
+      // Double-check ref is still valid and connected
       if (!inputRef.current || !inputRef.current.isConnected) {
         console.log('Input ref not available or not connected');
+        initializationAttempted.current = false;
         return;
       }
 
       // Verify it's actually an HTMLInputElement
       if (!(inputRef.current instanceof HTMLInputElement)) {
         console.log('Ref is not an HTMLInputElement, skipping initialization');
+        initializationAttempted.current = false;
         return;
       }
 
@@ -77,10 +80,11 @@ export function useGoogleMapsAutocomplete({
     } catch (err) {
       console.error('Error initializing autocomplete:', err);
       setError(err instanceof Error ? err.message : 'Failed to initialize autocomplete');
+      initializationAttempted.current = false;
     } finally {
       setIsLoading(false);
     }
-  }, [disabled, memoizedOptions]); // Remove onPlaceSelect from dependencies
+  }, [disabled, memoizedOptions, onPlaceSelect]);
 
   // Handle input changes
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,36 +93,49 @@ export function useGoogleMapsAutocomplete({
     }
   }, [onInputChange]);
 
-  // Initialize on mount
+  // Initialize on mount with better timing
   useEffect(() => {
-    initializeAutocomplete();
+    // Use a longer delay to ensure DOM is fully ready
+    const timer = setTimeout(() => {
+      initializeAutocomplete();
+    }, 200);
+
+    return () => clearTimeout(timer);
   }, [initializeAutocomplete]);
 
-  // Cleanup on unmount with delay to avoid DOM conflicts
+  // Improved cleanup on unmount
   useEffect(() => {
     return () => {
+      // Clear any pending initialization
+      if (cleanupTimeoutRef.current) {
+        clearTimeout(cleanupTimeoutRef.current);
+      }
+
       // Delay cleanup to avoid conflicts with React's DOM management
-      setTimeout(() => {
+      cleanupTimeoutRef.current = setTimeout(() => {
         if (autocompleteRef.current) {
           try {
-            cleanupAutocomplete(autocompleteRef.current);
+            safeCleanupAutocomplete(autocompleteRef.current);
           } catch (error) {
             console.warn('Error during autocomplete cleanup:', error);
           }
           autocompleteRef.current = null;
         }
         initializationAttempted.current = false;
-      }, 0);
+      }, 100);
     };
   }, []);
 
-  // Add input change listener
+  // Add input change listener with better cleanup
   useEffect(() => {
     const input = inputRef.current;
     if (input && onInputChange) {
-      input.addEventListener('input', handleInputChange as any);
+      const handleInput = handleInputChange as any;
+      input.addEventListener('input', handleInput);
       return () => {
-        input.removeEventListener('input', handleInputChange as any);
+        if (input && input.isConnected) {
+          input.removeEventListener('input', handleInput);
+        }
       };
     }
   }, [handleInputChange, onInputChange]);

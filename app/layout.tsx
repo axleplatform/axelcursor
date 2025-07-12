@@ -78,6 +78,49 @@ if (typeof window !== 'undefined') {
       return false;
     }
   });
+
+  // Google Maps cleanup on navigation
+  let cleanupTimeout: NodeJS.Timeout | null = null;
+  
+  const cleanupGoogleMaps = () => {
+    if (cleanupTimeout) {
+      clearTimeout(cleanupTimeout);
+    }
+    
+    cleanupTimeout = setTimeout(() => {
+      try {
+        // Import and call global cleanup dynamically to avoid SSR issues
+        import('@/lib/google-maps').then(({ globalCleanup }) => {
+          globalCleanup();
+        }).catch(() => {
+          // Fallback cleanup if import fails
+          const googleElements = document.querySelectorAll('.pac-container, [data-google-maps-autocomplete]');
+          googleElements.forEach(el => {
+            try {
+              if (el.parentNode) {
+                el.parentNode.removeChild(el);
+              }
+            } catch (error) {
+              // Ignore cleanup errors
+            }
+          });
+        });
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    }, 100);
+  };
+
+  // Cleanup on navigation events
+  window.addEventListener('popstate', cleanupGoogleMaps);
+  window.addEventListener('beforeunload', cleanupGoogleMaps);
+  
+  // Cleanup on visibility change (for SPA navigation)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      cleanupGoogleMaps();
+    }
+  });
 }
 
 export default function RootLayout({

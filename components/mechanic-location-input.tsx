@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { MapPin, Loader2 } from 'lucide-react'
 import { useGoogleMapsAutocomplete } from '@/hooks/use-google-maps-autocomplete';
@@ -21,6 +21,8 @@ export default function MechanicLocationInput({
   label = "Location address",
   required = false
 }: MechanicLocationInputProps) {
+  const [retryKey, setRetryKey] = useState(0);
+
   const handlePlaceSelect = (place: any) => {
     if (place.geometry && place.geometry.location) {
       const lat = place.geometry.location.lat();
@@ -43,8 +45,19 @@ export default function MechanicLocationInput({
     onPlaceSelect: handlePlaceSelect
   });
 
+  // Retry mechanism if initialization fails
+  useEffect(() => {
+    if (autocompleteError && !isLoading) {
+      const timer = setTimeout(() => {
+        setRetryKey(prev => prev + 1);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [autocompleteError, isLoading]);
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" key={retryKey}>
       {label && (
         <label className="block text-sm font-medium text-gray-700">
           {label} {required && <span className="text-red-500">*</span>}

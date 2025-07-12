@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useGoogleMapsAutocomplete } from '@/hooks/use-google-maps-autocomplete';
 
 interface GooglePlacesAutocompleteProps {
@@ -18,6 +18,7 @@ export function GooglePlacesAutocomplete({
   onChange
 }: GooglePlacesAutocompleteProps) {
   const [inputValue, setInputValue] = useState(value);
+  const [retryKey, setRetryKey] = useState(0);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -31,8 +32,19 @@ export function GooglePlacesAutocomplete({
     onPlaceSelect
   });
 
+  // Retry mechanism if initialization fails
+  useEffect(() => {
+    if (error && !isLoading) {
+      const timer = setTimeout(() => {
+        setRetryKey(prev => prev + 1);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error, isLoading]);
+
   return (
-    <div className={`google-places-container ${className}`}>
+    <div className={`google-places-container ${className}`} key={retryKey}>
       <input
         ref={inputRef}
         type="text"
