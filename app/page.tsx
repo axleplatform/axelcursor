@@ -463,14 +463,6 @@ function HomePageContent(): React.JSX.Element {
     console.log('[DEBUG] formData:', formData);
   }, [formData]);
 
-  useEffect(() => {
-    console.log('[DEBUG] missingFields:', missingFields);
-  }, [missingFields]);
-
-  useEffect(() => {
-    console.log('[DEBUG] isFormComplete:', isFormComplete);
-  }, [isFormComplete]);
-
   // Common car makes for the dropdown
   const makes = [
     "Acura",
@@ -1009,6 +1001,11 @@ function HomePageContent(): React.JSX.Element {
     )
   }, [formData])
 
+  // Debug: Log form completion status
+  useEffect(() => {
+    console.log('[DEBUG] isFormComplete:', isFormComplete);
+  }, [isFormComplete]);
+
   // Get missing required fields for UX guidance
   const missingFields = React.useMemo((): string[] => {
     const missing: string[] = []
@@ -1028,6 +1025,11 @@ function HomePageContent(): React.JSX.Element {
     if (!appointmentTime.trim()) missing.push('appointmentTime')
     return missing
   }, [formData])
+
+  // Debug: Log missing fields
+  useEffect(() => {
+    console.log('[DEBUG] missingFields:', missingFields);
+  }, [missingFields]);
 
   // Handle Continue button hover/click when disabled
   const handleDisabledContinueInteraction = React.useCallback(() => {
