@@ -110,35 +110,35 @@ function HomePageContent(): React.JSX.Element {
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
 
   // Initialize map on mount
+  const initializeMap = useCallback(async () => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    try {
+      // Load Google Maps using the safe loader
+      const { loadGoogleMaps } = await import('@/lib/google-maps');
+      const google = await loadGoogleMaps();
+
+      const map = new google.maps.Map(mapRef.current, {
+        center: { lat: 40.7128, lng: -74.0060 }, // NYC default
+        zoom: 12,
+        mapTypeControl: false,
+        streetViewControl: false,
+      });
+      
+      mapInstanceRef.current = map;
+      setMapLoaded(true);
+      console.log('Map initialized successfully');
+    } catch (error) {
+      console.error('Map initialization error:', error);
+    }
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
-    const initializeMap = async () => {
-      if (!mapRef.current || !mounted) return;
-
-      try {
-        // Load Google Maps using the safe loader
-        const { loadGoogleMaps } = await import('@/lib/google-maps');
-        const google = await loadGoogleMaps();
-
-        const map = new google.maps.Map(mapRef.current, {
-          center: { lat: 40.7128, lng: -74.0060 }, // NYC default
-          zoom: 12,
-          mapTypeControl: false,
-          streetViewControl: false,
-        });
-        
-        mapInstanceRef.current = map;
-        if (mounted) {
-          setMapLoaded(true);
-        }
-        console.log('Map initialized successfully');
-      } catch (error) {
-        console.error('Map initialization error:', error);
-      }
-    };
-
-    initializeMap();
+    if (mounted && mapRef.current && !mapInstanceRef.current) {
+      initializeMap();
+    }
 
     return () => {
       mounted = false;
@@ -147,14 +147,22 @@ function HomePageContent(): React.JSX.Element {
         mapInstanceRef.current = null;
       }
     };
-  }, []); // Empty dependency array to run only once
+  }, [initializeMap]); // Depend on memoized initializeMap function
 
   // Update map when location is selected
-  useEffect(() => {
-    if (selectedLocation && mapInstanceRef.current && window.google) {
+  const updateMapLocation = useCallback(async () => {
+    if (!selectedLocation || !mapInstanceRef.current) return;
+
+    try {
+      // Ensure Google Maps is loaded
+      if (!window.google) {
+        const { loadGoogleMaps } = await import('@/lib/google-maps');
+        await loadGoogleMaps();
+      }
+
       const map = mapInstanceRef.current;
 
-      // Clear existing markers
+      // Clear existing markers by setting map to null
       // Add new marker for selected location
       new window.google.maps.Marker({
         position: {
@@ -171,8 +179,16 @@ function HomePageContent(): React.JSX.Element {
         lng: selectedLocation.coordinates.lng
       });
       map.setZoom(15);
+    } catch (error) {
+      console.error('Error updating map location:', error);
     }
-  }, [selectedLocation]); // Only depend on selectedLocation
+  }, [selectedLocation]);
+
+  useEffect(() => {
+    if (selectedLocation && mapLoaded) {
+      updateMapLocation();
+    }
+  }, [selectedLocation, mapLoaded, updateMapLocation]);
 
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
@@ -231,37 +247,44 @@ function HomePageContent(): React.JSX.Element {
   }, [appointmentId])
 
   // Load existing data on mount if appointment ID is present
+  const loadDataFromStorage = useCallback(() => {
+    const savedFormData = sessionStorage.getItem('axle-landing-form-data')
+    if (savedFormData) {
+      try {
+        const parsedData = JSON.parse(savedFormData)
+        console.log("🔄 Restoring form data from sessionStorage:", parsedData)
+        setFormData(prev => ({ ...prev, ...parsedData }))
+        toast({
+          title: "Form Restored",
+          description: "Your previous information has been restored.",
+        })
+      } catch (error) {
+        console.error("Error parsing saved form data:", error)
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (appointmentId) {
       loadExistingAppointment()
     } else {
-      // Try to restore from sessionStorage as fallback
-      const savedFormData = sessionStorage.getItem('axle-landing-form-data')
-      if (savedFormData) {
-        try {
-          const parsedData = JSON.parse(savedFormData)
-          console.log("🔄 Restoring form data from sessionStorage:", parsedData)
-          setFormData(prev => ({ ...prev, ...parsedData }))
-          toast({
-            title: "Form Restored",
-            description: "Your previous information has been restored.",
-          })
-        } catch (error) {
-          console.error("Error parsing saved form data:", error)
-        }
-      }
+      loadDataFromStorage()
     }
-  }, [appointmentId, loadExistingAppointment])
+  }, [appointmentId, loadExistingAppointment, loadDataFromStorage])
 
   // Save form data to sessionStorage whenever it changes
-  useEffect(() => {
+  const saveFormDataToStorage = useCallback(() => {
     if (formData.location || formData.year || formData.make || formData.model) {
       sessionStorage.setItem('axle-landing-form-data', JSON.stringify(formData))
     }
-  }, [formData])
+  }, [formData]);
+
+  useEffect(() => {
+    saveFormDataToStorage();
+  }, [saveFormDataToStorage]);
 
   // Load phone and email from sessionStorage on edit mode
-  useEffect(() => {
+  const loadPhoneEmailFromStorage = useCallback(() => {
     if (appointmentId && !formData.phone) {
       const savedPhone = sessionStorage.getItem('customer_phone');
       const savedEmail = sessionStorage.getItem('customer_email');
@@ -273,7 +296,11 @@ function HomePageContent(): React.JSX.Element {
         }));
       }
     }
-  }, [appointmentId]);
+  }, [appointmentId, formData.phone]);
+
+  useEffect(() => {
+    loadPhoneEmailFromStorage();
+  }, [loadPhoneEmailFromStorage]);
 
   // Add debug logging
   useEffect(() => {
@@ -950,6 +977,63 @@ function HomePageContent(): React.JSX.Element {
     }));
   }, []); // Empty deps array to prevent re-creation
 
+  // Add handleLocationChange function with useCallback to prevent infinite loops
+  const handleLocationChange = useCallback((val: string) => {
+    setFormData(f => ({ ...f, location: val }));
+  }, []); // Empty deps array to prevent re-creation
+
+  // Memoized event handlers to prevent infinite loops
+  const handleTimeSelected = useCallback(() => {
+    // After time is selected, focus the continue button
+    setTimeout(() => {
+      continueButtonRef.current?.focus()
+    }, 100)
+  }, []);
+
+  const handleWrapperMouseEnter = useCallback(() => {
+    if (!isFormComplete && !isSubmitting) {
+      handleDisabledContinueInteraction()
+    }
+  }, [isFormComplete, isSubmitting, handleDisabledContinueInteraction]);
+
+  const handleWrapperMouseDown = useCallback(() => {
+    if (!isFormComplete && !isSubmitting) {
+      handleDisabledContinueInteraction()
+    }
+  }, [isFormComplete, isSubmitting, handleDisabledContinueInteraction]);
+
+  const handleWrapperClick = useCallback((e: React.MouseEvent) => {
+    if (!isFormComplete && !isSubmitting) {
+      e.preventDefault()
+      e.stopPropagation()
+      handleDisabledContinueInteraction()
+    }
+  }, [isFormComplete, isSubmitting, handleDisabledContinueInteraction]);
+
+  const handleWrapperTouchStart = useCallback(() => {
+    if (!isFormComplete && !isSubmitting) {
+      handleDisabledContinueInteraction()
+    }
+  }, [isFormComplete, isSubmitting, handleDisabledContinueInteraction]);
+
+  const handleWrapperKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      if (!isFormComplete && !isSubmitting) {
+        handleDisabledContinueInteraction()
+      }
+    }
+  }, [isFormComplete, isSubmitting, handleDisabledContinueInteraction]);
+
+  const handleButtonClick = useCallback((e: React.MouseEvent) => {
+    if (!isFormComplete && !isSubmitting) {
+      e.preventDefault()
+      e.stopPropagation()
+      handleDisabledContinueInteraction()
+    }
+    console.log('🔘 Continue button onClick triggered - isSubmitting:', isSubmitting, 'isFormComplete:', isFormComplete)
+  }, [isFormComplete, isSubmitting, handleDisabledContinueInteraction]);
+
   // Show loading state while restoring data
   if (isLoadingExistingData) {
     return (
@@ -989,8 +1073,8 @@ function HomePageContent(): React.JSX.Element {
           <div className="mb-8">
             <HomepageLocationInput
               value={formData.location}
-              onChange={val => setFormData(f => ({ ...f, location: val }))}
-              onLocationSelect={loc => setSelectedLocation(loc)}
+              onChange={handleLocationChange}
+              onLocationSelect={handleLocationSelect}
               label="Enter your location"
               required
             />
@@ -1269,12 +1353,7 @@ function HomePageContent(): React.JSX.Element {
               <DateTimeSelector
                 ref={dateTimeSelectorRef}
                 onDateTimeChange={handleDateTimeChange}
-                onTimeSelected={() => {
-                  // After time is selected, focus the continue button
-                  setTimeout(() => {
-                    continueButtonRef.current?.focus()
-                  }, 100)
-                }}
+                onTimeSelected={handleTimeSelected}
               />
             </div>
 
@@ -1282,39 +1361,14 @@ function HomePageContent(): React.JSX.Element {
             <div className="flex justify-center mb-8">
               <div 
                 className="relative inline-block"
-                onMouseEnter={() => {
-                  if (!isFormComplete && !isSubmitting) {
-                    handleDisabledContinueInteraction()
-                  }
-                }}
-                onMouseDown={() => {
-                  if (!isFormComplete && !isSubmitting) {
-                    handleDisabledContinueInteraction()
-                  }
-                }}
-                onClick={(e) => {
-                  if (!isFormComplete && !isSubmitting) {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    handleDisabledContinueInteraction()
-                  }
-                }}
-                onTouchStart={() => {
-                  if (!isFormComplete && !isSubmitting) {
-                    handleDisabledContinueInteraction()
-                  }
-                }}
+                onMouseEnter={handleWrapperMouseEnter}
+                onMouseDown={handleWrapperMouseDown}
+                onClick={handleWrapperClick}
+                onTouchStart={handleWrapperTouchStart}
                 role="button"
                 tabIndex={0}
                 aria-label={!isFormComplete ? `Continue button wrapper - ${missingFields.length} required field${missingFields.length > 1 ? 's' : ''} missing` : "Continue to next step"}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    if (!isFormComplete && !isSubmitting) {
-                      handleDisabledContinueInteraction()
-                    }
-                  }
-                }}
+                onKeyDown={handleWrapperKeyDown}
               >
                 <Button
                   ref={continueButtonRef}
@@ -1325,14 +1379,7 @@ function HomePageContent(): React.JSX.Element {
                       ? "bg-[#294a46] hover:bg-[#1e3632] text-white hover:scale-[1.01] active:scale-[0.99]" 
                       : "bg-[#294a46]/40 text-white cursor-pointer hover:bg-[#294a46]/60 hover:scale-[1.02] active:scale-[0.98]"
                   }`}
-                  onClick={(e) => {
-                    if (!isFormComplete && !isSubmitting) {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      handleDisabledContinueInteraction()
-                    }
-                    console.log('🔘 Continue button onClick triggered - isSubmitting:', isSubmitting, 'isFormComplete:', isFormComplete)
-                  }}
+                  onClick={handleButtonClick}
                   // Enhanced accessibility attributes
                   aria-label={!isFormComplete ? `Continue button - ${missingFields.length} required field${missingFields.length > 1 ? 's' : ''} missing` : "Continue to next step"}
                   aria-describedby={!isFormComplete ? "missing-fields-help" : undefined}
