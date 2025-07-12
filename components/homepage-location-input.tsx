@@ -28,8 +28,8 @@ export default function HomepageLocationInput({
     const container = containerRef.current;
     if (!container) return;
 
-    // Clear container before adding anything
-    if (container.isConnected && mounted) {
+    // Only clear if container is empty
+    if (container.isConnected && mounted && container.childNodes.length === 0) {
       container.innerHTML = '';
     }
 
@@ -66,10 +66,11 @@ export default function HomepageLocationInput({
 
         // Replace the input with the autocomplete element using innerHTML only
         if (mounted && container && container.isConnected) {
-          container.innerHTML = '';
-          // Use innerHTML to set the autocomplete element
-          const autocompleteHTML = autocompleteInstance.outerHTML || '';
-          container.innerHTML = autocompleteHTML;
+          // Only clear if container is empty
+          if (container.childNodes.length === 0) {
+            container.innerHTML = '';
+          }
+          container.appendChild(autocompleteInstance);
           setAutocomplete(autocompleteInstance);
         }
       } catch (error) {
@@ -81,12 +82,14 @@ export default function HomepageLocationInput({
 
     return () => {
       mounted = false;
-      // Only clear if container still exists and is connected
-      if (containerRef.current && containerRef.current.isConnected) {
+      // Remove autocompleteInstance if present
+      if (containerRef.current && containerRef.current.isConnected && autocompleteInstance) {
         try {
-          containerRef.current.innerHTML = '';
+          if (containerRef.current.contains(autocompleteInstance)) {
+            containerRef.current.removeChild(autocompleteInstance);
+          }
         } catch (e) {
-          console.error('Cleanup innerHTML error:', e);
+          console.error('Cleanup removeChild error:', e);
         }
       }
       // Remove all listeners from autocompleteInstance if needed

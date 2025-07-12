@@ -32,8 +32,10 @@ export function GooglePlacesAutocomplete({
       if (!mounted || !containerRef.current || !containerRef.current.isConnected) return;
 
       try {
-        // Clear container first
-        containerRef.current.innerHTML = '';
+        // Only clear if container is empty
+        if (containerRef.current.childNodes.length === 0) {
+          containerRef.current.innerHTML = '';
+        }
 
         // Try new API first
         if (window.google.maps.places.PlaceAutocompleteElement) {
@@ -41,10 +43,10 @@ export function GooglePlacesAutocomplete({
             componentRestrictions: { country: 'us' }
           });
           
-          // Add to container using innerHTML only to avoid DOM conflicts
-          containerRef.current.innerHTML = '';
-          const autocompleteHTML = autocompleteInstance.outerHTML || '';
-          containerRef.current.innerHTML = autocompleteHTML;
+          // Add to container only if not already present
+          if (!containerRef.current.contains(autocompleteInstance)) {
+            containerRef.current.appendChild(autocompleteInstance);
+          }
           
           // Add placeholder
           const input = autocompleteInstance.querySelector('input');
@@ -90,7 +92,7 @@ export function GooglePlacesAutocomplete({
       } catch (error) {
         console.error('Autocomplete init error:', error);
         // Show fallback input
-        if (containerRef.current && mounted && containerRef.current.isConnected) {
+        if (containerRef.current && mounted && containerRef.current.isConnected && containerRef.current.childNodes.length === 0) {
           containerRef.current.innerHTML = `
             <input 
               type="text" 
@@ -107,12 +109,14 @@ export function GooglePlacesAutocomplete({
     // Cleanup
     return () => {
       mounted = false;
-      // Only clear if container still exists and is connected
-      if (containerRef.current && containerRef.current.isConnected) {
+      // Remove autocompleteInstance if present
+      if (containerRef.current && containerRef.current.isConnected && autocompleteInstance) {
         try {
-          containerRef.current.innerHTML = '';
+          if (containerRef.current.contains(autocompleteInstance)) {
+            containerRef.current.removeChild(autocompleteInstance);
+          }
         } catch (e) {
-          console.error('Cleanup innerHTML error:', e);
+          console.error('Cleanup removeChild error:', e);
         }
       }
       // Remove all listeners from autocompleteInstance if needed

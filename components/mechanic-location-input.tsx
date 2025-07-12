@@ -74,9 +74,11 @@ export default function MechanicLocationInput({
 
         // Replace the container with the autocomplete element using innerHTML only
         if (mounted && inputRef.current && inputRef.current.isConnected) {
-          inputRef.current.innerHTML = '';
-          const autocompleteHTML = autocompleteInstance.outerHTML || '';
-          inputRef.current.innerHTML = autocompleteHTML;
+          // Only clear if container is empty
+          if (inputRef.current.childNodes.length === 0) {
+            inputRef.current.innerHTML = '';
+          }
+          inputRef.current.appendChild(autocompleteInstance);
           autocompleteRef.current = autocompleteInstance;
         }
 
@@ -93,12 +95,14 @@ export default function MechanicLocationInput({
 
     return () => {
       mounted = false;
-      // Only clear if inputRef still exists and is connected
-      if (inputRef.current && inputRef.current.isConnected) {
+      // Remove autocompleteInstance if present
+      if (inputRef.current && inputRef.current.isConnected && autocompleteInstance) {
         try {
-          inputRef.current.innerHTML = '';
+          if (inputRef.current.contains(autocompleteInstance)) {
+            inputRef.current.removeChild(autocompleteInstance);
+          }
         } catch (e) {
-          console.error('Cleanup innerHTML error:', e);
+          console.error('Cleanup removeChild error:', e);
         }
       }
       // Remove all listeners from autocompleteInstance if needed
