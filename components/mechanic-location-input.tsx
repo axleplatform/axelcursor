@@ -31,61 +31,81 @@ export default function MechanicLocationInput({
 
   // Initialize Google Maps Autocomplete
   useEffect(() => {
+    let mounted = true;
+    let autocompleteInstance: any = null;
+
     const initializeAutocomplete = async () => {
-      if (!inputRef.current) return
+      if (!inputRef.current || !mounted) return;
 
       try {
-        setIsLoading(true)
+        setIsLoading(true);
         
         // Dynamic import to avoid SSR issues
-        const { loadGoogleMaps } = await import('@/lib/google-maps')
-        const google = await loadGoogleMaps()
+        const { loadGoogleMaps } = await import('@/lib/google-maps');
+        const google = await loadGoogleMaps();
 
         // Create autocomplete element using new API
-        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement({ componentRestrictions: { country: 'us' } })
+        autocompleteInstance = new google.maps.places.PlaceAutocompleteElement({ 
+          componentRestrictions: { country: 'us' } 
+        });
         
         // Configure the autocomplete element
-        autocompleteElement.setAttribute('placeholder', 'Enter your full address')
-        autocompleteElement.setAttribute('types', 'address')
-        autocompleteElement.setAttribute('component-restrictions', 'us')
-        autocompleteElement.setAttribute('fields', 'address_components,geometry,formatted_address')
+        autocompleteInstance.setAttribute('placeholder', 'Enter your full address');
+        autocompleteInstance.setAttribute('types', 'address');
+        autocompleteInstance.setAttribute('component-restrictions', 'us');
+        autocompleteInstance.setAttribute('fields', 'address_components,geometry,formatted_address');
 
         // Handle place selection
-        autocompleteElement.addEventListener('gmp-placeselect', (event: any) => {
-          const place = event.place
+        autocompleteInstance.addEventListener('gmp-placeselect', (event: any) => {
+          if (!mounted) return;
+          const place = event.place;
           
           if (place.geometry && place.geometry.location) {
-            const lat = place.geometry.location.lat()
-            const lng = place.geometry.location.lng()
-            const address = place.formatted_address || value
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
+            const address = place.formatted_address || value;
 
-            onChange(address)
+            onChange(address);
 
             if (onLocationSelect) {
-              onLocationSelect({ lat, lng, address })
+              onLocationSelect({ lat, lng, address });
             }
           }
-        })
+        });
 
         // Replace the input element with the autocomplete element
-        const inputContainer = inputRef.current.parentElement
-        if (inputContainer) {
+        const inputContainer = inputRef.current.parentElement;
+        if (mounted && inputContainer && inputRef.current) {
           // Remove the old input
-          inputRef.current.remove()
+          inputRef.current.remove();
           // Append the new autocomplete element
-          inputContainer.appendChild(autocompleteElement)
-          autocompleteRef.current = autocompleteElement
+          inputContainer.appendChild(autocompleteInstance);
+          autocompleteRef.current = autocompleteInstance;
         }
 
       } catch (error) {
-        console.error('Error initializing autocomplete:', error)
+        console.error('Error initializing autocomplete:', error);
       } finally {
-        setIsLoading(false)
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-    }
+    };
 
-    initializeAutocomplete()
-  }, [onChange, onLocationSelect, value])
+    initializeAutocomplete();
+
+    return () => {
+      mounted = false;
+      // Remove all listeners from autocompleteInstance if needed
+      if (autocompleteInstance) {
+        try {
+          google.maps.event.clearInstanceListeners(autocompleteInstance);
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
+      }
+    };
+  }, [onChange, onLocationSelect, value]);
 
   // Handle manual input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

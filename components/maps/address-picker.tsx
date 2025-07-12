@@ -71,8 +71,11 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
 
   // Initialize Google Maps Autocomplete with modern approach
   useEffect(() => {
+    let mounted = true;
+    let autocompleteInstance: any = null;
+
     const initializeAutocomplete = async () => {
-      if (!inputRef.current || isUpdating || !isLoaded) return;
+      if (!inputRef.current || isUpdating || !isLoaded || !mounted) return;
 
       try {
         setIsLoading(true);
@@ -82,38 +85,53 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
         const google = await loadGoogleMaps();
 
         // Create autocomplete element using new API
-        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement({});
+        autocompleteInstance = new google.maps.places.PlaceAutocompleteElement({});
         
         // Configure the autocomplete element
-        autocompleteElement.setAttribute('placeholder', 'Enter your service address');
-        autocompleteElement.setAttribute('types', 'address');
-        autocompleteElement.setAttribute('component-restrictions', 'us');
-        autocompleteElement.setAttribute('fields', 'address_components,geometry,formatted_address,place_id');
+        autocompleteInstance.setAttribute('placeholder', 'Enter your service address');
+        autocompleteInstance.setAttribute('types', 'address');
+        autocompleteInstance.setAttribute('component-restrictions', 'us');
+        autocompleteInstance.setAttribute('fields', 'address_components,geometry,formatted_address,place_id');
 
         // Handle place selection
-        autocompleteElement.addEventListener('gmp-placeselect', (event: any) => {
+        autocompleteInstance.addEventListener('gmp-placeselect', (event: any) => {
+          if (!mounted) return;
           const place = event.place;
           handlePlaceSelection(place);
         });
 
         // Replace the input element with the autocomplete element
         const inputContainer = inputRef.current.parentElement;
-        if (inputContainer) {
+        if (mounted && inputContainer && inputRef.current) {
           // Remove the old input
           inputRef.current.remove();
           // Append the new autocomplete element
-          inputContainer.appendChild(autocompleteElement);
-          autocompleteRef.current = autocompleteElement;
+          inputContainer.appendChild(autocompleteInstance);
+          autocompleteRef.current = autocompleteInstance;
         }
 
       } catch (error) {
         console.error('Error initializing autocomplete:', error);
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     initializeAutocomplete();
+
+    return () => {
+      mounted = false;
+      // Remove all listeners from autocompleteInstance if needed
+      if (autocompleteInstance) {
+        try {
+          google.maps.event.clearInstanceListeners(autocompleteInstance);
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
+      }
+    };
   }, [handlePlaceSelection, isUpdating, isLoaded]);
 
   // Get user's current location on mount with guard
