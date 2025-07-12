@@ -108,6 +108,35 @@ body {
   z-index: 1000 !important;
 }
 
+/* Style the Google autocomplete container */
+#google-autocomplete-container {
+  position: relative !important;
+  z-index: 1000 !important;
+}
+
+/* Style the Google PlaceAutocompleteElement */
+#google-autocomplete-container gmpx-place-autocomplete {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#google-autocomplete-container gmpx-place-autocomplete input {
+  width: 100% !important;
+  height: 50px !important;
+  padding: 0 16px 0 40px !important;
+  font-size: 16px !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  background-color: white !important;
+  box-sizing: border-box !important;
+}
+
+#google-autocomplete-container gmpx-place-autocomplete input:focus {
+  outline: 2px solid #294a46 !important;
+  outline-offset: 2px !important;
+  border-color: #294a46 !important;
+}
+
 .location-input-container input {
   position: relative !important;
   z-index: 1001 !important;
