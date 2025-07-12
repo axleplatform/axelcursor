@@ -27,6 +27,7 @@ export function useGoogleMapsAutocomplete({
   const [isLoading, setIsLoading] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const initializationAttempted = useRef(false);
 
   // Memoize options to prevent unnecessary re-renders
   const memoizedOptions = useMemo(() => ({
@@ -37,11 +38,12 @@ export function useGoogleMapsAutocomplete({
 
   // Initialize autocomplete
   const initializeAutocomplete = useCallback(async () => {
-    if (!inputRef.current || disabled) return;
+    if (!inputRef.current || disabled || initializationAttempted.current) return;
 
     try {
       setIsLoading(true);
       setError(null);
+      initializationAttempted.current = true;
 
       // Wait for the next tick to ensure the ref is properly attached
       await new Promise(resolve => setTimeout(resolve, 50));
@@ -54,13 +56,7 @@ export function useGoogleMapsAutocomplete({
 
       // Verify it's actually an HTMLInputElement
       if (!(inputRef.current instanceof HTMLInputElement)) {
-        console.log('Ref is not an HTMLInputElement, waiting...');
-        // Try again after a short delay
-        setTimeout(() => {
-          if (inputRef.current && inputRef.current instanceof HTMLInputElement) {
-            initializeAutocomplete();
-          }
-        }, 100);
+        console.log('Ref is not an HTMLInputElement, skipping initialization');
         return;
       }
 
@@ -84,7 +80,7 @@ export function useGoogleMapsAutocomplete({
     } finally {
       setIsLoading(false);
     }
-  }, [disabled, memoizedOptions, onPlaceSelect]);
+  }, [disabled, memoizedOptions]); // Remove onPlaceSelect from dependencies
 
   // Handle input changes
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,6 +107,7 @@ export function useGoogleMapsAutocomplete({
           }
           autocompleteRef.current = null;
         }
+        initializationAttempted.current = false;
       }, 0);
     };
   }, []);

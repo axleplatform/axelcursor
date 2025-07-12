@@ -23,42 +23,43 @@ if (typeof window !== 'undefined') {
   
   console.error = function(...args) {
     const message = args.join(' ');
+    // Only suppress specific DOM cleanup errors, not all errors
     if (
-      message.includes('removeChild') ||
-      message.includes('NotFoundError') ||
-      message.includes('Failed to execute') ||
-      message.includes('not a child of this node') ||
-      message.includes('Node was not found')
+      (message.includes('removeChild') && message.includes('not a child of this node')) ||
+      (message.includes('NotFoundError') && message.includes('removeChild')) ||
+      (message.includes('Failed to execute') && message.includes('removeChild')) ||
+      (message.includes('Node was not found'))
     ) {
-      // Completely suppress these errors
+      // Completely suppress these specific DOM errors
       return;
     }
+    // Call original error for all other errors
     originalError.apply(console, args);
   };
   
   console.warn = function(...args) {
     const message = args.join(' ');
+    // Only suppress specific DOM cleanup warnings
     if (
-      message.includes('removeChild') ||
-      message.includes('NotFoundError') ||
-      message.includes('Failed to execute') ||
-      message.includes('not a child of this node') ||
-      message.includes('Node was not found')
+      (message.includes('removeChild') && message.includes('not a child of this node')) ||
+      (message.includes('NotFoundError') && message.includes('removeChild')) ||
+      (message.includes('Failed to execute') && message.includes('removeChild')) ||
+      (message.includes('Node was not found'))
     ) {
-      // Completely suppress these warnings
+      // Completely suppress these specific DOM warnings
       return;
     }
+    // Call original warn for all other warnings
     originalWarn.apply(console, args);
   };
   
   // Also catch unhandled errors
   window.addEventListener('error', (event) => {
     if (
-      event.message.includes('removeChild') ||
-      event.message.includes('NotFoundError') ||
-      event.message.includes('Failed to execute') ||
-      event.message.includes('not a child of this node') ||
-      event.message.includes('Node was not found')
+      (event.message.includes('removeChild') && event.message.includes('not a child of this node')) ||
+      (event.message.includes('NotFoundError') && event.message.includes('removeChild')) ||
+      (event.message.includes('Failed to execute') && event.message.includes('removeChild')) ||
+      (event.message.includes('Node was not found'))
     ) {
       event.preventDefault();
       return false;
@@ -68,11 +69,10 @@ if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (event) => {
     const message = event.reason?.message || event.reason?.toString() || '';
     if (
-      message.includes('removeChild') ||
-      message.includes('NotFoundError') ||
-      message.includes('Failed to execute') ||
-      message.includes('not a child of this node') ||
-      message.includes('Node was not found')
+      (message.includes('removeChild') && message.includes('not a child of this node')) ||
+      (message.includes('NotFoundError') && message.includes('removeChild')) ||
+      (message.includes('Failed to execute') && message.includes('removeChild')) ||
+      (message.includes('Node was not found'))
     ) {
       event.preventDefault();
       return false;
