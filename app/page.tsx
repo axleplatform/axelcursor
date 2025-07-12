@@ -306,6 +306,32 @@ function HomePageContent(): React.JSX.Element {
     }
   }, [selectedLocation, mapLoaded, updateMapLocation]);
 
+  // Watch for manual location changes and update map if possible
+  useEffect(() => {
+    // Only run if location is set and not already from a selectedLocation
+    if (formData.location && (!selectedLocation || formData.location !== (selectedLocation.formatted_address || selectedLocation.name))) {
+      (async () => {
+        try {
+          const { geocodeAddress } = await import('@/lib/google-maps');
+          const results = await geocodeAddress(formData.location);
+          if (results && results[0] && results[0].geometry && mapInstanceRef.current) {
+            const { lat, lng } = results[0].geometry.location;
+            // Update map
+            new window.google.maps.Marker({
+              position: { lat: typeof lat === 'function' ? lat() : lat, lng: typeof lng === 'function' ? lng() : lng },
+              map: mapInstanceRef.current,
+              animation: window.google.maps.Animation.DROP
+            });
+            mapInstanceRef.current.setCenter({ lat: typeof lat === 'function' ? lat() : lat, lng: typeof lng === 'function' ? lng() : lng });
+            mapInstanceRef.current.setZoom(15);
+          }
+        } catch (err) {
+          // Ignore geocode errors
+        }
+      })();
+    }
+  }, [formData.location, selectedLocation]);
+
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
     if (!appointmentId) return
