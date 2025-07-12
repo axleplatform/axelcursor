@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect, useRef, Suspense } from "react"
 import type { FormEvent, ChangeEvent, KeyboardEvent } from 'react'
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { MapPin, ChevronRight, User } from "lucide-react"
+import { MapPin, ChevronRight, User, Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
 import Footer from "@/components/footer"
@@ -17,9 +17,8 @@ import HomepageLocationInput from "@/components/homepage-location-input"
 // Global type declarations
 declare global {
   interface Window {
-    mapInstance?: google.maps.Map;
-    locationMarker?: google.maps.Marker;
     initMap?: () => void;
+    mapInstance?: google.maps.Map;
   }
 }
 
@@ -108,92 +107,73 @@ function HomePageContent(): React.JSX.Element {
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef<HTMLDivElement | null>(null);
 
-  // Professional map styles
-  const mapStyles = [
-    { featureType: "poi.business", stylers: [{ visibility: "off" }] },
-    { featureType: "transit", elementType: "labels.icon", stylers: [{ visibility: "off" }] }
-  ];
+
 
   // Initialize map on mount
   useEffect(() => {
-    let mapInitialized = false;
-    
-    const loadMap = () => {
-      if (mapInitialized || !document.getElementById('landing-map')) return;
-      
-      if (!window.google?.maps?.Map) {
-        console.log('Google Maps not loaded yet');
-        // Wait and retry
-        setTimeout(loadMap, 100);
-        return;
-      }
-      
-      mapInitialized = true;
-      const mapElement = document.getElementById('landing-map');
+    // Define the map initialization function
+    window.initMap = () => {
+      const mapElement = document.getElementById('map');
       if (!mapElement) return;
-      
-      const map = new window.google.maps.Map(mapElement, {
-        center: { lat: 40.7128, lng: -74.0060 },
-        zoom: 11,
-        styles: mapStyles,
-        disableDefaultUI: false,
-        zoomControl: true,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: true
-      });
-      
-      window.mapInstance = map;
-      setMapLoaded(true);
-      
-      // Optionally center on user location
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((position) => {
-          const userLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          map.setCenter(userLocation);
-          new window.google.maps.Marker({
-            position: userLocation,
-            map: map,
-            icon: {
-              path: window.google.maps.SymbolPath.CIRCLE,
-              scale: 10,
-              fillColor: '#4285F4',
-              fillOpacity: 0.8,
-              strokeColor: 'white',
-              strokeWeight: 2
-            }
-          });
+
+      try {
+        const map = new google.maps.Map(mapElement, {
+          center: { lat: 40.7128, lng: -74.0060 }, // NYC default
+          zoom: 12,
+          mapTypeControl: false,
+          streetViewControl: false,
         });
+        
+        window.mapInstance = map;
+        setMapLoaded(true);
+        console.log('Map initialized successfully');
+      } catch (error) {
+        console.error('Map initialization error:', error);
       }
     };
-    
-    loadMap();
-    
-    // Cleanup
+
+    // Check if Google Maps is already loaded
+    if (window.google && window.google.maps) {
+      window.initMap();
+    }
+
+    // Load Google Maps script if not already loaded
+    if (!document.getElementById('google-maps-script')) {
+      const script = document.createElement('script');
+      script.id = 'google-maps-script';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap`;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+
     return () => {
-      mapInitialized = true;
+      // Cleanup
+      delete window.initMap;
     };
   }, []);
 
-  // Update map when location changes
+  // Update map when location is selected
   useEffect(() => {
     if (selectedLocation && window.mapInstance) {
       const map = window.mapInstance;
-      // Clear existing marker
-      if (window.locationMarker) {
-        window.locationMarker.setMap(null);
-      }
-      // Add new marker
-      window.locationMarker = new window.google.maps.Marker({
-        position: selectedLocation.coordinates,
+
+      // Clear existing markers
+      // Add new marker for selected location
+      new google.maps.Marker({
+        position: {
+          lat: selectedLocation.coordinates.lat,
+          lng: selectedLocation.coordinates.lng
+        },
         map: map,
-        title: selectedLocation.address,
-        animation: window.google.maps.Animation.DROP
+        animation: google.maps.Animation.DROP
       });
-      map.setCenter(selectedLocation.coordinates);
+
+      // Center map on new location
+      map.setCenter({
+        lat: selectedLocation.coordinates.lat,
+        lng: selectedLocation.coordinates.lng
+      });
       map.setZoom(15);
     }
   }, [selectedLocation]);
@@ -1018,17 +998,15 @@ function HomePageContent(): React.JSX.Element {
               label="Enter your location"
               required
             />
-            <div className="relative w-full h-[400px] rounded-lg overflow-hidden mt-4">
-              <div id="landing-map" className="w-full h-full">
-                {!mapLoaded && (
-                  <div className="flex items-center justify-center h-full bg-gray-100">
-                    <div className="text-center">
-                      <span className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#294a46] mb-2"></span>
-                      <p className="text-gray-600">Loading map...</p>
-                    </div>
+            <div id="map" className="w-full h-[400px] rounded-lg bg-gray-100">
+              {!mapLoaded && (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-gray-400" />
+                    <p className="text-gray-500">Loading map...</p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
 
