@@ -5,7 +5,7 @@ import { Loader } from '@googlemaps/js-api-loader'
 let cachedApiKey: string | null = null;
 let googleMapsInstance: any = null;
 let loadingPromise: Promise<any> | null = null;
-let autocompleteContainers = new Set<HTMLElement>();
+let autocompleteInstances = new Map<HTMLElement, any>();
 
 export async function getGoogleMapsApiKey(): Promise<string> {
   if (cachedApiKey) return cachedApiKey;
@@ -66,40 +66,25 @@ export async function loadGoogleMaps(): Promise<any> {
   return loadingPromise;
 }
 
-// Safe autocomplete initialization with dedicated container
+// Safe autocomplete initialization without dedicated container
 export async function createSafeAutocomplete(
   inputElement: HTMLInputElement,
   options: any = {}
 ): Promise<any> {
   const google = await loadGoogleMaps();
   
-  // Create a dedicated container for the autocomplete dropdown
-  const container = document.createElement('div');
-  container.style.position = 'absolute';
-  container.style.zIndex = '1000';
-  container.style.width = '100%';
-  container.style.top = '100%';
-  container.style.left = '0';
-  container.style.pointerEvents = 'auto';
-  
-  // Insert container after the input
-  if (inputElement.parentElement) {
-    inputElement.parentElement.appendChild(container);
-  }
-  
-  // Create autocomplete with container
+  // Create autocomplete without container to avoid DOM conflicts
   const autocomplete = new google.maps.places.Autocomplete(inputElement, {
-    ...options,
-    container: container
+    ...options
   });
   
-  // Track container for cleanup
-  autocompleteContainers.add(container);
+  // Track instance for cleanup
+  autocompleteInstances.set(inputElement, autocomplete);
   
   return autocomplete;
 }
 
-// Cleanup autocomplete and its container
+// Cleanup autocomplete safely
 export function cleanupAutocomplete(autocomplete: any): void {
   try {
     // Clear all listeners
@@ -107,34 +92,30 @@ export function cleanupAutocomplete(autocomplete: any): void {
       window.google.maps.event.clearInstanceListeners(autocomplete);
     }
     
-    // Remove container from DOM safely
-    const container = autocomplete.getContainer?.();
-    if (container && container.parentElement) {
-      try {
-        container.parentElement.removeChild(container);
-      } catch (e) {
-        // Container might already be removed
-        console.log('Container already removed or not found');
+    // Remove from tracking map
+    for (const [element, instance] of autocompleteInstances.entries()) {
+      if (instance === autocomplete) {
+        autocompleteInstances.delete(element);
+        break;
       }
-      autocompleteContainers.delete(container);
     }
   } catch (error) {
     console.warn('Error during autocomplete cleanup:', error);
   }
 }
 
-// Cleanup all autocomplete containers
-export function cleanupAllAutocompleteContainers(): void {
-  autocompleteContainers.forEach(container => {
+// Cleanup all autocomplete instances
+export function cleanupAllAutocompleteInstances(): void {
+  autocompleteInstances.forEach((instance, element) => {
     try {
-      if (container.parentElement) {
-        container.parentElement.removeChild(container);
+      if (window.google?.maps?.event) {
+        window.google.maps.event.clearInstanceListeners(instance);
       }
     } catch (error) {
-      console.warn('Error removing autocomplete container:', error);
+      console.warn('Error cleaning up autocomplete instance:', error);
     }
   });
-  autocompleteContainers.clear();
+  autocompleteInstances.clear();
 }
 
 // Geocoding functions
@@ -207,5 +188,5 @@ export function resetGoogleMapsState(): void {
   cachedApiKey = null;
   googleMapsInstance = null;
   loadingPromise = null;
-  cleanupAllAutocompleteContainers();
+  cleanupAllAutocompleteInstances();
 }

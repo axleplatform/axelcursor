@@ -64,7 +64,7 @@ export function useGoogleMapsAutocomplete({
         return;
       }
 
-      // Create safe autocomplete with dedicated container
+      // Create safe autocomplete without container
       const autocomplete = await createSafeAutocomplete(inputRef.current, memoizedOptions);
 
       autocompleteRef.current = autocomplete;
@@ -98,13 +98,20 @@ export function useGoogleMapsAutocomplete({
     initializeAutocomplete();
   }, [initializeAutocomplete]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount with delay to avoid DOM conflicts
   useEffect(() => {
     return () => {
-      if (autocompleteRef.current) {
-        cleanupAutocomplete(autocompleteRef.current);
-        autocompleteRef.current = null;
-      }
+      // Delay cleanup to avoid conflicts with React's DOM management
+      setTimeout(() => {
+        if (autocompleteRef.current) {
+          try {
+            cleanupAutocomplete(autocompleteRef.current);
+          } catch (error) {
+            console.warn('Error during autocomplete cleanup:', error);
+          }
+          autocompleteRef.current = null;
+        }
+      }, 0);
     };
   }, []);
 
