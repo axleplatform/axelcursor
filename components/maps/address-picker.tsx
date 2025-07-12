@@ -103,9 +103,8 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
         // Replace the input element with the autocomplete element
         const inputContainer = inputRef.current.parentElement;
         if (mounted && inputContainer && inputRef.current) {
-          // Remove the old input
-          inputRef.current.remove();
-          // Append the new autocomplete element
+          // Clear the container and append the new autocomplete element
+          inputContainer.innerHTML = '';
           inputContainer.appendChild(autocompleteInstance);
           autocompleteRef.current = autocompleteInstance;
         }
