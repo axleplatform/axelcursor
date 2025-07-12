@@ -44,9 +44,12 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
     }
   }, [onLocationSelect]);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAddress(e.target.value);
+  };
+
   const { inputRef, isLoading, isLoaded, error } = useGoogleMapsAutocomplete({
-    onPlaceSelect: handlePlaceSelection,
-    onInputChange: setAddress
+    onPlaceSelect: handlePlaceSelection
   });
 
   // Handle map location selection
@@ -79,6 +82,7 @@ export function AddressPicker({ onLocationSelect }: AddressPickerProps) {
             type="text"
             name="address"
             value={address}
+            onChange={handleInputChange}
             placeholder="Enter your service address"
             className="block w-full p-3 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-white relative z-10 focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
             disabled={isLoading}

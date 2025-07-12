@@ -35,9 +35,12 @@ export default function MechanicLocationInput({
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
+  };
+
   const { inputRef, isLoading, isLoaded, error: autocompleteError } = useGoogleMapsAutocomplete({
-    onPlaceSelect: handlePlaceSelect,
-    onInputChange: onChange
+    onPlaceSelect: handlePlaceSelect
   });
 
   return (
@@ -59,6 +62,7 @@ export default function MechanicLocationInput({
           ref={inputRef}
           type="text"
           value={value}
+          onChange={handleInputChange}
           placeholder="Enter your address"
           className="pl-10"
           required={required}

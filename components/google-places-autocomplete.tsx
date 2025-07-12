@@ -1,18 +1,32 @@
 // @ts-nocheck
-import React from 'react'
+import React, { useState } from 'react'
 import { useGoogleMapsAutocomplete } from '@/hooks/use-google-maps-autocomplete';
 
 interface GooglePlacesAutocompleteProps {
   onPlaceSelect: (place: any) => void
   placeholder?: string
   className?: string
+  value?: string
+  onChange?: (value: string) => void
 }
 
 export function GooglePlacesAutocomplete({
   onPlaceSelect,
   placeholder = "Enter your address",
-  className = ""
+  className = "",
+  value = "",
+  onChange
 }: GooglePlacesAutocompleteProps) {
+  const [inputValue, setInputValue] = useState(value);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+    if (onChange) {
+      onChange(newValue);
+    }
+  };
+
   const { inputRef, isLoading, isLoaded, error } = useGoogleMapsAutocomplete({
     onPlaceSelect
   });
@@ -22,6 +36,8 @@ export function GooglePlacesAutocomplete({
       <input
         ref={inputRef}
         type="text"
+        value={inputValue}
+        onChange={handleInputChange}
         placeholder={placeholder}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg"
         disabled={isLoading}

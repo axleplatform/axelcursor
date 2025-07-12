@@ -37,11 +37,24 @@ export function useGoogleMapsAutocomplete({
       setError(null);
 
       // Wait for the next tick to ensure the ref is properly attached
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Double-check ref is still valid
+      if (!inputRef.current || !inputRef.current.isConnected) {
+        console.log('Input ref not available or not connected');
+        return;
+      }
 
       // Verify it's actually an HTMLInputElement
       if (!(inputRef.current instanceof HTMLInputElement)) {
-        throw new Error('Ref is not an HTMLInputElement');
+        console.log('Ref is not an HTMLInputElement, waiting...');
+        // Try again after a short delay
+        setTimeout(() => {
+          if (inputRef.current && inputRef.current instanceof HTMLInputElement) {
+            initializeAutocomplete();
+          }
+        }, 100);
+        return;
       }
 
       // Create safe autocomplete with dedicated container

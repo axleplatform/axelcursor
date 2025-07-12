@@ -80,9 +80,12 @@ export async function createSafeAutocomplete(
   container.style.width = '100%';
   container.style.top = '100%';
   container.style.left = '0';
+  container.style.pointerEvents = 'auto';
   
   // Insert container after the input
-  inputElement.parentElement?.appendChild(container);
+  if (inputElement.parentElement) {
+    inputElement.parentElement.appendChild(container);
+  }
   
   // Create autocomplete with container
   const autocomplete = new google.maps.places.Autocomplete(inputElement, {
@@ -104,10 +107,15 @@ export function cleanupAutocomplete(autocomplete: any): void {
       window.google.maps.event.clearInstanceListeners(autocomplete);
     }
     
-    // Remove container from DOM
+    // Remove container from DOM safely
     const container = autocomplete.getContainer?.();
     if (container && container.parentElement) {
-      container.parentElement.removeChild(container);
+      try {
+        container.parentElement.removeChild(container);
+      } catch (e) {
+        // Container might already be removed
+        console.log('Container already removed or not found');
+      }
       autocompleteContainers.delete(container);
     }
   } catch (error) {
