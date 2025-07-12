@@ -109,23 +109,20 @@ function HomePageContent(): React.JSX.Element {
 
   // Initialize Google Maps Autocomplete
   const initializeAutocomplete = useCallback(async () => {
-    const container = document.getElementById('google-autocomplete-container');
-    if (!container) return;
+    if (!locationInputRef.current) return;
 
     try {
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
 
-      // Use the new PlaceAutocompleteElement API
-      const autocomplete = new google.maps.places.PlaceAutocompleteElement({
-        componentRestrictions: { country: 'us' }
+      // Use the traditional Autocomplete API which works better with our form state
+      const autocomplete = new google.maps.places.Autocomplete(locationInputRef.current, {
+        componentRestrictions: { country: 'us' },
+        fields: ['address_components', 'geometry', 'formatted_address', 'place_id']
       });
 
-      // Append the autocomplete element to our container
-      container.appendChild(autocomplete);
-
       // Add event listener for place selection
-      autocomplete.addEventListener('place_changed', () => {
+      autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
         console.log('📍 Place selected:', place);
         if (place && place.geometry) {
@@ -136,36 +133,33 @@ function HomePageContent(): React.JSX.Element {
       });
 
       // Add debugging for autocomplete events
-      autocomplete.addEventListener('place_changed', () => {
+      autocomplete.addListener('place_changed', () => {
         console.log('🎯 place_changed event fired');
       });
 
       autocompleteRef.current = autocomplete;
-      console.log('✅ PlaceAutocompleteElement initialized successfully:', autocomplete);
+      console.log('✅ Traditional Autocomplete initialized successfully:', autocomplete);
       
       // Add input event listener to detect typing
-      const googleInput = autocomplete.querySelector('input');
-      if (googleInput) {
-        googleInput.addEventListener('input', () => {
-          setTimeout(() => {
-            const allGmpxElements = document.querySelectorAll('[class*="gmpx"]');
-            const allAutocompleteElements = document.querySelectorAll('[class*="autocomplete"]');
-            const allDropdownElements = document.querySelectorAll('[class*="dropdown"], [class*="picker"], [class*="suggestions"]');
-            
-            console.log('🔍 After typing - GMPX elements:', allGmpxElements.length);
-            console.log('🔍 After typing - Autocomplete elements:', allAutocompleteElements.length);
-            console.log('🔍 After typing - Dropdown elements:', allDropdownElements.length);
-            
-            allGmpxElements.forEach((el, index) => {
-              console.log(`🔍 GMPX element ${index} after typing:`, el.className, el);
-            });
-            
-            allDropdownElements.forEach((el, index) => {
-              console.log(`🔍 Dropdown element ${index} after typing:`, el.className, el);
-            });
-          }, 500);
-        });
-      }
+      locationInputRef.current.addEventListener('input', () => {
+        setTimeout(() => {
+          const allGmpxElements = document.querySelectorAll('[class*="gmpx"]');
+          const allAutocompleteElements = document.querySelectorAll('[class*="autocomplete"]');
+          const allDropdownElements = document.querySelectorAll('[class*="dropdown"], [class*="picker"], [class*="suggestions"]');
+          
+          console.log('🔍 After typing - GMPX elements:', allGmpxElements.length);
+          console.log('🔍 After typing - Autocomplete elements:', allAutocompleteElements.length);
+          console.log('🔍 After typing - Dropdown elements:', allDropdownElements.length);
+          
+          allGmpxElements.forEach((el, index) => {
+            console.log(`🔍 GMPX element ${index} after typing:`, el.className, el);
+          });
+          
+          allDropdownElements.forEach((el, index) => {
+            console.log(`🔍 Dropdown element ${index} after typing:`, el.className, el);
+          });
+        }, 500);
+      });
       
       // Check if autocomplete container exists after initialization
       setTimeout(() => {
@@ -212,13 +206,13 @@ function HomePageContent(): React.JSX.Element {
 
   // Initialize autocomplete on mount
   useEffect(() => {
-    const container = document.getElementById('google-autocomplete-container');
-    if (container) {
-      console.log('🔍 Container found, initializing autocomplete...');
-      console.log('🔍 Container element:', container);
+    if (locationInputRef.current) {
+      console.log('🔍 Input element found, initializing autocomplete...');
+      console.log('🔍 Input element:', locationInputRef.current);
+      console.log('🔍 Input connected to DOM:', locationInputRef.current.isConnected);
       initializeAutocomplete();
     } else {
-      console.log('❌ Container element not found');
+      console.log('❌ Input element not found');
     }
   }, [initializeAutocomplete]);
 
@@ -1248,9 +1242,7 @@ function HomePageContent(): React.JSX.Element {
                 className="w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46] transition-all duration-200"
                 autoFocus
                 ref={locationInputRef}
-                style={{ display: 'none' }} // Hide our input since Google's will replace it
               />
-              <div id="google-autocomplete-container" className="w-full h-[50px]"></div>
             </div>
 
             {/* Spacer for autocomplete dropdown */}

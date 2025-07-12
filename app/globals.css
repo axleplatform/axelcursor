@@ -110,14 +110,20 @@ body {
 
 /* Style the Google autocomplete container */
 #google-autocomplete-container {
-  position: relative !important;
-  z-index: 1000 !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 1001 !important;
+  pointer-events: none !important;
 }
 
 /* Style the Google PlaceAutocompleteElement */
 #google-autocomplete-container gmpx-place-autocomplete {
   width: 100% !important;
   height: 100% !important;
+  pointer-events: auto !important;
 }
 
 #google-autocomplete-container gmpx-place-autocomplete input {
@@ -129,6 +135,7 @@ body {
   border-radius: 8px !important;
   background-color: white !important;
   box-sizing: border-box !important;
+  pointer-events: auto !important;
 }
 
 #google-autocomplete-container gmpx-place-autocomplete input:focus {
