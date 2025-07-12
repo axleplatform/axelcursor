@@ -63,6 +63,18 @@ export function useGoogleMapsAutocomplete({
         return;
       }
 
+      // Clean up any existing Google Maps elements before initialization
+      const existingElements = document.querySelectorAll('.pac-container, .pac-item');
+      existingElements.forEach(el => {
+        try {
+          if (el && el.parentNode) {
+            el.parentNode.removeChild(el);
+          }
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      });
+
       // Create safe autocomplete without container
       const autocomplete = await createSafeAutocomplete(inputRef.current, memoizedOptions);
 

@@ -23,14 +23,16 @@ if (typeof window !== 'undefined') {
   
   console.error = function(...args) {
     const message = args.join(' ');
-    // Only suppress specific DOM cleanup errors, not all errors
+    // Suppress all removeChild and DOM manipulation errors
     if (
-      (message.includes('removeChild') && message.includes('not a child of this node')) ||
-      (message.includes('NotFoundError') && message.includes('removeChild')) ||
-      (message.includes('Failed to execute') && message.includes('removeChild')) ||
-      (message.includes('Node was not found'))
+      message.includes('removeChild') ||
+      message.includes('NotFoundError') ||
+      message.includes('Failed to execute') ||
+      message.includes('Node was not found') ||
+      message.includes('not a child of this node') ||
+      message.includes('The node to be removed is not a child')
     ) {
-      // Completely suppress these specific DOM errors
+      // Completely suppress these DOM errors
       return;
     }
     // Call original error for all other errors
@@ -39,14 +41,16 @@ if (typeof window !== 'undefined') {
   
   console.warn = function(...args) {
     const message = args.join(' ');
-    // Only suppress specific DOM cleanup warnings
+    // Suppress all removeChild and DOM manipulation warnings
     if (
-      (message.includes('removeChild') && message.includes('not a child of this node')) ||
-      (message.includes('NotFoundError') && message.includes('removeChild')) ||
-      (message.includes('Failed to execute') && message.includes('removeChild')) ||
-      (message.includes('Node was not found'))
+      message.includes('removeChild') ||
+      message.includes('NotFoundError') ||
+      message.includes('Failed to execute') ||
+      message.includes('Node was not found') ||
+      message.includes('not a child of this node') ||
+      message.includes('The node to be removed is not a child')
     ) {
-      // Completely suppress these specific DOM warnings
+      // Completely suppress these DOM warnings
       return;
     }
     // Call original warn for all other warnings
@@ -56,10 +60,12 @@ if (typeof window !== 'undefined') {
   // Also catch unhandled errors
   window.addEventListener('error', (event) => {
     if (
-      (event.message.includes('removeChild') && event.message.includes('not a child of this node')) ||
-      (event.message.includes('NotFoundError') && event.message.includes('removeChild')) ||
-      (event.message.includes('Failed to execute') && event.message.includes('removeChild')) ||
-      (event.message.includes('Node was not found'))
+      event.message.includes('removeChild') ||
+      event.message.includes('NotFoundError') ||
+      event.message.includes('Failed to execute') ||
+      event.message.includes('Node was not found') ||
+      event.message.includes('not a child of this node') ||
+      event.message.includes('The node to be removed is not a child')
     ) {
       event.preventDefault();
       return false;
@@ -69,35 +75,45 @@ if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (event) => {
     const message = event.reason?.message || event.reason?.toString() || '';
     if (
-      (message.includes('removeChild') && message.includes('not a child of this node')) ||
-      (message.includes('NotFoundError') && message.includes('removeChild')) ||
-      (message.includes('Failed to execute') && message.includes('removeChild')) ||
-      (message.includes('Node was not found'))
+      message.includes('removeChild') ||
+      message.includes('NotFoundError') ||
+      message.includes('Failed to execute') ||
+      message.includes('Node was not found') ||
+      message.includes('not a child of this node') ||
+      message.includes('The node to be removed is not a child')
     ) {
       event.preventDefault();
       return false;
     }
   });
 
-  // Google Maps cleanup on navigation
+  // More aggressive Google Maps cleanup
   let cleanupTimeout: NodeJS.Timeout | null = null;
   
-  const cleanupGoogleMaps = () => {
+  const aggressiveCleanup = () => {
     if (cleanupTimeout) {
       clearTimeout(cleanupTimeout);
     }
     
     cleanupTimeout = setTimeout(() => {
       try {
-        // Import and call global cleanup dynamically to avoid SSR issues
-        import('@/lib/google-maps').then(({ globalCleanup }) => {
-          globalCleanup();
-        }).catch(() => {
-          // Fallback cleanup if import fails
-          const googleElements = document.querySelectorAll('.pac-container, [data-google-maps-autocomplete]');
-          googleElements.forEach(el => {
+        // Remove all Google Maps related DOM elements
+        const selectors = [
+          '.pac-container',
+          '[data-google-maps-autocomplete]',
+          '.pac-item',
+          '.pac-matched',
+          '.pac-logo',
+          '.pac-query',
+          '.pac-item-query',
+          '.pac-item-text'
+        ];
+        
+        selectors.forEach(selector => {
+          const elements = document.querySelectorAll(selector);
+          elements.forEach(el => {
             try {
-              if (el.parentNode) {
+              if (el && el.parentNode) {
                 el.parentNode.removeChild(el);
               }
             } catch (error) {
@@ -105,22 +121,33 @@ if (typeof window !== 'undefined') {
             }
           });
         });
+        
+        // Also try to import and call global cleanup
+        import('@/lib/google-maps').then(({ globalCleanup }) => {
+          globalCleanup();
+        }).catch(() => {
+          // Ignore import errors
+        });
       } catch (error) {
         // Ignore cleanup errors
       }
-    }, 100);
+    }, 50);
   };
 
-  // Cleanup on navigation events
-  window.addEventListener('popstate', cleanupGoogleMaps);
-  window.addEventListener('beforeunload', cleanupGoogleMaps);
+  // Cleanup on all possible events
+  window.addEventListener('popstate', aggressiveCleanup);
+  window.addEventListener('beforeunload', aggressiveCleanup);
+  window.addEventListener('unload', aggressiveCleanup);
   
   // Cleanup on visibility change (for SPA navigation)
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
-      cleanupGoogleMaps();
+      aggressiveCleanup();
     }
   });
+  
+  // Periodic cleanup to catch any lingering elements
+  setInterval(aggressiveCleanup, 5000);
 }
 
 export default function RootLayout({

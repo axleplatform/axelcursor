@@ -263,14 +263,48 @@ export function globalCleanup(): void {
     cleanupAllAutocompleteInstances();
     
     // Clear any Google Maps DOM elements that might be lingering
-    const googleElements = document.querySelectorAll('[data-google-maps-autocomplete], .pac-container');
-    googleElements.forEach(el => {
+    const selectors = [
+      '.pac-container',
+      '[data-google-maps-autocomplete]',
+      '.pac-item',
+      '.pac-matched',
+      '.pac-logo',
+      '.pac-query',
+      '.pac-item-query',
+      '.pac-item-text',
+      '.pac-item-index',
+      '.pac-item-selected',
+      '.pac-item-query',
+      '.pac-item-text',
+      '.pac-item-index',
+      '.pac-item-selected'
+    ];
+    
+    selectors.forEach(selector => {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach(el => {
+        try {
+          if (el && el.parentNode) {
+            el.parentNode.removeChild(el);
+          }
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      });
+    });
+    
+    // Also try to remove any elements with Google Maps related classes
+    const allElements = document.querySelectorAll('*');
+    allElements.forEach(el => {
       try {
-        if (el.parentNode) {
-          el.parentNode.removeChild(el);
+        const className = el.className || '';
+        if (typeof className === 'string' && className.includes('pac-')) {
+          if (el.parentNode) {
+            el.parentNode.removeChild(el);
+          }
         }
       } catch (error) {
-        console.warn('Error removing Google Maps DOM element:', error);
+        // Ignore cleanup errors
       }
     });
     
@@ -299,4 +333,16 @@ if (typeof window !== 'undefined') {
       }, 100);
     }
   });
+  
+  // Periodic cleanup to prevent DOM conflicts
+  setInterval(() => {
+    try {
+      // Only cleanup if page is not visible or if there are Google Maps elements
+      if (document.visibilityState === 'hidden' || document.querySelector('.pac-container')) {
+        globalCleanup();
+      }
+    } catch (error) {
+      // Ignore periodic cleanup errors
+    }
+  }, 10000); // Every 10 seconds
 }
