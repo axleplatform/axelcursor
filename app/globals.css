@@ -151,6 +151,26 @@ body {
   opacity: 1 !important;
 }
 
+/* Specific styles for new PlaceAutocompleteElement API */
+.gmpx-place-autocomplete-picker {
+  z-index: 9999 !important;
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin-top: 2px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.375rem !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  background-color: white !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
 /* Ensure autocomplete container is visible */
 .pac-container {
   display: block !important;
@@ -199,5 +219,27 @@ body {
 
 .pac-item-selected,
 .gmpx-place-autocomplete-picker-item-selected {
+  background-color: #e5e7eb !important;
+}
+
+/* Additional styles for new PlaceAutocompleteElement items */
+.gmpx-place-autocomplete-picker-item {
+  padding: 12px 16px !important;
+  cursor: pointer !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.gmpx-place-autocomplete-picker-item:hover {
+  background-color: #f9fafb !important;
+}
+
+.gmpx-place-autocomplete-picker-item:last-child {
+  border-bottom: none !important;
+}
+
+.gmpx-place-autocomplete-picker-item[aria-selected="true"] {
   background-color: #e5e7eb !important;
 }

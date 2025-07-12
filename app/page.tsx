@@ -115,14 +115,14 @@ function HomePageContent(): React.JSX.Element {
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
 
-      // Use the traditional Autocomplete API which is more reliable
-      const autocomplete = new google.maps.places.Autocomplete(locationInputRef.current, {
-        componentRestrictions: { country: 'us' },
-        fields: ['address_components', 'geometry', 'formatted_address', 'place_id']
+      // Use the new PlaceAutocompleteElement API
+      const autocomplete = new google.maps.places.PlaceAutocompleteElement({
+        inputElement: locationInputRef.current,
+        componentRestrictions: { country: 'us' }
       });
 
       // Add event listener for place selection
-      autocomplete.addListener('place_changed', () => {
+      autocomplete.addEventListener('place_changed', () => {
         const place = autocomplete.getPlace();
         console.log('📍 Place selected:', place);
         if (place && place.geometry) {
@@ -133,23 +133,33 @@ function HomePageContent(): React.JSX.Element {
       });
 
       // Add debugging for autocomplete events
-      autocomplete.addListener('place_changed', () => {
+      autocomplete.addEventListener('place_changed', () => {
         console.log('🎯 place_changed event fired');
       });
 
       autocompleteRef.current = autocomplete;
-      console.log('✅ Autocomplete initialized successfully:', autocomplete);
+      console.log('✅ PlaceAutocompleteElement initialized successfully:', autocomplete);
       
       // Check if autocomplete container exists after initialization
       setTimeout(() => {
         const pacContainer = document.querySelector('.pac-container');
+        const gmpxContainer = document.querySelector('.gmpx-place-autocomplete-picker');
         console.log('🔍 PAC container found:', pacContainer);
+        console.log('🔍 GMPX container found:', gmpxContainer);
         if (pacContainer) {
           console.log('🔍 PAC container styles:', {
             display: window.getComputedStyle(pacContainer).display,
             visibility: window.getComputedStyle(pacContainer).visibility,
             opacity: window.getComputedStyle(pacContainer).opacity,
             zIndex: window.getComputedStyle(pacContainer).zIndex
+          });
+        }
+        if (gmpxContainer) {
+          console.log('🔍 GMPX container styles:', {
+            display: window.getComputedStyle(gmpxContainer).display,
+            visibility: window.getComputedStyle(gmpxContainer).visibility,
+            opacity: window.getComputedStyle(gmpxContainer).opacity,
+            zIndex: window.getComputedStyle(gmpxContainer).zIndex
           });
         }
       }, 1000);
