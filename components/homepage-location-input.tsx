@@ -4,12 +4,20 @@ import { useEffect, useRef, useState } from 'react'
 import { Input } from "@/components/ui/input"
 
 interface HomepageLocationInputProps {
-  value?: string
-  onChange?: (value: string) => void
-  onLocationSelect: (location: any) => void
+  value?: string;
+  onChange?: (value: string) => void;
+  onLocationSelect: (loc: any) => void;
+  label?: string;     // ➊ add
+  required?: boolean; // ➋ add
 }
 
-export default function HomepageLocationInput({ value, onChange, onLocationSelect }: HomepageLocationInputProps) {
+export default function HomepageLocationInput({
+  value,
+  onChange,
+  onLocationSelect,
+  label,        // ➌ use if you like
+  required      // ➍ use if you like
+}: HomepageLocationInputProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [autocomplete, setAutocomplete] = useState<any>(null)
@@ -96,7 +104,12 @@ export default function HomepageLocationInput({ value, onChange, onLocationSelec
 
   return (
     <div className="mb-3">
-      <label className="block text-sm font-medium text-gray-700 mb-1">Enter your location</label>
+      {label && (
+        <label className="block text-sm font-medium mb-1">
+          {label}
+          {required && <span className="text-red-500 ml-0.5">*</span>}
+        </label>
+      )}
       <div className="relative" ref={containerRef} />
     </div>
   )
