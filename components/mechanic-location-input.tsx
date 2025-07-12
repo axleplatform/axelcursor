@@ -73,12 +73,11 @@ export default function MechanicLocationInput({
           }
         });
 
-        // Replace the input element with the autocomplete element
-        const inputContainer = inputRef.current.parentElement;
-        if (mounted && inputContainer && inputRef.current) {
+        // Replace the container with the autocomplete element
+        if (mounted && inputRef.current) {
           // Clear the container and append the new autocomplete element
-          inputContainer.innerHTML = '';
-          inputContainer.appendChild(autocompleteInstance);
+          inputRef.current.innerHTML = '';
+          inputRef.current.appendChild(autocompleteInstance);
           autocompleteRef.current = autocompleteInstance;
         }
 
@@ -117,21 +116,16 @@ export default function MechanicLocationInput({
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <div className="mt-1 relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
           {isLoading ? (
             <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
           ) : (
             <span className="text-lg sm:text-xl lg:text-2xl leading-none text-[#294a46] inline-flex items-center justify-center">📍</span>
           )}
         </div>
-        <input
+        {/* Dedicated container that React never touches after initial render */}
+        <div 
           ref={inputRef}
-          type="text"
-          id="locationAddress"
-          name="locationAddress"
-          value={value}
-          onChange={handleInputChange}
-          placeholder="Enter your full address"
           className={`pl-10 shadow-sm focus:ring-[#294a46] focus:border-[#294a46] block w-full text-base border-gray-200 rounded-md h-10 ${
             error ? "border-red-300 focus:border-red-500 focus:ring-red-500" : ""
           }`}

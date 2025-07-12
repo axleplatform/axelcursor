@@ -24,13 +24,17 @@ export default function HomepageLocationInput({ value, onChange, onLocationSelec
     // Clear container before adding anything
     container.innerHTML = '';
 
-    // Create input and append
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = 'Enter your location';
-    input.className = 'pl-10 w-full h-12 border rounded-md bg-gray-50 px-3 text-sm';
-    if (value) input.value = value;
-    container.appendChild(input);
+    // Create input and append using innerHTML to avoid DOM conflicts
+    const inputHTML = `
+      <input 
+        type="text" 
+        placeholder="Enter your location" 
+        class="pl-10 w-full h-12 border rounded-md bg-gray-50 px-3 text-sm"
+        value="${value || ''}"
+      />
+    `;
+    container.innerHTML = inputHTML;
+    const input = container.querySelector('input');
     inputRef.current = input;
 
     const loadAutocomplete = async () => {
@@ -51,7 +55,7 @@ export default function HomepageLocationInput({ value, onChange, onLocationSelec
           if (onLocationSelect) onLocationSelect(place);
         });
 
-        // Replace the input with the autocomplete element
+        // Replace the input with the autocomplete element using innerHTML
         if (mounted && container) {
           container.innerHTML = '';
           container.appendChild(autocompleteInstance);
@@ -79,7 +83,7 @@ export default function HomepageLocationInput({ value, onChange, onLocationSelec
         }
       }
     };
-  }, [onChange, onLocationSelect]);
+  }, [onChange, onLocationSelect, value]);
 
   // Keep value in sync
   useEffect(() => {
