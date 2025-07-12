@@ -83,25 +83,9 @@ export default function HomepageLocationInput({
           value={value}
           onChange={handleInputChange}
           placeholder="Enter your address"
-          className="pl-10 w-full h-[46px] text-sm border border-gray-200 rounded-md bg-white relative z-10"
+          className="pl-10 w-full h-[46px] text-sm border border-gray-200 rounded-md bg-white"
           required={required}
           disabled={isLoading}
-          style={{
-            position: 'relative',
-            zIndex: 10,
-            backgroundColor: 'white',
-            border: '1px solid #e5e7eb',
-            borderRadius: '0.375rem',
-            paddingLeft: '2.5rem',
-            paddingRight: '0.75rem',
-            paddingTop: '0.5rem',
-            paddingBottom: '0.5rem',
-            fontSize: '0.875rem',
-            lineHeight: '1.25rem',
-            width: '100%',
-            height: '46px',
-            boxSizing: 'border-box'
-          }}
         />
       </div>
       {error && (

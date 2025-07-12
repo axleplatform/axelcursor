@@ -93,35 +93,6 @@ export async function createSafeAutocomplete(
     ...options
   });
   
-  // Add a listener to reposition the dropdown when it appears
-  const repositionDropdown = () => {
-    setTimeout(() => {
-      const pacContainer = document.querySelector('.pac-container');
-      if (pacContainer && inputElement.parentElement) {
-        // Position the dropdown relative to the input container
-        const inputRect = inputElement.getBoundingClientRect();
-        const parentRect = inputElement.parentElement.getBoundingClientRect();
-        
-        pacContainer.style.position = 'absolute';
-        pacContainer.style.top = `${inputElement.offsetHeight + 2}px`;
-        pacContainer.style.left = '0';
-        pacContainer.style.right = '0';
-        pacContainer.style.zIndex = '9999';
-        pacContainer.style.marginTop = '0';
-        pacContainer.style.marginLeft = '0';
-        pacContainer.style.marginRight = '0';
-        pacContainer.style.marginBottom = '0';
-        
-        // Move the dropdown to the input's parent container
-        inputElement.parentElement.appendChild(pacContainer);
-      }
-    }, 10);
-  };
-  
-  // Listen for focus events to reposition
-  inputElement.addEventListener('focus', repositionDropdown);
-  inputElement.addEventListener('input', repositionDropdown);
-  
   // Track instance for cleanup
   autocompleteInstances.set(inputElement, autocomplete);
   
