@@ -51,7 +51,6 @@ export default function HomepageLocationInput({
   // Debug effect to check if input is visible
   useEffect(() => {
     if (inputRef.current) {
-      console.log('Input element:', inputRef.current);
       console.log('Input visible:', inputRef.current.offsetParent !== null);
       console.log('Input dimensions:', {
         offsetWidth: inputRef.current.offsetWidth,

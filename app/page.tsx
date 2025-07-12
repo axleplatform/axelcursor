@@ -121,7 +121,8 @@ function HomePageContent(): React.JSX.Element {
         componentRestrictions: { country: 'us' }
       });
 
-      autocomplete.addListener('place_changed', () => {
+      // Add event listener for place selection
+      autocomplete.addEventListener('place_changed', () => {
         const place = autocomplete.getPlace();
         if (place && place.geometry) {
           const address = place.formatted_address || '';
@@ -621,7 +622,24 @@ function HomePageContent(): React.JSX.Element {
       console.log('✅ preventDefault() completed')
       
       console.log('🔍 About to log Form data')
-      console.log('🔍 Form data:', formData)
+      console.log('🔍 Form data (safe):', {
+        location: formData.location,
+        vin: formData.vin,
+        year: formData.year,
+        make: formData.make,
+        model: formData.model,
+        mileage: formData.mileage,
+        appointmentDate: formData.appointmentDate,
+        appointmentTime: formData.appointmentTime,
+        issueDescription: formData.issueDescription,
+        selectedServices: formData.selectedServices,
+        carRuns: formData.carRuns,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        place_id: formData.place_id,
+        phone: formData.phone,
+        email: formData.email
+      })
       console.log('🔍 DEBUG appointmentTime value:', {
         appointmentTime: formData.appointmentTime,
         type: typeof formData.appointmentTime,
