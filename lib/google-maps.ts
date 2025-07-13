@@ -48,7 +48,7 @@ export async function loadGoogleMaps(): Promise<any> {
       try {
         console.log('🔍 Google Maps: Getting API key...');
         const apiKey = await getGoogleMapsApiKey();
-        console.log('🔍 Google Maps: API key obtained, first 10 chars:', apiKey.substring(0, 10) + '...');
+        console.log('🔍 Google Maps: API key obtained successfully');
         
         console.log('🔍 Google Maps: Creating loader...');
         const loader = new Loader({
@@ -121,7 +121,7 @@ export async function searchPlacesNew(input: string, sessionToken: string, signa
     };
     
     console.log('🔍 Places API request body:', JSON.stringify(requestBody, null, 2));
-    console.log('🔑 API Key (first 10 chars):', apiKey.substring(0, 10) + '...');
+    console.log('🔑 API Key: [REDACTED]');
     
     const response = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
       method: 'POST',
