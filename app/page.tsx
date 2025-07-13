@@ -179,26 +179,13 @@ function HomePageContent(): React.JSX.Element {
         console.log('✅ New Places API (PlaceAutocompleteElement) initialized successfully:', autocomplete);
         
       } catch (placesApiError) {
-        console.warn('New Places API not available, falling back to traditional input:', placesApiError);
+        console.error('New Places API not available:', placesApiError);
+        console.log('⚠️ Falling back to manual input only - no autocomplete available');
         
-        // Fallback: Use traditional autocomplete on the visible input
-        const traditionalAutocomplete = new google.maps.places.Autocomplete(visibleInput, {
-          componentRestrictions: { country: 'us' },
-          types: ['address', 'establishment']
-        });
-        
-        traditionalAutocomplete.addListener('place_changed', () => {
-          const place = traditionalAutocomplete.getPlace();
-          console.log('📍 Place selected (traditional):', place);
-          if (place && place.geometry) {
-            const address = place.formatted_address || '';
-            handleLocationChange(address);
-            handleLocationSelect(place);
-          }
-        });
-        
-        autocompleteRef.current = traditionalAutocomplete;
-        console.log('✅ Traditional Autocomplete initialized successfully on visible input');
+        // Keep the original input visible for manual typing
+        visibleInput.style.opacity = '1';
+        visibleInput.style.position = 'relative';
+        visibleInput.style.zIndex = '50';
       }
       
     } catch (error) {

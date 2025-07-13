@@ -67,7 +67,7 @@ export async function loadGoogleMaps(): Promise<any> {
   return loadingPromise;
 }
 
-// Safe autocomplete initialization with better positioning
+// Safe autocomplete initialization with new Places API
 export async function createSafeAutocomplete(
   inputElement: HTMLInputElement,
   options: any = {}
