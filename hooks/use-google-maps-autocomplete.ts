@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { createSafeAutocomplete, safeCleanupAutocomplete } from '@/lib/google-maps';
+import { createSimpleAutocomplete, cleanupAutocomplete } from '@/lib/google-maps';
 
 interface UseGoogleMapsAutocompleteOptions {
   onPlaceSelect?: (place: any) => void;
@@ -32,7 +32,6 @@ export function useGoogleMapsAutocomplete({
 
   // Memoize options to prevent unnecessary re-renders
   const memoizedOptions = useMemo(() => ({
-    componentRestrictions: { country: 'us' },
     ...options
   }), [options]);
 
@@ -62,32 +61,20 @@ export function useGoogleMapsAutocomplete({
         return;
       }
 
-      // Clean up any existing Google Maps elements before initialization
-      const existingElements = document.querySelectorAll('.pac-container, .pac-item');
-      existingElements.forEach(el => {
-        try {
-          if (el && el.parentNode) {
-            el.parentNode.removeChild(el);
-          }
-        } catch (error) {
-          // Ignore cleanup errors
-        }
-      });
-
-      // Create safe autocomplete without container
-      const autocomplete = await createSafeAutocomplete(inputRef.current, memoizedOptions);
-
-      autocompleteRef.current = autocomplete;
-
-      // Add place_changed listener
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (place.geometry && onPlaceSelect) {
+      // Create simple autocomplete (no Places API needed)
+      const result = await createSimpleAutocomplete(inputRef.current, (place: any) => {
+        if (place && onPlaceSelect) {
           onPlaceSelect(place);
         }
-      });
+      }, memoizedOptions);
 
-      setIsLoaded(true);
+      if (result.success) {
+        autocompleteRef.current = result.autocomplete;
+        setIsLoaded(true);
+        console.log('✅ Simple autocomplete initialized successfully');
+      } else {
+        throw new Error(result.error || 'Failed to initialize autocomplete');
+      }
     } catch (err) {
       console.error('Error initializing autocomplete:', err);
       setError(err instanceof Error ? err.message : 'Failed to initialize autocomplete');
@@ -95,7 +82,7 @@ export function useGoogleMapsAutocomplete({
     } finally {
       setIsLoading(false);
     }
-  }, [disabled, memoizedOptions, onPlaceSelect]);
+  }, [disabled, onPlaceSelect, memoizedOptions]);
 
   // Handle input changes
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,7 +113,7 @@ export function useGoogleMapsAutocomplete({
       cleanupTimeoutRef.current = setTimeout(() => {
         if (autocompleteRef.current) {
           try {
-            safeCleanupAutocomplete(autocompleteRef.current);
+            cleanupAutocomplete(autocompleteRef.current);
           } catch (error) {
             console.warn('Error during autocomplete cleanup:', error);
           }

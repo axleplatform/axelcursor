@@ -141,6 +141,39 @@ textarea:focus {
   left: auto !important;
 }
 
+/* Simple autocomplete dropdown styles */
+.address-suggestions {
+  z-index: 9999 !important;
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.375rem !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
+  margin-top: 2px !important;
+}
+
+.suggestion-item {
+  padding: 8px 12px !important;
+  cursor: pointer !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.suggestion-item:hover {
+  background-color: #f9fafb !important;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none !important;
+}
+
 /* Ensure the location input pin stays in place */
 .location-input-wrapper .absolute {
   position: absolute !important;

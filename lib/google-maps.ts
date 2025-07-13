@@ -26,7 +26,7 @@ export async function getGoogleMapsApiKey(): Promise<string> {
   }
 }
 
-// Load Google Maps API
+// Load Google Maps API (only core and geocoding, no places)
 export async function loadGoogleMaps(): Promise<any> {
   if (googleMapsInstance) {
     return googleMapsInstance;
@@ -43,11 +43,11 @@ export async function loadGoogleMaps(): Promise<any> {
       const loader = new Loader({
         apiKey: apiKey,
         version: 'weekly',
-        libraries: ['places', 'geometry']
+        libraries: ['geometry'] // Remove 'places' since we're not using it
       });
 
       googleMapsInstance = await loader.load();
-      console.log('✅ Google Maps loaded successfully');
+      console.log('✅ Google Maps loaded successfully (Geocoding only)');
       return googleMapsInstance;
     } catch (error) {
       console.error('❌ Failed to load Google Maps:', error);
@@ -60,71 +60,209 @@ export async function loadGoogleMaps(): Promise<any> {
   return loadingPromise;
 }
 
-// Create autocomplete with traditional approach (no duplicate inputs)
-export async function createAutocomplete(
+// Simple address search using Geocoding API (no Places API needed)
+export async function searchAddresses(query: string): Promise<any[]> {
+  try {
+    const apiKey = await getGoogleMapsApiKey();
+    
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${apiKey}&components=country:us`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Geocoding API request failed: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.status === 'OK' && data.results) {
+      return data.results.map((result: any) => ({
+        formatted_address: result.formatted_address,
+        place_id: result.place_id,
+        geometry: {
+          location: {
+            lat: result.geometry.location.lat,
+            lng: result.geometry.location.lng
+          }
+        },
+        address_components: result.address_components
+      }));
+    } else {
+      console.warn('Geocoding API returned status:', data.status);
+      return [];
+    }
+  } catch (error) {
+    console.error('Address search failed:', error);
+    return [];
+  }
+}
+
+// Create simple autocomplete using Geocoding API
+export async function createSimpleAutocomplete(
   inputElement: HTMLInputElement,
   onPlaceSelect: (place: any) => void,
   options: any = {}
 ): Promise<any> {
   try {
-    const google = await loadGoogleMaps();
-    
     // Check if element is still valid
     if (!inputElement || !inputElement.isConnected) {
       throw new Error('Input element is not connected to DOM');
     }
     
-    // Clean up any existing autocomplete on this element
-    const existingInstance = autocompleteInstances.get(inputElement);
-    if (existingInstance) {
-      try {
-        cleanupAutocomplete(existingInstance);
-      } catch (error) {
-        console.warn('Error cleaning up existing autocomplete:', error);
+    let searchTimeout: NodeJS.Timeout | null = null;
+    let suggestionsContainer: HTMLDivElement | null = null;
+    
+    // Create suggestions container
+    const createSuggestionsContainer = () => {
+      if (suggestionsContainer) {
+        suggestionsContainer.remove();
       }
-    }
-    
-    // Use traditional Autocomplete API (no duplicate inputs)
-    if (google.maps.places?.Autocomplete) {
-      console.log('🔄 Using traditional Autocomplete API');
       
-      const autocomplete = new google.maps.places.Autocomplete(inputElement, {
-        componentRestrictions: { country: 'us' },
-        types: ['address', 'establishment'],
-        fields: ['address_components', 'geometry', 'formatted_address', 'place_id'],
-        ...options
+      suggestionsContainer = document.createElement('div');
+      suggestionsContainer.className = 'address-suggestions';
+      suggestionsContainer.style.cssText = `
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 9999;
+        display: none;
+      `;
+      
+      inputElement.parentElement?.appendChild(suggestionsContainer);
+    };
+    
+    // Show suggestions
+    const showSuggestions = (suggestions: any[]) => {
+      if (!suggestionsContainer) {
+        createSuggestionsContainer();
+      }
+      
+      suggestionsContainer!.innerHTML = '';
+      
+      if (suggestions.length === 0) {
+        suggestionsContainer!.style.display = 'none';
+        return;
+      }
+      
+      suggestions.forEach((suggestion, index) => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.style.cssText = `
+          padding: 8px 12px;
+          cursor: pointer;
+          border-bottom: 1px solid #f3f4f6;
+          font-size: 14px;
+        `;
+        item.textContent = suggestion.formatted_address;
+        
+        item.addEventListener('click', () => {
+          inputElement.value = suggestion.formatted_address;
+          suggestionsContainer!.style.display = 'none';
+          onPlaceSelect(suggestion);
+        });
+        
+        item.addEventListener('mouseenter', () => {
+          item.style.backgroundColor = '#f9fafb';
+        });
+        
+        item.addEventListener('mouseleave', () => {
+          item.style.backgroundColor = 'white';
+        });
+        
+        suggestionsContainer!.appendChild(item);
       });
       
-      // Add event listener for place selection
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        console.log('📍 Place selected:', place);
-        if (place && place.geometry) {
-          onPlaceSelect(place);
+      suggestionsContainer!.style.display = 'block';
+    };
+    
+    // Handle input changes with debouncing
+    const handleInputChange = async (e: Event) => {
+      const query = (e.target as HTMLInputElement).value.trim();
+      
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+      
+      if (query.length < 3) {
+        if (suggestionsContainer) {
+          suggestionsContainer.style.display = 'none';
         }
-      });
+        return;
+      }
       
-      // Track instance for cleanup
-      autocompleteInstances.set(inputElement, autocomplete);
-      
-      console.log('✅ Traditional Autocomplete API initialized successfully');
-      return { success: true, autocomplete };
-    }
+      searchTimeout = setTimeout(async () => {
+        try {
+          const suggestions = await searchAddresses(query);
+          showSuggestions(suggestions.slice(0, 5)); // Limit to 5 suggestions
+        } catch (error) {
+          console.error('Failed to search addresses:', error);
+        }
+      }, 300); // 300ms debounce
+    };
     
-    throw new Error('Places API is not available');
+    // Add event listeners
+    inputElement.addEventListener('input', handleInputChange);
+    inputElement.addEventListener('focus', () => {
+      if (suggestionsContainer && suggestionsContainer.children.length > 0) {
+        suggestionsContainer.style.display = 'block';
+      }
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+      if (suggestionsContainer && !inputElement.contains(e.target as Node) && !suggestionsContainer.contains(e.target as Node)) {
+        suggestionsContainer.style.display = 'none';
+      }
+    });
+    
+    // Track instance for cleanup
+    const instance = {
+      inputElement,
+      suggestionsContainer,
+      searchTimeout,
+      cleanup: () => {
+        if (searchTimeout) {
+          clearTimeout(searchTimeout);
+        }
+        if (suggestionsContainer) {
+          suggestionsContainer.remove();
+        }
+        inputElement.removeEventListener('input', handleInputChange);
+      }
+    };
+    
+    autocompleteInstances.set(inputElement, instance);
+    
+    console.log('✅ Simple autocomplete initialized successfully');
+    return { success: true, autocomplete: instance };
     
   } catch (error) {
-    console.error('Failed to create autocomplete:', error);
+    console.error('Failed to create simple autocomplete:', error);
     return { success: false, error: error.message };
   }
+}
+
+// Legacy function for backward compatibility
+export async function createAutocomplete(
+  inputElement: HTMLInputElement,
+  onPlaceSelect: (place: any) => void,
+  options: any = {}
+): Promise<any> {
+  return createSimpleAutocomplete(inputElement, onPlaceSelect, options);
 }
 
 // Cleanup autocomplete safely
 export function cleanupAutocomplete(autocomplete: any): void {
   try {
-    // Clear all listeners
-    if (window.google?.maps?.event) {
-      window.google.maps.event.clearInstanceListeners(autocomplete);
+    if (autocomplete && typeof autocomplete.cleanup === 'function') {
+      autocomplete.cleanup();
     }
     
     // Remove from tracking map
