@@ -246,23 +246,37 @@ function HomePageContent(): React.JSX.Element {
           marker.content.style.cursor = 'grab';
         }
         
-        // Add null checks for marker and position
-        if (!event?.target || !event.target.position) {
-          console.error('Invalid marker position in dragend event');
+        // For AdvancedMarkerElement, position is directly on the marker
+        const position = marker.position;
+        
+        // Check if position exists and has proper format
+        if (!position) {
+          console.error('No position available on marker');
           return;
         }
         
-        const newPosition = event.target.position;
+        // Handle different position formats for AdvancedMarkerElement
+        let lat, lng;
         
-        // Handle both function and property access for position
-        const lat = typeof newPosition.lat === 'function' ? newPosition.lat() : newPosition.lat;
-        const lng = typeof newPosition.lng === 'function' ? newPosition.lng() : newPosition.lng;
+        // Handle different position formats
+        if (typeof position.lat === 'function') {
+          lat = position.lat();
+          lng = position.lng();
+        } else if (position.lat !== undefined && position.lng !== undefined) {
+          lat = position.lat;
+          lng = position.lng;
+        } else {
+          console.error('Invalid position format:', position);
+          return;
+        }
         
         // Validate coordinates
         if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
           console.error('Invalid coordinates from marker position:', { lat, lng });
           return;
         }
+        
+        console.log('New position:', { lat, lng });
         
         // Get address from reverse geocoding
         const address = await reverseGeocode(lat, lng);
@@ -1210,17 +1224,30 @@ function HomePageContent(): React.JSX.Element {
 
   // Handle marker drag end (legacy - now handled in createDraggableMarker)
   const handleMarkerDragEnd = useCallback((event: any) => {
-    // Add null checks for marker and position
-    if (!event?.target || !event.target.position) {
-      console.error('Invalid marker position in handleMarkerDragEnd');
+    // For AdvancedMarkerElement, position is directly on the marker
+    const marker = event.target;
+    const position = marker?.position;
+    
+    // Check if position exists and has proper format
+    if (!position) {
+      console.error('No position available on marker');
       return;
     }
     
-    const newPosition = event.target.position;
+    // Handle different position formats for AdvancedMarkerElement
+    let lat, lng;
     
-    // Handle both function and property access for position
-    const lat = typeof newPosition.lat === 'function' ? newPosition.lat() : newPosition.lat;
-    const lng = typeof newPosition.lng === 'function' ? newPosition.lng() : newPosition.lng;
+    // Handle different position formats
+    if (typeof position.lat === 'function') {
+      lat = position.lat();
+      lng = position.lng();
+    } else if (position.lat !== undefined && position.lng !== undefined) {
+      lat = position.lat;
+      lng = position.lng;
+    } else {
+      console.error('Invalid position format:', position);
+      return;
+    }
     
     // Validate coordinates
     if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
@@ -1229,7 +1256,7 @@ function HomePageContent(): React.JSX.Element {
     }
 
     // Update the coordinates
-    console.log('New position:', lat, lng);
+    console.log('New position:', { lat, lng });
     
     // Update form data with new coordinates
     setFormData(prev => ({
