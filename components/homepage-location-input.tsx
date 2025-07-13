@@ -126,7 +126,11 @@ export default function HomepageLocationInput({
           value={value}
           onChange={handleInputChange}
           placeholder="Type your address here..."
-          className="location-input w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-0 focus:ring-offset-0 focus:border-gray-300 focus:shadow-none transition-none"
+          className="location-input w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-0 focus:ring-offset-0 focus:border-gray-300 focus:shadow-none transition-none"
+          style={{
+            paddingLeft: '2.5rem',
+            background: 'linear-gradient(to right, transparent 2.5rem, white 2.5rem)'
+          }}
           required={required}
           disabled={isLoading}
         />
