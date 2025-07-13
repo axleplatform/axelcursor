@@ -184,83 +184,58 @@ function HomePageContent(): React.JSX.Element {
     };
   }, [initializeMap]); // Depend on memoized initializeMap function
 
-  // Update map when location is selected
-  const updateMapLocation = useCallback(async () => {
-    if (!selectedLocation || !mapInstanceRef.current) return;
 
-    try {
-      // Ensure Google Maps is loaded
-      if (!window.google) {
-        const { loadGoogleMaps } = await import('@/lib/google-maps');
-        await loadGoogleMaps();
-      }
-
-      const map = mapInstanceRef.current;
-
-      // Handle both function and number coordinate formats
-      const lat = typeof selectedLocation.geometry.location.lat === 'function' 
-        ? selectedLocation.geometry.location.lat() 
-        : selectedLocation.geometry.location.lat;
-      const lng = typeof selectedLocation.geometry.location.lng === 'function' 
-        ? selectedLocation.geometry.location.lng() 
-        : selectedLocation.geometry.location.lng;
-
-      // Clear existing marker
-      if (markerRef.current) {
-        markerRef.current.setMap(null);
-        markerRef.current = null;
-      }
-
-      // Add new marker for selected location
-      markerRef.current = new window.google.maps.marker.AdvancedMarkerElement({
-        position: { lat, lng },
-        map: map
-      });
-
-      // Center map on new location
-      map.setCenter({ lat, lng });
-      map.setZoom(15);
-    } catch (error) {
-      console.error('Error updating map location:', error);
-    }
-  }, [selectedLocation]);
-
-  // Update map when selectedLocation changes
-  useEffect(() => {
-    if (selectedLocation && mapInstanceRef.current) {
-      updateMapLocation();
-    }
-  }, [selectedLocation, updateMapLocation]);
-
-  useEffect(() => {
-    if (selectedLocation && mapLoaded) {
-      updateMapLocation();
-    }
-  }, [selectedLocation, mapLoaded, updateMapLocation]);
 
   // Watch for manual location changes and update map if possible
+  // Only add marker when user has explicitly selected a location (not just typing)
   useEffect(() => {
-    // Only run if location is set and not already from a selectedLocation
-    if (formData.location && (!selectedLocation || formData.location !== (selectedLocation.formatted_address || selectedLocation.name))) {
+    // Only run if we have a selectedLocation (user picked from autocomplete)
+    // OR if we're loading existing appointment data with coordinates
+    const shouldAddMarker = selectedLocation || 
+      (formData.location && formData.latitude && formData.longitude && appointmentId);
+    
+    if (shouldAddMarker && mapInstanceRef.current) {
       (async () => {
         try {
-          const { geocodeAddress } = await import('@/lib/google-maps');
-          const results = await geocodeAddress(formData.location);
-          if (results && results[0] && results[0].geometry && mapInstanceRef.current) {
-            const { lat, lng } = results[0].geometry.location;
-            
+          let coordinates;
+          
+          if (selectedLocation) {
+            // Use selectedLocation coordinates
+            const lat = typeof selectedLocation.geometry.location.lat === 'function' 
+              ? selectedLocation.geometry.location.lat() 
+              : selectedLocation.geometry.location.lat;
+            const lng = typeof selectedLocation.geometry.location.lng === 'function' 
+              ? selectedLocation.geometry.location.lng() 
+              : selectedLocation.geometry.location.lng;
+            coordinates = { lat, lng };
+          } else if (formData.latitude && formData.longitude) {
+            // Use stored coordinates from existing appointment
+            coordinates = { lat: formData.latitude, lng: formData.longitude };
+          } else {
+            // Geocode the address as fallback
+            const { geocodeAddress } = await import('@/lib/google-maps');
+            const results = await geocodeAddress(formData.location);
+            if (results && results[0] && results[0].geometry) {
+              const { lat, lng } = results[0].geometry.location;
+              coordinates = { lat: typeof lat === 'function' ? lat() : lat, lng: typeof lng === 'function' ? lng() : lng };
+            }
+          }
+          
+          if (coordinates) {
             // Clear existing marker
             if (markerRef.current) {
               markerRef.current.setMap(null);
               markerRef.current = null;
             }
             
-            // Update map
+            // Add new marker
             markerRef.current = new window.google.maps.marker.AdvancedMarkerElement({
-              position: { lat: typeof lat === 'function' ? lat() : lat, lng: typeof lng === 'function' ? lng() : lng },
+              position: coordinates,
               map: mapInstanceRef.current
             });
-            mapInstanceRef.current.setCenter({ lat: typeof lat === 'function' ? lat() : lat, lng: typeof lng === 'function' ? lng() : lng });
+            
+            // Center map on location
+            mapInstanceRef.current.setCenter(coordinates);
             mapInstanceRef.current.setZoom(15);
           }
         } catch (err) {
@@ -268,7 +243,7 @@ function HomePageContent(): React.JSX.Element {
         }
       })();
     }
-  }, [formData.location, selectedLocation]);
+  }, [selectedLocation, formData.location, formData.latitude, formData.longitude, appointmentId]);
 
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
