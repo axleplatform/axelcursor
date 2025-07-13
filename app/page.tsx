@@ -114,6 +114,7 @@ function HomePageContent(): React.JSX.Element {
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markerRef = useRef<google.maps.Marker | null>(null);
 
   // Initialize map on mount
   const initializeMap = useCallback(async () => {
@@ -171,7 +172,11 @@ function HomePageContent(): React.JSX.Element {
 
     return () => {
       mounted = false;
-      // Cleanup map instance
+      // Cleanup map instance and marker
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+        markerRef.current = null;
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current = null;
       }
@@ -199,9 +204,14 @@ function HomePageContent(): React.JSX.Element {
         ? selectedLocation.geometry.location.lng() 
         : selectedLocation.geometry.location.lng;
 
-      // Clear existing markers by setting map to null
+      // Clear existing marker
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+        markerRef.current = null;
+      }
+
       // Add new marker for selected location
-      new window.google.maps.Marker({
+      markerRef.current = new window.google.maps.Marker({
         position: { lat, lng },
         map: map,
         animation: window.google.maps.Animation.DROP
@@ -238,8 +248,15 @@ function HomePageContent(): React.JSX.Element {
           const results = await geocodeAddress(formData.location);
           if (results && results[0] && results[0].geometry && mapInstanceRef.current) {
             const { lat, lng } = results[0].geometry.location;
+            
+            // Clear existing marker
+            if (markerRef.current) {
+              markerRef.current.setMap(null);
+              markerRef.current = null;
+            }
+            
             // Update map
-            new window.google.maps.Marker({
+            markerRef.current = new window.google.maps.Marker({
               position: { lat: typeof lat === 'function' ? lat() : lat, lng: typeof lng === 'function' ? lng() : lng },
               map: mapInstanceRef.current,
               animation: window.google.maps.Animation.DROP
