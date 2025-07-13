@@ -1106,48 +1106,12 @@ function HomePageContent(): React.JSX.Element {
     }));
   }, []); // Empty deps array to prevent re-creation
 
-  // Add debounced geocoding for manual address input
-  const debouncedGeocode = useCallback(
-    debounce(async (address: string) => {
-      if (!address.trim()) return;
-      
-      try {
-        const { geocodeAddress } = await import('@/lib/google-maps');
-        const results = await geocodeAddress(address);
-        
-        if (results && results[0] && results[0].geometry) {
-          const { lat, lng } = results[0].geometry.location;
-          const place = {
-            formatted_address: results[0].formatted_address,
-            geometry: {
-              location: {
-                lat: typeof lat === 'function' ? lat() : lat,
-                lng: typeof lng === 'function' ? lng() : lng
-              }
-            },
-            place_id: results[0].place_id
-          };
-          
-          console.log('📍 Geocoded address:', place);
-          handleLocationSelect(place);
-        }
-      } catch (error) {
-        console.log('⚠️ Geocoding failed for address:', address, error);
-      }
-    }, 1000), // Wait 1 second after user stops typing
-    []
-  );
-
-  // Update handleLocationChange to include geocoding
+  // Simple handleLocationChange - only updates form data, no automatic geocoding
   const handleLocationChange = useCallback((val: string | React.ChangeEvent<HTMLInputElement>) => {
     const value = typeof val === 'string' ? val : val.target.value;
     setFormData(f => ({ ...f, location: value }));
-    
-    // Trigger geocoding for manual input
-    if (value.trim()) {
-      debouncedGeocode(value);
-    }
-  }, [debouncedGeocode]); // Empty deps array to prevent re-creation
+    // No automatic geocoding - only update when user selects from dropdown
+  }, []);
 
   // Memoized event handlers to prevent infinite loops
   const handleTimeSelected = useCallback(() => {
@@ -1243,10 +1207,7 @@ function HomePageContent(): React.JSX.Element {
             <HomepageLocationInput
               value={formData.location}
               onChange={handleLocationChange}
-              onLocationSelect={(place) => {
-                setSelectedLocation(place);
-                console.log('📍 Location selected:', place);
-              }}
+              onLocationSelect={handleLocationSelect}
               label="Enter your location"
               required
             />
