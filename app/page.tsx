@@ -112,6 +112,12 @@ function HomePageContent(): React.JSX.Element {
     const container = document.getElementById('google-autocomplete-container');
     if (!container) return;
 
+    // Prevent multiple initializations
+    if (autocompleteRef.current) {
+      console.log('✅ Autocomplete already initialized, skipping...');
+      return;
+    }
+
     try {
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
@@ -189,19 +195,21 @@ function HomePageContent(): React.JSX.Element {
     } catch (error) {
       console.error('Error initializing autocomplete:', error);
     }
-  }, [formData.location]);
+  }, []); // Remove formData.location dependency
 
   // Initialize autocomplete on mount
   useEffect(() => {
     const container = document.getElementById('google-autocomplete-container');
-    if (container) {
+    if (container && !autocompleteRef.current) {
       console.log('🔍 Container found, initializing autocomplete...');
       console.log('🔍 Container element:', container);
       initializeAutocomplete();
+    } else if (autocompleteRef.current) {
+      console.log('✅ Autocomplete already initialized, skipping...');
     } else {
       console.log('❌ Container element not found');
     }
-  }, [initializeAutocomplete]);
+  }, []); // Only run once on mount
 
   // Initialize map on mount
   const initializeMap = useCallback(async () => {
