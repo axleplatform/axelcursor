@@ -44,6 +44,7 @@ export default function AppointmentLocationMap({
         const map = new google.maps.Map(mapRef.current, {
           center: coordinates,
           zoom: 15,
+          mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID || 'DEMO_MAP_ID',
           mapTypeId: google.maps.MapTypeId.ROADMAP,
           mapTypeControl: false,
           streetViewControl: false,
@@ -61,18 +62,10 @@ export default function AppointmentLocationMap({
 
         // Add marker
         if (showMarker) {
-          new google.maps.Marker({
+          new google.maps.marker.AdvancedMarkerElement({
             position: coordinates,
             map,
-            icon: {
-              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#294a46"/>
-                </svg>
-              `),
-              scaledSize: new google.maps.Size(24, 24),
-              anchor: new google.maps.Point(12, 24)
-            }
+            title: 'Appointment location'
           })
         }
 

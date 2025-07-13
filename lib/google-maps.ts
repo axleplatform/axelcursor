@@ -54,7 +54,8 @@ export async function loadGoogleMaps(): Promise<any> {
         const loader = new Loader({
           apiKey: apiKey,
           version: 'weekly',
-          libraries: ['geometry', 'marker'] // Need geometry for maps and marker for AdvancedMarkerElement
+          libraries: ['geometry', 'marker'], // Need geometry for maps and marker for AdvancedMarkerElement
+          mapIds: [process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID || 'DEMO_MAP_ID']
         });
 
         console.log('🔍 Google Maps: Loading Google Maps...');
@@ -146,8 +147,12 @@ export async function searchPlacesNew(input: string, sessionToken: string, signa
     const data = JSON.parse(responseText);
     console.log('📍 New Places API parsed response:', data);
     return data;
-  } catch (error) {
-    console.error('New Places API detailed error:', error);
+  } catch (error: any) {
+    // Ignore abort errors - they're expected when debouncing
+    if (error.name === 'AbortError') {
+      return { suggestions: [] };
+    }
+    console.error('Places API error:', error);
     throw error;
   }
 }
@@ -771,7 +776,7 @@ export function globalCleanup(): void {
       }
     });
     
-    console.log('✅ Google Maps cleanup completed');
+    console.debug('Google Maps cleanup completed'); // Only shows in dev tools when verbose logging is on
   } catch (error) {
     console.warn('Error during Google Maps cleanup:', error);
   }

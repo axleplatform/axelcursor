@@ -148,6 +148,7 @@ function HomePageContent(): React.JSX.Element {
       const map = new google.maps.Map(mapRef.current, {
         center: { lat: 40.7128, lng: -74.0060 }, // NYC default
         zoom: 12,
+        mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID || 'DEMO_MAP_ID',
         mapTypeControl: false,
         streetViewControl: false,
       });
