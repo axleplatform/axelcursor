@@ -228,6 +228,42 @@ export async function createNewPlacesAutocomplete(
     let currentAbortController: AbortController | null = null;
     let sessionToken = generateSecureSessionToken();
 
+    // Handle Enter key when no suggestions are available
+    const handleEnterOnEmptySuggestions = async (text: string) => {
+      try {
+        console.log('🔍 Enter pressed with no suggestions, geocoding:', text);
+        const { geocodeAddress } = await import('@/lib/google-maps');
+        const results = await geocodeAddress(text);
+        
+        if (results && results[0] && results[0].geometry) {
+          const { lat, lng } = results[0].geometry.location;
+          const place = {
+            place_id: results[0].place_id,
+            formatted_address: results[0].formatted_address,
+            geometry: {
+              location: {
+                lat: typeof lat === 'function' ? lat() : lat,
+                lng: typeof lng === 'function' ? lng() : lng
+              }
+            },
+            address_components: results[0].address_components,
+            types: results[0].types
+          };
+          
+          console.log('📍 Geocoded place from Enter key:', place);
+          inputElement.value = place.formatted_address;
+          suggestionsContainer!.style.display = 'none';
+          if (typeof onPlaceSelect === 'function') {
+            onPlaceSelect(place);
+          }
+        } else {
+          console.log('⚠️ No geocoding results for:', text);
+        }
+      } catch (error) {
+        console.error('❌ Geocoding failed on Enter key:', error);
+      }
+    };
+
     console.log('🔍 createNewPlacesAutocomplete: Creating suggestions container...');
     const createSuggestionsContainer = () => {
       try {
@@ -461,7 +497,21 @@ export async function createNewPlacesAutocomplete(
           e.preventDefault();
           const selectedItem = suggestionsContainer.querySelector('.suggestion-item[style*="background-color: rgb(249, 250, 251)"]');
           if (selectedItem) {
+            // Click the highlighted suggestion
             selectedItem.dispatchEvent(new Event('click'));
+          } else if (currentSuggestions.length > 0) {
+            // No suggestion highlighted but suggestions exist - select the first one
+            const firstItem = suggestionsContainer.querySelector('.suggestion-item');
+            if (firstItem) {
+              firstItem.dispatchEvent(new Event('click'));
+            }
+          } else {
+            // No suggestions - geocode the current text
+            const currentText = inputElement.value.trim();
+            if (currentText.length >= 3) {
+              // Trigger geocoding for the current text
+              handleEnterOnEmptySuggestions(currentText);
+            }
           }
           break;
         case 'Escape':
