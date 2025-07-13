@@ -113,7 +113,7 @@ export default function HomepageLocationInput({
         </label>
       )}
       <div className="relative location-input-wrapper">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style={{ zIndex: 1 }}>
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style={{ zIndex: 10 }}>
           {isLoading ? (
             <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
           ) : (
