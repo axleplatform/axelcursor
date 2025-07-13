@@ -1085,8 +1085,25 @@ function HomePageContent(): React.JSX.Element {
       title: "Drag to adjust location"
     });
     
+    // Add cursor style for visual feedback
+    if (marker.content) {
+      marker.content.style.cursor = 'grab';
+    }
+    
+    // Change cursor while dragging
+    marker.addListener('dragstart', () => {
+      if (marker.content) {
+        marker.content.style.cursor = 'grabbing';
+      }
+    });
+    
     // Add drag end event listener
     marker.addListener('dragend', (event: any) => {
+      // Reset cursor
+      if (marker.content) {
+        marker.content.style.cursor = 'grab';
+      }
+      
       const newPosition = event.target.position;
       const lat = newPosition.lat;
       const lng = newPosition.lng;
