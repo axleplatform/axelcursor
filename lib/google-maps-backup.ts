@@ -26,41 +26,59 @@ export async function getGoogleMapsApiKey(): Promise<string> {
   }
 }
 
-// Load Google Maps API
+// Load Google Maps API with Places library
 export async function loadGoogleMaps(): Promise<any> {
+  // Return cached instance if already loaded
   if (googleMapsInstance) {
     return googleMapsInstance;
   }
 
+  // Return existing promise if loading
   if (loadingPromise) {
     return loadingPromise;
   }
 
+  // Create new loading promise
   loadingPromise = (async () => {
     try {
       const apiKey = await getGoogleMapsApiKey();
       
+      if (!apiKey) {
+        throw new Error('Google Maps API key not found. Please set GOOGLE_MAPS_API_KEY environment variable.');
+      }
+
       const loader = new Loader({
-        apiKey: apiKey,
+        apiKey,
         version: 'weekly',
-        libraries: ['places', 'geometry']
+        libraries: ['places', 'geometry', 'marker'],
+        mapIds: ['DEMO_MAP_ID']
       });
 
-      googleMapsInstance = await loader.load();
-      console.log('✅ Google Maps loaded successfully');
-      return googleMapsInstance;
+      const google = await loader.load();
+      
+      // Ensure Places library is loaded
+      if (!google.maps.places) {
+        console.warn('Places library not loaded, attempting to load manually...');
+        try {
+          await google.maps.importLibrary('places');
+        } catch (placesError) {
+          console.error('Failed to load Places library:', placesError);
+        }
+      }
+      
+      googleMapsInstance = google;
+      return google;
     } catch (error) {
-      console.error('❌ Failed to load Google Maps:', error);
+      console.error('Failed to load Google Maps API:', error);
+      loadingPromise = null; // Reset on error
       throw error;
-    } finally {
-      loadingPromise = null;
     }
   })();
 
   return loadingPromise;
 }
 
-// Create autocomplete with traditional approach (no duplicate inputs)
+// Create autocomplete with new Places API
 export async function createAutocomplete(
   inputElement: HTMLInputElement,
   onPlaceSelect: (place: any) => void,
@@ -84,21 +102,79 @@ export async function createAutocomplete(
       }
     }
     
-    // Use traditional Autocomplete API (no duplicate inputs)
+    // Try the new PlaceAutocompleteElement first
+    if (google.maps.places?.PlaceAutocompleteElement) {
+      try {
+        console.log('🔄 Using new PlaceAutocompleteElement API');
+        
+        // Create the autocomplete element
+        const autocomplete = new google.maps.places.PlaceAutocompleteElement({
+          componentRestrictions: { country: 'us' },
+          types: ['address', 'establishment'],
+          ...options
+        });
+        
+        // Style the autocomplete element
+        autocomplete.style.cssText = `
+          width: 100% !important;
+          height: 50px !important;
+          border: 1px solid #d1d5db !important;
+          border-radius: 8px !important;
+          background-color: white !important;
+          font-size: 16px !important;
+          padding: 0 16px 0 40px !important;
+          box-sizing: border-box !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          z-index: 40 !important;
+        `;
+        
+        // Replace the input with the autocomplete element
+        const container = inputElement.parentElement;
+        if (container) {
+          // Hide the original input
+          inputElement.style.opacity = '0';
+          inputElement.style.position = 'absolute';
+          inputElement.style.zIndex = '-1';
+          
+          // Add the autocomplete element
+          container.appendChild(autocomplete);
+          
+          // Add event listener for place selection
+          autocomplete.addEventListener('gmp-placeselect', (event: any) => {
+            console.log('📍 Place selected (new API):', event);
+            const place = event.detail?.place;
+            if (place && place.geometry) {
+              onPlaceSelect(place);
+            }
+          });
+          
+          // Track instance for cleanup
+          autocompleteInstances.set(inputElement, autocomplete);
+          
+          console.log('✅ New Places API autocomplete initialized successfully');
+          return autocomplete;
+        }
+      } catch (newApiError) {
+        console.warn('New Places API failed, falling back to legacy:', newApiError);
+      }
+    }
+    
+    // Fallback to legacy Autocomplete if new API fails
     if (google.maps.places?.Autocomplete) {
-      console.log('🔄 Using traditional Autocomplete API');
+      console.log('🔄 Using legacy Autocomplete API');
       
       const autocomplete = new google.maps.places.Autocomplete(inputElement, {
         componentRestrictions: { country: 'us' },
         types: ['address', 'establishment'],
-        fields: ['address_components', 'geometry', 'formatted_address', 'place_id'],
         ...options
       });
       
       // Add event listener for place selection
       autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
-        console.log('📍 Place selected:', place);
+        console.log('📍 Place selected (legacy API):', place);
         if (place && place.geometry) {
           onPlaceSelect(place);
         }
@@ -107,15 +183,15 @@ export async function createAutocomplete(
       // Track instance for cleanup
       autocompleteInstances.set(inputElement, autocomplete);
       
-      console.log('✅ Traditional Autocomplete API initialized successfully');
-      return { success: true, autocomplete };
+      console.log('✅ Legacy Autocomplete API initialized successfully');
+      return autocomplete;
     }
     
-    throw new Error('Places API is not available');
+    throw new Error('Neither new nor legacy Places API is available');
     
   } catch (error) {
     console.error('Failed to create autocomplete:', error);
-    return { success: false, error: error.message };
+    throw error;
   }
 }
 
@@ -151,6 +227,56 @@ export function cleanupAllAutocompleteInstances(): void {
     }
   });
   autocompleteInstances.clear();
+}
+
+// Enhanced cleanup function with DOM safety checks
+export function safeCleanupAutocomplete(autocomplete: any): void {
+  try {
+    // Check if autocomplete is still valid
+    if (!autocomplete || typeof autocomplete !== 'object') {
+      return;
+    }
+
+    // Clear all listeners safely
+    if (window.google?.maps?.event && typeof window.google.maps.event.clearInstanceListeners === 'function') {
+      try {
+        window.google.maps.event.clearInstanceListeners(autocomplete);
+      } catch (listenerError) {
+        console.warn('Error clearing autocomplete listeners:', listenerError);
+      }
+    }
+    
+    // Remove from tracking map
+    for (const [element, instance] of autocompleteInstances.entries()) {
+      if (instance === autocomplete) {
+        // Check if element is still in DOM before removing
+        if (element && element.isConnected) {
+          try {
+            // Remove any Google Maps DOM elements that might be attached
+            const parent = element.parentElement;
+            if (parent) {
+              const googleElements = parent.querySelectorAll('[data-google-maps-autocomplete]');
+              googleElements.forEach(el => {
+                try {
+                  if (el.parentNode) {
+                    el.parentNode.removeChild(el);
+                  }
+                } catch (domError) {
+                  console.warn('Error removing Google Maps DOM element:', domError);
+                }
+              });
+            }
+          } catch (domError) {
+            console.warn('Error cleaning up DOM elements:', domError);
+          }
+        }
+        autocompleteInstances.delete(element);
+        break;
+      }
+    }
+  } catch (error) {
+    console.warn('Error during safe autocomplete cleanup:', error);
+  }
 }
 
 // Geocoding functions
@@ -278,8 +404,41 @@ export function globalCleanup(): void {
       }
     });
     
-    console.log('✅ Google Maps cleanup completed');
+    // Reset global state
+    cachedApiKey = null;
+    googleMapsInstance = null;
+    loadingPromise = null;
+    
   } catch (error) {
-    console.warn('Error during Google Maps cleanup:', error);
+    console.warn('Error during global cleanup:', error);
   }
+}
+
+// Add global cleanup on page unload
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    globalCleanup();
+  });
+  
+  // Also cleanup on page visibility change (for SPA navigation)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      // Delay cleanup to avoid conflicts
+      setTimeout(() => {
+        globalCleanup();
+      }, 100);
+    }
+  });
+  
+  // Periodic cleanup to prevent DOM conflicts
+  setInterval(() => {
+    try {
+      // Only cleanup if page is not visible or if there are Google Maps elements
+      if (document.visibilityState === 'hidden' || document.querySelector('.pac-container')) {
+        globalCleanup();
+      }
+    } catch (error) {
+      // Ignore periodic cleanup errors
+    }
+  }, 10000); // Every 10 seconds
 }
