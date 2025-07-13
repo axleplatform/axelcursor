@@ -1076,6 +1076,23 @@ function HomePageContent(): React.JSX.Element {
     // No automatic geocoding - only update when user selects from dropdown
   }, []);
 
+  // Show coordinates helper function
+  const showCoordinates = useCallback((lat: number, lng: number) => {
+    return `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  }, []);
+
+  // Reverse geocode helper function
+  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+    try {
+      const { reverseGeocode: reverseGeocodeFunc } = await import('@/lib/google-maps');
+      const results = await reverseGeocodeFunc(lat, lng);
+      return results && results[0] ? results[0].formatted_address : showCoordinates(lat, lng);
+    } catch (error) {
+      console.warn('Reverse geocoding failed, showing coordinates:', error);
+      return showCoordinates(lat, lng);
+    }
+  }, [showCoordinates]);
+
   // Create draggable marker function
   const createDraggableMarker = useCallback((map: google.maps.Map, location: { lat: number; lng: number }, onDragEnd: (newPos: { lat: number; lng: number }) => void) => {
     const marker = new window.google.maps.marker.AdvancedMarkerElement({
@@ -1098,7 +1115,7 @@ function HomePageContent(): React.JSX.Element {
     });
     
     // Add drag end event listener
-    marker.addListener('dragend', (event: any) => {
+    marker.addListener('dragend', async (event: any) => {
       // Reset cursor
       if (marker.content) {
         marker.content.style.cursor = 'grab';
@@ -1107,11 +1124,15 @@ function HomePageContent(): React.JSX.Element {
       const newPosition = event.target.position;
       const lat = newPosition.lat;
       const lng = newPosition.lng;
-      onDragEnd({ lat, lng });
+      
+      // Get address from reverse geocoding
+      const address = await reverseGeocode(lat, lng);
+      
+      onDragEnd({ lat, lng, address });
     });
     
     return marker;
-  }, []);
+  }, [reverseGeocode]);
 
   // Animate map to location with zoom effect
   const animateToLocation = useCallback((map: google.maps.Map, location: { lat: number; lng: number }) => {
@@ -1142,12 +1163,12 @@ function HomePageContent(): React.JSX.Element {
     
     // Add draggable marker
     markerRef.current = createDraggableMarker(mapInstanceRef.current, location, (newPos) => {
-      // Update form with new coordinates
+      // Update form with new coordinates and address
       setFormData(prev => ({
         ...prev,
         latitude: newPos.lat,
         longitude: newPos.lng,
-        location: `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}` // Show coordinates
+        location: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}` // Use address if available, otherwise coordinates
       }));
 
       // Update selectedLocation if it exists
@@ -1156,9 +1177,9 @@ function HomePageContent(): React.JSX.Element {
           ...selectedLocation,
           geometry: {
             ...selectedLocation.geometry,
-            location: newPos
+            location: { lat: newPos.lat, lng: newPos.lng }
           },
-          formatted_address: `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
+          formatted_address: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
         };
         setSelectedLocation(updatedLocation);
       }
