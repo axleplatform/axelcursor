@@ -1178,7 +1178,7 @@ function HomePageContent(): React.JSX.Element {
             )}
           </div>
 
-          <div className="mb-8 space-y-6">
+          <div className="mb-3 space-y-2">
             {/* Location Input */}
             <HomepageLocationInput
               value={formData.location}
@@ -1207,7 +1207,7 @@ function HomePageContent(): React.JSX.Element {
 
           <form onSubmit={handleSubmit}>
             {/* Car Selector */}
-            <div className="mb-4 w-full">
+            <div className="mb-2 w-full">
 
               {/* Desktop layout: All fields in one row */}
               <div className="hidden sm:flex gap-2">
