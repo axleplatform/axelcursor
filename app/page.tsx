@@ -13,7 +13,7 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { DateTimeSelector } from "@/components/date-time-selector"
 import { toast } from "@/components/ui/use-toast"
-import HomepageLocationInput from "@/components/homepage-location-input"
+
 
 // Simple debounce function
 function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
@@ -113,6 +113,62 @@ function HomePageContent(): React.JSX.Element {
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const locationInputRef = useRef<HTMLInputElement | null>(null);
+  const autocompleteRef = useRef<any>(null);
+
+  // Initialize Google Maps Autocomplete
+  const initializeAutocomplete = useCallback(async () => {
+    if (autocompleteRef.current) {
+      console.log('✅ Autocomplete already initialized, skipping...');
+      return;
+    }
+
+    try {
+      // Find the visible input field
+      const visibleInput = document.querySelector('.location-input-wrapper input[type="text"]') as HTMLInputElement;
+      if (!visibleInput) {
+        console.warn('Visible input not found, skipping autocomplete initialization');
+        return;
+      }
+
+      console.log('🔍 Found visible input:', visibleInput);
+
+      // Use the new createAutocomplete function
+      const { createAutocomplete } = await import('@/lib/google-maps');
+      
+      const result = await createAutocomplete(visibleInput, {
+        onPlaceSelect: (place: any) => {
+          console.log('📍 Place selected:', place);
+          if (place && place.geometry) {
+            const address = place.formatted_address || '';
+            handleLocationChange(address);
+            handleLocationSelect(place);
+          }
+        },
+        onError: (err: string) => {
+          console.warn('Autocomplete error:', err);
+        }
+      });
+
+      if (result.success) {
+        autocompleteRef.current = result.autocomplete;
+        console.log('✅ Autocomplete initialized successfully');
+      } else {
+        console.warn('⚠️ Autocomplete not available, using manual input');
+      }
+    } catch (error) {
+      console.error('Error initializing autocomplete:', error);
+      console.log('⚠️ Falling back to manual input with geocoding');
+    }
+  }, [handleLocationChange, handleLocationSelect]);
+
+  // Initialize autocomplete on mount
+  useEffect(() => {
+    if (!autocompleteRef.current) {
+      console.log('🔍 Initializing autocomplete...');
+      initializeAutocomplete();
+    }
+  }, [initializeAutocomplete]);
 
   // Initialize map on mount
   const initializeMap = useCallback(async () => {
@@ -1220,16 +1276,35 @@ function HomePageContent(): React.JSX.Element {
             </div>
 
             {/* Location Input */}
-            <HomepageLocationInput
-              value={formData.location}
-              onChange={handleLocationChange}
-              onLocationSelect={(place) => {
-                setSelectedLocation(place);
-                console.log('📍 Location selected:', place);
-              }}
-              label="Enter your location"
-              required
-            />
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Enter your location
+              </label>
+              <div className="relative location-input-wrapper">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+                  <span className="text-gray-400">📍</span>
+                </div>
+                {/* Visible input for manual typing */}
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => handleLocationChange(e.target.value)}
+                  placeholder="Type your address here..."
+                  className="w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46] transition-all duration-200 relative z-50"
+                  onClick={() => console.log('📍 Location input clicked')}
+                  onFocus={() => console.log('📍 Location input focused')}
+                />
+                {/* Hidden input for form validation */}
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  readOnly
+                  hidden
+                  tabIndex={-1}
+                />
+              </div>
+            </div>
 
 
 
