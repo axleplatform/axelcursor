@@ -114,7 +114,7 @@ function HomePageContent(): React.JSX.Element {
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markerRef = useRef<google.maps.Marker | null>(null);
+  const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
 
   // Initialize map on mount
   const initializeMap = useCallback(async () => {
@@ -211,10 +211,9 @@ function HomePageContent(): React.JSX.Element {
       }
 
       // Add new marker for selected location
-      markerRef.current = new window.google.maps.Marker({
+      markerRef.current = new window.google.maps.marker.AdvancedMarkerElement({
         position: { lat, lng },
-        map: map,
-        animation: window.google.maps.Animation.DROP
+        map: map
       });
 
       // Center map on new location
@@ -256,10 +255,9 @@ function HomePageContent(): React.JSX.Element {
             }
             
             // Update map
-            markerRef.current = new window.google.maps.Marker({
+            markerRef.current = new window.google.maps.marker.AdvancedMarkerElement({
               position: { lat: typeof lat === 'function' ? lat() : lat, lng: typeof lng === 'function' ? lng() : lng },
-              map: mapInstanceRef.current,
-              animation: window.google.maps.Animation.DROP
+              map: mapInstanceRef.current
             });
             mapInstanceRef.current.setCenter({ lat: typeof lat === 'function' ? lat() : lat, lng: typeof lng === 'function' ? lng() : lng });
             mapInstanceRef.current.setZoom(15);

@@ -54,12 +54,12 @@ export async function loadGoogleMaps(): Promise<any> {
         const loader = new Loader({
           apiKey: apiKey,
           version: 'weekly',
-          libraries: ['geometry'] // Only need geometry for maps, not places
+          libraries: ['geometry', 'marker'] // Need geometry for maps and marker for AdvancedMarkerElement
         });
 
         console.log('🔍 Google Maps: Loading Google Maps...');
         googleMapsInstance = await loader.load();
-        console.log('✅ Google Maps loaded successfully (Core + Geometry)');
+        console.log('✅ Google Maps loaded successfully (Core + Geometry + Marker)');
         return googleMapsInstance;
       } catch (error) {
         console.error('❌ Failed to load Google Maps:', error);
