@@ -329,7 +329,11 @@ export async function createNewPlacesAutocomplete(
             
             inputElement.value = formattedPlace.formatted_address;
             suggestionsContainer!.style.display = 'none';
-            onPlaceSelect(formattedPlace);
+            if (typeof onPlaceSelect === 'function') {
+              onPlaceSelect(formattedPlace);
+            } else {
+              console.error('onPlaceSelect is not a function, received:', onPlaceSelect);
+            }
             
             // Generate new session token for next search
             sessionToken = generateSecureSessionToken();
@@ -338,11 +342,15 @@ export async function createNewPlacesAutocomplete(
             // Fallback to basic selection
             inputElement.value = placePrediction.text?.text || '';
             suggestionsContainer!.style.display = 'none';
-            onPlaceSelect({
-              place_id: placePrediction.placeId,
-              formatted_address: placePrediction.text?.text || '',
-              geometry: { location: { lat: 0, lng: 0 } }
-            });
+            if (typeof onPlaceSelect === 'function') {
+              onPlaceSelect({
+                place_id: placePrediction.placeId,
+                formatted_address: placePrediction.text?.text || '',
+                geometry: { location: { lat: 0, lng: 0 } }
+              });
+            } else {
+              console.error('onPlaceSelect is not a function, received:', onPlaceSelect);
+            }
           }
         });
         
@@ -474,18 +482,44 @@ export async function createNewPlacesAutocomplete(
 // Legacy function for backward compatibility
 export async function createAutocomplete(
   inputElement: HTMLInputElement,
-  onPlaceSelect: (place: any) => void,
+  optionsOrOnPlaceSelect: any,
   options: any = {}
 ): Promise<any> {
   try {
     console.log('🔍 createAutocomplete: Starting...');
+    console.log('🔍 createAutocomplete: Second parameter type:', typeof optionsOrOnPlaceSelect);
+    console.log('🔍 createAutocomplete: Second parameter:', optionsOrOnPlaceSelect);
+    
+    // Handle both function and options object formats
+    let onPlaceSelect: (place: any) => void;
+    let finalOptions: any = {};
+    
+    if (typeof optionsOrOnPlaceSelect === 'function') {
+      // Called as: createAutocomplete(inputElement, onPlaceSelect, options)
+      onPlaceSelect = optionsOrOnPlaceSelect;
+      finalOptions = options;
+    } else if (optionsOrOnPlaceSelect && typeof optionsOrOnPlaceSelect === 'object') {
+      // Called as: createAutocomplete(inputElement, { onPlaceSelect, onError, ... })
+      onPlaceSelect = optionsOrOnPlaceSelect.onPlaceSelect;
+      finalOptions = optionsOrOnPlaceSelect;
+    } else {
+      console.error('❌ createAutocomplete: Invalid second parameter:', optionsOrOnPlaceSelect);
+      return { success: false, error: 'Invalid onPlaceSelect parameter' };
+    }
+    
+    console.log('🔍 createAutocomplete: onPlaceSelect type:', typeof onPlaceSelect);
+    
+    if (typeof onPlaceSelect !== 'function') {
+      console.error('❌ createAutocomplete: onPlaceSelect is not a function:', onPlaceSelect);
+      return { success: false, error: 'onPlaceSelect must be a function' };
+    }
     
     // Test if new Places API is available
     const isNewAPIEnabled = await testPlacesAPINew();
     
     if (isNewAPIEnabled) {
       console.log('🔍 createAutocomplete: Using new Places API');
-      return await createNewPlacesAutocomplete(inputElement, onPlaceSelect, options);
+      return await createNewPlacesAutocomplete(inputElement, onPlaceSelect, finalOptions);
     } else {
       console.log('🔍 createAutocomplete: New Places API not available, using fallback');
       // For now, return a simple success response since we're not using the old API
