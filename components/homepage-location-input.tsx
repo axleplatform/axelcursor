@@ -113,7 +113,7 @@ export default function HomepageLocationInput({
         </label>
       )}
       <div className="relative location-input-wrapper">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style={{ zIndex: 1 }}>
           {isLoading ? (
             <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
           ) : (
@@ -126,7 +126,11 @@ export default function HomepageLocationInput({
           value={value}
           onChange={handleInputChange}
           placeholder="Type your address here..."
-          className="w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:outline-none focus:border-gray-300 transition-none relative z-10"
+          className="w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-0 focus:ring-offset-0 focus:border-gray-300 focus:shadow-none transition-none relative z-10"
+          style={{
+            outline: 'none !important',
+            boxShadow: 'none !important'
+          }}
           required={required}
           disabled={isLoading}
         />
