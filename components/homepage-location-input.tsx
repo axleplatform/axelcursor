@@ -25,18 +25,25 @@ export default function HomepageLocationInput({
 
   // Initialize Google Maps Autocomplete
   const initializeAutocomplete = useCallback(async () => {
-    if (!inputRef.current || autocompleteRef.current) {
-      return;
-    }
-
     try {
+      console.log('🔍 Autocomplete init: Starting initialization...');
+      
+      if (!inputRef.current || autocompleteRef.current) {
+        console.log('🔍 Autocomplete init: Early return - refs not ready');
+        return;
+      }
+
+      console.log('🔍 Autocomplete init: Setting loading state...');
       setIsLoading(true);
       setError(null);
 
+      console.log('🔍 Autocomplete init: Importing createAutocomplete...');
       const { createAutocomplete } = await import('@/lib/google-maps');
       
+      console.log('🔍 Autocomplete init: Creating autocomplete...');
       const result = await createAutocomplete(inputRef.current, {
         onPlaceSelect: (place: any) => {
+          console.log('🔍 Autocomplete: Place selected:', place);
           if (place.geometry) {
             const address = place.formatted_address || '';
             onChange(address);
@@ -49,6 +56,7 @@ export default function HomepageLocationInput({
         }
       });
 
+      console.log('🔍 Autocomplete init: Checking result...');
       if (result.success) {
         autocompleteRef.current = result.autocomplete;
         console.log('✅ Autocomplete initialized successfully');
@@ -58,8 +66,12 @@ export default function HomepageLocationInput({
       }
     } catch (err) {
       console.error('❌ Failed to initialize autocomplete:', err);
+      console.error('❌ Error stack:', err.stack);
+      console.error('❌ Error message:', err.message);
+      console.error('❌ Error name:', err.name);
       setError('Failed to load location suggestions');
     } finally {
+      console.log('🔍 Autocomplete init: Setting loading to false');
       setIsLoading(false);
     }
   }, [onChange, onLocationSelect]);

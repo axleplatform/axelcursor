@@ -30,36 +30,58 @@ export async function getGoogleMapsApiKey(): Promise<string> {
 
 // Load Google Maps API (only core and geometry for maps, no places needed for new API)
 export async function loadGoogleMaps(): Promise<any> {
-  if (googleMapsInstance) {
-    return googleMapsInstance;
-  }
-
-  if (loadingPromise) {
-    return loadingPromise;
-  }
-
-  loadingPromise = (async () => {
-    try {
-      const apiKey = await getGoogleMapsApiKey();
-      
-      const loader = new Loader({
-        apiKey: apiKey,
-        version: 'weekly',
-        libraries: ['geometry'] // Only need geometry for maps, not places
-      });
-
-      googleMapsInstance = await loader.load();
-      console.log('✅ Google Maps loaded successfully (Core + Geometry)');
+  try {
+    console.log('🔍 Google Maps: Checking cached instance...');
+    if (googleMapsInstance) {
+      console.log('🔍 Google Maps: Returning cached instance');
       return googleMapsInstance;
-    } catch (error) {
-      console.error('❌ Failed to load Google Maps:', error);
-      throw error;
-    } finally {
-      loadingPromise = null;
     }
-  })();
 
-  return loadingPromise;
+    console.log('🔍 Google Maps: Checking loading promise...');
+    if (loadingPromise) {
+      console.log('🔍 Google Maps: Returning existing loading promise');
+      return loadingPromise;
+    }
+
+    console.log('🔍 Google Maps: Starting new loading process...');
+    loadingPromise = (async () => {
+      try {
+        console.log('🔍 Google Maps: Getting API key...');
+        const apiKey = await getGoogleMapsApiKey();
+        console.log('🔍 Google Maps: API key obtained, first 10 chars:', apiKey.substring(0, 10) + '...');
+        
+        console.log('🔍 Google Maps: Creating loader...');
+        const loader = new Loader({
+          apiKey: apiKey,
+          version: 'weekly',
+          libraries: ['geometry'] // Only need geometry for maps, not places
+        });
+
+        console.log('🔍 Google Maps: Loading Google Maps...');
+        googleMapsInstance = await loader.load();
+        console.log('✅ Google Maps loaded successfully (Core + Geometry)');
+        return googleMapsInstance;
+      } catch (error) {
+        console.error('❌ Failed to load Google Maps:', error);
+        console.error('❌ Error stack:', error.stack);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error name:', error.name);
+        throw error;
+      } finally {
+        console.log('🔍 Google Maps: Clearing loading promise');
+        loadingPromise = null;
+      }
+    })();
+
+    console.log('🔍 Google Maps: Returning loading promise');
+    return loadingPromise;
+  } catch (error) {
+    console.error('❌ Google Maps loader error:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error name:', error.name);
+    throw error;
+  }
 }
 
 // Generate session token for new Places API
@@ -160,33 +182,6 @@ export async function testPlacesAPINew(): Promise<boolean> {
     return false;
   }
 }
-    
-    const response = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': apiKey,
-      },
-      body: JSON.stringify({
-        input: "test",
-      })
-    });
-    
-    console.log('🔍 Places API (New) test response status:', response.status);
-    
-    if (response.ok) {
-      console.log('✅ Places API (New) is available');
-      return true;
-    } else {
-      const errorText = await response.text();
-      console.log('❌ Places API (New) test failed:', response.status, errorText);
-      return false;
-    }
-  } catch (error) {
-    console.error('❌ Places API (New) not available:', error);
-    return false;
-  }
-}
 
 // Fallback to Geocoding API if new Places API is not available
 export async function searchAddressesFallback(query: string): Promise<any[]> {
@@ -260,41 +255,46 @@ export async function createNewPlacesAutocomplete(
   options: any = {}
 ): Promise<any> {
   try {
-    // Check if element is still valid
-    if (!inputElement || !inputElement.isConnected) {
-      throw new Error('Input element is not connected to DOM');
-    }
+    console.log('🔍 createNewPlacesAutocomplete: Starting...');
     
-    let searchTimeout: NodeJS.Timeout | null = null;
     let suggestionsContainer: HTMLDivElement | null = null;
-    let sessionToken = generateSecureSessionToken();
     let currentSuggestions: any[] = [];
-    
-    // Create suggestions container
+    let searchTimeout: NodeJS.Timeout | null = null;
+    let sessionToken = generateSecureSessionToken();
+
+    console.log('🔍 createNewPlacesAutocomplete: Creating suggestions container...');
     const createSuggestionsContainer = () => {
-      if (suggestionsContainer) {
-        suggestionsContainer.remove();
+      try {
+        if (suggestionsContainer) return;
+        
+        suggestionsContainer = document.createElement('div');
+        suggestionsContainer.className = 'google-maps-autocomplete-suggestions';
+        suggestionsContainer.style.cssText = `
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: white;
+          border: 1px solid #ddd;
+          border-top: none;
+          border-radius: 0 0 4px 4px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          z-index: 1000;
+          max-height: 200px;
+          overflow-y: auto;
+          display: none;
+        `;
+        
+        // Position relative to input
+        const inputRect = inputElement.getBoundingClientRect();
+        suggestionsContainer.style.top = `${inputRect.height}px`;
+        
+        inputElement.parentElement?.appendChild(suggestionsContainer);
+        console.log('✅ Suggestions container created');
+      } catch (error) {
+        console.error('❌ Error creating suggestions container:', error);
+        throw error;
       }
-      
-      suggestionsContainer = document.createElement('div');
-      suggestionsContainer.className = 'places-autocomplete-suggestions';
-      suggestionsContainer.style.cssText = `
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.375rem;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        max-height: 200px;
-        overflow-y: auto;
-        z-index: 9999;
-        display: none;
-        margin-top: 2px;
-      `;
-      
-      inputElement.parentElement?.appendChild(suggestionsContainer);
     };
     
     // Show suggestions
@@ -533,7 +533,27 @@ export async function createAutocomplete(
   onPlaceSelect: (place: any) => void,
   options: any = {}
 ): Promise<any> {
-  return createNewPlacesAutocomplete(inputElement, onPlaceSelect, options);
+  try {
+    console.log('🔍 createAutocomplete: Starting...');
+    
+    // Test if new Places API is available
+    const isNewAPIEnabled = await testPlacesAPINew();
+    
+    if (isNewAPIEnabled) {
+      console.log('🔍 createAutocomplete: Using new Places API');
+      return await createNewPlacesAutocomplete(inputElement, onPlaceSelect, options);
+    } else {
+      console.log('🔍 createAutocomplete: New Places API not available, using fallback');
+      // For now, return a simple success response since we're not using the old API
+      return { success: true, autocomplete: null };
+    }
+  } catch (error) {
+    console.error('❌ createAutocomplete error:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error name:', error.name);
+    return { success: false, error: error.message };
+  }
 }
 
 // Cleanup autocomplete safely

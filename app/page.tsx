@@ -117,9 +117,15 @@ function HomePageContent(): React.JSX.Element {
 
   // Initialize map on mount
   const initializeMap = useCallback(async () => {
-    if (!mapRef.current || mapInstanceRef.current) return;
-
     try {
+      console.log('🔍 Map init: Starting initialization...');
+      
+      if (!mapRef.current || mapInstanceRef.current) {
+        console.log('🔍 Map init: Early return - refs not ready');
+        return;
+      }
+
+      console.log('🔍 Map init: Cleaning up existing elements...');
       // Clean up any existing Google Maps elements that might interfere
       const pacElements = document.querySelectorAll('.pac-container, .pac-item');
       pacElements.forEach(el => {
@@ -128,14 +134,16 @@ function HomePageContent(): React.JSX.Element {
             el.parentNode.removeChild(el);
           }
         } catch (error) {
-          // Ignore cleanup errors
+          console.log('🔍 Map init: Cleanup error (ignored):', error);
         }
       });
 
+      console.log('🔍 Map init: Loading Google Maps...');
       // Load Google Maps using the safe loader
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
 
+      console.log('🔍 Map init: Creating map instance...');
       const map = new google.maps.Map(mapRef.current, {
         center: { lat: 40.7128, lng: -74.0060 }, // NYC default
         zoom: 12,
@@ -145,9 +153,12 @@ function HomePageContent(): React.JSX.Element {
       
       mapInstanceRef.current = map;
       setMapLoaded(true);
-      console.log('Map initialized successfully');
+      console.log('✅ Map initialized successfully');
     } catch (error) {
-      console.error('Map initialization error:', error);
+      console.error('❌ Map initialization error:', error);
+      console.error('❌ Error stack:', error.stack);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error name:', error.name);
     }
   }, []);
 
