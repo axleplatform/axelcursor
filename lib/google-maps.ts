@@ -6,6 +6,8 @@ let cachedApiKey: string | null = null;
 let googleMapsInstance: any = null;
 let loadingPromise: Promise<any> | null = null;
 let autocompleteInstances = new Map<HTMLElement, any>();
+let placesAPINewAvailable: boolean | null = null;
+let placesAPITestPromise: Promise<boolean> | null = null;
 
 export async function getGoogleMapsApiKey(): Promise<string> {
   if (cachedApiKey) return cachedApiKey;
@@ -88,6 +90,50 @@ export async function searchPlacesNew(input: string, sessionToken: string): Prom
   try {
     const apiKey = await getGoogleMapsApiKey();
     
+    const requestBody = {
+      input: input,
+      includedPrimaryTypes: ["address"],
+      includedRegionCodes: ["us"],
+      sessionToken: sessionToken,
+      languageCode: "en"
+    };
+    
+    console.log('🔍 Places API request body:', JSON.stringify(requestBody, null, 2));
+    console.log('🔑 API Key (first 10 chars):', apiKey.substring(0, 10) + '...');
+    
+    const response = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    // Log the full response for debugging
+    const responseText = await response.text();
+    console.log('📡 Places API response status:', response.status);
+    console.log('📡 Places API response headers:', Object.fromEntries(response.headers.entries()));
+    console.log('📡 Places API response body:', responseText);
+    
+    if (!response.ok) {
+      throw new Error(`Places API error ${response.status}: ${responseText}`);
+    }
+    
+    const data = JSON.parse(responseText);
+    console.log('📍 New Places API parsed response:', data);
+    return data;
+  } catch (error) {
+    console.error('New Places API detailed error:', error);
+    throw error;
+  }
+}
+
+// Test if Places API (New) is enabled
+export async function testPlacesAPINew(): Promise<boolean> {
+  try {
+    const apiKey = await getGoogleMapsApiKey();
+    
     const response = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
       method: 'POST',
       headers: {
@@ -95,24 +141,88 @@ export async function searchPlacesNew(input: string, sessionToken: string): Prom
         'X-Goog-Api-Key': apiKey,
       },
       body: JSON.stringify({
-        input: input,
-        includedPrimaryTypes: ["address", "establishment"],
-        includedRegionCodes: ["us"],
-        sessionToken: sessionToken,
-        languageCode: "en"
+        input: "test",
       })
     });
-
-    if (!response.ok) {
-      throw new Error(`Places API request failed: ${response.status} ${response.statusText}`);
+    
+    console.log('🔍 Places API (New) test response status:', response.status);
+    
+    if (response.ok) {
+      console.log('✅ Places API (New) is available');
+      return true;
+    } else {
+      const errorText = await response.text();
+      console.log('❌ Places API (New) test failed:', response.status, errorText);
+      return false;
     }
-
-    const data = await response.json();
-    console.log('📍 New Places API response:', data);
-    return data;
   } catch (error) {
-    console.error('New Places API search failed:', error);
-    throw error;
+    console.error('❌ Places API (New) not available:', error);
+    return false;
+  }
+}
+    
+    const response = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+      },
+      body: JSON.stringify({
+        input: "test",
+      })
+    });
+    
+    console.log('🔍 Places API (New) test response status:', response.status);
+    
+    if (response.ok) {
+      console.log('✅ Places API (New) is available');
+      return true;
+    } else {
+      const errorText = await response.text();
+      console.log('❌ Places API (New) test failed:', response.status, errorText);
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Places API (New) not available:', error);
+    return false;
+  }
+}
+
+// Fallback to Geocoding API if new Places API is not available
+export async function searchAddressesFallback(query: string): Promise<any[]> {
+  try {
+    const apiKey = await getGoogleMapsApiKey();
+    
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${apiKey}&components=country:us`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Geocoding API request failed: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.status === 'OK' && data.results) {
+      return data.results.map((result: any) => ({
+        place_id: result.place_id,
+        formatted_address: result.formatted_address,
+        types: result.types,
+        geometry: {
+          location: {
+            lat: result.geometry.location.lat,
+            lng: result.geometry.location.lng
+          }
+        },
+        address_components: result.address_components
+      }));
+    } else {
+      console.warn('Geocoding API returned status:', data.status);
+      return [];
+    }
+  } catch (error) {
+    console.error('Geocoding API fallback failed:', error);
+    return [];
   }
 }
 
@@ -303,6 +413,7 @@ export async function createNewPlacesAutocomplete(
       
       searchTimeout = setTimeout(async () => {
         try {
+          // Try new Places API first
           const data = await searchPlacesNew(query, sessionToken);
           
           if (data.suggestions && Array.isArray(data.suggestions)) {
@@ -312,8 +423,28 @@ export async function createNewPlacesAutocomplete(
             showSuggestions([]);
           }
         } catch (error) {
-          console.error('Failed to search places:', error);
-          showSuggestions([]);
+          console.error('New Places API failed, trying Geocoding API fallback:', error);
+          
+          // Fallback to Geocoding API if new Places API fails
+          try {
+            const geocodingResults = await searchAddressesFallback(query);
+            if (geocodingResults.length > 0) {
+              // Convert geocoding results to autocomplete format
+              const suggestions = geocodingResults.map(result => ({
+                placePrediction: {
+                  placeId: result.place_id,
+                  text: { text: result.formatted_address },
+                  types: result.types || ['address']
+                }
+              }));
+              showSuggestions(suggestions.slice(0, 5));
+            } else {
+              showSuggestions([]);
+            }
+          } catch (fallbackError) {
+            console.error('Geocoding API fallback also failed:', fallbackError);
+            showSuggestions([]);
+          }
         }
       }, 300); // 300ms debounce
     };
