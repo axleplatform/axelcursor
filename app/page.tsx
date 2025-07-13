@@ -1225,7 +1225,7 @@ function HomePageContent(): React.JSX.Element {
             </div>
 
             {/* Location Input */}
-            <div className="relative location-input-wrapper" style={{ position: 'relative', zIndex: 10 }}>
+            <div className="relative location-input-wrapper">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                 <MapPin className="h-5 w-5 text-gray-400" />
               </div>
@@ -1238,7 +1238,6 @@ function HomePageContent(): React.JSX.Element {
                 className="w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46] transition-all duration-200 relative z-50"
                 onClick={() => console.log('📍 Location input clicked')}
                 onFocus={() => console.log('📍 Location input focused')}
-                style={{ position: 'relative', zIndex: 50 }}
               />
               {/* Hidden input for form validation */}
               <input
