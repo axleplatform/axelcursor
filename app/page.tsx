@@ -116,6 +116,10 @@ function HomePageContent(): React.JSX.Element {
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
 
+  // Declare functions first to prevent circular dependencies
+  let updateMapLocation: (location: { lat: number; lng: number }) => void;
+  let handleLocationSelect: (place: google.maps.places.PlaceResult) => void;
+
   // Initialize map on mount
   const initializeMap = useCallback(async () => {
     try {
@@ -256,8 +260,8 @@ function HomePageContent(): React.JSX.Element {
     }, 500);
   }, []);
 
-  // Update map location function with animation
-  const updateMapLocation = useCallback((location: { lat: number; lng: number }) => {
+  // Define updateMapLocation function
+  updateMapLocation = useCallback((location: { lat: number; lng: number }) => {
     if (!mapInstanceRef.current) return;
     
     // Remove old marker
@@ -296,51 +300,16 @@ function HomePageContent(): React.JSX.Element {
     });
   }, [animateToLocation, createDraggableMarker]);
 
-  // Watch for manual location changes and update map if possible
-  // Only add marker when user has explicitly selected a location (not just typing)
+  // Watch for existing appointment data and update map if needed
   useEffect(() => {
-    // Only run if we have a selectedLocation (user picked from autocomplete)
-    // OR if we're loading existing appointment data with coordinates
-    const shouldAddMarker = selectedLocation || 
-      (formData.location && formData.latitude && formData.longitude && appointmentId);
+    // Only run if we're loading existing appointment data with coordinates
+    const shouldAddMarker = formData.location && formData.latitude && formData.longitude && appointmentId;
     
     if (shouldAddMarker && mapInstanceRef.current) {
-      (async () => {
-        try {
-          let coordinates;
-          
-          if (selectedLocation) {
-            // Use selectedLocation coordinates
-            const lat = typeof selectedLocation.geometry.location.lat === 'function' 
-              ? selectedLocation.geometry.location.lat() 
-              : selectedLocation.geometry.location.lat;
-            const lng = typeof selectedLocation.geometry.location.lng === 'function' 
-              ? selectedLocation.geometry.location.lng() 
-              : selectedLocation.geometry.location.lng;
-            coordinates = { lat, lng };
-          } else if (formData.latitude && formData.longitude) {
-            // Use stored coordinates from existing appointment
-            coordinates = { lat: formData.latitude, lng: formData.longitude };
-          } else {
-            // Geocode the address as fallback
-            const { geocodeAddress } = await import('@/lib/google-maps');
-            const results = await geocodeAddress(formData.location);
-            if (results && results[0] && results[0].geometry) {
-              const { lat, lng } = results[0].geometry.location;
-              coordinates = { lat: typeof lat === 'function' ? lat() : lat, lng: typeof lng === 'function' ? lng() : lng };
-            }
-          }
-          
-          if (coordinates) {
-            // Use the new updateMapLocation function
-            updateMapLocation(coordinates);
-          }
-        } catch (err) {
-          // Ignore geocode errors
-        }
-      })();
+      const coordinates = { lat: formData.latitude, lng: formData.longitude };
+      updateMapLocation(coordinates);
     }
-  }, [selectedLocation, formData.location, formData.latitude, formData.longitude, appointmentId, updateMapLocation]);
+  }, [formData.latitude, formData.longitude, appointmentId]);
 
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
@@ -1156,8 +1125,8 @@ function HomePageContent(): React.JSX.Element {
     }))
   }, [])
 
-  // Add handleLocationSelect function with useCallback to prevent infinite loops
-  const handleLocationSelect = useCallback((place: google.maps.places.PlaceResult) => {
+  // Define handleLocationSelect function
+  handleLocationSelect = useCallback((place: google.maps.places.PlaceResult) => {
     // Add null checks and validation
     if (!place || !place.geometry) {
       console.error('Invalid place data received:', place);
@@ -1177,6 +1146,13 @@ function HomePageContent(): React.JSX.Element {
       longitude: place.geometry.location.lng,
       place_id: place.place_id || '',
     }));
+
+    // Update map with new location
+    const coordinates = {
+      lat: place.geometry.location.lat,
+      lng: place.geometry.location.lng
+    };
+    updateMapLocation(coordinates);
   }, []); // Empty deps array to prevent re-creation
 
   // Simple handleLocationChange - only updates form data, no automatic geocoding
