@@ -183,43 +183,7 @@ export async function testPlacesAPINew(): Promise<boolean> {
   }
 }
 
-// Fallback to Geocoding API if new Places API is not available
-export async function searchAddressesFallback(query: string): Promise<any[]> {
-  try {
-    const apiKey = await getGoogleMapsApiKey();
-    
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${apiKey}&components=country:us`
-    );
-    
-    if (!response.ok) {
-      throw new Error(`Geocoding API request failed: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (data.status === 'OK' && data.results) {
-      return data.results.map((result: any) => ({
-        place_id: result.place_id,
-        formatted_address: result.formatted_address,
-        types: result.types,
-        geometry: {
-          location: {
-            lat: result.geometry.location.lat,
-            lng: result.geometry.location.lng
-          }
-        },
-        address_components: result.address_components
-      }));
-    } else {
-      console.warn('Geocoding API returned status:', data.status);
-      return [];
-    }
-  } catch (error) {
-    console.error('Geocoding API fallback failed:', error);
-    return [];
-  }
-}
+
 
 // Get place details using new Places API
 export async function getPlaceDetailsNew(placeId: string, sessionToken: string): Promise<any> {
@@ -423,28 +387,8 @@ export async function createNewPlacesAutocomplete(
             showSuggestions([]);
           }
         } catch (error) {
-          console.error('New Places API failed, trying Geocoding API fallback:', error);
-          
-          // Fallback to Geocoding API if new Places API fails
-          try {
-            const geocodingResults = await searchAddressesFallback(query);
-            if (geocodingResults.length > 0) {
-              // Convert geocoding results to autocomplete format
-              const suggestions = geocodingResults.map(result => ({
-                placePrediction: {
-                  placeId: result.place_id,
-                  text: { text: result.formatted_address },
-                  types: result.types || ['address']
-                }
-              }));
-              showSuggestions(suggestions.slice(0, 5));
-            } else {
-              showSuggestions([]);
-            }
-          } catch (fallbackError) {
-            console.error('Geocoding API fallback also failed:', fallbackError);
-            showSuggestions([]);
-          }
+          console.error('New Places API failed:', error);
+          showSuggestions([]);
         }
       }, 300); // 300ms debounce
     };
