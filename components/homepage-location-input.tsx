@@ -126,11 +126,7 @@ export default function HomepageLocationInput({
           value={value}
           onChange={handleInputChange}
           placeholder="Type your address here..."
-          className="w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-0 focus:ring-offset-0 focus:border-gray-300 focus:shadow-none transition-none relative z-10"
-          style={{
-            outline: 'none !important',
-            boxShadow: 'none !important'
-          }}
+          className="location-input w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-0 focus:ring-offset-0 focus:border-gray-300 focus:shadow-none transition-none"
           required={required}
           disabled={isLoading}
         />
@@ -138,6 +134,20 @@ export default function HomepageLocationInput({
       {error && (
         <p className="text-sm text-red-600 mt-1">{error}</p>
       )}
+      <style jsx>{`
+        /* Remove all focus styles from location input */
+        .location-input:focus {
+          outline: none !important;
+          box-shadow: none !important;
+          border-color: #d1d5db !important; /* gray-300 */
+        }
+
+        /* Remove focus-visible styles too */
+        .location-input:focus-visible {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+      `}</style>
     </div>
   );
 }
