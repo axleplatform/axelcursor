@@ -152,7 +152,7 @@ function FeedbackButton() {
       </button>
       
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 z-50">
+        <div className="absolute top-full right-0 mt-2 z-[999]">
           <div className="w-80 bg-white/65 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold">What would you like to share?</h3>
@@ -269,7 +269,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-[1000]">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between md:relative">
         {/* Logo */}
         <div className="flex items-center">
@@ -344,7 +344,7 @@ export function SiteHeader() {
 
       {/* Mobile Menu Dropdown */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-16 right-0 left-0 z-50">
+        <div className="md:hidden absolute top-16 right-0 left-0 z-[999]">
           <div className="flex justify-end px-4">
             <div className="w-fit bg-white/65 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-4">
               <nav className="space-y-4">
@@ -415,7 +415,7 @@ export function SiteHeader() {
 
       {/* Mobile Feedback Dropdown */}
       {isFeedbackOpen && (
-        <div className="md:hidden absolute top-16 right-0 left-0 z-50">
+        <div className="md:hidden absolute top-16 right-0 left-0 z-[999]">
           <div className="flex justify-end px-4">
             <div className="w-80 bg-white/65 backdrop-blur-[2px] rounded-md shadow-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
