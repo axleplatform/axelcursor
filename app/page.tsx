@@ -1332,6 +1332,11 @@ function HomePageContent(): React.JSX.Element {
                 )}
               </div>
             </div>
+            
+            {/* Help text for dragging */}
+            <p className="text-sm text-gray-600 mt-2">
+              💡 Drag the pin on the map to adjust the exact location
+            </p>
           </div>
 
           <form onSubmit={handleSubmit}>
