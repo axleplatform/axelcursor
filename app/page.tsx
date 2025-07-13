@@ -1171,20 +1171,22 @@ function HomePageContent(): React.JSX.Element {
         location: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}` // Use address if available, otherwise coordinates
       }));
 
-      // Update selectedLocation if it exists
-      if (selectedLocation) {
-        const updatedLocation = {
-          ...selectedLocation,
-          geometry: {
-            ...selectedLocation.geometry,
-            location: { lat: newPos.lat, lng: newPos.lng }
-          },
-          formatted_address: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
-        };
-        setSelectedLocation(updatedLocation);
-      }
+      // Update selectedLocation if it exists - use setSelectedLocation directly
+      setSelectedLocation(prevSelectedLocation => {
+        if (prevSelectedLocation) {
+          return {
+            ...prevSelectedLocation,
+            geometry: {
+              ...prevSelectedLocation.geometry,
+              location: { lat: newPos.lat, lng: newPos.lng }
+            },
+            formatted_address: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
+          };
+        }
+        return prevSelectedLocation;
+      });
     });
-  }, [animateToLocation, createDraggableMarker, selectedLocation]);
+  }, [animateToLocation, createDraggableMarker]);
 
   // Handle marker drag end (legacy - now handled in createDraggableMarker)
   const handleMarkerDragEnd = useCallback((event: any) => {
