@@ -710,6 +710,8 @@ function PickMechanicContent() {
             <div className="flex items-start mt-1">
              <GoogleMapsLink 
                address={appointment.location}
+               latitude={appointment.latitude}
+               longitude={appointment.longitude}
              />
             </div>
            </div>

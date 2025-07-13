@@ -98,6 +98,8 @@ export default function UpcomingAppointmentCard({
         <div className="flex items-center gap-2">
           <GoogleMapsLink 
             address={appointment.location}
+            latitude={appointment.latitude}
+            longitude={appointment.longitude}
           />
         </div>
         <span className={`px-2 py-1 rounded-full text-sm font-medium ${getStatusColor(appointment.status)}`}>

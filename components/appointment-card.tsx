@@ -149,6 +149,8 @@ export default function AppointmentCard({
       <div className={`mb-4 ${isUpcoming ? 'text-gray-600' : 'text-white/70'}`}>
         <GoogleMapsLink 
           address={appointment.location}
+          latitude={appointment.latitude}
+          longitude={appointment.longitude}
         />
       </div>
 

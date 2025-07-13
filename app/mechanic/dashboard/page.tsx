@@ -2308,6 +2308,8 @@ export default function MechanicDashboard() {
                             <div className="flex items-center gap-2">
                               <GoogleMapsLink 
                                 address={appointment.location}
+                                latitude={appointment.latitude}
+                                longitude={appointment.longitude}
                               />
                             </div>
                             <div className="flex items-center gap-2">
@@ -2633,6 +2635,8 @@ export default function MechanicDashboard() {
                       <div className="flex items-center gap-2">
                         <GoogleMapsLink 
                           address={filteredAvailableAppointments[currentAvailableIndex].location}
+                          latitude={filteredAvailableAppointments[currentAvailableIndex].latitude}
+                          longitude={filteredAvailableAppointments[currentAvailableIndex].longitude}
                           variant="dark"
                         />
                         </div>

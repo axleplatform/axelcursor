@@ -1,11 +1,16 @@
 interface GoogleMapsLinkProps {
   address: string;
+  latitude?: number;
+  longitude?: number;
   variant?: 'light' | 'dark';
   showIcon?: boolean;
 }
 
-export function GoogleMapsLink({ address, variant = 'light', showIcon = true }: GoogleMapsLinkProps) {
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+export function GoogleMapsLink({ address, latitude, longitude, variant = 'light', showIcon = true }: GoogleMapsLinkProps) {
+  // Use coordinates if available, otherwise fall back to address
+  const mapsUrl = latitude && longitude 
+    ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   
   const textColorClass = variant === 'dark' 
     ? 'text-white hover:text-gray-200' 

@@ -267,6 +267,8 @@ export default function MechanicAppointmentsPage() {
                           <div className="flex items-center gap-1">
                             <GoogleMapsLink 
                               address={appointment.location}
+                              latitude={appointment.latitude}
+                              longitude={appointment.longitude}
                             />
                           </div>
                           <div className="flex items-center gap-1">
