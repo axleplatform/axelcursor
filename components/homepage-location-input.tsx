@@ -1,8 +1,7 @@
 // @ts-nocheck
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Input } from "@/components/ui/input"
 import { MapPin, Loader2 } from 'lucide-react'
-import { useGoogleMapsAutocomplete } from '@/hooks/use-google-maps-autocomplete';
 
 interface HomepageLocationInputProps {
   value: string
@@ -19,56 +18,82 @@ export default function HomepageLocationInput({
   label,
   required
 }: HomepageLocationInputProps) {
-  const [retryKey, setRetryKey] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<any>(null);
 
-  const handlePlaceSelect = (place: any) => {
-    if (place.geometry) {
-      const address = place.formatted_address || '';
-      if (onChange) onChange(address);
-      if (onLocationSelect) onLocationSelect(place);
+  // Initialize Google Maps Autocomplete
+  const initializeAutocomplete = useCallback(async () => {
+    if (!inputRef.current || autocompleteRef.current) {
+      return;
     }
-  };
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const { createAutocomplete } = await import('@/lib/google-maps');
+      
+      const result = await createAutocomplete(inputRef.current, {
+        onPlaceSelect: (place: any) => {
+          if (place.geometry) {
+            const address = place.formatted_address || '';
+            onChange(address);
+            if (onLocationSelect) onLocationSelect(place);
+          }
+        },
+        onError: (err: string) => {
+          console.warn('Autocomplete error:', err);
+          setError(err);
+        }
+      });
+
+      if (result.success) {
+        autocompleteRef.current = result.autocomplete;
+        console.log('✅ Autocomplete initialized successfully');
+      } else {
+        console.warn('⚠️ Autocomplete not available, using manual input');
+        setError('Autocomplete not available');
+      }
+    } catch (err) {
+      console.error('❌ Failed to initialize autocomplete:', err);
+      setError('Failed to load location suggestions');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [onChange, onLocationSelect]);
+
+  // Initialize on mount
+  useEffect(() => {
+    initializeAutocomplete();
+  }, [initializeAutocomplete]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autocompleteRef.current) {
+        try {
+          autocompleteRef.current = null;
+        } catch (err) {
+          console.warn('Error cleaning up autocomplete:', err);
+        }
+      }
+    };
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
   };
 
-  const { inputRef, isLoading, isLoaded, error } = useGoogleMapsAutocomplete({
-    onPlaceSelect: handlePlaceSelect
-  });
-
-  // Retry mechanism if initialization fails
-  useEffect(() => {
-    if (error && !isLoading) {
-      const timer = setTimeout(() => {
-        setRetryKey(prev => prev + 1);
-      }, 2000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [error, isLoading]);
-
-  // Debug effect to check if input is visible
-  useEffect(() => {
-    if (inputRef.current) {
-      console.log('Input visible:', inputRef.current.offsetParent !== null);
-      console.log('Input dimensions:', {
-        offsetWidth: inputRef.current.offsetWidth,
-        offsetHeight: inputRef.current.offsetHeight,
-        clientWidth: inputRef.current.clientWidth,
-        clientHeight: inputRef.current.clientHeight
-      });
-    }
-  }, [inputRef.current]);
-
   return (
-    <div className="space-y-2" key={retryKey}>
+    <div className="space-y-2">
       {label && (
         <label className="block text-sm font-medium text-gray-700">
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
-      <div className="relative location-input-container">
+      <div className="relative location-input-wrapper">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
           {isLoading ? (
             <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
@@ -81,8 +106,8 @@ export default function HomepageLocationInput({
           type="text"
           value={value}
           onChange={handleInputChange}
-          placeholder="Enter your address"
-          className="pl-10 w-full h-[46px] text-sm border border-gray-200 rounded-md bg-white"
+          placeholder="Type your address here..."
+          className="w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46] transition-all duration-200 relative z-50"
           required={required}
           disabled={isLoading}
         />
