@@ -28,7 +28,7 @@ if (typeof window !== 'undefined') {
   
   // Override the native removeChild method to prevent errors
   const originalRemoveChild = Node.prototype.removeChild;
-  (Node.prototype.removeChild as any) = function<T extends Node>(child: T): T {
+  (Node.prototype.removeChild as any) = function<T extends Node>(this: Node, child: T): T {
     try {
       // Check if the child is actually a child of this node
       if (child && child.parentNode === this) {
@@ -43,7 +43,7 @@ if (typeof window !== 'undefined') {
   // Also override removeChild on Element prototype
   if (Element.prototype.removeChild !== Node.prototype.removeChild) {
     const originalElementRemoveChild = Element.prototype.removeChild;
-    (Element.prototype.removeChild as any) = function<T extends Node>(child: T): T {
+    (Element.prototype.removeChild as any) = function<T extends Node>(this: Element, child: T): T {
       try {
         if (child && child.parentNode === this) {
           return originalElementRemoveChild.call(this, child) as T;
