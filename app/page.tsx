@@ -207,43 +207,74 @@ function HomePageContent(): React.JSX.Element {
 
   // Create draggable marker function
   const createDraggableMarker = useCallback((map: google.maps.Map, location: { lat: number; lng: number }, onDragEnd: (newPos: { lat: number; lng: number }) => void) => {
-    const marker = new window.google.maps.marker.AdvancedMarkerElement({
-      position: location,
-      map: map,
-      gmpDraggable: true,
-      title: "Drag to adjust location"
-    });
-    
-    // Add cursor style for visual feedback
-    if (marker.content) {
-      marker.content.style.cursor = 'grab';
-    }
-    
-    // Change cursor while dragging
-    marker.addListener('dragstart', () => {
-      if (marker.content) {
-        marker.content.style.cursor = 'grabbing';
+    try {
+      // Validate inputs
+      if (!map || !location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
+        console.error('Invalid inputs for marker creation:', { map, location });
+        return null;
       }
-    });
+      
+      const marker = new window.google.maps.marker.AdvancedMarkerElement({
+        position: location,
+        map: map,
+        gmpDraggable: true,
+        title: "Drag to adjust location"
+      });
+      
+      // Verify marker was created
+      if (!marker) {
+        console.error('Failed to create marker');
+        return null;
+      }
     
-    // Add drag end event listener
-    marker.addListener('dragend', async (event: any) => {
-      // Reset cursor
+      // Add cursor style for visual feedback
       if (marker.content) {
         marker.content.style.cursor = 'grab';
       }
       
-      const newPosition = event.target.position;
-      const lat = newPosition.lat;
-      const lng = newPosition.lng;
+      // Change cursor while dragging
+      marker.addListener('dragstart', () => {
+        if (marker.content) {
+          marker.content.style.cursor = 'grabbing';
+        }
+      });
       
-      // Get address from reverse geocoding
-      const address = await reverseGeocode(lat, lng);
+      // Add drag end event listener
+      marker.addListener('dragend', async (event: any) => {
+        // Reset cursor
+        if (marker.content) {
+          marker.content.style.cursor = 'grab';
+        }
+        
+        // Add null checks for marker and position
+        if (!event?.target || !event.target.position) {
+          console.error('Invalid marker position in dragend event');
+          return;
+        }
+        
+        const newPosition = event.target.position;
+        
+        // Handle both function and property access for position
+        const lat = typeof newPosition.lat === 'function' ? newPosition.lat() : newPosition.lat;
+        const lng = typeof newPosition.lng === 'function' ? newPosition.lng() : newPosition.lng;
+        
+        // Validate coordinates
+        if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+          console.error('Invalid coordinates from marker position:', { lat, lng });
+          return;
+        }
+        
+        // Get address from reverse geocoding
+        const address = await reverseGeocode(lat, lng);
+        
+        onDragEnd({ lat, lng, address });
+      });
       
-      onDragEnd({ lat, lng, address });
-    });
-    
-    return marker;
+      return marker;
+    } catch (error) {
+      console.error('Error creating marker:', error);
+      return null;
+    }
   }, [reverseGeocode]);
 
   // Animate map to location with zoom effect
@@ -274,7 +305,7 @@ function HomePageContent(): React.JSX.Element {
     animateToLocation(mapInstanceRef.current, location);
     
     // Add draggable marker
-    markerRef.current = createDraggableMarker(mapInstanceRef.current, location, (newPos) => {
+    const newMarker = createDraggableMarker(mapInstanceRef.current, location, (newPos) => {
       // Update form with new coordinates and address
       setFormData(prev => ({
         ...prev,
@@ -298,6 +329,13 @@ function HomePageContent(): React.JSX.Element {
         return prevSelectedLocation;
       });
     });
+    
+    // Only set marker ref if creation was successful
+    if (newMarker) {
+      markerRef.current = newMarker;
+    } else {
+      console.error('Failed to create draggable marker');
+    }
   }, [animateToLocation, createDraggableMarker]);
 
   // Watch for existing appointment data and update map if needed
@@ -1164,9 +1202,23 @@ function HomePageContent(): React.JSX.Element {
 
   // Handle marker drag end (legacy - now handled in createDraggableMarker)
   const handleMarkerDragEnd = useCallback((event: any) => {
+    // Add null checks for marker and position
+    if (!event?.target || !event.target.position) {
+      console.error('Invalid marker position in handleMarkerDragEnd');
+      return;
+    }
+    
     const newPosition = event.target.position;
-    const lat = newPosition.lat;
-    const lng = newPosition.lng;
+    
+    // Handle both function and property access for position
+    const lat = typeof newPosition.lat === 'function' ? newPosition.lat() : newPosition.lat;
+    const lng = typeof newPosition.lng === 'function' ? newPosition.lng() : newPosition.lng;
+    
+    // Validate coordinates
+    if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+      console.error('Invalid coordinates from marker position:', { lat, lng });
+      return;
+    }
 
     // Update the coordinates
     console.log('New position:', lat, lng);
