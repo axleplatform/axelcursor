@@ -26,7 +26,7 @@ export async function getGoogleMapsApiKey(): Promise<string> {
   }
 }
 
-// Load Google Maps API (only core and geocoding, no places)
+// Load Google Maps API (only core and geometry for maps, no places needed for new API)
 export async function loadGoogleMaps(): Promise<any> {
   if (googleMapsInstance) {
     return googleMapsInstance;
@@ -43,11 +43,11 @@ export async function loadGoogleMaps(): Promise<any> {
       const loader = new Loader({
         apiKey: apiKey,
         version: 'weekly',
-        libraries: ['geometry'] // Remove 'places' since we're not using it
+        libraries: ['geometry'] // Only need geometry for maps, not places
       });
 
       googleMapsInstance = await loader.load();
-      console.log('✅ Google Maps loaded successfully (Geocoding only)');
+      console.log('✅ Google Maps loaded successfully (Core + Geometry)');
       return googleMapsInstance;
     } catch (error) {
       console.error('❌ Failed to load Google Maps:', error);
@@ -60,45 +60,91 @@ export async function loadGoogleMaps(): Promise<any> {
   return loadingPromise;
 }
 
-// Simple address search using Geocoding API (no Places API needed)
-export async function searchAddresses(query: string): Promise<any[]> {
+// Generate session token for new Places API
+function generateSessionToken(): string {
+  // Generate a UUID-like string for session token
+  // This follows Google's recommendation for session tokens
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 15);
+  const uuidPart = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+  
+  return `${timestamp}-${randomPart}-${uuidPart}`;
+}
+
+// Alternative: Use crypto.randomUUID if available (more secure)
+function generateSecureSessionToken(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return generateSessionToken();
+}
+
+// New Places API autocomplete using HTTP POST
+export async function searchPlacesNew(input: string, sessionToken: string): Promise<any> {
   try {
     const apiKey = await getGoogleMapsApiKey();
     
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${apiKey}&components=country:us`
-    );
-    
+    const response = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+      },
+      body: JSON.stringify({
+        input: input,
+        includedPrimaryTypes: ["address", "establishment"],
+        includedRegionCodes: ["us"],
+        sessionToken: sessionToken,
+        languageCode: "en"
+      })
+    });
+
     if (!response.ok) {
-      throw new Error(`Geocoding API request failed: ${response.status}`);
+      throw new Error(`Places API request failed: ${response.status} ${response.statusText}`);
     }
-    
+
     const data = await response.json();
-    
-    if (data.status === 'OK' && data.results) {
-      return data.results.map((result: any) => ({
-        formatted_address: result.formatted_address,
-        place_id: result.place_id,
-        geometry: {
-          location: {
-            lat: result.geometry.location.lat,
-            lng: result.geometry.location.lng
-          }
-        },
-        address_components: result.address_components
-      }));
-    } else {
-      console.warn('Geocoding API returned status:', data.status);
-      return [];
-    }
+    console.log('📍 New Places API response:', data);
+    return data;
   } catch (error) {
-    console.error('Address search failed:', error);
-    return [];
+    console.error('New Places API search failed:', error);
+    throw error;
   }
 }
 
-// Create simple autocomplete using Geocoding API
-export async function createSimpleAutocomplete(
+// Get place details using new Places API
+export async function getPlaceDetailsNew(placeId: string, sessionToken: string): Promise<any> {
+  try {
+    const apiKey = await getGoogleMapsApiKey();
+    
+    const response = await fetch(`https://places.googleapis.com/v1/places/${placeId}?sessionToken=${sessionToken}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'id,displayName,formattedAddress,location,addressComponents'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Place details request failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('📍 Place details response:', data);
+    return data;
+  } catch (error) {
+    console.error('Place details request failed:', error);
+    throw error;
+  }
+}
+
+// Create autocomplete using new Places API
+export async function createNewPlacesAutocomplete(
   inputElement: HTMLInputElement,
   onPlaceSelect: (place: any) => void,
   options: any = {}
@@ -111,6 +157,8 @@ export async function createSimpleAutocomplete(
     
     let searchTimeout: NodeJS.Timeout | null = null;
     let suggestionsContainer: HTMLDivElement | null = null;
+    let sessionToken = generateSecureSessionToken();
+    let currentSuggestions: any[] = [];
     
     // Create suggestions container
     const createSuggestionsContainer = () => {
@@ -119,20 +167,21 @@ export async function createSimpleAutocomplete(
       }
       
       suggestionsContainer = document.createElement('div');
-      suggestionsContainer.className = 'address-suggestions';
+      suggestionsContainer.className = 'places-autocomplete-suggestions';
       suggestionsContainer.style.cssText = `
         position: absolute;
         top: 100%;
         left: 0;
         right: 0;
         background: white;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        border: 1px solid #e5e7eb;
+        border-radius: 0.375rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         max-height: 200px;
         overflow-y: auto;
         z-index: 9999;
         display: none;
+        margin-top: 2px;
       `;
       
       inputElement.parentElement?.appendChild(suggestionsContainer);
@@ -145,6 +194,7 @@ export async function createSimpleAutocomplete(
       }
       
       suggestionsContainer!.innerHTML = '';
+      currentSuggestions = suggestions;
       
       if (suggestions.length === 0) {
         suggestionsContainer!.style.display = 'none';
@@ -152,6 +202,9 @@ export async function createSimpleAutocomplete(
       }
       
       suggestions.forEach((suggestion, index) => {
+        const placePrediction = suggestion.placePrediction;
+        if (!placePrediction) return;
+        
         const item = document.createElement('div');
         item.className = 'suggestion-item';
         item.style.cssText = `
@@ -159,13 +212,64 @@ export async function createSimpleAutocomplete(
           cursor: pointer;
           border-bottom: 1px solid #f3f4f6;
           font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
         `;
-        item.textContent = suggestion.formatted_address;
         
-        item.addEventListener('click', () => {
-          inputElement.value = suggestion.formatted_address;
-          suggestionsContainer!.style.display = 'none';
-          onPlaceSelect(suggestion);
+        // Create icon
+        const icon = document.createElement('span');
+        // Check if it's an establishment based on place types or text content
+        const isEstablishment = placePrediction.types?.some((type: string) => 
+          type.includes('establishment') || type.includes('business')
+        ) || placePrediction.text?.text?.includes('St') === false;
+        icon.textContent = isEstablishment ? '🏢' : '📍';
+        icon.style.fontSize = '16px';
+        
+        // Create text content
+        const text = document.createElement('span');
+        text.textContent = placePrediction.text?.text || '';
+        
+        item.appendChild(icon);
+        item.appendChild(text);
+        
+        item.addEventListener('click', async () => {
+          try {
+            // Get place details
+            const placeDetails = await getPlaceDetailsNew(placePrediction.placeId, sessionToken);
+            
+            // Format place data to match expected structure
+            const formattedPlace = {
+              place_id: placePrediction.placeId,
+              formatted_address: placeDetails.formattedAddress || placePrediction.text?.text || '',
+              geometry: {
+                location: {
+                  lat: placeDetails.location?.latitude || 0,
+                  lng: placeDetails.location?.longitude || 0
+                }
+              },
+              address_components: placeDetails.addressComponents || [],
+              displayName: placeDetails.displayName,
+              types: placePrediction.types
+            };
+            
+            inputElement.value = formattedPlace.formatted_address;
+            suggestionsContainer!.style.display = 'none';
+            onPlaceSelect(formattedPlace);
+            
+            // Generate new session token for next search
+            sessionToken = generateSecureSessionToken();
+          } catch (error) {
+            console.error('Failed to get place details:', error);
+            // Fallback to basic selection
+            inputElement.value = placePrediction.text?.text || '';
+            suggestionsContainer!.style.display = 'none';
+            onPlaceSelect({
+              place_id: placePrediction.placeId,
+              formatted_address: placePrediction.text?.text || '',
+              geometry: { location: { lat: 0, lng: 0 } }
+            });
+          }
         });
         
         item.addEventListener('mouseenter', () => {
@@ -199,10 +303,17 @@ export async function createSimpleAutocomplete(
       
       searchTimeout = setTimeout(async () => {
         try {
-          const suggestions = await searchAddresses(query);
-          showSuggestions(suggestions.slice(0, 5)); // Limit to 5 suggestions
+          const data = await searchPlacesNew(query, sessionToken);
+          
+          if (data.suggestions && Array.isArray(data.suggestions)) {
+            showSuggestions(data.suggestions.slice(0, 5)); // Limit to 5 suggestions
+          } else {
+            console.warn('No suggestions in response:', data);
+            showSuggestions([]);
+          }
         } catch (error) {
-          console.error('Failed to search addresses:', error);
+          console.error('Failed to search places:', error);
+          showSuggestions([]);
         }
       }, 300); // 300ms debounce
     };
@@ -212,6 +323,41 @@ export async function createSimpleAutocomplete(
     inputElement.addEventListener('focus', () => {
       if (suggestionsContainer && suggestionsContainer.children.length > 0) {
         suggestionsContainer.style.display = 'block';
+      }
+    });
+    
+    // Handle keyboard navigation
+    inputElement.addEventListener('keydown', (e) => {
+      if (!suggestionsContainer || suggestionsContainer.style.display === 'none') return;
+      
+      const items = suggestionsContainer.querySelectorAll('.suggestion-item');
+      const currentIndex = Array.from(items).findIndex(item => item.style.backgroundColor === 'rgb(249, 250, 251)');
+      
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          if (currentIndex < items.length - 1) {
+            items[currentIndex]?.style.removeProperty('background-color');
+            items[currentIndex + 1].style.backgroundColor = '#f9fafb';
+          }
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          if (currentIndex > 0) {
+            items[currentIndex]?.style.removeProperty('background-color');
+            items[currentIndex - 1].style.backgroundColor = '#f9fafb';
+          }
+          break;
+        case 'Enter':
+          e.preventDefault();
+          const selectedItem = suggestionsContainer.querySelector('.suggestion-item[style*="background-color: rgb(249, 250, 251)"]');
+          if (selectedItem) {
+            selectedItem.dispatchEvent(new Event('click'));
+          }
+          break;
+        case 'Escape':
+          suggestionsContainer.style.display = 'none';
+          break;
       }
     });
     
@@ -227,6 +373,7 @@ export async function createSimpleAutocomplete(
       inputElement,
       suggestionsContainer,
       searchTimeout,
+      sessionToken,
       cleanup: () => {
         if (searchTimeout) {
           clearTimeout(searchTimeout);
@@ -240,11 +387,11 @@ export async function createSimpleAutocomplete(
     
     autocompleteInstances.set(inputElement, instance);
     
-    console.log('✅ Simple autocomplete initialized successfully');
+    console.log('✅ New Places API autocomplete initialized successfully');
     return { success: true, autocomplete: instance };
     
   } catch (error) {
-    console.error('Failed to create simple autocomplete:', error);
+    console.error('Failed to create new Places API autocomplete:', error);
     return { success: false, error: error.message };
   }
 }
@@ -255,7 +402,7 @@ export async function createAutocomplete(
   onPlaceSelect: (place: any) => void,
   options: any = {}
 ): Promise<any> {
-  return createSimpleAutocomplete(inputElement, onPlaceSelect, options);
+  return createNewPlacesAutocomplete(inputElement, onPlaceSelect, options);
 }
 
 // Cleanup autocomplete safely

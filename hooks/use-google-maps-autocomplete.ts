@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { createSimpleAutocomplete, cleanupAutocomplete } from '@/lib/google-maps';
+import { createNewPlacesAutocomplete, cleanupAutocomplete } from '@/lib/google-maps';
 
 interface UseGoogleMapsAutocompleteOptions {
   onPlaceSelect?: (place: any) => void;
@@ -61,8 +61,8 @@ export function useGoogleMapsAutocomplete({
         return;
       }
 
-      // Create simple autocomplete (no Places API needed)
-      const result = await createSimpleAutocomplete(inputRef.current, (place: any) => {
+      // Create new Places API autocomplete
+      const result = await createNewPlacesAutocomplete(inputRef.current, (place: any) => {
         if (place && onPlaceSelect) {
           onPlaceSelect(place);
         }
@@ -71,7 +71,7 @@ export function useGoogleMapsAutocomplete({
       if (result.success) {
         autocompleteRef.current = result.autocomplete;
         setIsLoaded(true);
-        console.log('✅ Simple autocomplete initialized successfully');
+        console.log('✅ New Places API autocomplete initialized successfully');
       } else {
         throw new Error(result.error || 'Failed to initialize autocomplete');
       }

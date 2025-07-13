@@ -141,8 +141,8 @@ textarea:focus {
   left: auto !important;
 }
 
-/* Simple autocomplete dropdown styles */
-.address-suggestions {
+/* New Places API autocomplete dropdown styles */
+.places-autocomplete-suggestions {
   z-index: 9999 !important;
   position: absolute !important;
   top: 100% !important;
@@ -164,6 +164,9 @@ textarea:focus {
   font-size: 0.875rem !important;
   line-height: 1.25rem !important;
   transition: background-color 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
 }
 
 .suggestion-item:hover {
