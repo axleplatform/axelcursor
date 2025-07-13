@@ -15,6 +15,15 @@ import { DateTimeSelector } from "@/components/date-time-selector"
 import { toast } from "@/components/ui/use-toast"
 import HomepageLocationInput from "@/components/homepage-location-input"
 
+// Simple debounce function
+function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
+  let timeout: NodeJS.Timeout;
+  return ((...args: any[]) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  }) as T;
+}
+
 // Global type declarations
 declare global {
   interface Window {
@@ -127,66 +136,71 @@ function HomePageContent(): React.JSX.Element {
       }
 
       console.log('🔍 Found visible input:', visibleInput);
+      console.log('🔍 Available Google Maps APIs:', Object.keys(google.maps || {}));
 
-      // Use the new Places API (PlaceAutocompleteElement)
-      try {
-        // Create the new PlaceAutocompleteElement
-        const autocomplete = new google.maps.places.PlaceAutocompleteElement({
-          componentRestrictions: { country: 'us' },
-          types: ['address', 'establishment']
-        });
+      // Check if new Places API is available
+      if (google.maps?.places?.PlaceAutocompleteElement) {
+        try {
+          // Create the new PlaceAutocompleteElement
+          const autocomplete = new google.maps.places.PlaceAutocompleteElement({
+            componentRestrictions: { country: 'us' },
+            types: ['address', 'establishment']
+          });
 
-        // Style the autocomplete element to match our input
-        autocomplete.style.cssText = `
-          width: 100% !important;
-          height: 50px !important;
-          border: 1px solid #d1d5db !important;
-          border-radius: 8px !important;
-          background-color: white !important;
-          font-size: 16px !important;
-          padding: 0 16px 0 40px !important;
-          box-sizing: border-box !important;
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          z-index: 40 !important;
-        `;
+          // Style the autocomplete element to match our input
+          autocomplete.style.cssText = `
+            width: 100% !important;
+            height: 50px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 8px !important;
+            background-color: white !important;
+            font-size: 16px !important;
+            padding: 0 16px 0 40px !important;
+            box-sizing: border-box !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 40 !important;
+          `;
 
-        // Replace the visible input with the autocomplete element
-        const container = visibleInput.parentElement;
-        if (container) {
-          // Hide the original input
-          visibleInput.style.opacity = '0';
-          visibleInput.style.position = 'absolute';
-          visibleInput.style.zIndex = '-1';
-          
-          // Add the autocomplete element
-          container.appendChild(autocomplete);
-        }
-
-        // Add event listener for place selection
-        autocomplete.addEventListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          console.log('📍 Place selected (new API):', place);
-          if (place && place.geometry) {
-            const address = place.formatted_address || '';
-            handleLocationChange(address);
-            handleLocationSelect(place);
+          // Replace the visible input with the autocomplete element
+          const container = visibleInput.parentElement;
+          if (container) {
+            // Hide the original input
+            visibleInput.style.opacity = '0';
+            visibleInput.style.position = 'absolute';
+            visibleInput.style.zIndex = '-1';
+            
+            // Add the autocomplete element
+            container.appendChild(autocomplete);
           }
-        });
 
-        autocompleteRef.current = autocomplete;
-        console.log('✅ New Places API (PlaceAutocompleteElement) initialized successfully:', autocomplete);
-        
-      } catch (placesApiError) {
-        console.error('New Places API not available:', placesApiError);
-        console.log('⚠️ Falling back to manual input only - no autocomplete available');
-        
-        // Keep the original input visible for manual typing
-        visibleInput.style.opacity = '1';
-        visibleInput.style.position = 'relative';
-        visibleInput.style.zIndex = '50';
+          // Add event listener for place selection
+          autocomplete.addEventListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            console.log('📍 Place selected (new API):', place);
+            if (place && place.geometry) {
+              const address = place.formatted_address || '';
+              handleLocationChange(address);
+              handleLocationSelect(place);
+            }
+          });
+
+          autocompleteRef.current = autocomplete;
+          console.log('✅ New Places API (PlaceAutocompleteElement) initialized successfully:', autocomplete);
+          
+        } catch (placesApiError) {
+          console.error('New Places API not available:', placesApiError);
+          console.log('⚠️ Falling back to manual input with geocoding');
+        }
+      } else {
+        console.log('⚠️ New Places API not available, using manual input with geocoding');
       }
+      
+      // Always ensure the input is visible for manual typing
+      visibleInput.style.opacity = '1';
+      visibleInput.style.position = 'relative';
+      visibleInput.style.zIndex = '50';
       
     } catch (error) {
       console.error('Error initializing autocomplete:', error);
@@ -1162,11 +1176,48 @@ function HomePageContent(): React.JSX.Element {
     }));
   }, []); // Empty deps array to prevent re-creation
 
-  // Add handleLocationChange function with useCallback to prevent infinite loops
+  // Add debounced geocoding for manual address input
+  const debouncedGeocode = useCallback(
+    debounce(async (address: string) => {
+      if (!address.trim()) return;
+      
+      try {
+        const { geocodeAddress } = await import('@/lib/google-maps');
+        const results = await geocodeAddress(address);
+        
+        if (results && results[0] && results[0].geometry) {
+          const { lat, lng } = results[0].geometry.location;
+          const place = {
+            formatted_address: results[0].formatted_address,
+            geometry: {
+              location: {
+                lat: typeof lat === 'function' ? lat() : lat,
+                lng: typeof lng === 'function' ? lng() : lng
+              }
+            },
+            place_id: results[0].place_id
+          };
+          
+          console.log('📍 Geocoded address:', place);
+          handleLocationSelect(place);
+        }
+      } catch (error) {
+        console.log('⚠️ Geocoding failed for address:', address, error);
+      }
+    }, 1000), // Wait 1 second after user stops typing
+    []
+  );
+
+  // Update handleLocationChange to include geocoding
   const handleLocationChange = useCallback((val: string | React.ChangeEvent<HTMLInputElement>) => {
     const value = typeof val === 'string' ? val : val.target.value;
     setFormData(f => ({ ...f, location: value }));
-  }, []); // Empty deps array to prevent re-creation
+    
+    // Trigger geocoding for manual input
+    if (value.trim()) {
+      debouncedGeocode(value);
+    }
+  }, [debouncedGeocode]); // Empty deps array to prevent re-creation
 
   // Memoized event handlers to prevent infinite loops
   const handleTimeSelected = useCallback(() => {
