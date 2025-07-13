@@ -222,28 +222,15 @@ function HomePageContent(): React.JSX.Element {
           }
           
           if (coordinates) {
-            // Clear existing marker
-            if (markerRef.current) {
-              markerRef.current.setMap(null);
-              markerRef.current = null;
-            }
-            
-            // Add new marker
-            markerRef.current = new window.google.maps.marker.AdvancedMarkerElement({
-              position: coordinates,
-              map: mapInstanceRef.current
-            });
-            
-            // Center map on location
-            mapInstanceRef.current.setCenter(coordinates);
-            mapInstanceRef.current.setZoom(15);
+            // Use the new updateMapLocation function
+            updateMapLocation(coordinates);
           }
         } catch (err) {
           // Ignore geocode errors
         }
       })();
     }
-  }, [selectedLocation, formData.location, formData.latitude, formData.longitude, appointmentId]);
+  }, [selectedLocation, formData.location, formData.latitude, formData.longitude, appointmentId, updateMapLocation]);
 
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
@@ -1088,6 +1075,110 @@ function HomePageContent(): React.JSX.Element {
     setFormData(f => ({ ...f, location: value }));
     // No automatic geocoding - only update when user selects from dropdown
   }, []);
+
+  // Create draggable marker function
+  const createDraggableMarker = useCallback((map: google.maps.Map, location: { lat: number; lng: number }, onDragEnd: (newPos: { lat: number; lng: number }) => void) => {
+    const marker = new window.google.maps.marker.AdvancedMarkerElement({
+      position: location,
+      map: map,
+      gmpDraggable: true,
+      title: "Drag to adjust location"
+    });
+    
+    // Add drag end event listener
+    marker.addListener('dragend', (event: any) => {
+      const newPosition = event.target.position;
+      const lat = newPosition.lat;
+      const lng = newPosition.lng;
+      onDragEnd({ lat, lng });
+    });
+    
+    return marker;
+  }, []);
+
+  // Animate map to location with zoom effect
+  const animateToLocation = useCallback((map: google.maps.Map, location: { lat: number; lng: number }) => {
+    // Start zoomed out
+    map.setZoom(10);
+    
+    // Pan to location
+    map.panTo(location);
+    
+    // Animate zoom in after a short delay
+    setTimeout(() => {
+      map.setZoom(15); // Zoom in closer
+    }, 500);
+  }, []);
+
+  // Update map location function with animation
+  const updateMapLocation = useCallback((location: { lat: number; lng: number }) => {
+    if (!mapInstanceRef.current) return;
+    
+    // Remove old marker
+    if (markerRef.current) {
+      markerRef.current.setMap(null);
+      markerRef.current = null;
+    }
+    
+    // Animate to new location
+    animateToLocation(mapInstanceRef.current, location);
+    
+    // Add draggable marker
+    markerRef.current = createDraggableMarker(mapInstanceRef.current, location, (newPos) => {
+      // Update form with new coordinates
+      setFormData(prev => ({
+        ...prev,
+        latitude: newPos.lat,
+        longitude: newPos.lng,
+        location: `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}` // Show coordinates
+      }));
+
+      // Update selectedLocation if it exists
+      if (selectedLocation) {
+        const updatedLocation = {
+          ...selectedLocation,
+          geometry: {
+            ...selectedLocation.geometry,
+            location: newPos
+          },
+          formatted_address: `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
+        };
+        setSelectedLocation(updatedLocation);
+      }
+    });
+  }, [animateToLocation, createDraggableMarker, selectedLocation]);
+
+  // Handle marker drag end (legacy - now handled in createDraggableMarker)
+  const handleMarkerDragEnd = useCallback((event: any) => {
+    const newPosition = event.target.position;
+    const lat = newPosition.lat;
+    const lng = newPosition.lng;
+
+    // Update the coordinates
+    console.log('New position:', lat, lng);
+    
+    // Update form data with new coordinates
+    setFormData(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+      location: `${lat.toFixed(6)}, ${lng.toFixed(6)}` // Show coordinates
+    }));
+
+    // Update selectedLocation if it exists
+    if (selectedLocation) {
+      // Create a new location object with updated coordinates
+      const updatedLocation = {
+        ...selectedLocation,
+        geometry: {
+          ...selectedLocation.geometry,
+          location: { lat, lng }
+        },
+        formatted_address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+      };
+      setSelectedLocation(updatedLocation);
+    }
+  }, [selectedLocation]);
 
   // Memoized event handlers to prevent infinite loops
   const handleTimeSelected = useCallback(() => {
