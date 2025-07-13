@@ -18,6 +18,11 @@ export const metadata: Metadata = {
 
 // Global error handler to suppress DOM errors
 if (typeof window !== 'undefined') {
+  // Monaco Editor worker fix
+  window.MonacoEnvironment = {
+    getWorkerUrl: () => '/monaco-editor-worker.js'
+  };
+
   const originalError = console.error;
   const originalWarn = console.warn;
   
