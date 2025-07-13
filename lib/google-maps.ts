@@ -50,7 +50,8 @@ export async function loadGoogleMaps(): Promise<any> {
       const loader = new Loader({
         apiKey,
         version: 'weekly',
-        libraries: ['places', 'geometry', 'marker']
+        libraries: ['geometry', 'marker'],
+        mapIds: ['DEMO_MAP_ID']
       });
 
       const google = await loader.load();
@@ -90,7 +91,8 @@ export async function createSafeAutocomplete(
   
   // Create autocomplete with the new PlaceAutocompleteElement API
   const autocomplete = new google.maps.places.PlaceAutocompleteElement({
-    inputElement: inputElement,
+    componentRestrictions: { country: 'us' },
+    types: ['address', 'establishment'],
     ...options
   });
   

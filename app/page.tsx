@@ -128,24 +128,78 @@ function HomePageContent(): React.JSX.Element {
 
       console.log('🔍 Found visible input:', visibleInput);
 
-      // Use traditional autocomplete directly on the visible input
-      const traditionalAutocomplete = new google.maps.places.Autocomplete(visibleInput, {
-        componentRestrictions: { country: 'us' },
-        types: ['address', 'establishment']
-      });
-      
-      traditionalAutocomplete.addListener('place_changed', () => {
-        const place = traditionalAutocomplete.getPlace();
-        console.log('📍 Place selected (traditional):', place);
-        if (place && place.geometry) {
-          const address = place.formatted_address || '';
-          handleLocationChange(address);
-          handleLocationSelect(place);
+      // Use the new Places API (PlaceAutocompleteElement)
+      try {
+        // Create the new PlaceAutocompleteElement
+        const autocomplete = new google.maps.places.PlaceAutocompleteElement({
+          componentRestrictions: { country: 'us' },
+          types: ['address', 'establishment']
+        });
+
+        // Style the autocomplete element to match our input
+        autocomplete.style.cssText = `
+          width: 100% !important;
+          height: 50px !important;
+          border: 1px solid #d1d5db !important;
+          border-radius: 8px !important;
+          background-color: white !important;
+          font-size: 16px !important;
+          padding: 0 16px 0 40px !important;
+          box-sizing: border-box !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          z-index: 40 !important;
+        `;
+
+        // Replace the visible input with the autocomplete element
+        const container = visibleInput.parentElement;
+        if (container) {
+          // Hide the original input
+          visibleInput.style.opacity = '0';
+          visibleInput.style.position = 'absolute';
+          visibleInput.style.zIndex = '-1';
+          
+          // Add the autocomplete element
+          container.appendChild(autocomplete);
         }
-      });
-      
-      autocompleteRef.current = traditionalAutocomplete;
-      console.log('✅ Traditional Autocomplete initialized successfully on visible input');
+
+        // Add event listener for place selection
+        autocomplete.addEventListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          console.log('📍 Place selected (new API):', place);
+          if (place && place.geometry) {
+            const address = place.formatted_address || '';
+            handleLocationChange(address);
+            handleLocationSelect(place);
+          }
+        });
+
+        autocompleteRef.current = autocomplete;
+        console.log('✅ New Places API (PlaceAutocompleteElement) initialized successfully:', autocomplete);
+        
+      } catch (placesApiError) {
+        console.warn('New Places API not available, falling back to traditional input:', placesApiError);
+        
+        // Fallback: Use traditional autocomplete on the visible input
+        const traditionalAutocomplete = new google.maps.places.Autocomplete(visibleInput, {
+          componentRestrictions: { country: 'us' },
+          types: ['address', 'establishment']
+        });
+        
+        traditionalAutocomplete.addListener('place_changed', () => {
+          const place = traditionalAutocomplete.getPlace();
+          console.log('📍 Place selected (traditional):', place);
+          if (place && place.geometry) {
+            const address = place.formatted_address || '';
+            handleLocationChange(address);
+            handleLocationSelect(place);
+          }
+        });
+        
+        autocompleteRef.current = traditionalAutocomplete;
+        console.log('✅ Traditional Autocomplete initialized successfully on visible input');
+      }
       
     } catch (error) {
       console.error('Error initializing autocomplete:', error);

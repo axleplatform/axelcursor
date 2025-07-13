@@ -131,7 +131,21 @@ input[type="password"]:focus,
 select:focus,
 textarea:focus {
   z-index: 100 !important;
-  position: relative !important;
+}
+
+/* Google Places autocomplete dropdown positioning */
+.pac-container {
+  z-index: 9999 !important;
+  position: fixed !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+/* Ensure the location input pin stays in place */
+.location-input-wrapper .absolute {
+  position: absolute !important;
+  z-index: 20 !important;
+  pointer-events: none !important;
 }
 
 /* Style the Google autocomplete container */
