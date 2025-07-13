@@ -41,13 +41,20 @@ export default function HomepageLocationInput({
       const { createAutocomplete } = await import('@/lib/google-maps');
       
       console.log('🔍 Autocomplete init: Creating autocomplete...');
+      console.log('🔍 Autocomplete init: onLocationSelect type:', typeof onLocationSelect);
+      console.log('🔍 Autocomplete init: onLocationSelect:', onLocationSelect);
+      
       const result = await createAutocomplete(inputRef.current, {
         onPlaceSelect: (place: any) => {
           console.log('🔍 Autocomplete: Place selected:', place);
           if (place.geometry) {
             const address = place.formatted_address || '';
             onChange(address);
-            if (onLocationSelect) onLocationSelect(place);
+            if (typeof onLocationSelect === 'function') {
+              onLocationSelect(place);
+            } else {
+              console.log('🔍 Autocomplete: onLocationSelect is not a function, skipping');
+            }
           }
         },
         onError: (err: string) => {
