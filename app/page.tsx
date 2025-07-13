@@ -245,7 +245,7 @@ function HomePageContent(): React.JSX.Element {
 
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
-    if (!appointmentId) return
+    if (!appointmentId) return;
 
     setIsLoadingExistingData(true)
     try {
@@ -262,7 +262,7 @@ function HomePageContent(): React.JSX.Element {
 
       if (error) {
         console.error("Error loading appointment:", error)
-        return
+        return;
       }
 
       if (data) {
@@ -558,7 +558,7 @@ function HomePageContent(): React.JSX.Element {
     setErrors(newErrors)
     const isValid = Object.keys(newErrors).length === 0
     console.log('🔄 validateForm: Returning isValid:', isValid)
-    return isValid
+    return isValid;
   }, [formData])
 
   // Create a temporary user record immediately (no more NULL user_id!)
@@ -583,7 +583,7 @@ function HomePageContent(): React.JSX.Element {
       }
 
       console.log('✅ Temporary user created successfully:', userId)
-      return userId as string
+      return userId as string;
       
     } catch (error) {
       console.error('❌ Failed to create temporary user:', error)
@@ -686,13 +686,13 @@ function HomePageContent(): React.JSX.Element {
       } catch (error) {
         console.log('❌ validateForm() threw an error:', error)
         setErrors({ general: 'Form validation error. Please check your inputs.' })
-        return
+        return;
       }
       
       console.log('🔄 About to check isValid result')
       if (!isValid) {
         console.log('❌ Form validation failed')
-        return
+        return;
       }
       console.log('✅ isValid check passed')
 
@@ -913,7 +913,7 @@ function HomePageContent(): React.JSX.Element {
       model.trim() &&
       appointmentDate.trim() &&
       appointmentTime.trim()
-    )
+    );
   }, [formData])
 
   // Debug: Log form completion status
@@ -938,7 +938,7 @@ function HomePageContent(): React.JSX.Element {
     if (!model.trim()) missing.push('model')
     if (!appointmentDate.trim()) missing.push('appointmentDate')
     if (!appointmentTime.trim()) missing.push('appointmentTime')
-    return missing
+    return missing;
   }, [formData])
 
   // Debug: Log missing fields
