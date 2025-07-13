@@ -184,7 +184,117 @@ function HomePageContent(): React.JSX.Element {
     };
   }, [initializeMap]); // Depend on memoized initializeMap function
 
+  // Show coordinates helper function
+  const showCoordinates = useCallback((lat: number, lng: number) => {
+    return `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  }, []);
 
+  // Reverse geocode helper function
+  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+    try {
+      const { reverseGeocode: reverseGeocodeFunc } = await import('@/lib/google-maps');
+      const results = await reverseGeocodeFunc(lat, lng);
+      return results && results[0] ? results[0].formatted_address : showCoordinates(lat, lng);
+    } catch (error) {
+      console.warn('Reverse geocoding failed, showing coordinates:', error);
+      return showCoordinates(lat, lng);
+    }
+  }, [showCoordinates]);
+
+  // Create draggable marker function
+  const createDraggableMarker = useCallback((map: google.maps.Map, location: { lat: number; lng: number }, onDragEnd: (newPos: { lat: number; lng: number }) => void) => {
+    const marker = new window.google.maps.marker.AdvancedMarkerElement({
+      position: location,
+      map: map,
+      gmpDraggable: true,
+      title: "Drag to adjust location"
+    });
+    
+    // Add cursor style for visual feedback
+    if (marker.content) {
+      marker.content.style.cursor = 'grab';
+    }
+    
+    // Change cursor while dragging
+    marker.addListener('dragstart', () => {
+      if (marker.content) {
+        marker.content.style.cursor = 'grabbing';
+      }
+    });
+    
+    // Add drag end event listener
+    marker.addListener('dragend', async (event: any) => {
+      // Reset cursor
+      if (marker.content) {
+        marker.content.style.cursor = 'grab';
+      }
+      
+      const newPosition = event.target.position;
+      const lat = newPosition.lat;
+      const lng = newPosition.lng;
+      
+      // Get address from reverse geocoding
+      const address = await reverseGeocode(lat, lng);
+      
+      onDragEnd({ lat, lng, address });
+    });
+    
+    return marker;
+  }, [reverseGeocode]);
+
+  // Animate map to location with zoom effect
+  const animateToLocation = useCallback((map: google.maps.Map, location: { lat: number; lng: number }) => {
+    // Start zoomed out
+    map.setZoom(10);
+    
+    // Pan to location
+    map.panTo(location);
+    
+    // Animate zoom in after a short delay
+    setTimeout(() => {
+      map.setZoom(15); // Zoom in closer
+    }, 500);
+  }, []);
+
+  // Update map location function with animation
+  const updateMapLocation = useCallback((location: { lat: number; lng: number }) => {
+    if (!mapInstanceRef.current) return;
+    
+    // Remove old marker
+    if (markerRef.current) {
+      markerRef.current.setMap(null);
+      markerRef.current = null;
+    }
+    
+    // Animate to new location
+    animateToLocation(mapInstanceRef.current, location);
+    
+    // Add draggable marker
+    markerRef.current = createDraggableMarker(mapInstanceRef.current, location, (newPos) => {
+      // Update form with new coordinates and address
+      setFormData(prev => ({
+        ...prev,
+        latitude: newPos.lat,
+        longitude: newPos.lng,
+        location: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}` // Use address if available, otherwise coordinates
+      }));
+
+      // Update selectedLocation if it exists - use setSelectedLocation directly
+      setSelectedLocation(prevSelectedLocation => {
+        if (prevSelectedLocation) {
+          return {
+            ...prevSelectedLocation,
+            geometry: {
+              ...prevSelectedLocation.geometry,
+              location: { lat: newPos.lat, lng: newPos.lng }
+            },
+            formatted_address: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
+          };
+        }
+        return prevSelectedLocation;
+      });
+    });
+  }, [animateToLocation, createDraggableMarker]);
 
   // Watch for manual location changes and update map if possible
   // Only add marker when user has explicitly selected a location (not just typing)
@@ -1075,118 +1185,6 @@ function HomePageContent(): React.JSX.Element {
     setFormData(f => ({ ...f, location: value }));
     // No automatic geocoding - only update when user selects from dropdown
   }, []);
-
-  // Show coordinates helper function
-  const showCoordinates = useCallback((lat: number, lng: number) => {
-    return `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-  }, []);
-
-  // Reverse geocode helper function
-  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
-    try {
-      const { reverseGeocode: reverseGeocodeFunc } = await import('@/lib/google-maps');
-      const results = await reverseGeocodeFunc(lat, lng);
-      return results && results[0] ? results[0].formatted_address : showCoordinates(lat, lng);
-    } catch (error) {
-      console.warn('Reverse geocoding failed, showing coordinates:', error);
-      return showCoordinates(lat, lng);
-    }
-  }, [showCoordinates]);
-
-  // Create draggable marker function
-  const createDraggableMarker = useCallback((map: google.maps.Map, location: { lat: number; lng: number }, onDragEnd: (newPos: { lat: number; lng: number }) => void) => {
-    const marker = new window.google.maps.marker.AdvancedMarkerElement({
-      position: location,
-      map: map,
-      gmpDraggable: true,
-      title: "Drag to adjust location"
-    });
-    
-    // Add cursor style for visual feedback
-    if (marker.content) {
-      marker.content.style.cursor = 'grab';
-    }
-    
-    // Change cursor while dragging
-    marker.addListener('dragstart', () => {
-      if (marker.content) {
-        marker.content.style.cursor = 'grabbing';
-      }
-    });
-    
-    // Add drag end event listener
-    marker.addListener('dragend', async (event: any) => {
-      // Reset cursor
-      if (marker.content) {
-        marker.content.style.cursor = 'grab';
-      }
-      
-      const newPosition = event.target.position;
-      const lat = newPosition.lat;
-      const lng = newPosition.lng;
-      
-      // Get address from reverse geocoding
-      const address = await reverseGeocode(lat, lng);
-      
-      onDragEnd({ lat, lng, address });
-    });
-    
-    return marker;
-  }, [reverseGeocode]);
-
-  // Animate map to location with zoom effect
-  const animateToLocation = useCallback((map: google.maps.Map, location: { lat: number; lng: number }) => {
-    // Start zoomed out
-    map.setZoom(10);
-    
-    // Pan to location
-    map.panTo(location);
-    
-    // Animate zoom in after a short delay
-    setTimeout(() => {
-      map.setZoom(15); // Zoom in closer
-    }, 500);
-  }, []);
-
-  // Update map location function with animation
-  const updateMapLocation = useCallback((location: { lat: number; lng: number }) => {
-    if (!mapInstanceRef.current) return;
-    
-    // Remove old marker
-    if (markerRef.current) {
-      markerRef.current.setMap(null);
-      markerRef.current = null;
-    }
-    
-    // Animate to new location
-    animateToLocation(mapInstanceRef.current, location);
-    
-    // Add draggable marker
-    markerRef.current = createDraggableMarker(mapInstanceRef.current, location, (newPos) => {
-      // Update form with new coordinates and address
-      setFormData(prev => ({
-        ...prev,
-        latitude: newPos.lat,
-        longitude: newPos.lng,
-        location: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}` // Use address if available, otherwise coordinates
-      }));
-
-      // Update selectedLocation if it exists - use setSelectedLocation directly
-      setSelectedLocation(prevSelectedLocation => {
-        if (prevSelectedLocation) {
-          return {
-            ...prevSelectedLocation,
-            geometry: {
-              ...prevSelectedLocation.geometry,
-              location: { lat: newPos.lat, lng: newPos.lng }
-            },
-            formatted_address: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
-          };
-        }
-        return prevSelectedLocation;
-      });
-    });
-  }, [animateToLocation, createDraggableMarker]);
 
   // Handle marker drag end (legacy - now handled in createDraggableMarker)
   const handleMarkerDragEnd = useCallback((event: any) => {
