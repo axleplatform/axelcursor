@@ -282,22 +282,24 @@ function HomePageContent(): React.JSX.Element {
 
       const map = mapInstanceRef.current;
 
+      // Handle both function and number coordinate formats
+      const lat = typeof selectedLocation.geometry.location.lat === 'function' 
+        ? selectedLocation.geometry.location.lat() 
+        : selectedLocation.geometry.location.lat;
+      const lng = typeof selectedLocation.geometry.location.lng === 'function' 
+        ? selectedLocation.geometry.location.lng() 
+        : selectedLocation.geometry.location.lng;
+
       // Clear existing markers by setting map to null
       // Add new marker for selected location
       new window.google.maps.Marker({
-        position: {
-          lat: selectedLocation.geometry.location.lat(),
-          lng: selectedLocation.geometry.location.lng()
-        },
+        position: { lat, lng },
         map: map,
         animation: window.google.maps.Animation.DROP
       });
 
       // Center map on new location
-      map.setCenter({
-        lat: selectedLocation.geometry.location.lat(),
-        lng: selectedLocation.geometry.location.lng()
-      });
+      map.setCenter({ lat, lng });
       map.setZoom(15);
     } catch (error) {
       console.error('Error updating map location:', error);
@@ -845,8 +847,12 @@ function HomePageContent(): React.JSX.Element {
           source: 'web_guest_booking',
           // Add location coordinates if available
           ...(selectedLocation?.geometry && {
-            latitude: selectedLocation.geometry.location.lat(),
-            longitude: selectedLocation.geometry.location.lng(),
+            latitude: typeof selectedLocation.geometry.location.lat === 'function' 
+              ? selectedLocation.geometry.location.lat() 
+              : selectedLocation.geometry.location.lat,
+            longitude: typeof selectedLocation.geometry.location.lng === 'function' 
+              ? selectedLocation.geometry.location.lng() 
+              : selectedLocation.geometry.location.lng,
             place_id: selectedLocation.place_id || null
           })
         }
