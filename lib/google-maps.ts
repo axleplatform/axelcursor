@@ -327,6 +327,7 @@ export async function createNewPlacesAutocomplete(
               types: placePrediction.types
             };
             
+            console.log('🔍 Autocomplete: Setting input value to:', formattedPlace.formatted_address);
             inputElement.value = formattedPlace.formatted_address;
             suggestionsContainer!.style.display = 'none';
             if (typeof onPlaceSelect === 'function') {
@@ -340,6 +341,7 @@ export async function createNewPlacesAutocomplete(
           } catch (error) {
             console.error('Failed to get place details:', error);
             // Fallback to basic selection
+            console.log('🔍 Autocomplete: Setting input value to (fallback):', placePrediction.text?.text || '');
             inputElement.value = placePrediction.text?.text || '';
             suggestionsContainer!.style.display = 'none';
             if (typeof onPlaceSelect === 'function') {
@@ -400,6 +402,12 @@ export async function createNewPlacesAutocomplete(
         }
       }, 300); // 300ms debounce
     };
+    
+    // Disable browser's native autocomplete
+    inputElement.setAttribute('autocomplete', 'off');
+    inputElement.setAttribute('autocorrect', 'off');
+    inputElement.setAttribute('autocapitalize', 'off');
+    inputElement.setAttribute('spellcheck', 'false');
     
     // Add event listeners
     inputElement.addEventListener('input', handleInputChange);
