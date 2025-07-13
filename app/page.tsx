@@ -293,24 +293,27 @@ function HomePageContent(): React.JSX.Element {
 
   // Animate map to location with zoom effect
   const animateToLocation = useCallback((map: google.maps.Map, location: { lat: number; lng: number }) => {
-    // Start already zoomed in for better precision
+    // Start at zoom 15
     map.setZoom(15);
-    
-    // Pan to location
     map.panTo(location);
     
-    // Gradually zoom in even closer over time for precise pin placement
+    // Smooth zoom with smaller increments
     let currentZoom = 15;
-    const targetZoom = 18; // Very close for precise pin placement
+    const targetZoom = 18;
+    const zoomIncrement = 0.1; // Much smaller increment for smoothness
+    const animationSpeed = 50; // Faster interval (ms)
     
-    const zoomInterval = setInterval(() => {
-      currentZoom += 0.5; // Gradual increment
+    const smoothZoom = setInterval(() => {
+      currentZoom += zoomIncrement;
       map.setZoom(currentZoom);
       
       if (currentZoom >= targetZoom) {
-        clearInterval(zoomInterval);
+        map.setZoom(targetZoom); // Ensure exact final zoom
+        clearInterval(smoothZoom);
       }
-    }, 200); // Smooth animation over ~1.2 seconds
+    }, animationSpeed);
+    
+    // Total animation time: ~600ms (very fast and smooth)
   }, []);
 
   // Define updateMapLocation function
