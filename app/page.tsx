@@ -1607,7 +1607,7 @@ function HomePageContent(): React.JSX.Element {
             {/* Feature 1 */}
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 rounded-full border-2 border-[#294a46] flex items-center justify-center mb-4">
-                <MapPin className="h-8 w-8 text-[#294a46]" />
+                <span className="text-2xl">📍</span>
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">Real-Time Tracking</h3>
               <p className="text-gray-600 mb-2">Track mechanic in real-time and get accurate ETA.</p>
