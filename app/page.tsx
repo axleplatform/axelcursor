@@ -109,9 +109,6 @@ function HomePageContent(): React.JSX.Element {
 
   // Initialize Google Maps Autocomplete with new Places API
   const initializeAutocomplete = useCallback(async () => {
-    const container = document.getElementById('google-autocomplete-container');
-    if (!container) return;
-
     // Prevent multiple initializations
     if (autocompleteRef.current) {
       console.log('✅ Autocomplete already initialized, skipping...');
@@ -122,19 +119,19 @@ function HomePageContent(): React.JSX.Element {
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
 
-      // Clear any existing content
-      container.innerHTML = '';
-
-      // Find the visible input field
-      const visibleInput = container.parentElement?.querySelector('input[type="text"]') as HTMLInputElement;
+      // Find the visible input field directly
+      const visibleInput = document.querySelector('.location-input-wrapper input[type="text"]') as HTMLInputElement;
       if (!visibleInput) {
         console.warn('Visible input not found, skipping autocomplete initialization');
         return;
       }
 
+      console.log('🔍 Found visible input:', visibleInput);
+
       // Try to create the new PlaceAutocompleteElement
       let autocomplete;
       try {
+        // For the new Places API, we need to create it and then sync with our input
         autocomplete = new google.maps.places.PlaceAutocompleteElement({
           componentRestrictions: { country: 'us' },
           types: ['address', 'establishment']
@@ -151,9 +148,6 @@ function HomePageContent(): React.JSX.Element {
           padding: 0 16px 0 40px !important;
           box-sizing: border-box !important;
         `;
-
-        // Append the autocomplete element to our container
-        container.appendChild(autocomplete);
 
         // Add event listener for place selection
         autocomplete.addEventListener('place_changed', () => {
@@ -189,7 +183,7 @@ function HomePageContent(): React.JSX.Element {
         });
         
         autocompleteRef.current = traditionalAutocomplete;
-        console.log('✅ Traditional Autocomplete initialized successfully');
+        console.log('✅ Traditional Autocomplete initialized successfully on visible input');
       }
       
     } catch (error) {
@@ -199,15 +193,11 @@ function HomePageContent(): React.JSX.Element {
 
   // Initialize autocomplete on mount
   useEffect(() => {
-    const container = document.getElementById('google-autocomplete-container');
-    if (container && !autocompleteRef.current) {
-      console.log('🔍 Container found, initializing autocomplete...');
-      console.log('🔍 Container element:', container);
+    if (!autocompleteRef.current) {
+      console.log('🔍 Initializing autocomplete...');
       initializeAutocomplete();
-    } else if (autocompleteRef.current) {
-      console.log('✅ Autocomplete already initialized, skipping...');
     } else {
-      console.log('❌ Container element not found');
+      console.log('✅ Autocomplete already initialized, skipping...');
     }
   }, []); // Only run once on mount
 
@@ -1288,7 +1278,6 @@ function HomePageContent(): React.JSX.Element {
                 onClick={() => console.log('📍 Location input clicked')}
                 onFocus={() => console.log('📍 Location input focused')}
               />
-              <div id="google-autocomplete-container" className="w-full h-[50px] relative z-40 absolute top-0 left-0 pointer-events-none opacity-0"></div>
               {/* Hidden input for form validation */}
               <input
                 type="text"
