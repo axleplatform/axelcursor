@@ -114,7 +114,7 @@ export async function searchPlacesNew(input: string, sessionToken: string): Prom
     
     const requestBody = {
       input: input,
-      includedPrimaryTypes: ["address"],
+      includedPrimaryTypes: ["street_address", "route", "locality"],
       includedRegionCodes: ["us"],
       sessionToken: sessionToken,
       languageCode: "en"
