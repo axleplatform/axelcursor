@@ -108,7 +108,7 @@ function generateSecureSessionToken(): string {
 }
 
 // New Places API autocomplete using HTTP POST
-export async function searchPlacesNew(input: string, sessionToken: string): Promise<any> {
+export async function searchPlacesNew(input: string, sessionToken: string, signal?: AbortSignal): Promise<any> {
   try {
     const apiKey = await getGoogleMapsApiKey();
     
@@ -129,7 +129,8 @@ export async function searchPlacesNew(input: string, sessionToken: string): Prom
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': apiKey,
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
+      signal: signal
     });
     
     // Log the full response for debugging
@@ -224,6 +225,7 @@ export async function createNewPlacesAutocomplete(
     let suggestionsContainer: HTMLDivElement | null = null;
     let currentSuggestions: any[] = [];
     let searchTimeout: NodeJS.Timeout | null = null;
+    let currentAbortController: AbortController | null = null;
     let sessionToken = generateSecureSessionToken();
 
     console.log('🔍 createNewPlacesAutocomplete: Creating suggestions container...');
@@ -374,10 +376,18 @@ export async function createNewPlacesAutocomplete(
     const handleInputChange = async (e: Event) => {
       const query = (e.target as HTMLInputElement).value.trim();
       
+      // Cancel previous timeout
       if (searchTimeout) {
         clearTimeout(searchTimeout);
       }
       
+      // Cancel previous API request
+      if (currentAbortController) {
+        currentAbortController.abort();
+        currentAbortController = null;
+      }
+      
+      // Don't make API calls for inputs less than 3 characters
       if (query.length < 3) {
         if (suggestionsContainer) {
           suggestionsContainer.style.display = 'none';
@@ -387,8 +397,11 @@ export async function createNewPlacesAutocomplete(
       
       searchTimeout = setTimeout(async () => {
         try {
-          // Try new Places API first
-          const data = await searchPlacesNew(query, sessionToken);
+          // Create new AbortController for this request
+          currentAbortController = new AbortController();
+          
+          // Try new Places API with abort signal
+          const data = await searchPlacesNew(query, sessionToken, currentAbortController.signal);
           
           if (data.suggestions && Array.isArray(data.suggestions)) {
             showSuggestions(data.suggestions.slice(0, 5)); // Limit to 5 suggestions
@@ -397,10 +410,15 @@ export async function createNewPlacesAutocomplete(
             showSuggestions([]);
           }
         } catch (error) {
-          console.error('New Places API failed:', error);
-          showSuggestions([]);
+          // Don't show error if request was aborted
+          if (error.name !== 'AbortError') {
+            console.error('New Places API failed:', error);
+            showSuggestions([]);
+          }
+        } finally {
+          currentAbortController = null;
         }
-      }, 300); // 300ms debounce
+      }, 500); // 500ms debounce (increased from 300ms)
     };
     
     // Disable browser's native autocomplete
@@ -468,6 +486,9 @@ export async function createNewPlacesAutocomplete(
       cleanup: () => {
         if (searchTimeout) {
           clearTimeout(searchTimeout);
+        }
+        if (currentAbortController) {
+          currentAbortController.abort();
         }
         if (suggestionsContainer) {
           suggestionsContainer.remove();
