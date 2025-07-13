@@ -119,6 +119,13 @@ function HomePageContent(): React.JSX.Element {
       // Clear any existing content
       container.innerHTML = '';
 
+      // Find the visible input field
+      const visibleInput = container.parentElement?.querySelector('input[type="text"]') as HTMLInputElement;
+      if (!visibleInput) {
+        console.warn('Visible input not found, skipping autocomplete initialization');
+        return;
+      }
+
       // Try to create the new PlaceAutocompleteElement
       let autocomplete;
       try {
@@ -159,18 +166,8 @@ function HomePageContent(): React.JSX.Element {
       } catch (placesApiError) {
         console.warn('New Places API not available, falling back to traditional input:', placesApiError);
         
-        // Fallback to traditional input with autocomplete
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.placeholder = 'Type your address here...';
-        input.className = 'w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46] transition-all duration-200';
-        input.value = formData.location;
-        input.addEventListener('input', (e) => handleLocationChange(e.target.value));
-        
-        container.appendChild(input);
-        
-        // Create traditional autocomplete
-        const traditionalAutocomplete = new google.maps.places.Autocomplete(input, {
+        // Use the existing visible input for traditional autocomplete
+        const traditionalAutocomplete = new google.maps.places.Autocomplete(visibleInput, {
           componentRestrictions: { country: 'us' },
           types: ['address', 'establishment']
         });
@@ -1273,7 +1270,17 @@ function HomePageContent(): React.JSX.Element {
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                 <MapPin className="h-5 w-5 text-gray-400" />
               </div>
-              <div id="google-autocomplete-container" className="w-full h-[50px] relative z-50"></div>
+              {/* Visible input for manual typing */}
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => handleLocationChange(e.target.value)}
+                placeholder="Type your address here..."
+                className="w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46] transition-all duration-200 relative z-50"
+                onClick={() => console.log('📍 Location input clicked')}
+                onFocus={() => console.log('📍 Location input focused')}
+              />
+              <div id="google-autocomplete-container" className="w-full h-[50px] relative z-40 absolute top-0 left-0 pointer-events-none opacity-0"></div>
               {/* Hidden input for form validation */}
               <input
                 type="text"
