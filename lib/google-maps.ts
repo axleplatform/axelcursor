@@ -26,7 +26,7 @@ export async function getGoogleMapsApiKey(): Promise<string> {
   }
 }
 
-// Load Google Maps API only once
+// Load Google Maps API with Places library
 export async function loadGoogleMaps(): Promise<any> {
   // Return cached instance if already loaded
   if (googleMapsInstance) {
@@ -50,11 +50,22 @@ export async function loadGoogleMaps(): Promise<any> {
       const loader = new Loader({
         apiKey,
         version: 'weekly',
-        libraries: ['geometry', 'marker'],
+        libraries: ['places', 'geometry', 'marker'],
         mapIds: ['DEMO_MAP_ID']
       });
 
       const google = await loader.load();
+      
+      // Ensure Places library is loaded
+      if (!google.maps.places) {
+        console.warn('Places library not loaded, attempting to load manually...');
+        try {
+          await google.maps.importLibrary('places');
+        } catch (placesError) {
+          console.error('Failed to load Places library:', placesError);
+        }
+      }
+      
       googleMapsInstance = google;
       return google;
     } catch (error) {
@@ -67,39 +78,121 @@ export async function loadGoogleMaps(): Promise<any> {
   return loadingPromise;
 }
 
-// Safe autocomplete initialization with new Places API
-export async function createSafeAutocomplete(
+// Create autocomplete with new Places API
+export async function createAutocomplete(
   inputElement: HTMLInputElement,
+  onPlaceSelect: (place: any) => void,
   options: any = {}
 ): Promise<any> {
-  const google = await loadGoogleMaps();
-  
-  // Check if element is still valid
-  if (!inputElement || !inputElement.isConnected) {
-    throw new Error('Input element is not connected to DOM');
-  }
-  
-  // Clean up any existing autocomplete on this element
-  const existingInstance = autocompleteInstances.get(inputElement);
-  if (existingInstance) {
-    try {
-      safeCleanupAutocomplete(existingInstance);
-    } catch (error) {
-      console.warn('Error cleaning up existing autocomplete:', error);
+  try {
+    const google = await loadGoogleMaps();
+    
+    // Check if element is still valid
+    if (!inputElement || !inputElement.isConnected) {
+      throw new Error('Input element is not connected to DOM');
     }
+    
+    // Clean up any existing autocomplete on this element
+    const existingInstance = autocompleteInstances.get(inputElement);
+    if (existingInstance) {
+      try {
+        cleanupAutocomplete(existingInstance);
+      } catch (error) {
+        console.warn('Error cleaning up existing autocomplete:', error);
+      }
+    }
+    
+    // Try the new PlaceAutocompleteElement first
+    if (google.maps.places?.PlaceAutocompleteElement) {
+      try {
+        console.log('🔄 Using new PlaceAutocompleteElement API');
+        
+        // Create the autocomplete element
+        const autocomplete = new google.maps.places.PlaceAutocompleteElement({
+          componentRestrictions: { country: 'us' },
+          types: ['address', 'establishment'],
+          ...options
+        });
+        
+        // Style the autocomplete element
+        autocomplete.style.cssText = `
+          width: 100% !important;
+          height: 50px !important;
+          border: 1px solid #d1d5db !important;
+          border-radius: 8px !important;
+          background-color: white !important;
+          font-size: 16px !important;
+          padding: 0 16px 0 40px !important;
+          box-sizing: border-box !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          z-index: 40 !important;
+        `;
+        
+        // Replace the input with the autocomplete element
+        const container = inputElement.parentElement;
+        if (container) {
+          // Hide the original input
+          inputElement.style.opacity = '0';
+          inputElement.style.position = 'absolute';
+          inputElement.style.zIndex = '-1';
+          
+          // Add the autocomplete element
+          container.appendChild(autocomplete);
+          
+          // Add event listener for place selection
+          autocomplete.addEventListener('gmp-placeselect', (event: any) => {
+            console.log('📍 Place selected (new API):', event);
+            const place = event.detail?.place;
+            if (place && place.geometry) {
+              onPlaceSelect(place);
+            }
+          });
+          
+          // Track instance for cleanup
+          autocompleteInstances.set(inputElement, autocomplete);
+          
+          console.log('✅ New Places API autocomplete initialized successfully');
+          return autocomplete;
+        }
+      } catch (newApiError) {
+        console.warn('New Places API failed, falling back to legacy:', newApiError);
+      }
+    }
+    
+    // Fallback to legacy Autocomplete if new API fails
+    if (google.maps.places?.Autocomplete) {
+      console.log('🔄 Using legacy Autocomplete API');
+      
+      const autocomplete = new google.maps.places.Autocomplete(inputElement, {
+        componentRestrictions: { country: 'us' },
+        types: ['address', 'establishment'],
+        ...options
+      });
+      
+      // Add event listener for place selection
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        console.log('📍 Place selected (legacy API):', place);
+        if (place && place.geometry) {
+          onPlaceSelect(place);
+        }
+      });
+      
+      // Track instance for cleanup
+      autocompleteInstances.set(inputElement, autocomplete);
+      
+      console.log('✅ Legacy Autocomplete API initialized successfully');
+      return autocomplete;
+    }
+    
+    throw new Error('Neither new nor legacy Places API is available');
+    
+  } catch (error) {
+    console.error('Failed to create autocomplete:', error);
+    throw error;
   }
-  
-  // Create autocomplete with the new PlaceAutocompleteElement API
-  const autocomplete = new google.maps.places.PlaceAutocompleteElement({
-    componentRestrictions: { country: 'us' },
-    types: ['address', 'establishment'],
-    ...options
-  });
-  
-  // Track instance for cleanup
-  autocompleteInstances.set(inputElement, autocomplete);
-  
-  return autocomplete;
 }
 
 // Cleanup autocomplete safely

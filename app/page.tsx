@@ -125,9 +125,6 @@ function HomePageContent(): React.JSX.Element {
     }
 
     try {
-      const { loadGoogleMaps } = await import('@/lib/google-maps');
-      const google = await loadGoogleMaps();
-
       // Find the visible input field directly
       const visibleInput = document.querySelector('.location-input-wrapper input[type="text"]') as HTMLInputElement;
       if (!visibleInput) {
@@ -136,74 +133,36 @@ function HomePageContent(): React.JSX.Element {
       }
 
       console.log('🔍 Found visible input:', visibleInput);
-      console.log('🔍 Available Google Maps APIs:', Object.keys(google.maps || {}));
 
-      // Check if new Places API is available
-      if (google.maps?.places?.PlaceAutocompleteElement) {
-        try {
-          // Create the new PlaceAutocompleteElement
-          const autocomplete = new google.maps.places.PlaceAutocompleteElement({
-            componentRestrictions: { country: 'us' },
-            types: ['address', 'establishment']
-          });
-
-          // Style the autocomplete element to match our input
-          autocomplete.style.cssText = `
-            width: 100% !important;
-            height: 50px !important;
-            border: 1px solid #d1d5db !important;
-            border-radius: 8px !important;
-            background-color: white !important;
-            font-size: 16px !important;
-            padding: 0 16px 0 40px !important;
-            box-sizing: border-box !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            z-index: 40 !important;
-          `;
-
-          // Replace the visible input with the autocomplete element
-          const container = visibleInput.parentElement;
-          if (container) {
-            // Hide the original input
-            visibleInput.style.opacity = '0';
-            visibleInput.style.position = 'absolute';
-            visibleInput.style.zIndex = '-1';
-            
-            // Add the autocomplete element
-            container.appendChild(autocomplete);
-          }
-
-          // Add event listener for place selection
-          autocomplete.addEventListener('place_changed', () => {
-            const place = autocomplete.getPlace();
-            console.log('📍 Place selected (new API):', place);
-            if (place && place.geometry) {
-              const address = place.formatted_address || '';
-              handleLocationChange(address);
-              handleLocationSelect(place);
-            }
-          });
-
-          autocompleteRef.current = autocomplete;
-          console.log('✅ New Places API (PlaceAutocompleteElement) initialized successfully:', autocomplete);
-          
-        } catch (placesApiError) {
-          console.error('New Places API not available:', placesApiError);
-          console.log('⚠️ Falling back to manual input with geocoding');
-        }
-      } else {
-        console.log('⚠️ New Places API not available, using manual input with geocoding');
-      }
+      // Use the new createAutocomplete function
+      const { createAutocomplete } = await import('@/lib/google-maps');
       
-      // Always ensure the input is visible for manual typing
-      visibleInput.style.opacity = '1';
-      visibleInput.style.position = 'relative';
-      visibleInput.style.zIndex = '50';
+      const autocomplete = await createAutocomplete(visibleInput, (place) => {
+        console.log('📍 Place selected:', place);
+        if (place && place.geometry) {
+          const address = place.formatted_address || '';
+          handleLocationChange(address);
+          handleLocationSelect(place);
+        }
+      }, {
+        componentRestrictions: { country: 'us' },
+        types: ['address', 'establishment']
+      });
+
+      autocompleteRef.current = autocomplete;
+      console.log('✅ Autocomplete initialized successfully:', autocomplete);
       
     } catch (error) {
       console.error('Error initializing autocomplete:', error);
+      console.log('⚠️ Falling back to manual input with geocoding');
+      
+      // Ensure the input is visible for manual typing as fallback
+      const visibleInput = document.querySelector('.location-input-wrapper input[type="text"]') as HTMLInputElement;
+      if (visibleInput) {
+        visibleInput.style.opacity = '1';
+        visibleInput.style.position = 'relative';
+        visibleInput.style.zIndex = '50';
+      }
     }
   }, []); // Remove formData.location dependency
 
