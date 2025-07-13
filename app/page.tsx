@@ -141,8 +141,12 @@ function HomePageContent(): React.JSX.Element {
           console.log('📍 Place selected:', place);
           if (place && place.geometry) {
             const address = place.formatted_address || '';
-            handleLocationChange(address);
-            handleLocationSelect(place);
+            // Update form data directly
+            setFormData(f => ({ ...f, location: address }));
+            // Call handleLocationSelect if it exists
+            if (typeof handleLocationSelect === 'function') {
+              handleLocationSelect(place);
+            }
           }
         },
         onError: (err: string) => {
@@ -160,7 +164,7 @@ function HomePageContent(): React.JSX.Element {
       console.error('Error initializing autocomplete:', error);
       console.log('⚠️ Falling back to manual input with geocoding');
     }
-  }, [handleLocationChange, handleLocationSelect]);
+  }, []); // Remove dependencies to avoid hoisting issues
 
   // Initialize autocomplete on mount
   useEffect(() => {
