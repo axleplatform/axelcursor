@@ -43,4 +43,4 @@ export function testPlacesAPIFromBrowser() {
   testPlacesAPINew().then(available => {
     console.log('Places API (New) available:', available);
   });
-} 
+}

@@ -193,4 +193,4 @@ export function useGoogleMaps({
     mapInstance: mapInstanceRef.current,
     markerInstance: markerInstanceRef.current
   };
-} 
+}

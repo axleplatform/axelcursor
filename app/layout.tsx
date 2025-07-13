@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
@@ -14,6 +13,7 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Axle - Mobile Mechanic Service",
   description: "Professional mobile mechanic service at your location",
+    generator: 'v0.dev'
 }
 
 // Global error handler to suppress DOM errors

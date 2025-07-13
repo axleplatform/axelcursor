@@ -29,7 +29,7 @@ This document outlines the safe, React-friendly pattern for integrating Google M
 ## 🚀 **Usage Examples**
 
 ### **Autocomplete Input**
-```tsx
+\`\`\`tsx
 import { useGoogleMapsAutocomplete } from '@/hooks/use-google-maps-autocomplete';
 
 function LocationInput() {
@@ -53,10 +53,10 @@ function LocationInput() {
     </div>
   );
 }
-```
+\`\`\`
 
 ### **Interactive Map**
-```tsx
+\`\`\`tsx
 import { useGoogleMaps } from '@/hooks/use-google-maps';
 
 function LocationMap() {
@@ -77,7 +77,7 @@ function LocationMap() {
 
   return <div ref={mapRef} className="h-400 w-full" />;
 }
-```
+\`\`\`
 
 ## 🏗️ **Architecture**
 
@@ -102,42 +102,42 @@ function LocationMap() {
 ### **Key Features**
 
 #### **1. Single Script Loading**
-```typescript
+\`\`\`typescript
 // Loads Google Maps only once, caches the instance
 const google = await loadGoogleMaps();
-```
+\`\`\`
 
 #### **2. Dedicated Containers**
-```typescript
+\`\`\`typescript
 // Creates isolated container for autocomplete dropdown
 const container = document.createElement('div');
 inputElement.parentElement?.appendChild(container);
-```
+\`\`\`
 
 #### **3. Proper Cleanup**
-```typescript
+\`\`\`typescript
 // Cleans up listeners and removes containers
 cleanupAutocomplete(autocomplete);
-```
+\`\`\`
 
 ## 🔧 **Migration Guide**
 
 ### **Before (Problematic)**
-```tsx
+\`\`\`tsx
 // ❌ Direct DOM manipulation
 useEffect(() => {
   const autocomplete = new google.maps.places.Autocomplete(inputRef.current);
   // No cleanup, DOM conflicts
 }, []);
-```
+\`\`\`
 
 ### **After (Safe)**
-```tsx
+\`\`\`tsx
 // ✅ React-friendly pattern
 const { inputRef, isLoading, error } = useGoogleMapsAutocomplete({
   onPlaceSelect: handlePlaceSelect
 });
-```
+\`\`\`
 
 ## 🛡️ **Error Handling**
 
@@ -180,16 +180,16 @@ const { inputRef, isLoading, error } = useGoogleMapsAutocomplete({
 - Check for JavaScript errors in console
 
 ### **Debug Tools**
-```typescript
+\`\`\`typescript
 // Reset global state for testing
 import { resetGoogleMapsState } from '@/lib/google-maps';
 resetGoogleMapsState();
-```
+\`\`\`
 
 ## 🧪 **Testing**
 
 ### **Unit Tests**
-```typescript
+\`\`\`typescript
 // Test hook behavior
 import { renderHook } from '@testing-library/react';
 import { useGoogleMapsAutocomplete } from '@/hooks/use-google-maps-autocomplete';
@@ -201,10 +201,10 @@ test('should initialize autocomplete', () => {
   
   expect(result.current.isLoading).toBe(true);
 });
-```
+\`\`\`
 
 ### **Integration Tests**
-```typescript
+\`\`\`typescript
 // Test component integration
 import { render, screen } from '@testing-library/react';
 import LocationInput from './LocationInput';
@@ -213,7 +213,7 @@ test('should render location input', () => {
   render(<LocationInput />);
   expect(screen.getByPlaceholderText('Enter address')).toBeInTheDocument();
 });
-```
+\`\`\`
 
 ## 📝 **Best Practices**
 
@@ -263,4 +263,4 @@ test('should render location input', () => {
 
 - [Google Maps JavaScript API Documentation](https://developers.google.com/maps/documentation/javascript)
 - [React Hooks Documentation](https://react.dev/reference/react/hooks)
-- [Google Maps Places API](https://developers.google.com/maps/documentation/javascript/places) 
+- [Google Maps Places API](https://developers.google.com/maps/documentation/javascript/places)
