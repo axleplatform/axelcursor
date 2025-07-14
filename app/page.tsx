@@ -2036,6 +2036,79 @@ function HomePageContent(): React.JSX.Element {
           transition: all 0.2s ease-out;
         }
       `}</style>
+
+      {/* Debug: Log when map update is triggered by location change */}
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+        
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out;
+        }
+        
+        .animate-shake {
+          animation: shake 0.5s ease-in-out;
+        }
+        
+        /* Remove all outline and glow effects from continue button */
+        button[type="submit"] {
+          outline: none !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
+        
+        button[type="submit"]:hover,
+        button[type="submit"]:focus,
+        button[type="submit"]:active {
+          outline: none !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
+        
+        /* Screen reader only class */
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+        }
+        
+        /* Custom tooltip animations */
+        .tooltip-enter {
+          opacity: 0;
+          transform: translateY(-5px) translateX(-50%);
+        }
+        
+        .tooltip-enter-active {
+          opacity: 1;
+          transform: translateY(0) translateX(-50%);
+          transition: all 0.2s ease-out;
+        }
+      `}</style>
     </div>
   )
 }
