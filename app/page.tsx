@@ -997,19 +997,16 @@ function HomePageContent(): React.JSX.Element {
               console.log('✅ Delete response:', deleteData);
               console.log('✅ Previous quotes removed - appointment available for new quotes');
               
-              // Verify quotes were actually deleted
-              const { data: verifyQuotes, error: verifyError } = await supabase
+              // VERIFY the deletion worked
+              const { data: verifyDeleted, error: verifyError } = await supabase
                 .from('mechanic_quotes')
                 .select('*')
                 .eq('appointment_id', finalAppointmentId);
               
-              if (verifyError) {
-                console.error('❌ Error verifying quote deletion:', verifyError);
-              } else if (verifyQuotes && verifyQuotes.length > 0) {
-                console.error('❌ QUOTES STILL EXIST after deletion! Count:', verifyQuotes.length);
-                console.error('❌ Remaining quotes:', verifyQuotes);
-              } else {
-                console.log('✅ Verification successful - all quotes deleted');
+              console.log('🔍 Quotes remaining after delete:', verifyDeleted);
+              
+              if (verifyDeleted && verifyDeleted.length > 0) {
+                console.error('❌ QUOTES STILL EXIST AFTER DELETE!');
               }
             }
           } else {
