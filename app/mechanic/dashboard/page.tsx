@@ -715,7 +715,61 @@ export default function MechanicDashboard() {
 
       // STEP 1: Get all pending appointments first with ALL fields
       console.log('🔍 Fetching all pending appointments before filtering...');
-      const { data: allPendingAppointments, error: appointmentsError } = await supabase
+      
+      // Test 1: Just appointments
+      const { data: test1, error: error1 } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('status', 'pending');
+      console.log('Test 1 - Basic query:', { data: test1?.length, error: error1 });
+      
+      if (error1) {
+        console.error('❌ DETAILED ERROR Test 1:', error1.message, error1.details, error1.hint);
+        console.error('Full error object:', JSON.stringify(error1, null, 2));
+      }
+      
+      // Test 2: Add users join with explicit foreign key
+      const { data: test2, error: error2 } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          users!appointments_user_id_fkey (
+            email,
+            full_name,
+            phone,
+            is_guest
+          )
+        `)
+        .eq('status', 'pending');
+      console.log('Test 2 - With users (explicit FK):', { data: test2?.length, error: error2 });
+      
+      if (error2) {
+        console.error('❌ DETAILED ERROR Test 2:', error2.message, error2.details, error2.hint);
+        console.error('Full error object:', JSON.stringify(error2, null, 2));
+      }
+      
+      // Test 2b: Add users join with simpler syntax
+      const { data: test2b, error: error2b } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          users (
+            email,
+            full_name,
+            phone,
+            is_guest
+          )
+        `)
+        .eq('status', 'pending');
+      console.log('Test 2b - With users (simple):', { data: test2b?.length, error: error2b });
+      
+      if (error2b) {
+        console.error('❌ DETAILED ERROR Test 2b:', error2b.message, error2b.details, error2b.hint);
+        console.error('Full error object:', JSON.stringify(error2b, null, 2));
+      }
+      
+      // Test 3: Add vehicles (this might be the problem)
+      const { data: test3, error: error3 } = await supabase
         .from('appointments')
         .select(`
           *,
@@ -727,8 +781,17 @@ export default function MechanicDashboard() {
           ),
           vehicles (*)
         `)
-        .eq('status', 'pending')
-        .order('appointment_date', { ascending: true });
+        .eq('status', 'pending');
+      console.log('Test 3 - With vehicles:', { data: test3?.length, error: error3 });
+      
+      if (error3) {
+        console.error('❌ DETAILED ERROR Test 3:', error3.message, error3.details, error3.hint);
+        console.error('Full error object:', JSON.stringify(error3, null, 2));
+      }
+      
+      // Use the working query result (prioritize simpler queries if complex ones fail)
+      const allPendingAppointments = error3 ? (error2b ? test2b : (error2 ? test1 : test2)) : test3;
+      const appointmentsError = error3 || error2b || error2 || error1;
         
       console.log('🔍 RAW APPOINTMENT DATA:', allPendingAppointments?.slice(0, 2));
 
@@ -854,19 +917,24 @@ export default function MechanicDashboard() {
         if (validQuotes && validQuotes.length > 0) {
           const appointmentIds = validQuotes.map((q: any) => q.appointment_id);
           
-          const { data: appointments } = await supabase
-            .from('appointments')
-            .select(`
-              *,
-              users!appointments_user_id_fkey (
-                email,
-                full_name,
-                phone,
-                is_guest
-              ),
-              vehicles (*)
-            `)
-            .in('id', appointmentIds)
+                  const { data: appointments, error: upcomingError } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            users (
+              email,
+              full_name,
+              phone,
+              is_guest
+            ),
+            vehicles (*)
+          `)
+          .in('id', appointmentIds)
+          
+        if (upcomingError) {
+          console.error('❌ DETAILED ERROR Upcoming appointments:', upcomingError.message, upcomingError.details, upcomingError.hint);
+          console.error('Full error object:', JSON.stringify(upcomingError, null, 2));
+        }
           
         console.log('🔍 RAW UPCOMING APPOINTMENT DATA:', appointments?.slice(0, 2));
         
