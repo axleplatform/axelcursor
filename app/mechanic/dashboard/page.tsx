@@ -713,19 +713,26 @@ export default function MechanicDashboard() {
     try {
       setIsAppointmentsLoading(true);
 
-      // STEP 1: Get all pending appointments first
+      // STEP 1: Get all pending appointments first with ALL fields
       console.log('🔍 Fetching all pending appointments before filtering...');
       const { data: allPendingAppointments, error: appointmentsError } = await supabase
         .from('appointments')
         .select(`
           *,
-          users!appointments_user_id_fkey (email, phone),
+          users!appointments_user_id_fkey (
+            email,
+            full_name,
+            phone,
+            is_guest
+          ),
           vehicles!vehicles_appointment_id_fkey (*)
         `)
         .eq('status', 'pending')
         .is('selected_quote_id', null)
         .eq('is_being_edited', false)
         .order('appointment_date', { ascending: true });
+        
+      console.log('🔍 RAW APPOINTMENT DATA:', allPendingAppointments?.slice(0, 2));
 
       // DEBUG: Check for edited appointments that should be available
       console.log('🔍 Checking for edited appointments that should be available...');
@@ -844,10 +851,17 @@ export default function MechanicDashboard() {
           .from('appointments')
           .select(`
             *,
-            users!appointments_user_id_fkey (email, phone),
+            users!appointments_user_id_fkey (
+              email,
+              full_name,
+              phone,
+              is_guest
+            ),
             vehicles!vehicles_appointment_id_fkey (*)
           `)
           .in('id', appointmentIds)
+          
+        console.log('🔍 RAW UPCOMING APPOINTMENT DATA:', appointments?.slice(0, 2));
         
         // Step 3: Combine them properly and exclude edited appointments
         const upcomingWithQuotes = appointments?.map((apt: any) => {
@@ -1012,8 +1026,11 @@ export default function MechanicDashboard() {
      },
      (payload: RealtimePostgresChangesPayload<any>) => {
       console.log('📡 Appointment change detected:', payload)
-      // Refresh appointments when any appointment changes
-      fetchInitialAppointments()
+      console.log('📝 Appointment was edited by customer:', payload);
+      
+      // Force complete data refresh with fresh data
+      console.log('🔄 Forcing complete data refresh after appointment change...');
+      fetchInitialAppointments();
      }
     )
     .subscribe()
@@ -1093,14 +1110,17 @@ export default function MechanicDashboard() {
      },
      (payload: RealtimePostgresChangesPayload<any>) => {
       console.log('📝 Appointment was edited by customer:', payload)
+      
       // Show notification to mechanic
       toast({
        title: "Appointment Edited",
-       description: "An appointment you quoted was edited by the customer",
+       description: "An appointment you quoted was edited by the customer. Refreshing data...",
        variant: "default",
       })
-      // Refresh both lists
-      fetchInitialAppointments()
+      
+      // Force complete data refresh with fresh data
+      console.log('🔄 Forcing complete data refresh after appointment edit...');
+      fetchInitialAppointments();
      }
     )
     .subscribe()
