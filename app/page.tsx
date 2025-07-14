@@ -1040,6 +1040,28 @@ function HomePageContent(): React.JSX.Element {
             console.log('✅ Mechanics notified of appointment update via real-time');
           }
           
+          // UPDATE VEHICLE DATA BEFORE NAVIGATION
+          console.log('🚗 Updating vehicle data for appointment:', finalAppointmentId);
+          const vehicleData = {
+            year: formData.year,
+            make: formData.make,
+            model: formData.model,
+            mileage: parseInt(formData.mileage) || 0,
+            vin: formData.vin || null
+          }
+
+          const { error: vehicleError } = await supabase
+            .from('vehicles')
+            .update(vehicleData)
+            .eq('appointment_id', finalAppointmentId)
+
+          if (vehicleError) {
+            console.error('❌ Error updating vehicle data:', vehicleError);
+            throw vehicleError;
+          } else {
+            console.log('✅ Vehicle data updated successfully');
+          }
+          
           // Navigate to book-appointment page for edit mode (not pick-mechanic)
           console.log('🚀 Navigation starting - appointmentId:', finalAppointmentId)
           console.log('🚀 Navigating to:', `/book-appointment?appointment_id=${finalAppointmentId}`)
@@ -1076,26 +1098,8 @@ function HomePageContent(): React.JSX.Element {
           finalAppointmentId = createdAppointment.id
         }
 
-        // Handle vehicle data
-        if (appointmentId) {
-          // EDIT MODE - Update existing vehicle
-          const vehicleData = {
-            year: formData.year,
-            make: formData.make,
-            model: formData.model,
-            mileage: parseInt(formData.mileage) || 0,
-            vin: formData.vin || null
-          }
-
-          const { error: vehicleError } = await supabase
-            .from('vehicles')
-            .update(vehicleData)
-            .eq('appointment_id', finalAppointmentId)
-
-          if (vehicleError) {
-            throw vehicleError
-          }
-        } else {
+        // Handle vehicle data (only for CREATE mode now)
+        if (!appointmentId) {
           // CREATE MODE - Create new vehicle
           const vehicleData = {
             appointment_id: finalAppointmentId, // Foreign key to appointment
