@@ -2223,7 +2223,7 @@ export default function MechanicDashboard() {
                               ) : appointment.status === 'pending' && !isSelected ? (
                                 <div className="flex flex-col items-end">
                                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm mb-2 bg-yellow-100 text-yellow-800">
-                                    ⏳ Awaiting Customer Selection
+                                    ⏳ Pending
                                   </span>
                                   <div className="text-sm text-gray-600">
                                     <div className="flex items-center gap-2">
@@ -2459,13 +2459,13 @@ export default function MechanicDashboard() {
                                       onClick={() => handleEditAppointment(appointment)}
                                       className="flex-1 bg-[#294a46] text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99]"
                                     >
-                                      Edit Quote
+                                      Edit
                                     </button>
                                     <button
                                       onClick={() => handleCancelQuote(appointment.id)}
                                       className="flex-1 bg-red-600 text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-red-700 hover:shadow-md active:scale-[0.99]"
                                     >
-                                      Cancel Quote
+                                      Cancel
                                     </button>
                                   </div>
                                 )}

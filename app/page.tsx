@@ -934,12 +934,11 @@ function HomePageContent(): React.JSX.Element {
           // EDIT MODE - Update existing appointment
           console.log('📝 UPDATING existing appointment:', appointmentId);
           
-          // Check if appointment has quotes
+          // Check if appointment has quotes (any status)
           const { data: quotes } = await supabase
             .from('mechanic_quotes')
             .select('id')
-            .eq('appointment_id', appointmentId)
-            .eq('status', 'active');
+            .eq('appointment_id', appointmentId);
           
           // Prepare update data
           const updateData: AppointmentUpdateData = {
@@ -968,19 +967,44 @@ function HomePageContent(): React.JSX.Element {
           
           finalAppointmentId = appointmentId;
           
-          // Delete existing quotes when appointment is edited
-          if (quotes && quotes.length > 0) {
-            console.log('🔄 Removing existing quotes for edited appointment...');
-            const { error: deleteError } = await supabase
-              .from('mechanic_quotes')
-              .delete()
-              .eq('appointment_id', finalAppointmentId);
-              
-            if (deleteError) {
-              console.error('Error removing old quotes:', deleteError);
-            } else {
-              console.log('✅ Previous quotes removed - appointment available for new quotes');
-            }
+          // Always delete existing quotes when appointment is edited (regardless of status)
+          console.log('🔄 Removing existing quotes for edited appointment...');
+          const { error: deleteError } = await supabase
+            .from('mechanic_quotes')
+            .delete()
+            .eq('appointment_id', finalAppointmentId);
+            
+          if (deleteError) {
+            console.error('Error removing old quotes:', deleteError);
+          } else {
+            console.log('✅ Previous quotes removed - appointment available for new quotes');
+          }
+          
+          // Also clear mechanic skips so they can quote again
+          const { error: deleteSkipsError } = await supabase
+            .from('mechanic_skipped_appointments')
+            .delete()
+            .eq('appointment_id', finalAppointmentId);
+            
+          if (deleteSkipsError) {
+            console.error('Error clearing mechanic skips:', deleteSkipsError);
+          } else {
+            console.log('✅ Mechanic skips cleared');
+          }
+          
+          // Notify mechanics via real-time about the appointment update
+          const { error: realtimeError } = await supabase
+            .from('appointment_updates')
+            .insert({
+              appointment_id: finalAppointmentId,
+              update_type: 'details_changed',
+              message: 'Customer updated appointment details. Previous quotes have been cleared.'
+            });
+
+          if (realtimeError) {
+            console.error('Warning: Could not send real-time notification:', realtimeError);
+          } else {
+            console.log('✅ Mechanics notified of appointment update via real-time');
           }
           
           // Navigate to book-appointment page for edit mode (not pick-mechanic)
