@@ -945,12 +945,14 @@ function HomePageContent(): React.JSX.Element {
           const updateData: AppointmentUpdateData = {
             ...appointmentData,
             updated_at: new Date().toISOString(),
-            is_being_edited: false
+            is_being_edited: false,
+            status: 'pending', // Reset to pending when edited
+            selected_mechanic_id: null, // Clear selected mechanic
+            edited_after_quotes: quotes && quotes.length > 0 ? true : false
           };
           
           // If has quotes and significant changes, mark as edited
           if (quotes && quotes.length > 0) {
-            updateData.edited_after_quotes = true;
             console.log('🔄 Marking appointment as edited after quotes');
           }
           
@@ -966,9 +968,24 @@ function HomePageContent(): React.JSX.Element {
           
           finalAppointmentId = appointmentId;
           
-          // Navigate back to pick-mechanic page for edit mode
+          // Delete existing quotes when appointment is edited
+          if (quotes && quotes.length > 0) {
+            console.log('🔄 Removing existing quotes for edited appointment...');
+            const { error: deleteError } = await supabase
+              .from('mechanic_quotes')
+              .delete()
+              .eq('appointment_id', finalAppointmentId);
+              
+            if (deleteError) {
+              console.error('Error removing old quotes:', deleteError);
+            } else {
+              console.log('✅ Previous quotes removed - appointment available for new quotes');
+            }
+          }
+          
+          // Navigate to book-appointment page for edit mode (not pick-mechanic)
           console.log('🚀 Navigation starting - appointmentId:', finalAppointmentId)
-          console.log('🚀 Navigating to:', `/pick-mechanic?appointment_id=${finalAppointmentId}`)
+          console.log('🚀 Navigating to:', `/book-appointment?appointment_id=${finalAppointmentId}`)
           
           // Save phone and email to sessionStorage when creating/updating appointment
           if (formData.phone) {
@@ -981,7 +998,7 @@ function HomePageContent(): React.JSX.Element {
           // Clear sessionStorage since we're moving to the next step
           sessionStorage.removeItem('axle-landing-form-data')
           
-          router.push(`/pick-mechanic?appointment_id=${finalAppointmentId}`)
+          router.push(`/book-appointment?appointment_id=${finalAppointmentId}`)
           return;
         } else {
           // CREATE MODE - Create new appointment
