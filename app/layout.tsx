@@ -29,6 +29,8 @@ export default function RootLayout({
       <head>
         {/* Load DOM fixes before anything else */}
         <Script src="/dom-fixes.js" strategy="beforeInteractive" />
+        {/* Scroll to top on navigation */}
+        <Script src="/scroll-to-top.js" strategy="beforeInteractive" />
       </head>
       <body className={inter.className}>
         <ThemeProvider

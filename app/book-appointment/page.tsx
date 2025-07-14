@@ -881,7 +881,7 @@ function BookAppointmentContent() {
       // Clear sessionStorage since we're moving to the next step
       sessionStorage.removeItem('axle-book-appointment-form-data')
       
-      router.push(`/pick-mechanic?appointmentId=${appointment.id}`)
+      router.push(`/pick-mechanic?appointment_id=${appointment.id}`)
     } catch (err) {
       console.error("Error creating/updating appointment:", err)
       setValidationError(err instanceof Error ? err.message : "Failed to save appointment")
@@ -1162,7 +1162,7 @@ function BookAppointmentContent() {
       }
 
       // Navigate to pick mechanic page
-      router.push(`/pick-mechanic?appointmentId=${appointmentId}`)
+      router.push(`/pick-mechanic?appointment_id=${appointmentId}`)
     } catch (error) {
       console.error('❌ Error updating appointment:', error)
       toast({

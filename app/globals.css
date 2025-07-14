@@ -133,6 +133,19 @@ textarea:focus {
   z-index: 100 !important;
 }
 
+/* Prevent zoom on input focus for mobile devices */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="password"],
+  select,
+  textarea {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+}
+
 /* Google Places autocomplete dropdown positioning */
 .pac-container {
   z-index: 9999 !important;

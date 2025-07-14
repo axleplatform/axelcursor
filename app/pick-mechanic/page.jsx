@@ -58,10 +58,57 @@ function PickMechanicContent() {
    "Adding Processing fee"
  ]
 
- // Get appointmentId from searchParams
- const appointmentId = searchParams?.get("appointmentId")
+ // Get appointmentId from searchParams (check both parameter names for consistency)
+ const appointmentId = searchParams?.get("appointmentId") || searchParams?.get("appointment_id")
  
  console.log("🔍 AppointmentId from searchParams:", appointmentId)
+
+   // Early return if no appointment ID
+  if (!appointmentId) {
+   return (
+    <div className="flex flex-col min-h-screen">
+     <SiteHeader />
+     <main className="flex-1 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+       <div className="text-center">
+        <h2 className="text-2xl font-bold mb-4 text-[#294a46]">No Appointment Found</h2>
+        <p className="text-gray-600 mb-6">Please start a new appointment request.</p>
+        <Button onClick={() => router.push('/')} className="bg-[#294a46] hover:bg-[#1e3632]">
+         Go to Home
+        </Button>
+       </div>
+      </div>
+     </main>
+     <Footer />
+    </div>
+   )
+  }
+
+  // Show error state if appointment failed to load
+  if (error && !isLoading) {
+   return (
+    <div className="flex flex-col min-h-screen">
+     <SiteHeader />
+     <main className="flex-1 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+       <div className="text-center">
+        <h2 className="text-2xl font-bold mb-4 text-[#294a46]">Error Loading Appointment</h2>
+        <p className="text-gray-600 mb-6">{error}</p>
+        <div className="space-x-4">
+         <Button onClick={() => router.push('/')} className="bg-[#294a46] hover:bg-[#1e3632]">
+          Go to Home
+         </Button>
+         <Button onClick={() => window.location.reload()} variant="outline">
+          Try Again
+         </Button>
+        </div>
+       </div>
+      </div>
+     </main>
+     <Footer />
+    </div>
+   )
+  }
 
  // Move fetchAppointmentData OUTSIDE of useCallback to fix dependency issues
  const fetchAppointmentData = async () => {
@@ -676,69 +723,87 @@ function PickMechanicContent() {
        </Card>
       </div>
 
-      {/* Stripe Payment Section */}
-      <div className="w-full lg:w-1/3">
-       <Card className="p-4 border border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 mb-6">
-        <div className="flex items-center justify-center mb-3">
-         <CreditCard className="h-5 w-5 text-[#294a46] mr-2" />
-         <h3 className="font-semibold text-gray-700 text-sm">Payment Integration Coming Soon</h3>
-        </div>
-        <div className="space-y-2">
-         <div className="h-8 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
-         <div className="grid grid-cols-2 gap-2">
-          <div className="h-8 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
-          <div className="h-8 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+             {/* Stripe Payment Section */}
+       <div className="w-full lg:w-1/3">
+        <Card className="p-4 border border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 mb-6">
+         <div className="flex items-center justify-center mb-3">
+          <CreditCard className="h-5 w-5 text-[#294a46] mr-2" />
+          <h3 className="font-semibold text-gray-700 text-sm">Payment Integration Coming Soon</h3>
          </div>
-        </div>
-        <p className="text-xs text-gray-500 text-center mt-3">Secure payment processing with Stripe</p>
-       </Card>
+         <div className="space-y-2">
+          <div className="h-8 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+          <div className="grid grid-cols-2 gap-2">
+           <div className="h-8 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+           <div className="h-8 bg-white rounded-lg border border-gray-200 shadow-sm"></div>
+          </div>
+         </div>
+         <p className="text-xs text-gray-500 text-center mt-3">Secure payment processing with Stripe</p>
+        </Card>
+
+        {/* Loading state for Order Summary */}
+        {isLoading && (
+         <Card className="p-0 bg-white shadow-lg sticky top-8 h-fit">
+          <div className="p-4 border-b bg-gradient-to-r from-[#294a46] to-[#1e3632]">
+           <h2 className="text-lg font-semibold text-white">Order Summary</h2>
+           <p className="text-gray-200 text-sm mt-1">Loading appointment details...</p>
+          </div>
+          <div className="p-4">
+           <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#294a46]"></div>
+           </div>
+          </div>
+         </Card>
+        )}
 
        {/* Order Summary */}
-       <Card className="p-0 bg-white shadow-lg sticky top-8 h-fit">
-        <div className="p-4 border-b bg-gradient-to-r from-[#294a46] to-[#1e3632]">
-         <h2 className="text-lg font-semibold text-white">Order Summary</h2>
-         <p className="text-gray-200 text-sm mt-1">Review your appointment details</p>
-        </div>
+       {!isLoading && appointment && (
+        <Card className="p-0 bg-white shadow-lg sticky top-8 h-fit">
+         <div className="p-4 border-b bg-gradient-to-r from-[#294a46] to-[#1e3632]">
+          <h2 className="text-lg font-semibold text-white">Order Summary</h2>
+          <p className="text-gray-200 text-sm mt-1">Review your appointment details</p>
+         </div>
 
         <div className="p-4">
          <div className="space-y-4">
-          <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
-           <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
-           <div className="flex-1">
-            <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Appointment Details</h3>
-            <p className="text-xs text-gray-600 mt-1">{formatDate(appointment.appointment_date)}</p>
-            <div className="flex items-start mt-1">
-             <GoogleMapsLink 
-               address={appointment.location}
-               latitude={appointment.latitude}
-               longitude={appointment.longitude}
-             />
+          {appointment && (
+           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+            <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
+            <div className="flex-1">
+             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Appointment Details</h3>
+             <p className="text-xs text-gray-600 mt-1">{appointment?.appointment_date ? formatDate(appointment.appointment_date) : 'No date specified'}</p>
+             <div className="flex items-start mt-1">
+              <GoogleMapsLink 
+                address={appointment?.location || 'No location specified'}
+                latitude={appointment?.latitude}
+                longitude={appointment?.longitude}
+              />
+             </div>
             </div>
            </div>
-          </div>
+          )}
 
-          {appointment.vehicles && (
+          {appointment?.vehicles && (
            <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
             <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🚗</span>
             <div className="flex-1">
              <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Vehicle</h3>
              <p className="text-xs text-gray-600 mt-1 font-medium">
-              {appointment.vehicles.year} {appointment.vehicles.make} {appointment.vehicles.model}
+              {appointment.vehicles?.year} {appointment.vehicles?.make} {appointment.vehicles?.model}
              </p>
-             {appointment.vehicles.color && (
+             {appointment.vehicles?.color && (
               <p className="text-xs text-gray-500 mt-1">Color: {appointment.vehicles.color}</p>
              )}
-             {appointment.vehicles.vin && (
+             {appointment.vehicles?.vin && (
               <p className="text-xs text-gray-500">VIN: {appointment.vehicles.vin}</p>
              )}
-             {appointment.vehicles.mileage && (
+             {appointment.vehicles?.mileage && (
               <p className="text-xs text-gray-500">Mileage: {appointment.vehicles.mileage}</p>
              )}
             </div>
            </div>
           )}
 
-          {appointment.selected_services && appointment.selected_services.length > 0 && (
+          {appointment?.selected_services && appointment.selected_services.length > 0 && (
            <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
             <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔧</span>
             <div className="flex-1">
@@ -755,7 +820,7 @@ function PickMechanicContent() {
            </div>
           )}
 
-          {appointment.selected_car_issues && appointment.selected_car_issues.length > 0 && (
+          {appointment?.selected_car_issues && appointment.selected_car_issues.length > 0 && (
            <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
             <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">⚠️</span>
             <div className="flex-1">
@@ -772,7 +837,7 @@ function PickMechanicContent() {
            </div>
           )}
 
-          {appointment.issue_description && (
+          {appointment?.issue_description && (
            <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
             <FileText className="h-4 w-4 text-[#294a46] mt-0.5 flex-shrink-0" />
             <div className="flex-1">
@@ -782,22 +847,25 @@ function PickMechanicContent() {
            </div>
           )}
 
-          <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
-           <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔋</span>
-           <div className="flex-1">
-            <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Car Status</h3>
-            <p className="text-xs text-gray-600 mt-1">
-             {appointment.car_runs !== null
-              ? appointment.car_runs
-               ? "✅ Car is running"
-               : "❌ Car is not running"
-              : "❓ Car status not specified"}
-            </p>
+          {appointment && (
+           <div className="flex items-start space-x-3 pb-3 border-b border-gray-200">
+            <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">🔋</span>
+            <div className="flex-1">
+             <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Car Status</h3>
+             <p className="text-xs text-gray-600 mt-1">
+              {appointment?.car_runs !== null
+               ? appointment.car_runs
+                ? "✅ Car is running"
+                : "❌ Car is not running"
+               : "❓ Car status not specified"}
+             </p>
+            </div>
            </div>
-          </div>
+          )}
          </div>
         </div>
        </Card>
+       )}
       </div>
      </div>
     </div>

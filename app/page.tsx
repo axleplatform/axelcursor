@@ -130,6 +130,13 @@ function HomePageContent(): React.JSX.Element {
         return;
       }
 
+      // Check if map container element exists before initializing
+      const mapElement = mapRef.current;
+      if (!mapElement) {
+        console.log('🔍 Map init: Map container element not found');
+        return;
+      }
+
       console.log('🔍 Map init: Cleaning up existing elements...');
       // Clean up any existing Google Maps elements that might interfere
       const pacElements = document.querySelectorAll('.pac-container, .pac-item');
@@ -149,7 +156,7 @@ function HomePageContent(): React.JSX.Element {
       const google = await loadGoogleMaps();
 
       console.log('🔍 Map init: Creating map instance...');
-      const map = new google.maps.Map(mapRef.current, {
+      const map = new google.maps.Map(mapElement, {
         center: { lat: 40.7128, lng: -74.0060 }, // NYC default
         zoom: 12,
         mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID || 'DEMO_MAP_ID',
@@ -373,6 +380,41 @@ function HomePageContent(): React.JSX.Element {
       updateMapLocation(coordinates);
     }
   }, [formData.latitude, formData.longitude, appointmentId]);
+
+  // Mobile scrolling functionality
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768
+
+  const scrollToElement = useCallback((element: HTMLElement | null, offset = 100) => {
+    if (!element || !isMobile) return
+
+    const elementRect = element.getBoundingClientRect()
+    const absoluteElementTop = elementRect.top + window.pageYOffset
+    const middle = absoluteElementTop - (window.innerHeight / 2) + (elementRect.height / 2) - offset
+
+    window.scrollTo({
+      top: Math.max(0, middle),
+      behavior: 'smooth'
+    })
+  }, [isMobile])
+
+  const scrollToLocationSection = useCallback(() => {
+    if (!isMobile) return
+    
+    // Find the location label
+    const locationLabel = document.querySelector('label')
+    if (locationLabel) {
+      scrollToElement(locationLabel as HTMLElement, 50)
+    }
+  }, [isMobile, scrollToElement])
+
+  const scrollToFormSection = useCallback((fieldName: string) => {
+    if (!isMobile) return
+    
+    const field = document.querySelector(`[name="${fieldName}"]`) as HTMLElement
+    if (field) {
+      scrollToElement(field, 100)
+    }
+  }, [isMobile, scrollToElement])
 
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
@@ -1216,7 +1258,12 @@ function HomePageContent(): React.JSX.Element {
       lng: place.geometry.location.lng
     };
     updateMapLocation(coordinates);
-  }, []); // Empty deps array to prevent re-creation
+
+    // Scroll to location section on mobile after a short delay
+    setTimeout(() => {
+      scrollToLocationSection();
+    }, 300);
+  }, [updateMapLocation, scrollToLocationSection]); // Updated deps array
 
   // Simple handleLocationChange - only updates form data, no automatic geocoding
   const handleLocationChange = useCallback((val: string | React.ChangeEvent<HTMLInputElement>) => {
@@ -1401,7 +1448,7 @@ function HomePageContent(): React.JSX.Element {
             
             {/* Help text for dragging */}
             <p className="text-sm text-gray-600 mt-2">
-              💡 Drag the pin on the map to adjust the exact location
+              💡 Drag the Pin to Exact Location
             </p>
           </div>
 
@@ -1417,6 +1464,7 @@ function HomePageContent(): React.JSX.Element {
                     name="year"
                     value={formData.year}
                     onChange={handleChange}
+                    onFocus={() => scrollToFormSection('year')}
                     className={`w-full h-[46px] px-2 pr-6 text-sm border rounded-md bg-gray-50 appearance-none transition-all duration-300 ${
                       errors.year 
                         ? "border-red-500" 
@@ -1461,6 +1509,7 @@ function HomePageContent(): React.JSX.Element {
                     name="make"
                     value={formData.make}
                     onChange={handleChange}
+                    onFocus={() => scrollToFormSection('make')}
                     className={`w-full h-[46px] px-2 pr-6 text-sm border rounded-md bg-gray-50 appearance-none transition-all duration-300 ${
                       errors.make 
                         ? "border-red-500" 
@@ -1504,7 +1553,10 @@ function HomePageContent(): React.JSX.Element {
                         : "border-gray-200"
                     }`}
                     onClick={() => console.log('🚗 Desktop Model input clicked')}
-                    onFocus={() => console.log('🚗 Desktop Model input focused')}
+                    onFocus={() => {
+                      console.log('🚗 Desktop Model input focused');
+                      scrollToFormSection('model');
+                    }}
                   />
                   {errors.model && <p className="text-red-500 text-xs absolute -bottom-5">{errors.model}</p>}
                 </div>
@@ -1518,6 +1570,7 @@ function HomePageContent(): React.JSX.Element {
                     onChange={handleChange}
                     onKeyDown={handleKeyDown}
                     placeholder="VIN (optional)"
+                    onFocus={() => scrollToFormSection('vin')}
                     className="w-full h-[46px] px-2 text-sm border border-gray-200 rounded-md bg-gray-50"
                   />
                 </div>
@@ -1531,6 +1584,7 @@ function HomePageContent(): React.JSX.Element {
                     onChange={handleChange}
                     onKeyDown={handleKeyDown}
                     placeholder="Mileage"
+                    onFocus={() => scrollToFormSection('mileage')}
                     className="w-full h-[46px] px-2 text-sm border border-gray-200 rounded-md bg-gray-50"
                   />
                 </div>
@@ -1545,6 +1599,7 @@ function HomePageContent(): React.JSX.Element {
                       name="year"
                       value={formData.year}
                       onChange={handleChange}
+                      onFocus={() => scrollToFormSection('year')}
                       className={`w-full h-[46px] px-2 pr-6 text-sm border rounded-md bg-gray-50 appearance-none transition-all duration-300 ${
                         errors.year 
                           ? "border-red-500" 
@@ -1588,6 +1643,7 @@ function HomePageContent(): React.JSX.Element {
                       name="make"
                       value={formData.make}
                       onChange={handleChange}
+                      onFocus={() => scrollToFormSection('make')}
                       className={`w-full h-[46px] px-2 pr-6 text-sm border rounded-md bg-gray-50 appearance-none transition-all duration-300 ${
                         errors.make 
                           ? "border-red-500" 
@@ -1630,7 +1686,10 @@ function HomePageContent(): React.JSX.Element {
                           : "border-gray-200"
                       }`}
                       onClick={() => console.log('🚗 Mobile Model input clicked')}
-                      onFocus={() => console.log('🚗 Mobile Model input focused')}
+                      onFocus={() => {
+                        console.log('🚗 Mobile Model input focused');
+                        scrollToFormSection('model');
+                      }}
                     />
                     {errors.model && <p className="text-red-500 text-xs absolute -bottom-5">{errors.model}</p>}
                   </div>
@@ -1647,6 +1706,7 @@ function HomePageContent(): React.JSX.Element {
                       onChange={handleChange}
                       onKeyDown={handleKeyDown}
                       placeholder="VIN (optional)"
+                      onFocus={() => scrollToFormSection('vin')}
                       className="w-full h-[46px] px-2 text-sm border border-gray-200 rounded-md bg-gray-50"
                     />
                   </div>
@@ -1660,6 +1720,7 @@ function HomePageContent(): React.JSX.Element {
                       onChange={handleChange}
                       onKeyDown={handleKeyDown}
                       placeholder="Mileage"
+                      onFocus={() => scrollToFormSection('mileage')}
                       className="w-full h-[46px] px-2 text-sm border border-gray-200 rounded-md bg-gray-50"
                     />
                   </div>
@@ -1763,7 +1824,7 @@ function HomePageContent(): React.JSX.Element {
           <div className="grid md:grid-cols-3 gap-8 mb-16">
             {/* Feature 1 */}
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full border-2 border-[#294a46] flex items-center justify-center mb-4">
+              <div className="w-16 h-16 flex items-center justify-center mb-4">
                 <span className="text-2xl">📍</span>
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">Real-Time Tracking</h3>
