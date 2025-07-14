@@ -735,8 +735,7 @@ export default function MechanicDashboard() {
           *,
           users!appointments_user_id_fkey (
             email,
-            phone,
-            is_guest
+            phone
           )
         `)
         .eq('status', 'pending');
@@ -754,8 +753,7 @@ export default function MechanicDashboard() {
           *,
           users (
             email,
-            phone,
-            is_guest
+            phone
           )
         `)
         .eq('status', 'pending');
@@ -773,8 +771,7 @@ export default function MechanicDashboard() {
           *,
           users!appointments_user_id_fkey (
             email,
-            phone,
-            is_guest
+            phone
           ),
           vehicles!fk_appointment_id (*)
         `)
@@ -929,8 +926,7 @@ export default function MechanicDashboard() {
             *,
             users (
               email,
-              phone,
-              is_guest
+              phone
             ),
             vehicles!fk_appointment_id (*)
           `)
