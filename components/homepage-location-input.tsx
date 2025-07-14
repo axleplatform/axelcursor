@@ -122,6 +122,7 @@ export default function HomepageLocationInput({
         </div>
         <Input
           ref={inputRef}
+          id="location-input"
           type="text"
           value={value}
           onChange={handleInputChange}
