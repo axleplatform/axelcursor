@@ -728,14 +728,13 @@ export default function MechanicDashboard() {
         console.error('Full error object:', JSON.stringify(error1, null, 2));
       }
       
-      // Test 2: Add users join with explicit foreign key
+      // Test 2: Add users join with explicit foreign key (using only existing columns)
       const { data: test2, error: error2 } = await supabase
         .from('appointments')
         .select(`
           *,
           users!appointments_user_id_fkey (
             email,
-            full_name,
             phone,
             is_guest
           )
@@ -748,14 +747,13 @@ export default function MechanicDashboard() {
         console.error('Full error object:', JSON.stringify(error2, null, 2));
       }
       
-      // Test 2b: Add users join with simpler syntax
+      // Test 2b: Add users join with simpler syntax (using only existing columns)
       const { data: test2b, error: error2b } = await supabase
         .from('appointments')
         .select(`
           *,
           users (
             email,
-            full_name,
             phone,
             is_guest
           )
@@ -775,11 +773,10 @@ export default function MechanicDashboard() {
           *,
           users!appointments_user_id_fkey (
             email,
-            full_name,
             phone,
             is_guest
           ),
-          vehicles (*)
+          vehicles!fk_appointment_id (*)
         `)
         .eq('status', 'pending');
       console.log('Test 3 - With vehicles:', { data: test3?.length, error: error3 });
@@ -803,6 +800,15 @@ export default function MechanicDashboard() {
         .limit(1);
       
       console.log('Available columns:', testAppt ? Object.keys(testAppt[0]) : 'No appointments');
+      
+      // DEBUG: Check what columns actually exist in users table
+      console.log('🔍 Checking available columns in users table...');
+      const { data: testUser } = await supabase
+        .from('users')
+        .select('*')
+        .limit(1);
+      
+      console.log('Users table columns:', testUser ? Object.keys(testUser[0]) : 'No users');
 
       // DEBUG: Check for edited appointments that should be available
       console.log('🔍 Checking for edited appointments that should be available...');
@@ -923,11 +929,10 @@ export default function MechanicDashboard() {
             *,
             users (
               email,
-              full_name,
               phone,
               is_guest
             ),
-            vehicles (*)
+            vehicles!fk_appointment_id (*)
           `)
           .in('id', appointmentIds)
           
