@@ -22,7 +22,7 @@
         return originalRemoveChild.call(this, child);
       }
     } catch (error) {
-      // Silently fail if the child doesn't exist
+      console.debug('RemoveChild error caught:', error);
     }
     return child;
   };
@@ -36,15 +36,12 @@
         if (!child.parentNode || child.parentNode !== this) {
           return originalAppendChild.call(this, child);
         }
-        return child;
       } else {
         return originalAppendChild.call(this, child);
       }
     } catch (error) {
-      // Silently fail
+      console.debug('AppendChild error caught:', error);
     }
     return child;
   };
-  
-  console.log('DOM fixes applied successfully');
-})(); 
+})();
