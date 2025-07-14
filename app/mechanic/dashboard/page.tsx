@@ -725,20 +725,27 @@ export default function MechanicDashboard() {
             phone,
             is_guest
           ),
-          vehicles!vehicles_appointment_id_fkey (*)
+          vehicles (*)
         `)
         .eq('status', 'pending')
-        .is('selected_quote_id', null)
-        .eq('is_being_edited', false)
         .order('appointment_date', { ascending: true });
         
       console.log('🔍 RAW APPOINTMENT DATA:', allPendingAppointments?.slice(0, 2));
+
+      // DEBUG: Check what columns actually exist in appointments table
+      console.log('🔍 Checking available columns in appointments table...');
+      const { data: testAppt } = await supabase
+        .from('appointments')
+        .select('*')
+        .limit(1);
+      
+      console.log('Available columns:', testAppt ? Object.keys(testAppt[0]) : 'No appointments');
 
       // DEBUG: Check for edited appointments that should be available
       console.log('🔍 Checking for edited appointments that should be available...');
       const { data: editedAppointments }: { data: EditedAppointmentResult[] | null } = await supabase
         .from('appointments')
-        .select('id, status, edited_after_quotes, is_being_edited')
+        .select('id, status, edited_after_quotes')
         .eq('status', 'pending')
         .eq('edited_after_quotes', true);
 
@@ -843,23 +850,23 @@ export default function MechanicDashboard() {
         ['pending', 'submitted', 'accepted'].indexOf(q.status) !== -1
       );
 
-      // Step 2: Get appointments for those quotes
-      if (validQuotes && validQuotes.length > 0) {
-        const appointmentIds = validQuotes.map((q: any) => q.appointment_id);
-        
-        const { data: appointments } = await supabase
-          .from('appointments')
-          .select(`
-            *,
-            users!appointments_user_id_fkey (
-              email,
-              full_name,
-              phone,
-              is_guest
-            ),
-            vehicles!vehicles_appointment_id_fkey (*)
-          `)
-          .in('id', appointmentIds)
+              // Step 2: Get appointments for those quotes
+        if (validQuotes && validQuotes.length > 0) {
+          const appointmentIds = validQuotes.map((q: any) => q.appointment_id);
+          
+          const { data: appointments } = await supabase
+            .from('appointments')
+            .select(`
+              *,
+              users!appointments_user_id_fkey (
+                email,
+                full_name,
+                phone,
+                is_guest
+              ),
+              vehicles (*)
+            `)
+            .in('id', appointmentIds)
           
         console.log('🔍 RAW UPCOMING APPOINTMENT DATA:', appointments?.slice(0, 2));
         
