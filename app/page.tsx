@@ -968,16 +968,52 @@ function HomePageContent(): React.JSX.Element {
           finalAppointmentId = appointmentId;
           
           // Always delete existing quotes when appointment is edited (regardless of status)
-          console.log('🔄 Removing existing quotes for edited appointment...');
-          const { error: deleteError } = await supabase
+          console.log('🔍 Attempting to delete quotes for appointment:', finalAppointmentId);
+          
+          // First, verify quotes exist
+          const { data: quotesToDelete, error: fetchError } = await supabase
             .from('mechanic_quotes')
-            .delete()
+            .select('*')
             .eq('appointment_id', finalAppointmentId);
-            
-          if (deleteError) {
-            console.error('Error removing old quotes:', deleteError);
+          
+          console.log('📊 Quotes found before deletion:', quotesToDelete);
+          
+          if (quotesToDelete && quotesToDelete.length > 0) {
+            // Delete the quotes
+            const { data: deleteData, error: deleteError } = await supabase
+              .from('mechanic_quotes')
+              .delete()
+              .eq('appointment_id', finalAppointmentId);
+              
+            if (deleteError) {
+              console.error('❌ FAILED to delete quotes:', deleteError);
+              console.error('Delete error details:', { 
+                message: deleteError.message, 
+                details: deleteError.details, 
+                hint: deleteError.hint, 
+                code: deleteError.code 
+              });
+            } else {
+              console.log('✅ Delete response:', deleteData);
+              console.log('✅ Previous quotes removed - appointment available for new quotes');
+              
+              // Verify quotes were actually deleted
+              const { data: verifyQuotes, error: verifyError } = await supabase
+                .from('mechanic_quotes')
+                .select('*')
+                .eq('appointment_id', finalAppointmentId);
+              
+              if (verifyError) {
+                console.error('❌ Error verifying quote deletion:', verifyError);
+              } else if (verifyQuotes && verifyQuotes.length > 0) {
+                console.error('❌ QUOTES STILL EXIST after deletion! Count:', verifyQuotes.length);
+                console.error('❌ Remaining quotes:', verifyQuotes);
+              } else {
+                console.log('✅ Verification successful - all quotes deleted');
+              }
+            }
           } else {
-            console.log('✅ Previous quotes removed - appointment available for new quotes');
+            console.log('ℹ️ No quotes found to delete for appointment:', finalAppointmentId);
           }
           
           // Also clear mechanic skips so they can quote again
