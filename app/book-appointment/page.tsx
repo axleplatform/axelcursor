@@ -573,6 +573,25 @@ function BookAppointmentContent() {
             mileage: data.vehicles?.mileage?.toString() || "",
           }))
           console.log("Fetched and pre-filled appointment data:", data)
+          
+          // Notify mechanics about the appointment update from book-appointment page
+          if (appointmentId && data) {
+            try {
+              await supabase.channel('appointment-updates')
+                .send({
+                  type: 'broadcast',
+                  event: 'appointment_edited',
+                  payload: {
+                    appointment_id: appointmentId,
+                    edited_at: new Date().toISOString()
+                  }
+                });
+                
+              console.log('📢 Notified mechanics about appointment update from book-appointment page');
+            } catch (error) {
+              console.error('⚠️ Warning: Could not send real-time notification:', error);
+            }
+          }
         }
       } catch (error: unknown) {
         console.error("Error fetching appointment data:", error)
@@ -1135,6 +1154,23 @@ function BookAppointmentContent() {
           console.error('⚠️ Warning: Could not send real-time notification:', realtimeError)
         } else {
           console.log('✅ Mechanics notified of appointment update via real-time')
+        }
+        
+        // Also send channel notification for immediate updates
+        try {
+          await supabase.channel('appointment-updates')
+            .send({
+              type: 'broadcast',
+              event: 'appointment_edited',
+              payload: {
+                appointment_id: appointmentId,
+                edited_at: new Date().toISOString()
+              }
+            });
+            
+          console.log('📢 Sent immediate channel notification to mechanics');
+        } catch (error) {
+          console.error('⚠️ Warning: Could not send channel notification:', error);
         }
 
         console.log('✅ Appointment edited and reset to available')
