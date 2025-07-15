@@ -1128,9 +1128,16 @@ function HomePageContent(): React.JSX.Element {
             .select('id')
             .eq('appointment_id', appointmentId);
           
+          // Always build the latest appointment_date from formData
+          const latestAppointmentDate = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`);
+          if (isNaN(latestAppointmentDate.getTime())) {
+            throw new Error('Invalid appointment date');
+          }
+          
           // Prepare update data
           const updateData: AppointmentUpdateData = {
             ...appointmentData,
+            appointment_date: latestAppointmentDate.toISOString(), // always use latest
             updated_at: new Date().toISOString(),
             is_being_edited: false,
             status: 'pending', // Reset to pending when edited
@@ -1148,7 +1155,7 @@ function HomePageContent(): React.JSX.Element {
             .from('appointments')
             .update(updateData)
             .eq('id', appointmentId);
-            
+          
           if (error) {
             throw error;
           }
