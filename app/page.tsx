@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useCallback, useEffect, useRef, Suspense } from "react"
+import { useState, useCallback, useEffect, useRef, Suspense, useMemo } from "react"
 import type { FormEvent, ChangeEvent, KeyboardEvent } from 'react'
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import Link from "next/link"
@@ -444,110 +444,80 @@ function HomePageContent(): React.JSX.Element {
 
   // Smooth animation to location with professional easing
   const animateToLocation = useCallback((map: google.maps.Map, location: { lat: number; lng: number }) => {
-    // Clear any existing animation
-    if (window.smoothZoomInterval) {
-      clearInterval(window.smoothZoomInterval);
-    }
-    
-    const startCenter = map.getCenter();
-    const startZoom = map.getZoom();
-    const targetZoom = 17; // Perfect zoom level for addresses
-    
-    // Calculate distance between current and target location
-    const latDiff = Math.abs(location.lat - startCenter.lat());
-    const lngDiff = Math.abs(location.lng - startCenter.lng());
-    const isNearby = latDiff < 0.01 && lngDiff < 0.01; // Within ~1km
-    
-    // Adjust animation parameters based on distance
-    const duration = isNearby ? 1200 : 1800; // Faster for nearby locations
-    const fps = 60; // 60fps for smooth animation
-    const interval = 1000 / fps;
-    const totalSteps = Math.floor(duration / interval);
-    
-    let currentStep = 0;
-    
-    // Easing function for smooth acceleration/deceleration
-    const easeInOutCubic = (t: number): number => {
-      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    };
-    
-    window.smoothZoomInterval = setInterval(() => {
-      currentStep++;
-      const progress = currentStep / totalSteps;
-      const easedProgress = easeInOutCubic(progress);
-      
-      // Interpolate center position
-      const lat = startCenter.lat() + (location.lat - startCenter.lat()) * easedProgress;
-      const lng = startCenter.lng() + (location.lng - startCenter.lng()) * easedProgress;
-      
-      // Interpolate zoom level
-      const zoom = startZoom + (targetZoom - startZoom) * easedProgress;
-      
-      // Apply changes to map
-      map.setCenter({ lat, lng });
-      map.setZoom(zoom);
-      
-      // End animation when complete
-      if (currentStep >= totalSteps) {
-        // Ensure exact final position and zoom
-        map.setCenter(location);
-        map.setZoom(targetZoom);
+    return new Promise<void>((resolve) => {
+      if (window.smoothZoomInterval) {
         clearInterval(window.smoothZoomInterval);
-        window.smoothZoomInterval = null;
       }
-    }, interval);
+      const startCenter = map.getCenter();
+      const startZoom = map.getZoom();
+      const targetZoom = 17;
+      const latDiff = Math.abs(location.lat - startCenter.lat());
+      const lngDiff = Math.abs(location.lng - startCenter.lng());
+      const isNearby = latDiff < 0.01 && lngDiff < 0.01;
+      const duration = isNearby ? 1200 : 1800;
+      const fps = 60;
+      const interval = 1000 / fps;
+      const totalSteps = Math.floor(duration / interval);
+      let currentStep = 0;
+      const easeInOutCubic = (t: number): number => {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      };
+      window.smoothZoomInterval = setInterval(() => {
+        currentStep++;
+        const progress = currentStep / totalSteps;
+        const easedProgress = easeInOutCubic(progress);
+        const lat = startCenter.lat() + (location.lat - startCenter.lat()) * easedProgress;
+        const lng = startCenter.lng() + (location.lng - startCenter.lng()) * easedProgress;
+        const zoom = startZoom + (targetZoom - startZoom) * easedProgress;
+        map.setCenter({ lat, lng });
+        map.setZoom(zoom);
+        if (currentStep >= totalSteps) {
+          map.setCenter(location);
+          map.setZoom(targetZoom);
+          clearInterval(window.smoothZoomInterval);
+          window.smoothZoomInterval = null;
+          resolve();
+        }
+      }, interval);
+    });
   }, []);
 
   // Define updateMapLocation function (with animation for address selection)
-  updateMapLocation = useCallback((location: { lat: number; lng: number }) => {
+  updateMapLocation = useCallback(async (location: { lat: number; lng: number }) => {
     if (!mapInstanceRef.current) return;
-    
-    // Remove old marker
     if (markerRef.current) {
       markerRef.current.setMap(null);
       markerRef.current = null;
     }
-    
-    // Animate to new location
-    animateToLocation(mapInstanceRef.current, location);
-    
-    // Add draggable marker after animation completes
-    const markerDelay = 1900; // Default delay for 1800ms animation
-    setTimeout(() => {
-      if (mapInstanceRef.current) {
-        const newMarker = createDraggableMarker(mapInstanceRef.current, location, (newPos) => {
-          // Update form with new coordinates and address
-          setFormData(prev => ({
-            ...prev,
-            latitude: newPos.lat,
-            longitude: newPos.lng,
-            location: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}` // Use address if available, otherwise coordinates
-          }));
-
-          // Update selectedLocation if it exists - use setSelectedLocation directly
-          setSelectedLocation(prevSelectedLocation => {
-            if (prevSelectedLocation) {
-              return {
-                ...prevSelectedLocation,
-                geometry: {
-                  ...prevSelectedLocation.geometry,
-                  location: { lat: newPos.lat, lng: newPos.lng }
-                },
-                formatted_address: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
-              };
-            }
-            return prevSelectedLocation;
-          });
+    await animateToLocation(mapInstanceRef.current, location);
+    if (mapInstanceRef.current) {
+      const newMarker = createDraggableMarker(mapInstanceRef.current, location, (newPos) => {
+        setFormData(prev => ({
+          ...prev,
+          latitude: newPos.lat,
+          longitude: newPos.lng,
+          location: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
+        }));
+        setSelectedLocation(prevSelectedLocation => {
+          if (prevSelectedLocation) {
+            return {
+              ...prevSelectedLocation,
+              geometry: {
+                ...prevSelectedLocation.geometry,
+                location: { lat: newPos.lat, lng: newPos.lng }
+              },
+              formatted_address: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
+            };
+          }
+          return prevSelectedLocation;
         });
-        
-        // Only set marker ref if creation was successful
-        if (newMarker) {
-          markerRef.current = newMarker;
-        } else {
-          console.error('Failed to create draggable marker');
-        }
+      });
+      if (newMarker) {
+        markerRef.current = newMarker;
+      } else {
+        console.error('Failed to create draggable marker');
       }
-    }, markerDelay); // Slightly longer than animation duration to ensure it completes
+    }
   }, [animateToLocation, createDraggableMarker]);
 
 
@@ -1712,6 +1682,9 @@ function HomePageContent(): React.JSX.Element {
     )
   }
 
+  // Before rendering DateTimeSelector:
+  const selectedDateObj = useMemo(() => formData.appointmentDate ? new Date(formData.appointmentDate) : undefined, [formData.appointmentDate]);
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Header */}
@@ -2047,7 +2020,7 @@ function HomePageContent(): React.JSX.Element {
                 onDateTimeChange={handleDateTimeChange}
                 onTimeSelected={handleTimeSelected}
                 selectedTime={formData.appointmentTime}
-                selectedDate={formData.appointmentDate ? new Date(formData.appointmentDate) : undefined}
+                selectedDate={selectedDateObj}
                 className={errors.appointmentTime ? 'border-red-500' : ''}
               />
               {errors.appointmentTime && (

@@ -217,6 +217,19 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     return date.toLocaleDateString("en-US", { month: "long", year: "numeric" })
   }
 
+  // Helper to format time in 12-hour AM/PM
+  function formatTime12Hour(time: string) {
+    if (!time || time === "ASAP") return time;
+    // If already in AM/PM format, return as is
+    if (/AM|PM/i.test(time)) return time;
+    // Parse 24-hour time (e.g., 00:00, 13:30)
+    const [h, m] = time.split(":").map(Number);
+    let hour = h % 12;
+    if (hour === 0) hour = 12;
+    const ampm = h < 12 ? "AM" : "PM";
+    return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
+  }
+
   // Update available time slots based on selected date
   useEffect(() => {
     if (isToday(selectedDate)) {
@@ -256,8 +269,8 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
 
   // When controlled props change, update internal state for backward compatibility
   useEffect(() => {
-    if (controlledDate) setInternalDate(controlledDate)
-    if (controlledTime !== undefined) setInternalTime(controlledTime)
+    if (controlledDate && controlledDate.getTime() !== internalDate.getTime()) setInternalDate(controlledDate)
+    if (controlledTime !== undefined && controlledTime !== internalTime) setInternalTime(controlledTime)
   }, [controlledDate, controlledTime])
 
   // Handle date selection
@@ -412,7 +425,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
           }}
         >
           <Clock />
-          <span>{selectedTime === "ASAP" ? "⚡ Now" : selectedTime || "Select time"}</span>
+          <span>{selectedTime === "ASAP" ? "⚡ Now" : formatTime12Hour(selectedTime) || "Select time"}</span>
           <span className="ml-1">▼</span>
         </button>
 
