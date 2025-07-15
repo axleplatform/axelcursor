@@ -995,21 +995,6 @@ function HomePageContent(): React.JSX.Element {
             console.log('✅ Mechanic skips cleared');
           }
           
-          // Notify mechanics via real-time about the appointment update
-          const { error: realtimeError } = await supabase
-            .from('appointment_updates')
-            .insert({
-              appointment_id: finalAppointmentId,
-              update_type: 'details_changed',
-              message: 'Customer updated appointment details. Previous quotes have been cleared.'
-            });
-
-          if (realtimeError) {
-            console.error('Warning: Could not send real-time notification:', realtimeError);
-          } else {
-            console.log('✅ Mechanics notified of appointment update via real-time');
-          }
-          
           // UPDATE VEHICLE DATA BEFORE NAVIGATION
           console.log('🚗 Updating vehicle data for appointment:', finalAppointmentId);
           const vehicleData = {
@@ -1031,6 +1016,45 @@ function HomePageContent(): React.JSX.Element {
           } else {
             console.log('✅ Vehicle data updated successfully');
           }
+          
+          // NOW send real-time notification AFTER all database updates are complete
+          console.log('📢 Sending real-time notification after all updates complete');
+          
+          // Send appointment_updates record for persistence
+          const { error: realtimeError } = await supabase
+            .from('appointment_updates')
+            .insert({
+              appointment_id: finalAppointmentId,
+              update_type: 'details_changed',
+              message: 'Customer updated appointment details. Previous quotes have been cleared.'
+            });
+
+          if (realtimeError) {
+            console.error('Warning: Could not send real-time notification:', realtimeError);
+          } else {
+            console.log('✅ Mechanics notified of appointment update via real-time');
+          }
+          
+          // Also send immediate channel notification for instant updates
+          try {
+            await supabase.channel('appointment-updates')
+              .send({
+                type: 'broadcast',
+                event: 'appointment_edited',
+                payload: {
+                  appointment_id: finalAppointmentId,
+                  edited_at: new Date().toISOString(),
+                  vehicle_updated: true
+                }
+              });
+              
+            console.log('📢 Sent immediate channel notification to mechanics');
+          } catch (error) {
+            console.error('⚠️ Warning: Could not send channel notification:', error);
+          }
+          
+          // Small delay to ensure notification is sent before navigation
+          await new Promise(resolve => setTimeout(resolve, 500));
           
           // Navigate to book-appointment page for edit mode (not pick-mechanic)
           console.log('🚀 Navigation starting - appointmentId:', finalAppointmentId)
