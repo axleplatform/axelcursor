@@ -117,96 +117,130 @@ function HomePageContent(): React.JSX.Element {
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
 
-  // 1. Add mapContainerRef
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-
   // Declare functions first to prevent circular dependencies
   let updateMapLocation: (location: { lat: number; lng: number }) => void;
   let handleLocationSelect: (place: google.maps.places.PlaceResult) => void;
 
   // Initialize map on mount
   const initializeMap = useCallback(async () => {
-    console.log('🔍 Map init: Starting initialization...');
-    if (!mapContainerRef.current) {
-      console.log('⚠️ Map container not ready');
-      return;
-    }
-    // Clean up any existing map instance
-    if (mapRef.current) {
-      console.log('🔍 Map init: Cleaning up existing map instance...');
-      mapRef.current = null;
-    }
     try {
+      console.log('🔍 Map init: Starting initialization...');
+      
+      if (!mapRef.current) {
+        console.log('🔍 Map init: Map ref not ready, retrying...');
+        return;
+      }
+
+      // Always clean up existing map instance first
+      if (mapInstanceRef.current) {
+        console.log('🔍 Map init: Cleaning up existing map instance');
+        mapInstanceRef.current = null;
+      }
+
+      // Check if map container element exists before initializing
+      const mapElement = mapRef.current;
+      if (!mapElement) {
+        console.log('🔍 Map init: Map container element not found');
+        return;
+      }
+
+      console.log('🔍 Map init: Cleaning up existing elements...');
+      // Clean up any existing Google Maps elements that might interfere
+      const pacElements = document.querySelectorAll('.pac-container, .pac-item');
+      pacElements.forEach(el => {
+        try {
+          if (el.parentNode) {
+            el.parentNode.removeChild(el);
+          }
+        } catch (error) {
+          console.log('🔍 Map init: Cleanup error (ignored):', error);
+        }
+      });
+
+      console.log('🔍 Map init: Loading Google Maps...');
+      // Load Google Maps using the safe loader
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
-      // Force the container to be visible
-      mapContainerRef.current.style.display = 'block';
-      mapContainerRef.current.style.height = '400px';
-      const map = new google.maps.Map(mapContainerRef.current, {
-        center: (selectedLocation?.geometry?.location && typeof selectedLocation.geometry.location.lat === 'number' && typeof selectedLocation.geometry.location.lng === 'number')
-          ? selectedLocation.geometry.location
-          : { lat: 33.6846, lng: -117.8265 },
+
+      console.log('🔍 Map init: Creating map instance...');
+      const map = new google.maps.Map(mapElement, {
+        center: { lat: 40.7128, lng: -74.0060 }, // NYC default
         zoom: 12,
+        mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID || 'DEMO_MAP_ID',
         mapTypeControl: false,
-        fullscreenControl: false,
-        streetViewControl: false
+        streetViewControl: false,
       });
-      mapRef.current = map;
+      
+      mapInstanceRef.current = map;
       setMapLoaded(true);
       console.log('✅ Map initialized successfully');
-      // Trigger resize to ensure map renders properly
-      setTimeout(() => {
-        google.maps.event.trigger(map, 'resize');
-      }, 100);
     } catch (error) {
       console.error('❌ Map initialization error:', error);
+      console.error('❌ Error stack:', error.stack);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error name:', error.name);
     }
-  }, [selectedLocation]);
+  }, []);
 
-  // 3. Add focus/visibility listeners for robust re-initialization
+  // Simplified map initialization - always initialize when component is active
+  useEffect(() => {
+    console.log('🗺️ Landing page mounted/active - initializing map');
+    
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      if (mapRef.current) {
+        initializeMap();
+      }
+    }, 50);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [initializeMap]); // Only depend on initializeMap function
+
+  // Handle visibility changes and focus events to reinitialize map
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && mapContainerRef.current && !mapRef.current) {
-        console.log('🗺️ Page became visible - initializing map');
-        initializeMap();
+      if (!document.hidden && mapRef.current && !mapInstanceRef.current) {
+        console.log('🗺️ Page became visible - reinitializing map');
+        setTimeout(() => initializeMap(), 100);
       }
     };
+
     const handleFocus = () => {
-      if (mapContainerRef.current && !mapRef.current) {
-        console.log('🗺️ Window focused - checking map');
-        initializeMap();
+      if (mapRef.current && !mapInstanceRef.current) {
+        console.log('🗺️ Window gained focus - reinitializing map');
+        setTimeout(() => initializeMap(), 100);
       }
     };
+
+    // Listen for visibility changes
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Listen for window focus (useful for browser back button)
     window.addEventListener('focus', handleFocus);
+    
+    // Also check if map needs initialization when component becomes active
+    const checkMapInterval = setInterval(() => {
+      if (mapRef.current && !mapInstanceRef.current) {
+        console.log('🗺️ Map check - reinitializing missing map');
+        initializeMap();
+      }
+    }, 2000); // Check every 2 seconds
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
+      clearInterval(checkMapInterval);
     };
   }, [initializeMap]);
 
-  // Add navigation detection and map reinitialization
+  // Force map reinitialization when navigating to landing page
   useEffect(() => {
-    // Track navigation state in session storage
-    const navigationKey = 'landing-page-navigation';
-    const currentTime = Date.now();
-    const lastVisit = sessionStorage.getItem(navigationKey);
-    
-    // Check if we're returning to the page and need to reinitialize map
-    const isReturning = window.performance?.navigation?.type === 2 || 
-                        document.referrer.includes('/book-appointment') ||
-                        document.referrer.includes('/pick-mechanic') ||
-                        (lastVisit && (currentTime - parseInt(lastVisit)) > 1000); // Returned after more than 1 second
-    
-    // Also check if we're on the landing page and map isn't initialized
-    const isOnLandingPage = pathname === '/';
-    const needsMapInit = isOnLandingPage && !mapInstanceRef.current;
-    
-    if (isReturning || needsMapInit) {
-      console.log('🗺️ Detected navigation return or map needs init - reinitializing map');
-      console.log('🗺️ Pathname:', pathname, 'Is returning:', isReturning, 'Needs init:', needsMapInit);
+    if (pathname === '/') {
+      console.log('🗺️ Landing page route detected - ensuring map is initialized');
       
-      // Force map cleanup and reinitialization
+      // Force cleanup and reinitialization
       if (mapInstanceRef.current) {
         mapInstanceRef.current = null;
       }
@@ -215,18 +249,15 @@ function HomePageContent(): React.JSX.Element {
         markerRef.current = null;
       }
       
-      // Trigger map initialization after a short delay to ensure DOM is ready
+      // Reinitialize map after a short delay
       setTimeout(() => {
-        if (mapRef.current && !mapInstanceRef.current) {
-          console.log('🗺️ Reinitializing map after navigation return');
+        if (mapRef.current) {
+          console.log('🗺️ Route-based map reinitialization');
           initializeMap();
         }
       }, 100);
     }
-    
-    // Store current visit time
-    sessionStorage.setItem(navigationKey, currentTime.toString());
-  }, [pathname, initializeMap]); // Run when pathname changes or initializeMap changes
+  }, [pathname, initializeMap]);
 
   // Cleanup effect for component unmount
   useEffect(() => {
@@ -240,8 +271,6 @@ function HomePageContent(): React.JSX.Element {
       if (mapInstanceRef.current) {
         mapInstanceRef.current = null;
       }
-      // Clear session storage
-      sessionStorage.removeItem('landing-page-navigation');
     };
   }, []); // Run only on unmount
 
@@ -1555,19 +1584,17 @@ function HomePageContent(): React.JSX.Element {
 
 
             {/* Map Container */}
-            <div
-              ref={mapContainerRef}
-              className="w-full h-[400px] rounded-lg border border-gray-200 overflow-hidden"
-              style={{ minHeight: '400px', display: 'block' }}
-            >
-              {!mapLoaded && (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-gray-400" />
-                    <p className="text-gray-500">Loading map...</p>
+            <div className="w-full h-[400px] rounded-lg border border-gray-200 overflow-hidden">
+              <div ref={mapRef} className="w-full h-full bg-gray-100">
+                {!mapLoaded && (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-gray-400" />
+                      <p className="text-gray-500">Loading map...</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
             
             {/* Help text for dragging */}
