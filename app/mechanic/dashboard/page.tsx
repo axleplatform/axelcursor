@@ -3482,36 +3482,6 @@ export default function MechanicDashboard() {
       </Dialog>
 
       <Footer />
-
-      {/* Debug: Show all skipped appointments for this mechanic */}
-      <button
-        onClick={async () => {
-          const { data: skips } = await supabase
-            .from('mechanic_skipped_appointments')
-            .select('*')
-            .eq('mechanic_id', mechanicId);
-          console.log('All my skipped appointments:', skips);
-        }}
-        style={{ margin: '16px 0', padding: '8px 16px', background: '#eee', borderRadius: 4 }}
-      >
-        Debug Skipped Appointments
-      </button>
-
-      {/* Debug: Add a button to log upcoming appointments and their quote data */}
-      <button
-        onClick={() => {
-          console.log('UPCOMING DATA:', upcomingAppointments.slice(0, 2).map(apt => ({
-            id: apt.id,
-            has_quote: !!apt.mechanic_quotes,
-            quote_data: apt.mechanic_quotes?.[0],
-            price: apt.mechanic_quotes?.[0]?.price,
-            eta: apt.mechanic_quotes?.[0]?.eta
-          })));
-        }}
-        className="bg-blue-500 text-white p-2 rounded mb-4"
-      >
-        Debug Quote Data
-      </button>
     </div>
   )
 }
