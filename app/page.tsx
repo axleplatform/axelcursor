@@ -498,7 +498,7 @@ function HomePageContent(): React.JSX.Element {
     }, interval);
   }, []);
 
-  // Define updateMapLocation function
+  // Define updateMapLocation function (with animation for address selection)
   updateMapLocation = useCallback((location: { lat: number; lng: number }) => {
     if (!mapInstanceRef.current) return;
     
@@ -549,6 +549,8 @@ function HomePageContent(): React.JSX.Element {
       }
     }, markerDelay); // Slightly longer than animation duration to ensure it completes
   }, [animateToLocation, createDraggableMarker]);
+
+
 
   // Watch for existing appointment data and update map if needed
   useEffect(() => {
