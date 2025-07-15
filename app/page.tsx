@@ -4,7 +4,7 @@
 import * as React from "react"
 import { useState, useCallback, useEffect, useRef, Suspense } from "react"
 import type { FormEvent, ChangeEvent, KeyboardEvent } from 'react'
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import Link from "next/link"
 import { ChevronRight, User, Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
@@ -80,6 +80,7 @@ interface SupabaseQueryResult {
 function HomePageContent(): React.JSX.Element {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const pathname = usePathname()
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [isLoadingExistingData, setIsLoadingExistingData] = useState<boolean>(false)
   const [errors, setErrors] = useState<Partial<AppointmentFormData & { general?: string }>>({})
@@ -194,6 +195,66 @@ function HomePageContent(): React.JSX.Element {
       }
     };
   }, [initializeMap]); // Depend on memoized initializeMap function
+
+  // Add navigation detection and map reinitialization
+  useEffect(() => {
+    // Track navigation state in session storage
+    const navigationKey = 'landing-page-navigation';
+    const currentTime = Date.now();
+    const lastVisit = sessionStorage.getItem(navigationKey);
+    
+    // Check if we're returning to the page and need to reinitialize map
+    const isReturning = window.performance?.navigation?.type === 2 || 
+                        document.referrer.includes('/book-appointment') ||
+                        document.referrer.includes('/pick-mechanic') ||
+                        (lastVisit && (currentTime - parseInt(lastVisit)) > 1000); // Returned after more than 1 second
+    
+    // Also check if we're on the landing page and map isn't initialized
+    const isOnLandingPage = pathname === '/';
+    const needsMapInit = isOnLandingPage && !mapInstanceRef.current;
+    
+    if (isReturning || needsMapInit) {
+      console.log('🗺️ Detected navigation return or map needs init - reinitializing map');
+      console.log('🗺️ Pathname:', pathname, 'Is returning:', isReturning, 'Needs init:', needsMapInit);
+      
+      // Force map cleanup and reinitialization
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current = null;
+      }
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+        markerRef.current = null;
+      }
+      
+      // Trigger map initialization after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        if (mapRef.current && !mapInstanceRef.current) {
+          console.log('🗺️ Reinitializing map after navigation return');
+          initializeMap();
+        }
+      }, 100);
+    }
+    
+    // Store current visit time
+    sessionStorage.setItem(navigationKey, currentTime.toString());
+  }, [pathname, initializeMap]); // Run when pathname changes or initializeMap changes
+
+  // Cleanup effect for component unmount
+  useEffect(() => {
+    return () => {
+      console.log('🗺️ Landing page unmounting - cleaning up map');
+      // Cleanup map instance and marker
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+        markerRef.current = null;
+      }
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current = null;
+      }
+      // Clear session storage
+      sessionStorage.removeItem('landing-page-navigation');
+    };
+  }, []); // Run only on unmount
 
   // Show coordinates helper function
   const showCoordinates = useCallback((lat: number, lng: number) => {
