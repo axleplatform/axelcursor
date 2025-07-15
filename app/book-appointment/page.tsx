@@ -603,6 +603,43 @@ function BookAppointmentContent() {
     fetchAppointmentData()
   }, [appointmentId])
 
+  // ALWAYS notify mechanics when customer navigates to book-appointment page
+  // This ensures mechanics see updates even when appointmentId doesn't change
+  useEffect(() => {
+    if (appointmentId) {
+      const notifyMechanics = async () => {
+        try {
+          // Send immediate channel notification
+          await supabase.channel('appointment-updates')
+            .send({
+              type: 'broadcast',
+              event: 'appointment_edited',
+              payload: {
+                appointment_id: appointmentId,
+                edited_at: new Date().toISOString()
+              }
+            });
+            
+          console.log('📢 Customer navigated to book-appointment page - notified mechanics');
+          
+          // Also send appointment_updates record for persistence
+          await supabase
+            .from('appointment_updates')
+            .insert({
+              appointment_id: appointmentId,
+              update_type: 'customer_navigated',
+              message: 'Customer is editing appointment on book-appointment page'
+            });
+            
+        } catch (error) {
+          console.error('⚠️ Warning: Could not send navigation notification:', error);
+        }
+      };
+      
+      notifyMechanics();
+    }
+  }, [appointmentId, searchParams]); // Trigger on both appointmentId and searchParams changes
+
   // Check if appointment had quotes before editing
   useEffect(() => {
     if (searchParams.get('edit') === 'true' && appointmentId) {
