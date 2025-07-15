@@ -30,6 +30,7 @@ declare global {
   interface Window {
     initMap?: () => void;
     mapInstance?: google.maps.Map;
+    smoothZoomInterval?: NodeJS.Timeout;
   }
 }
 
@@ -433,27 +434,36 @@ function HomePageContent(): React.JSX.Element {
 
   // Animate map to location with zoom effect
   const animateToLocation = useCallback((map: google.maps.Map, location: { lat: number; lng: number }) => {
+    // Clear any existing animation
+    if (window.smoothZoomInterval) {
+      clearInterval(window.smoothZoomInterval);
+    }
+    
     // Start at zoom 15
     map.setZoom(15);
     map.panTo(location);
     
-    // Smooth zoom with smaller increments
-    let currentZoom = 15;
-    const targetZoom = 18;
-    const zoomIncrement = 0.1; // Much smaller increment for smoothness
-    const animationSpeed = 50; // Faster interval (ms)
-    
-    const smoothZoom = setInterval(() => {
-      currentZoom += zoomIncrement;
-      map.setZoom(currentZoom);
+    // Small delay to ensure map is ready
+    setTimeout(() => {
+      // Ultra-smooth zoom with very small increments
+      let currentZoom = 15;
+      const targetZoom = 18;
+      const zoomIncrement = 0.05; // Even smaller increment for ultra-smoothness
+      const animationSpeed = 25; // Faster interval for smoother animation
       
-      if (currentZoom >= targetZoom) {
-        map.setZoom(targetZoom); // Ensure exact final zoom
-        clearInterval(smoothZoom);
-      }
-    }, animationSpeed);
+      window.smoothZoomInterval = setInterval(() => {
+        currentZoom += zoomIncrement;
+        map.setZoom(currentZoom);
+        
+        if (currentZoom >= targetZoom) {
+          map.setZoom(targetZoom); // Ensure exact final zoom
+          clearInterval(window.smoothZoomInterval);
+          window.smoothZoomInterval = null;
+        }
+      }, animationSpeed);
+    }, 50);
     
-    // Total animation time: ~600ms (very fast and smooth)
+    // Total animation time: ~425ms (ultra-smooth and fast)
   }, []);
 
   // Define updateMapLocation function
