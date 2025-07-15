@@ -739,11 +739,6 @@ function HomePageContent(): React.JSX.Element {
     )
   }, [])
 
-  // Debug: Log form field changes
-  useEffect(() => {
-    console.log('[DEBUG] formData:', formData);
-  }, [formData]);
-
   // Common car makes for the dropdown
   const makes = [
     "Acura",
@@ -1398,10 +1393,7 @@ function HomePageContent(): React.JSX.Element {
     return missing;
   }, [formData])
 
-  // Debug: Log missing fields
-  useEffect(() => {
-    console.log('[DEBUG] missingFields:', missingFields);
-  }, [missingFields]);
+
 
   // Handle Continue button hover/click when disabled
   const handleDisabledContinueInteraction = React.useCallback(() => {
