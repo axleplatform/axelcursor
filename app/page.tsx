@@ -14,7 +14,7 @@ import { supabase } from "@/lib/supabase"
 import { DateTimeSelector } from "@/components/date-time-selector"
 import { toast } from "@/components/ui/use-toast"
 import HomepageLocationInput from "@/components/homepage-location-input"
-import { ErrorBoundary } from "@/components/error-boundary"
+import ErrorBoundary from "@/components/error-boundary"
 
 // Simple debounce function
 function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
