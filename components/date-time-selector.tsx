@@ -129,8 +129,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
   // Generate days for the current week view
   function generateWeekDays(weekStart: Date): Date[] {
     return Array.from({ length: 7 }, (_, i) => {
-      const day = new Date(weekStart)
-      day.setDate(weekStart.getDate() + i)
+      const day = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i)
       return day
     })
   }
