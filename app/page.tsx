@@ -121,6 +121,109 @@ function HomePageContent(): React.JSX.Element {
   let updateMapLocation: (location: { lat: number; lng: number }) => void;
   let handleLocationSelect: (place: google.maps.places.PlaceResult) => void;
 
+  // Show coordinates helper function
+  const showCoordinates = useCallback((lat: number, lng: number) => {
+    return `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  }, []);
+
+  // Reverse geocode helper function
+  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+    try {
+      const { reverseGeocode: reverseGeocodeFunc } = await import('@/lib/google-maps');
+      const results = await reverseGeocodeFunc(lat, lng);
+      return results && results[0] ? results[0].formatted_address : showCoordinates(lat, lng);
+    } catch (error) {
+      console.warn('Reverse geocoding failed, showing coordinates:', error);
+      return showCoordinates(lat, lng);
+    }
+  }, [showCoordinates]);
+
+  // Create draggable marker function
+  const createDraggableMarker = useCallback((map: google.maps.Map, location: { lat: number; lng: number }, onDragEnd: (newPos: { lat: number; lng: number }) => void) => {
+    try {
+      // Validate inputs
+      if (!map || !location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
+        console.error('Invalid inputs for marker creation:', { map, location });
+        return null;
+      }
+      
+      const marker = new window.google.maps.marker.AdvancedMarkerElement({
+        position: location,
+        map: map,
+        gmpDraggable: true,
+        title: "Drag to adjust location"
+      });
+      
+      // Verify marker was created
+      if (!marker) {
+        console.error('Failed to create marker');
+        return null;
+      }
+    
+      // Add cursor style for visual feedback
+      if (marker.content) {
+        marker.content.style.cursor = 'grab';
+      }
+      
+      // Change cursor while dragging
+      marker.addListener('dragstart', () => {
+        if (marker.content) {
+          marker.content.style.cursor = 'grabbing';
+        }
+      });
+      
+      // Add drag end event listener
+      marker.addListener('dragend', async (event: any) => {
+        // Reset cursor
+        if (marker.content) {
+          marker.content.style.cursor = 'grab';
+        }
+        
+        // For AdvancedMarkerElement, position is directly on the marker
+        const position = marker.position;
+        
+        // Check if position exists and has proper format
+        if (!position) {
+          console.error('No position available on marker');
+          return;
+        }
+        
+        // Handle different position formats for AdvancedMarkerElement
+        let lat, lng;
+        
+        // Handle different position formats
+        if (typeof position.lat === 'function') {
+          lat = position.lat();
+          lng = position.lng();
+        } else if (position.lat !== undefined && position.lng !== undefined) {
+          lat = position.lat;
+          lng = position.lng;
+        } else {
+          console.error('Invalid position format:', position);
+          return;
+        }
+        
+        // Validate coordinates
+        if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+          console.error('Invalid coordinates from marker position:', { lat, lng });
+          return;
+        }
+        
+        console.log('New position:', { lat, lng });
+        
+        // Get address from reverse geocoding
+        const address = await reverseGeocode(lat, lng);
+        
+        onDragEnd({ lat, lng, address });
+      });
+      
+      return marker;
+    } catch (error) {
+      console.error('Error creating marker:', error);
+      return null;
+    }
+  }, [reverseGeocode]);
+
   // Initialize map on mount
   const initializeMap = useCallback(async () => {
     try {
@@ -327,109 +430,6 @@ function HomePageContent(): React.JSX.Element {
       }
     };
   }, []); // Run only on unmount
-
-  // Show coordinates helper function
-  const showCoordinates = useCallback((lat: number, lng: number) => {
-    return `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-  }, []);
-
-  // Reverse geocode helper function
-  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
-    try {
-      const { reverseGeocode: reverseGeocodeFunc } = await import('@/lib/google-maps');
-      const results = await reverseGeocodeFunc(lat, lng);
-      return results && results[0] ? results[0].formatted_address : showCoordinates(lat, lng);
-    } catch (error) {
-      console.warn('Reverse geocoding failed, showing coordinates:', error);
-      return showCoordinates(lat, lng);
-    }
-  }, [showCoordinates]);
-
-  // Create draggable marker function
-  const createDraggableMarker = useCallback((map: google.maps.Map, location: { lat: number; lng: number }, onDragEnd: (newPos: { lat: number; lng: number }) => void) => {
-    try {
-      // Validate inputs
-      if (!map || !location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
-        console.error('Invalid inputs for marker creation:', { map, location });
-        return null;
-      }
-      
-      const marker = new window.google.maps.marker.AdvancedMarkerElement({
-        position: location,
-        map: map,
-        gmpDraggable: true,
-        title: "Drag to adjust location"
-      });
-      
-      // Verify marker was created
-      if (!marker) {
-        console.error('Failed to create marker');
-        return null;
-      }
-    
-      // Add cursor style for visual feedback
-      if (marker.content) {
-        marker.content.style.cursor = 'grab';
-      }
-      
-      // Change cursor while dragging
-      marker.addListener('dragstart', () => {
-        if (marker.content) {
-          marker.content.style.cursor = 'grabbing';
-        }
-      });
-      
-      // Add drag end event listener
-      marker.addListener('dragend', async (event: any) => {
-        // Reset cursor
-        if (marker.content) {
-          marker.content.style.cursor = 'grab';
-        }
-        
-        // For AdvancedMarkerElement, position is directly on the marker
-        const position = marker.position;
-        
-        // Check if position exists and has proper format
-        if (!position) {
-          console.error('No position available on marker');
-          return;
-        }
-        
-        // Handle different position formats for AdvancedMarkerElement
-        let lat, lng;
-        
-        // Handle different position formats
-        if (typeof position.lat === 'function') {
-          lat = position.lat();
-          lng = position.lng();
-        } else if (position.lat !== undefined && position.lng !== undefined) {
-          lat = position.lat;
-          lng = position.lng;
-        } else {
-          console.error('Invalid position format:', position);
-          return;
-        }
-        
-        // Validate coordinates
-        if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
-          console.error('Invalid coordinates from marker position:', { lat, lng });
-          return;
-        }
-        
-        console.log('New position:', { lat, lng });
-        
-        // Get address from reverse geocoding
-        const address = await reverseGeocode(lat, lng);
-        
-        onDragEnd({ lat, lng, address });
-      });
-      
-      return marker;
-    } catch (error) {
-      console.error('Error creating marker:', error);
-      return null;
-    }
-  }, [reverseGeocode]);
 
   // Animate map to location with zoom effect
   const animateToLocation = useCallback((map: google.maps.Map, location: { lat: number; lng: number }) => {
