@@ -117,84 +117,73 @@ function HomePageContent(): React.JSX.Element {
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
 
+  // 1. Add mapContainerRef
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+
   // Declare functions first to prevent circular dependencies
   let updateMapLocation: (location: { lat: number; lng: number }) => void;
   let handleLocationSelect: (place: google.maps.places.PlaceResult) => void;
 
   // Initialize map on mount
   const initializeMap = useCallback(async () => {
+    console.log('🔍 Map init: Starting initialization...');
+    if (!mapContainerRef.current) {
+      console.log('⚠️ Map container not ready');
+      return;
+    }
+    // Clean up any existing map instance
+    if (mapRef.current) {
+      console.log('🔍 Map init: Cleaning up existing map instance...');
+      mapRef.current = null;
+    }
     try {
-      console.log('🔍 Map init: Starting initialization...');
-      
-      if (!mapRef.current || mapInstanceRef.current) {
-        console.log('🔍 Map init: Early return - refs not ready');
-        return;
-      }
-
-      // Check if map container element exists before initializing
-      const mapElement = mapRef.current;
-      if (!mapElement) {
-        console.log('🔍 Map init: Map container element not found');
-        return;
-      }
-
-      console.log('🔍 Map init: Cleaning up existing elements...');
-      // Clean up any existing Google Maps elements that might interfere
-      const pacElements = document.querySelectorAll('.pac-container, .pac-item');
-      pacElements.forEach(el => {
-        try {
-          if (el.parentNode) {
-            el.parentNode.removeChild(el);
-          }
-        } catch (error) {
-          console.log('🔍 Map init: Cleanup error (ignored):', error);
-        }
-      });
-
-      console.log('🔍 Map init: Loading Google Maps...');
-      // Load Google Maps using the safe loader
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
-
-      console.log('🔍 Map init: Creating map instance...');
-      const map = new google.maps.Map(mapElement, {
-        center: { lat: 40.7128, lng: -74.0060 }, // NYC default
+      // Force the container to be visible
+      mapContainerRef.current.style.display = 'block';
+      mapContainerRef.current.style.height = '400px';
+      const map = new google.maps.Map(mapContainerRef.current, {
+        center: (selectedLocation?.geometry?.location && typeof selectedLocation.geometry.location.lat === 'number' && typeof selectedLocation.geometry.location.lng === 'number')
+          ? selectedLocation.geometry.location
+          : { lat: 33.6846, lng: -117.8265 },
         zoom: 12,
-        mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID || 'DEMO_MAP_ID',
         mapTypeControl: false,
-        streetViewControl: false,
+        fullscreenControl: false,
+        streetViewControl: false
       });
-      
-      mapInstanceRef.current = map;
+      mapRef.current = map;
       setMapLoaded(true);
       console.log('✅ Map initialized successfully');
+      // Trigger resize to ensure map renders properly
+      setTimeout(() => {
+        google.maps.event.trigger(map, 'resize');
+      }, 100);
     } catch (error) {
       console.error('❌ Map initialization error:', error);
-      console.error('❌ Error stack:', error.stack);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error name:', error.name);
     }
-  }, []);
+  }, [selectedLocation]);
 
+  // 3. Add focus/visibility listeners for robust re-initialization
   useEffect(() => {
-    let mounted = true;
-
-    if (mounted && mapRef.current && !mapInstanceRef.current) {
-      initializeMap();
-    }
-
-    return () => {
-      mounted = false;
-      // Cleanup map instance and marker
-      if (markerRef.current) {
-        markerRef.current.setMap(null);
-        markerRef.current = null;
-      }
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current = null;
+    const handleVisibilityChange = () => {
+      if (!document.hidden && mapContainerRef.current && !mapRef.current) {
+        console.log('🗺️ Page became visible - initializing map');
+        initializeMap();
       }
     };
-  }, [initializeMap]); // Depend on memoized initializeMap function
+    const handleFocus = () => {
+      if (mapContainerRef.current && !mapRef.current) {
+        console.log('🗺️ Window focused - checking map');
+        initializeMap();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [initializeMap]);
 
   // Add navigation detection and map reinitialization
   useEffect(() => {
@@ -1566,17 +1555,19 @@ function HomePageContent(): React.JSX.Element {
 
 
             {/* Map Container */}
-            <div className="w-full h-[400px] rounded-lg border border-gray-200 overflow-hidden">
-              <div ref={mapRef} className="w-full h-full bg-gray-100">
-                {!mapLoaded && (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-gray-400" />
-                      <p className="text-gray-500">Loading map...</p>
-                    </div>
+            <div
+              ref={mapContainerRef}
+              className="w-full h-[400px] rounded-lg border border-gray-200 overflow-hidden"
+              style={{ minHeight: '400px', display: 'block' }}
+            >
+              {!mapLoaded && (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-gray-400" />
+                    <p className="text-gray-500">Loading map...</p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
             
             {/* Help text for dragging */}
