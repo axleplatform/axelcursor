@@ -1474,8 +1474,11 @@ function HomePageContent(): React.JSX.Element {
   }, [isFormComplete, isSubmitting, missingFields])
 
   const handleDateTimeChange = React.useCallback((date: Date, time: string): void => {
-    // Convert the selected date and time to the format expected by the form
-    const formattedDate = date.toISOString().split("T")[0];
+    // Convert the selected date to local date format (YYYY-MM-DD) without timezone conversion
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
 
     let formattedTime = "";
     if (time && time !== "Select time" && time !== "") {
