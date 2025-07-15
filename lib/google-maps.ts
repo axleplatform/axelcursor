@@ -227,6 +227,12 @@ export async function createNewPlacesAutocomplete(
   try {
     console.log('🔍 createNewPlacesAutocomplete: Starting...');
     
+    // Check if inputElement exists
+    if (!inputElement) {
+      console.warn('⚠️ createNewPlacesAutocomplete: inputElement is null, returning early');
+      return { success: false, error: 'Input element is null' };
+    }
+    
     let suggestionsContainer: HTMLDivElement | null = null;
     let currentSuggestions: any[] = [];
     let searchTimeout: NodeJS.Timeout | null = null;
@@ -463,71 +469,75 @@ export async function createNewPlacesAutocomplete(
     };
     
     // Disable browser's native autocomplete
-    inputElement.setAttribute('autocomplete', 'off');
-    inputElement.setAttribute('autocorrect', 'off');
-    inputElement.setAttribute('autocapitalize', 'off');
-    inputElement.setAttribute('spellcheck', 'false');
+    if (inputElement) {
+      inputElement.setAttribute('autocomplete', 'off');
+      inputElement.setAttribute('autocorrect', 'off');
+      inputElement.setAttribute('autocapitalize', 'off');
+      inputElement.setAttribute('spellcheck', 'false');
+    }
     
     // Add event listeners
-    inputElement.addEventListener('input', handleInputChange);
-    inputElement.addEventListener('focus', () => {
-      if (suggestionsContainer && suggestionsContainer.children.length > 0) {
-        suggestionsContainer.style.display = 'block';
-      }
-    });
-    
-    // Handle keyboard navigation
-    inputElement.addEventListener('keydown', (e) => {
-      if (!suggestionsContainer || suggestionsContainer.style.display === 'none') return;
+    if (inputElement) {
+      inputElement.addEventListener('input', handleInputChange);
+      inputElement.addEventListener('focus', () => {
+        if (suggestionsContainer && suggestionsContainer.children.length > 0) {
+          suggestionsContainer.style.display = 'block';
+        }
+      });
       
-      const items = suggestionsContainer.querySelectorAll('.suggestion-item');
-      const currentIndex = Array.from(items).findIndex(item => item.style.backgroundColor === 'rgb(249, 250, 251)');
-      
-      switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault();
-          if (currentIndex < items.length - 1) {
-            items[currentIndex]?.style.removeProperty('background-color');
-            items[currentIndex + 1].style.backgroundColor = '#f9fafb';
-          }
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          if (currentIndex > 0) {
-            items[currentIndex]?.style.removeProperty('background-color');
-            items[currentIndex - 1].style.backgroundColor = '#f9fafb';
-          }
-          break;
-        case 'Enter':
-          e.preventDefault();
-          const selectedItem = suggestionsContainer.querySelector('.suggestion-item[style*="background-color: rgb(249, 250, 251)"]');
-          if (selectedItem) {
-            // Click the highlighted suggestion
-            selectedItem.dispatchEvent(new Event('click'));
-          } else if (currentSuggestions.length > 0) {
-            // No suggestion highlighted but suggestions exist - select the first one
-            const firstItem = suggestionsContainer.querySelector('.suggestion-item');
-            if (firstItem) {
-              firstItem.dispatchEvent(new Event('click'));
+      // Handle keyboard navigation
+      inputElement.addEventListener('keydown', (e) => {
+        if (!suggestionsContainer || suggestionsContainer.style.display === 'none') return;
+        
+        const items = suggestionsContainer.querySelectorAll('.suggestion-item');
+        const currentIndex = Array.from(items).findIndex(item => item.style.backgroundColor === 'rgb(249, 250, 251)');
+        
+        switch (e.key) {
+          case 'ArrowDown':
+            e.preventDefault();
+            if (currentIndex < items.length - 1) {
+              items[currentIndex]?.style.removeProperty('background-color');
+              items[currentIndex + 1].style.backgroundColor = '#f9fafb';
             }
-          } else {
-            // No suggestions - geocode the current text
-            const currentText = inputElement.value.trim();
-            if (currentText.length >= 3) {
-              // Trigger geocoding for the current text
-              handleEnterOnEmptySuggestions(currentText);
+            break;
+          case 'ArrowUp':
+            e.preventDefault();
+            if (currentIndex > 0) {
+              items[currentIndex]?.style.removeProperty('background-color');
+              items[currentIndex - 1].style.backgroundColor = '#f9fafb';
             }
-          }
-          break;
-        case 'Escape':
-          suggestionsContainer.style.display = 'none';
-          break;
-      }
-    });
+            break;
+          case 'Enter':
+            e.preventDefault();
+            const selectedItem = suggestionsContainer.querySelector('.suggestion-item[style*="background-color: rgb(249, 250, 251)"]');
+            if (selectedItem) {
+              // Click the highlighted suggestion
+              selectedItem.dispatchEvent(new Event('click'));
+            } else if (currentSuggestions.length > 0) {
+              // No suggestion highlighted but suggestions exist - select the first one
+              const firstItem = suggestionsContainer.querySelector('.suggestion-item');
+              if (firstItem) {
+                firstItem.dispatchEvent(new Event('click'));
+              }
+            } else {
+              // No suggestions - geocode the current text
+              const currentText = inputElement.value.trim();
+              if (currentText.length >= 3) {
+                // Trigger geocoding for the current text
+                handleEnterOnEmptySuggestions(currentText);
+              }
+            }
+            break;
+          case 'Escape':
+            suggestionsContainer.style.display = 'none';
+            break;
+        }
+      });
+    }
     
     // Hide suggestions when clicking outside
     document.addEventListener('click', (e) => {
-      if (suggestionsContainer && !inputElement.contains(e.target as Node) && !suggestionsContainer.contains(e.target as Node)) {
+      if (suggestionsContainer && inputElement && !inputElement.contains(e.target as Node) && !suggestionsContainer.contains(e.target as Node)) {
         suggestionsContainer.style.display = 'none';
       }
     });
@@ -548,7 +558,9 @@ export async function createNewPlacesAutocomplete(
         if (suggestionsContainer) {
           suggestionsContainer.remove();
         }
-        inputElement.removeEventListener('input', handleInputChange);
+        if (inputElement) {
+          inputElement.removeEventListener('input', handleInputChange);
+        }
       }
     };
     
@@ -571,6 +583,13 @@ export async function createAutocomplete(
 ): Promise<any> {
   try {
     console.log('🔍 createAutocomplete: Starting...');
+    
+    // Check if inputElement exists
+    if (!inputElement) {
+      console.warn('⚠️ createAutocomplete: inputElement is null, returning early');
+      return { success: false, error: 'Input element is null' };
+    }
+    
     console.log('🔍 createAutocomplete: Second parameter type:', typeof optionsOrOnPlaceSelect);
     console.log('🔍 createAutocomplete: Second parameter:', optionsOrOnPlaceSelect);
     
