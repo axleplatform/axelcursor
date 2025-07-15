@@ -139,8 +139,8 @@ function HomePageContent(): React.JSX.Element {
     }
   }, [showCoordinates]);
 
-  // Create draggable marker function
-  const createDraggableMarker = useCallback((map: google.maps.Map, location: { lat: number; lng: number }, onDragEnd: (newPos: { lat: number; lng: number }) => void) => {
+  // Create draggable marker function with optimized performance
+  const createDraggableMarker = useCallback((map: google.maps.Map, location: { lat: number; lng: number }, onDragEnd: (newPos: { lat: number; lng: number; address: string }) => void) => {
     try {
       // Validate inputs
       if (!map || !location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
@@ -166,56 +166,65 @@ function HomePageContent(): React.JSX.Element {
         marker.content.style.cursor = 'grab';
       }
       
-      // Change cursor while dragging
+      // Track drag state to prevent updates during drag
+      let isDragging = false;
+      
+      // Change cursor while dragging and prevent map updates
       marker.addListener('dragstart', () => {
+        isDragging = true;
         if (marker.content) {
           marker.content.style.cursor = 'grabbing';
         }
+        // Disable map interactions during drag to prevent lag
+        map.setOptions({ gestureHandling: 'none' });
       });
       
-      // Add drag end event listener
+      // Add drag end event listener with debounced updates
       marker.addListener('dragend', async (event: any) => {
-        // Reset cursor
+        // Reset cursor and re-enable map interactions
         if (marker.content) {
           marker.content.style.cursor = 'grab';
         }
+        map.setOptions({ gestureHandling: 'greedy' });
+        isDragging = false;
         
-        // For AdvancedMarkerElement, position is directly on the marker
-        const position = marker.position;
-        
-        // Check if position exists and has proper format
-        if (!position) {
-          console.error('No position available on marker');
-          return;
-        }
-        
-        // Handle different position formats for AdvancedMarkerElement
-        let lat, lng;
-        
-        // Handle different position formats
-        if (typeof position.lat === 'function') {
-          lat = position.lat();
-          lng = position.lng();
-        } else if (position.lat !== undefined && position.lng !== undefined) {
-          lat = position.lat;
-          lng = position.lng;
-        } else {
-          console.error('Invalid position format:', position);
-          return;
-        }
-        
-        // Validate coordinates
-        if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
-          console.error('Invalid coordinates from marker position:', { lat, lng });
-          return;
-        }
-        
-        console.log('New position:', { lat, lng });
-        
-        // Get address from reverse geocoding
-        const address = await reverseGeocode(lat, lng);
-        
-        onDragEnd({ lat, lng, address });
+        // Small delay to ensure smooth transition
+        setTimeout(async () => {
+          // For AdvancedMarkerElement, position is directly on the marker
+          const position = marker.position;
+          
+          // Check if position exists and has proper format
+          if (!position) {
+            console.error('No position available on marker');
+            return;
+          }
+          
+          // Handle different position formats for AdvancedMarkerElement
+          let lat, lng;
+          
+          // Handle different position formats
+          if (typeof position.lat === 'function') {
+            lat = position.lat();
+            lng = position.lng();
+          } else if (position.lat !== undefined && position.lng !== undefined) {
+            lat = position.lat;
+            lng = position.lng;
+          } else {
+            console.error('Invalid position format:', position);
+            return;
+          }
+          
+          // Validate coordinates
+          if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+            console.error('Invalid coordinates from marker position:', { lat, lng });
+            return;
+          }
+          
+          // Get address from reverse geocoding
+          const address = await reverseGeocode(lat, lng);
+          
+          onDragEnd({ lat, lng, address });
+        }, 100); // Small delay for smooth transition
       });
       
       return marker;
@@ -432,38 +441,60 @@ function HomePageContent(): React.JSX.Element {
     };
   }, []); // Run only on unmount
 
-  // Animate map to location with zoom effect
+  // Smooth animation to location with professional easing
   const animateToLocation = useCallback((map: google.maps.Map, location: { lat: number; lng: number }) => {
     // Clear any existing animation
     if (window.smoothZoomInterval) {
       clearInterval(window.smoothZoomInterval);
     }
     
-    // Start at zoom 15
-    map.setZoom(15);
-    map.panTo(location);
+    const startCenter = map.getCenter();
+    const startZoom = map.getZoom();
+    const targetZoom = 17; // Perfect zoom level for addresses
     
-    // Small delay to ensure map is ready
-    setTimeout(() => {
-      // Ultra-smooth zoom with very small increments
-      let currentZoom = 15;
-      const targetZoom = 18;
-      const zoomIncrement = 0.05; // Even smaller increment for ultra-smoothness
-      const animationSpeed = 25; // Faster interval for smoother animation
+    // Calculate distance between current and target location
+    const latDiff = Math.abs(location.lat - startCenter.lat());
+    const lngDiff = Math.abs(location.lng - startCenter.lng());
+    const isNearby = latDiff < 0.01 && lngDiff < 0.01; // Within ~1km
+    
+    // Adjust animation parameters based on distance
+    const duration = isNearby ? 1200 : 1800; // Faster for nearby locations
+    const fps = 60; // 60fps for smooth animation
+    const interval = 1000 / fps;
+    const totalSteps = Math.floor(duration / interval);
+    
+    let currentStep = 0;
+    
+    // Easing function for smooth acceleration/deceleration
+    const easeInOutCubic = (t: number): number => {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    };
+    
+    window.smoothZoomInterval = setInterval(() => {
+      currentStep++;
+      const progress = currentStep / totalSteps;
+      const easedProgress = easeInOutCubic(progress);
       
-      window.smoothZoomInterval = setInterval(() => {
-        currentZoom += zoomIncrement;
-        map.setZoom(currentZoom);
-        
-        if (currentZoom >= targetZoom) {
-          map.setZoom(targetZoom); // Ensure exact final zoom
-          clearInterval(window.smoothZoomInterval);
-          window.smoothZoomInterval = null;
-        }
-      }, animationSpeed);
-    }, 50);
-    
-    // Total animation time: ~425ms (ultra-smooth and fast)
+      // Interpolate center position
+      const lat = startCenter.lat() + (location.lat - startCenter.lat()) * easedProgress;
+      const lng = startCenter.lng() + (location.lng - startCenter.lng()) * easedProgress;
+      
+      // Interpolate zoom level
+      const zoom = startZoom + (targetZoom - startZoom) * easedProgress;
+      
+      // Apply changes to map
+      map.setCenter({ lat, lng });
+      map.setZoom(zoom);
+      
+      // End animation when complete
+      if (currentStep >= totalSteps) {
+        // Ensure exact final position and zoom
+        map.setCenter(location);
+        map.setZoom(targetZoom);
+        clearInterval(window.smoothZoomInterval);
+        window.smoothZoomInterval = null;
+      }
+    }, interval);
   }, []);
 
   // Define updateMapLocation function
@@ -479,38 +510,43 @@ function HomePageContent(): React.JSX.Element {
     // Animate to new location
     animateToLocation(mapInstanceRef.current, location);
     
-    // Add draggable marker
-    const newMarker = createDraggableMarker(mapInstanceRef.current, location, (newPos) => {
-      // Update form with new coordinates and address
-      setFormData(prev => ({
-        ...prev,
-        latitude: newPos.lat,
-        longitude: newPos.lng,
-        location: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}` // Use address if available, otherwise coordinates
-      }));
+    // Add draggable marker after animation completes
+    const markerDelay = 1900; // Default delay for 1800ms animation
+    setTimeout(() => {
+      if (mapInstanceRef.current) {
+        const newMarker = createDraggableMarker(mapInstanceRef.current, location, (newPos) => {
+          // Update form with new coordinates and address
+          setFormData(prev => ({
+            ...prev,
+            latitude: newPos.lat,
+            longitude: newPos.lng,
+            location: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}` // Use address if available, otherwise coordinates
+          }));
 
-      // Update selectedLocation if it exists - use setSelectedLocation directly
-      setSelectedLocation(prevSelectedLocation => {
-        if (prevSelectedLocation) {
-          return {
-            ...prevSelectedLocation,
-            geometry: {
-              ...prevSelectedLocation.geometry,
-              location: { lat: newPos.lat, lng: newPos.lng }
-            },
-            formatted_address: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
-          };
+          // Update selectedLocation if it exists - use setSelectedLocation directly
+          setSelectedLocation(prevSelectedLocation => {
+            if (prevSelectedLocation) {
+              return {
+                ...prevSelectedLocation,
+                geometry: {
+                  ...prevSelectedLocation.geometry,
+                  location: { lat: newPos.lat, lng: newPos.lng }
+                },
+                formatted_address: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
+              };
+            }
+            return prevSelectedLocation;
+          });
+        });
+        
+        // Only set marker ref if creation was successful
+        if (newMarker) {
+          markerRef.current = newMarker;
+        } else {
+          console.error('Failed to create draggable marker');
         }
-        return prevSelectedLocation;
-      });
-    });
-    
-    // Only set marker ref if creation was successful
-    if (newMarker) {
-      markerRef.current = newMarker;
-    } else {
-      console.error('Failed to create draggable marker');
-    }
+      }
+    }, markerDelay); // Slightly longer than animation duration to ensure it completes
   }, [animateToLocation, createDraggableMarker]);
 
   // Watch for existing appointment data and update map if needed
