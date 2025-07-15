@@ -241,10 +241,14 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
   // Notify parent component when BOTH date AND time are properly selected
   // This prevents auto-submission by ensuring incomplete selections don't trigger updates
   useEffect(() => {
+    console.log('🕐 DateTimeSelector useEffect triggered:', { selectedTime, selectedDate });
     // Only notify parent when we have a complete date/time selection
     // This prevents partial selections from triggering form validation or submission
     if (selectedTime && selectedTime !== "") {
+      console.log('✅ Calling onDateTimeChange with:', { selectedDate, selectedTime });
       onDateTimeChange(selectedDate, selectedTime)
+    } else {
+      console.log('❌ selectedTime is empty or invalid:', selectedTime);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedTime])
@@ -270,6 +274,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
 
   // Handle time selection
   const handleTimeSelect = (time: string) => {
+    console.log('🕐 handleTimeSelect called with:', time);
     setInternalTime(time)
     setShowTimeSelector(false)
     

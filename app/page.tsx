@@ -1438,6 +1438,7 @@ function HomePageContent(): React.JSX.Element {
   }, [isFormComplete, isSubmitting, missingFields])
 
   const handleDateTimeChange = React.useCallback((date: Date, time: string): void => {
+    console.log('🕐 handleDateTimeChange called with:', { date, time });
     // This function is only called when BOTH date AND time are properly selected
     // (thanks to our DateTimeSelector improvement)
     
@@ -1462,6 +1463,8 @@ function HomePageContent(): React.JSX.Element {
         formattedTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`
       }
     }
+
+    console.log('🕐 Formatted values:', { formattedDate, formattedTime });
 
     // Update form data - this will NOT trigger form submission, only state update
     setFormData((prev: AppointmentFormData) => ({
