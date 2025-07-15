@@ -140,7 +140,7 @@ function HomePageContent(): React.JSX.Element {
     }
   }, [showCoordinates]);
 
-  // Create draggable marker function with optimized performance
+  // Create draggable marker function with smooth panning (Uber/Google Maps style)
   const createDraggableMarker = useCallback((map: google.maps.Map, location: { lat: number; lng: number }, onDragEnd: (newPos: { lat: number; lng: number; address: string }) => void) => {
     try {
       // Validate inputs
@@ -167,65 +167,87 @@ function HomePageContent(): React.JSX.Element {
         marker.content.style.cursor = 'grab';
       }
       
-      // Track drag state to prevent updates during drag
+      // Track drag state and store zoom level
       let isDragging = false;
+      let zoomBeforeDrag: number;
       
-      // Change cursor while dragging and prevent map updates
+      // Change cursor while dragging and freeze map
       marker.addListener('dragstart', () => {
         isDragging = true;
+        zoomBeforeDrag = map.getZoom(); // Store current zoom level
+        
         if (marker.content) {
           marker.content.style.cursor = 'grabbing';
         }
-        // Disable map interactions during drag to prevent lag
-        map.setOptions({ gestureHandling: 'none' });
+        
+        // Completely disable map interactions during drag
+        map.setOptions({ 
+          gestureHandling: 'none',
+          draggable: false,
+          zoomControl: false,
+          scrollwheel: false,
+          disableDoubleClickZoom: true
+        });
       });
       
-      // Add drag end event listener with debounced updates
+      // Smooth pan to center pin on drag end
       marker.addListener('dragend', async (event: any) => {
-        // Reset cursor and re-enable map interactions
+        // Reset cursor
         if (marker.content) {
           marker.content.style.cursor = 'grab';
         }
-        map.setOptions({ gestureHandling: 'greedy' });
+        
+        // Re-enable map interactions
+        map.setOptions({ 
+          gestureHandling: 'greedy',
+          draggable: true,
+          zoomControl: true,
+          scrollwheel: true,
+          disableDoubleClickZoom: false
+        });
+        
         isDragging = false;
         
-        // Small delay to ensure smooth transition
-        setTimeout(async () => {
-          // For AdvancedMarkerElement, position is directly on the marker
-          const position = marker.position;
-          
-          // Check if position exists and has proper format
-          if (!position) {
-            console.error('No position available on marker');
-            return;
-          }
-          
-          // Handle different position formats for AdvancedMarkerElement
-          let lat, lng;
-          
-          // Handle different position formats
-          if (typeof position.lat === 'function') {
-            lat = position.lat();
-            lng = position.lng();
-          } else if (position.lat !== undefined && position.lng !== undefined) {
-            lat = position.lat;
-            lng = position.lng;
-          } else {
-            console.error('Invalid position format:', position);
-            return;
-          }
-          
-          // Validate coordinates
-          if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
-            console.error('Invalid coordinates from marker position:', { lat, lng });
-            return;
-          }
-          
-          // Get address from reverse geocoding
-          const address = await reverseGeocode(lat, lng);
-          
-          onDragEnd({ lat, lng, address });
-        }, 100); // Small delay for smooth transition
+        // Get new marker position
+        const position = marker.position;
+        if (!position) {
+          console.error('No position available on marker');
+          return;
+        }
+        
+        // Handle different position formats for AdvancedMarkerElement
+        let lat, lng;
+        if (typeof position.lat === 'function') {
+          lat = position.lat();
+          lng = position.lng();
+        } else if (position.lat !== undefined && position.lng !== undefined) {
+          lat = position.lat;
+          lng = position.lng;
+        } else {
+          console.error('Invalid position format:', position);
+          return;
+        }
+        
+        // Validate coordinates
+        if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+          console.error('Invalid coordinates from marker position:', { lat, lng });
+          return;
+        }
+        
+        // Smoothly pan to center the pin (preserve zoom level)
+        const newCenter = { lat, lng };
+        map.panTo(newCenter);
+        
+        // Ensure zoom level is preserved exactly
+        if (zoomBeforeDrag !== undefined && map.getZoom() !== zoomBeforeDrag) {
+          map.setZoom(zoomBeforeDrag);
+        }
+        
+        // Get address from reverse geocoding
+        const address = await reverseGeocode(lat, lng);
+        
+        // Update form data
+        onDragEnd({ lat, lng, address });
       });
       
       return marker;
