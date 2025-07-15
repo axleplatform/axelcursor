@@ -117,9 +117,7 @@ function HomePageContent(): React.JSX.Element {
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
 
-  // Declare functions first to prevent circular dependencies
-  let updateMapLocation: (location: { lat: number; lng: number }) => void;
-  let handleLocationSelect: (place: google.maps.places.PlaceResult) => void;
+
 
   // Initialize map on mount
   const initializeMap = useCallback(async () => {
@@ -190,36 +188,8 @@ function HomePageContent(): React.JSX.Element {
       if (hasSavedLocation) {
         console.log('🔍 Map init: Restoring saved location with marker');
         
-        // Create draggable marker at saved position
-        const marker = createDraggableMarker(map, initialCenter, (newPos) => {
-          // Update form with new coordinates and address
-          setFormData(prev => ({
-            ...prev,
-            latitude: newPos.lat,
-            longitude: newPos.lng,
-            location: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
-          }));
-
-          // Update selectedLocation if it exists
-          setSelectedLocation(prevSelectedLocation => {
-            if (prevSelectedLocation) {
-              return {
-                ...prevSelectedLocation,
-                geometry: {
-                  ...prevSelectedLocation.geometry,
-                  location: { lat: newPos.lat, lng: newPos.lng }
-                },
-                formatted_address: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
-              };
-            }
-            return prevSelectedLocation;
-          });
-        });
-        
-        if (marker) {
-          markerRef.current = marker;
-          console.log('✅ Saved location marker restored');
-        }
+        // We'll handle marker creation in a separate effect to avoid circular dependencies
+        // The marker will be created by the updateMapLocation function when it's available
       }
     } catch (error) {
       console.error('❌ Map initialization error:', error);
@@ -227,7 +197,7 @@ function HomePageContent(): React.JSX.Element {
       console.error('❌ Error message:', error.message);
       console.error('❌ Error name:', error.name);
     }
-  }, [formData.latitude, formData.longitude, formData.location, createDraggableMarker]); // Add formData dependencies
+  }, [formData.latitude, formData.longitude, formData.location]); // Remove createDraggableMarker dependency
 
   // Simplified map initialization - always initialize when component is active
   useEffect(() => {
@@ -262,6 +232,26 @@ function HomePageContent(): React.JSX.Element {
       };
     }
   }, [formData.latitude, formData.longitude, formData.location, mapLoaded, initializeMap]);
+
+  // Handle marker creation for saved locations after map is initialized
+  useEffect(() => {
+    if (mapLoaded && mapInstanceRef.current && formData.latitude && formData.longitude && formData.location) {
+      console.log('🗺️ Map loaded with saved location - creating marker');
+      
+      // Small delay to ensure all functions are available
+      const timer = setTimeout(() => {
+        if (mapInstanceRef.current && updateMapLocation) {
+          const coordinates = { lat: formData.latitude, lng: formData.longitude };
+          updateMapLocation(coordinates);
+          console.log('✅ Saved location marker created');
+        }
+      }, 150);
+
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+  }, [mapLoaded, formData.latitude, formData.longitude, formData.location, updateMapLocation]);
 
   // Handle visibility changes and focus events to reinitialize map
   useEffect(() => {
@@ -468,7 +458,7 @@ function HomePageContent(): React.JSX.Element {
   }, []);
 
   // Define updateMapLocation function
-  updateMapLocation = useCallback((location: { lat: number; lng: number }) => {
+  const updateMapLocation = useCallback((location: { lat: number; lng: number }) => {
     if (!mapInstanceRef.current) return;
     
     // Remove old marker
@@ -1458,7 +1448,7 @@ function HomePageContent(): React.JSX.Element {
   }, [])
 
   // Define handleLocationSelect function
-  handleLocationSelect = useCallback((place: google.maps.places.PlaceResult) => {
+  const handleLocationSelect = useCallback((place: google.maps.places.PlaceResult) => {
     // Add null checks and validation
     if (!place || !place.geometry) {
       console.error('Invalid place data received:', place);
