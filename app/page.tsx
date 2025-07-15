@@ -370,9 +370,9 @@ function HomePageContent(): React.JSX.Element {
       console.error('❌ Error message:', error.message);
       console.error('❌ Error name:', error.name);
     }
-  }, [formData.latitude, formData.longitude, createDraggableMarker]); // Add dependencies for location data
+  }, [formData.latitude, formData.longitude, createDraggableMarker]); // Add createDraggableMarker dependency back
 
-  // Simplified map initialization - always initialize when component is active
+  // Single consolidated map initialization effect
   useEffect(() => {
     console.log('🗺️ Landing page mounted/active - initializing map');
     
@@ -386,9 +386,52 @@ function HomePageContent(): React.JSX.Element {
     return () => {
       clearTimeout(timer);
     };
-  }, [initializeMap]); // Only depend on initializeMap function
+  }, [initializeMap]);
 
-  // Handle visibility changes and focus events to reinitialize map
+  // Cleanup effect for component unmount
+  useEffect(() => {
+    return () => {
+      console.log('🗺️ Landing page unmounting - cleaning up map');
+      
+      // Clear any smooth zoom intervals
+      if (window.smoothZoomInterval) {
+        clearInterval(window.smoothZoomInterval);
+        window.smoothZoomInterval = null;
+      }
+      
+      // Cleanup map instance and marker
+      if (markerRef.current) {
+        try {
+          markerRef.current.setMap(null);
+        } catch (error) {
+          console.warn('Error cleaning up marker:', error);
+        }
+        markerRef.current = null;
+      }
+      
+      if (mapInstanceRef.current) {
+        try {
+          // Clear all listeners from the map
+          if (window.google?.maps?.event) {
+            window.google.maps.event.clearInstanceListeners(mapInstanceRef.current);
+          }
+        } catch (error) {
+          console.warn('Error clearing map listeners:', error);
+        }
+        mapInstanceRef.current = null;
+      }
+      
+      // Clean up Google Maps DOM elements
+      try {
+        const { globalCleanup } = require('@/lib/google-maps');
+        globalCleanup();
+      } catch (error) {
+        console.warn('Error during global cleanup:', error);
+      }
+    };
+  }, []); // Run only on unmount
+
+  // Handle visibility changes and focus events to reinitialize map (simplified)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && mapRef.current && !mapInstanceRef.current) {
@@ -409,60 +452,12 @@ function HomePageContent(): React.JSX.Element {
     
     // Listen for window focus (useful for browser back button)
     window.addEventListener('focus', handleFocus);
-    
-    // Also check if map needs initialization when component becomes active
-    const checkMapInterval = setInterval(() => {
-      if (mapRef.current && !mapInstanceRef.current) {
-        console.log('🗺️ Map check - reinitializing missing map');
-        initializeMap();
-      }
-    }, 2000); // Check every 2 seconds
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
-      clearInterval(checkMapInterval);
     };
   }, [initializeMap]);
-
-  // Force map reinitialization when navigating to landing page
-  useEffect(() => {
-    if (pathname === '/') {
-      console.log('🗺️ Landing page route detected - ensuring map is initialized');
-      
-      // Force cleanup and reinitialization
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current = null;
-      }
-      if (markerRef.current) {
-        markerRef.current.setMap(null);
-        markerRef.current = null;
-      }
-      
-      // Reinitialize map after a short delay
-      setTimeout(() => {
-        if (mapRef.current) {
-          console.log('🗺️ Route-based map reinitialization');
-          initializeMap();
-        }
-      }, 100);
-    }
-  }, [pathname, initializeMap]);
-
-  // Cleanup effect for component unmount
-  useEffect(() => {
-    return () => {
-      console.log('🗺️ Landing page unmounting - cleaning up map');
-      // Cleanup map instance and marker
-      if (markerRef.current) {
-        markerRef.current.setMap(null);
-        markerRef.current = null;
-      }
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current = null;
-      }
-    };
-  }, []); // Run only on unmount
 
   // Smooth animation to location with professional easing
   const animateToLocation = useCallback((map: google.maps.Map, location: { lat: number; lng: number }) => {

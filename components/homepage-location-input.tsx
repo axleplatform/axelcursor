@@ -92,8 +92,13 @@ export default function HomepageLocationInput({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      cleanupAllAutocompleteInstances();
-      autocompleteRef.current = null;
+      try {
+        console.log('🔍 HomepageLocationInput: Cleaning up autocomplete');
+        cleanupAllAutocompleteInstances();
+        autocompleteRef.current = null;
+      } catch (error) {
+        console.warn('Error during autocomplete cleanup:', error);
+      }
     };
   }, []);
 

@@ -658,16 +658,20 @@ export function cleanupAutocomplete(autocomplete: any): void {
 
 // Cleanup all autocomplete instances
 export function cleanupAllAutocompleteInstances(): void {
-  autocompleteInstances.forEach((instance, element) => {
-    try {
-      if (window.google?.maps?.event) {
-        window.google.maps.event.clearInstanceListeners(instance);
+  try {
+    autocompleteInstances.forEach((instance, element) => {
+      try {
+        if (window.google?.maps?.event && instance) {
+          window.google.maps.event.clearInstanceListeners(instance);
+        }
+      } catch (error) {
+        console.warn('Error cleaning up autocomplete instance:', error);
       }
-    } catch (error) {
-      console.warn('Error cleaning up autocomplete instance:', error);
-    }
-  });
-  autocompleteInstances.clear();
+    });
+    autocompleteInstances.clear();
+  } catch (error) {
+    console.warn('Error during autocomplete instances cleanup:', error);
+  }
 }
 
 // Geocoding functions
@@ -768,32 +772,51 @@ export function globalCleanup(): void {
     ];
     
     selectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(el => {
+      try {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+          try {
+            if (el && el.parentNode) {
+              el.parentNode.removeChild(el);
+            }
+          } catch (error) {
+            // Ignore cleanup errors
+          }
+        });
+      } catch (error) {
+        // Ignore selector errors
+      }
+    });
+    
+    // Also try to remove any elements with Google Maps related classes
+    try {
+      const allElements = document.querySelectorAll('*');
+      allElements.forEach(el => {
         try {
-          if (el && el.parentNode) {
-            el.parentNode.removeChild(el);
+          const className = el.className || '';
+          if (typeof className === 'string' && className.includes('pac-')) {
+            if (el.parentNode) {
+              el.parentNode.removeChild(el);
+            }
           }
         } catch (error) {
           // Ignore cleanup errors
         }
       });
-    });
+    } catch (error) {
+      // Ignore querySelectorAll errors
+    }
     
-    // Also try to remove any elements with Google Maps related classes
-    const allElements = document.querySelectorAll('*');
-    allElements.forEach(el => {
-      try {
-        const className = el.className || '';
-        if (typeof className === 'string' && className.includes('pac-')) {
-          if (el.parentNode) {
-            el.parentNode.removeChild(el);
-          }
-        }
-      } catch (error) {
-        // Ignore cleanup errors
+    // Clear any global Google Maps state
+    try {
+      if (window.google?.maps?.event) {
+        // Clear any global event listeners
+        window.google.maps.event.clearListeners(window, 'resize');
+        window.google.maps.event.clearListeners(document, 'visibilitychange');
       }
-    });
+    } catch (error) {
+      // Ignore Google Maps API errors
+    }
     
     console.debug('Google Maps cleanup completed'); // Only shows in dev tools when verbose logging is on
   } catch (error) {
