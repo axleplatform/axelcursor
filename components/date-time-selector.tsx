@@ -73,7 +73,8 @@ const ChevronRight = () => (
 )
 
 interface DateTimeSelectorProps {
-  onDateTimeChange: (date: Date, time: string) => void
+  onDateChange: (date: Date) => void
+  onTimeChange: (time: string) => void
   onTimeSelected?: () => void
   selectedTime?: string
   selectedDate?: Date
@@ -85,7 +86,7 @@ interface DateTimeSelectorRef {
   isFormComplete: () => boolean
 }
 
-export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelectorProps>(({ onDateTimeChange, onTimeSelected, selectedTime: controlledTime, selectedDate: controlledDate }, ref) => {
+export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelectorProps>(({ onDateChange, onTimeChange, onTimeSelected, selectedTime: controlledTime, selectedDate: controlledDate }, ref) => {
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimeSelector, setShowTimeSelector] = useState(false)
   const getTodayLocal = () => {
@@ -256,17 +257,6 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     }
   }, [selectedDate])
 
-  // Notify parent component when BOTH date AND time are properly selected
-  // This prevents auto-submission by ensuring incomplete selections don't trigger updates
-  useEffect(() => {
-    // Only notify parent when we have a complete date/time selection
-    // This prevents partial selections from triggering form validation or submission
-    if (selectedTime && selectedTime !== "") {
-      onDateTimeChange(selectedDate, selectedTime)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate, selectedTime])
-
   // When controlled props change, update internal state for backward compatibility
   useEffect(() => {
     if (controlledDate && controlledDate.getTime() !== internalDate.getTime()) setInternalDate(controlledDate)
@@ -278,8 +268,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     if (!isPastDate(date)) {
       setInternalDate(date)
       setShowCalendar(false)
-      
-      // After selecting date, automatically open time selector for progressive navigation
+      onDateChange(date)
       setTimeout(() => {
         setShowTimeSelector(true)
       }, 150)
@@ -290,13 +279,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
   const handleTimeSelect = (time: string) => {
     setInternalTime(time)
     setShowTimeSelector(false)
-    
-    // Immediately notify parent of the complete date/time selection
-    if (time && time !== "") {
-      onDateTimeChange(selectedDate, time)
-    }
-    
-    // Call the callback for progressive navigation
+    onTimeChange(time)
     if (onTimeSelected) {
       setTimeout(() => {
         onTimeSelected()

@@ -1494,13 +1494,18 @@ function HomePageContent(): React.JSX.Element {
     }
   }, [isFormComplete, isSubmitting, missingFields])
 
-  const handleDateTimeChange = React.useCallback((date: Date, time: string): void => {
-    // Convert the selected date to local date format (YYYY-MM-DD) without timezone conversion
+  const handleDateChange = React.useCallback((date: Date): void => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const formattedDate = `${year}-${month}-${day}`;
+    setFormData((prev: AppointmentFormData) => ({
+      ...prev,
+      appointmentDate: formattedDate
+    }));
+  }, []);
 
+  const handleTimeChange = React.useCallback((time: string): void => {
     let formattedTime = "";
     if (time && time !== "Select time" && time !== "") {
       if (time === "ASAP") {
@@ -1514,15 +1519,9 @@ function HomePageContent(): React.JSX.Element {
         formattedTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
       }
     }
-    
-    // Store the customer's timezone offset for proper timezone handling
-    const timezoneOffset = new Date().getTimezoneOffset();
-    
     setFormData((prev: AppointmentFormData) => ({
       ...prev,
-      appointmentDate: formattedDate,
-      appointmentTime: formattedTime,
-      timezoneOffset: timezoneOffset, // Store timezone offset in minutes
+      appointmentTime: formattedTime
     }));
   }, []);
 
@@ -2031,7 +2030,8 @@ function HomePageContent(): React.JSX.Element {
             <div className="mb-6 rounded-lg transition-all duration-300">
               <DateTimeSelector
                 ref={dateTimeSelectorRef}
-                onDateTimeChange={handleDateTimeChange}
+                onDateChange={handleDateChange}
+                onTimeChange={handleTimeChange}
                 onTimeSelected={handleTimeSelected}
                 selectedTime={formData.appointmentTime}
                 selectedDate={selectedDateObj}
