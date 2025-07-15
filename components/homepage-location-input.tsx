@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Input } from "@/components/ui/input"
 import { MapPin, Loader2 } from 'lucide-react'
+import { cleanupAllAutocompleteInstances } from '@/lib/google-maps'
 
 interface HomepageLocationInputProps {
   value: string
@@ -91,13 +92,8 @@ export default function HomepageLocationInput({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (autocompleteRef.current) {
-        try {
-          autocompleteRef.current = null;
-        } catch (err) {
-          console.warn('Error cleaning up autocomplete:', err);
-        }
-      }
+      cleanupAllAutocompleteInstances();
+      autocompleteRef.current = null;
     };
   }, []);
 
