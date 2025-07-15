@@ -162,10 +162,21 @@ function HomePageContent(): React.JSX.Element {
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
 
+      // Check if we have saved location data from appointment or form
+      const hasSavedLocation = formData.latitude && formData.longitude && formData.location;
+      const initialCenter = hasSavedLocation 
+        ? { lat: formData.latitude, lng: formData.longitude }
+        : { lat: 40.7128, lng: -74.0060 }; // NYC default
+      
+      const initialZoom = hasSavedLocation ? 18 : 12;
+
       console.log('🔍 Map init: Creating map instance...');
+      console.log('🔍 Map init: Initial center:', initialCenter);
+      console.log('🔍 Map init: Has saved location:', hasSavedLocation);
+      
       const map = new google.maps.Map(mapElement, {
-        center: { lat: 40.7128, lng: -74.0060 }, // NYC default
-        zoom: 12,
+        center: initialCenter,
+        zoom: initialZoom,
         mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID || 'DEMO_MAP_ID',
         mapTypeControl: false,
         streetViewControl: false,
@@ -174,13 +185,49 @@ function HomePageContent(): React.JSX.Element {
       mapInstanceRef.current = map;
       setMapLoaded(true);
       console.log('✅ Map initialized successfully');
+
+      // If we have saved location data, add the marker and restore the exact position
+      if (hasSavedLocation) {
+        console.log('🔍 Map init: Restoring saved location with marker');
+        
+        // Create draggable marker at saved position
+        const marker = createDraggableMarker(map, initialCenter, (newPos) => {
+          // Update form with new coordinates and address
+          setFormData(prev => ({
+            ...prev,
+            latitude: newPos.lat,
+            longitude: newPos.lng,
+            location: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
+          }));
+
+          // Update selectedLocation if it exists
+          setSelectedLocation(prevSelectedLocation => {
+            if (prevSelectedLocation) {
+              return {
+                ...prevSelectedLocation,
+                geometry: {
+                  ...prevSelectedLocation.geometry,
+                  location: { lat: newPos.lat, lng: newPos.lng }
+                },
+                formatted_address: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
+              };
+            }
+            return prevSelectedLocation;
+          });
+        });
+        
+        if (marker) {
+          markerRef.current = marker;
+          console.log('✅ Saved location marker restored');
+        }
+      }
     } catch (error) {
       console.error('❌ Map initialization error:', error);
       console.error('❌ Error stack:', error.stack);
       console.error('❌ Error message:', error.message);
       console.error('❌ Error name:', error.name);
     }
-  }, []);
+  }, [formData.latitude, formData.longitude, formData.location, createDraggableMarker]); // Add formData dependencies
 
   // Simplified map initialization - always initialize when component is active
   useEffect(() => {
@@ -197,6 +244,24 @@ function HomePageContent(): React.JSX.Element {
       clearTimeout(timer);
     };
   }, [initializeMap]); // Only depend on initializeMap function
+
+  // Reinitialize map when form data changes (e.g., when appointment data is loaded)
+  useEffect(() => {
+    if (mapLoaded && formData.latitude && formData.longitude && formData.location) {
+      console.log('🗺️ Form data changed - reinitializing map with saved location');
+      
+      // Small delay to ensure form data is fully updated
+      const timer = setTimeout(() => {
+        if (mapRef.current) {
+          initializeMap();
+        }
+      }, 100);
+
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+  }, [formData.latitude, formData.longitude, formData.location, mapLoaded, initializeMap]);
 
   // Handle visibility changes and focus events to reinitialize map
   useEffect(() => {
@@ -519,6 +584,12 @@ function HomePageContent(): React.JSX.Element {
 
       if (data) {
         console.log("✅ Loaded appointment data:", data)
+        console.log("📍 Appointment location data:", {
+          location: data.location,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          place_id: data.place_id
+        })
         
         // Restore form data from existing appointment
         setFormData(prev => ({
@@ -538,6 +609,11 @@ function HomePageContent(): React.JSX.Element {
           longitude: data.longitude,
           place_id: data.place_id
         }))
+
+        // If we have location data, trigger map reinitialization
+        if (data.latitude && data.longitude && data.location) {
+          console.log("🗺️ Appointment has location data - will trigger map restoration");
+        }
 
         toast({
           title: "Form Restored",
