@@ -88,10 +88,15 @@ interface DateTimeSelectorRef {
 export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelectorProps>(({ onDateTimeChange, onTimeSelected, selectedTime: controlledTime, selectedDate: controlledDate }, ref) => {
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimeSelector, setShowTimeSelector] = useState(false)
-  const [internalDate, setInternalDate] = useState(new Date())
+  const getTodayLocal = () => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+  const [internalDate, setInternalDate] = useState(getTodayLocal());
   const [internalTime, setInternalTime] = useState("")
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
-  const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()))
+  const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(getTodayLocal()));
 
   // Use controlled or internal state
   const selectedDate = controlledDate || internalDate;

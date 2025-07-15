@@ -1474,38 +1474,28 @@ function HomePageContent(): React.JSX.Element {
   }, [isFormComplete, isSubmitting, missingFields])
 
   const handleDateTimeChange = React.useCallback((date: Date, time: string): void => {
-    // This function is only called when BOTH date AND time are properly selected
-    // (thanks to our DateTimeSelector improvement)
-    
     // Convert the selected date and time to the format expected by the form
-    const formattedDate = date.toISOString().split("T")[0]
+    const formattedDate = date.toISOString().split("T")[0];
 
-    // Process the time selection
-    let formattedTime: string = ""
-    
+    let formattedTime = "";
     if (time && time !== "Select time" && time !== "") {
       if (time === "ASAP") {
-        // Keep "ASAP" as the value for validation and processing
-        formattedTime = "ASAP"
+        formattedTime = "ASAP";
       } else {
         // Parse the time string (e.g., "9:30 AM") to 24-hour format
-        const [timePart, ampm] = time.split(" ")
-        let [hours, minutes] = timePart.split(":").map(Number)
-
-        if (ampm === "PM" && hours < 12) hours += 12
-        if (ampm === "AM" && hours === 12) hours = 0
-
-        formattedTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`
+        const [timePart, ampm] = time.split(" ");
+        let [hours, minutes] = timePart.split(":").map(Number);
+        if (ampm === "PM" && hours < 12) hours += 12;
+        if (ampm === "AM" && hours === 12) hours = 0;
+        formattedTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
       }
     }
-
-    // Update form data - this will NOT trigger form submission, only state update
     setFormData((prev: AppointmentFormData) => ({
       ...prev,
       appointmentDate: formattedDate,
       appointmentTime: formattedTime,
-    }))
-  }, [])
+    }));
+  }, []);
 
   // Define handleLocationSelect function
   handleLocationSelect = useCallback((place: google.maps.places.PlaceResult) => {
