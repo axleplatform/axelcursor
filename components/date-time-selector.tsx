@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, forwardRef, useImperativeHandle } from "react"
+import * as React from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 
 // You can replace these with your preferred icon components
 const Calendar = () => (
@@ -74,6 +75,8 @@ const ChevronRight = () => (
 interface DateTimeSelectorProps {
   onDateTimeChange: (date: Date, time: string) => void
   onTimeSelected?: () => void
+  selectedTime?: string
+  selectedDate?: Date
 }
 
 interface DateTimeSelectorRef {
@@ -82,13 +85,17 @@ interface DateTimeSelectorRef {
   isFormComplete: () => boolean
 }
 
-export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelectorProps>(({ onDateTimeChange, onTimeSelected }, ref) => {
+export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelectorProps>(({ onDateTimeChange, onTimeSelected, selectedTime: controlledTime, selectedDate: controlledDate }, ref) => {
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimeSelector, setShowTimeSelector] = useState(false)
-  const [selectedDate, setSelectedDate] = useState(new Date())
-  const [selectedTime, setSelectedTime] = useState("")
+  const [internalDate, setInternalDate] = useState(new Date())
+  const [internalTime, setInternalTime] = useState("")
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()))
+
+  // Use controlled or internal state
+  const selectedDate = controlledDate || internalDate;
+  const selectedTime = controlledTime !== undefined ? controlledTime : internalTime;
 
   // Expose methods via ref for progressive navigation
   useImperativeHandle(ref, () => ({
@@ -218,7 +225,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
       
       // Clear invalid time selections
       if (!selectedTime || !todayTimeSlots.includes(selectedTime)) {
-        setSelectedTime("") // Force user to select a valid time
+        setInternalTime("") // Force user to select a valid time
       }
     } else {
       // For future dates, show all time slots (no ASAP option for future dates)
@@ -226,7 +233,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
 
       // For future dates, clear time selection to force user to pick
       if (!allTimeSlots.includes(selectedTime)) {
-        setSelectedTime("") // Force user to select a time for future dates
+        setInternalTime("") // Force user to select a time for future dates
       }
     }
   }, [selectedDate])
@@ -242,10 +249,16 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, selectedTime])
 
+  // When controlled props change, update internal state for backward compatibility
+  useEffect(() => {
+    if (controlledDate) setInternalDate(controlledDate)
+    if (controlledTime !== undefined) setInternalTime(controlledTime)
+  }, [controlledDate, controlledTime])
+
   // Handle date selection
   const handleDateSelect = (date: Date) => {
     if (!isPastDate(date)) {
-      setSelectedDate(date)
+      setInternalDate(date)
       setShowCalendar(false)
       
       // After selecting date, automatically open time selector for progressive navigation
@@ -257,7 +270,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
 
   // Handle time selection
   const handleTimeSelect = (time: string) => {
-    setSelectedTime(time)
+    setInternalTime(time)
     setShowTimeSelector(false)
     
     // Call the callback for progressive navigation

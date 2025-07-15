@@ -834,7 +834,8 @@ function HomePageContent(): React.JSX.Element {
       newErrors.appointmentDate = "Date is required"
     }
 
-    if (!formData.appointmentTime.trim()) {
+    // STRICT: Time is required
+    if (!formData.appointmentTime || !formData.appointmentTime.trim()) {
       newErrors.appointmentTime = "Time is required"
     }
 
@@ -850,36 +851,17 @@ function HomePageContent(): React.JSX.Element {
         const realToday = new Date() // Get actual current date/time
         const today = new Date(realToday.getFullYear(), realToday.getMonth(), realToday.getDate()) // Today at midnight
         
-        console.log('🔍 DEBUG: Raw appointment date string:', formData.appointmentDate)
-        console.log('🔍 DEBUG: Parsed appointment [year, month, day]:', [year, month, day])
-        console.log('🔍 DEBUG: appointmentDate object:', appointmentDate)
-        console.log('🔍 DEBUG: appointmentDate.getTime():', appointmentDate.getTime())
-        console.log('🔍 DEBUG: realToday object:', realToday)
-        console.log('🔍 DEBUG: today object (midnight):', today)
-        console.log('🔍 DEBUG: today.getTime():', today.getTime())
-        console.log('🔄 validateForm: Comparing DATES - appointment:', formData.appointmentDate, 'parsed as:', appointmentDate.toDateString(), 'today:', today.toDateString())
-        
         if (isNaN(appointmentDate.getTime())) {
-          console.log('❌ validateForm: Invalid date format')
           newErrors.appointmentDate = "Invalid date format"
         }
         // Step 1: If appointment DATE is in the future (tomorrow or later), ALWAYS ALLOW
         else if (appointmentDate.getTime() > today.getTime()) {
-          console.log('✅ validateForm: FUTURE DATE - always valid regardless of time (June 30, 2025 at any time is OK)')
           // No validation needed for future dates - any time is acceptable
         }
         // Step 2: If appointment DATE is today, check time constraints
         else if (appointmentDate.getTime() === today.getTime()) {
-          console.log('🔄 validateForm: TODAY - checking time constraints')
-          
           // Special case: Immediate appointments skip all time validation
           if (formData.appointmentTime === "ASAP" || formData.appointmentTime === "now" || formData.appointmentTime === "⚡ Now") {
-            console.log('⚡ validateForm: Immediate appointment detected - skipping time validation', {
-              timeValue: formData.appointmentTime,
-              isASAP: formData.appointmentTime === "ASAP",
-              isNow: formData.appointmentTime === "now",
-              isNowEmoji: formData.appointmentTime === "⚡ Now"
-            })
             // No validation needed for immediate appointments
           } else {
             // Parse regular time slots
@@ -887,7 +869,6 @@ function HomePageContent(): React.JSX.Element {
             const appointmentDateTime = new Date(year, month - 1, day, hours, minutes)
             
             if (isNaN(appointmentDateTime.getTime())) {
-              console.log('❌ validateForm: Invalid time format')
               newErrors.appointmentDate = "Invalid time format"
             } else {
               // Regular appointment - enforce 30-minute buffer
@@ -895,30 +876,23 @@ function HomePageContent(): React.JSX.Element {
               const bufferTime = new Date(now.getTime() + 30 * 60 * 1000) // Add 30 minutes
               
               if (appointmentDateTime <= bufferTime) {
-                console.log('❌ validateForm: Today appointment too soon (less than 30 min buffer)')
                 newErrors.appointmentDate = "Please select a time at least 30 minutes from now, or select ASAP for immediate service"
-              } else {
-                console.log('✅ validateForm: Today appointment with sufficient buffer')
               }
             }
           }
         }
         // Step 3: If appointment DATE is in the past, reject
         else {
-          console.log('❌ validateForm: PAST DATE - rejected')
           newErrors.appointmentDate = "Appointment date cannot be in the past"
         }
         
       } catch (error) {
-        console.log('❌ validateForm: Date parsing error:', error)
         newErrors.appointmentDate = "Invalid date or time format"
       }
     }
 
-    console.log('🔄 validateForm: Setting errors:', newErrors)
     setErrors(newErrors)
     const isValid = Object.keys(newErrors).length === 0
-    console.log('🔄 validateForm: Returning isValid:', isValid)
     return isValid;
   }, [formData])
 
@@ -2001,7 +1975,13 @@ function HomePageContent(): React.JSX.Element {
                 ref={dateTimeSelectorRef}
                 onDateTimeChange={handleDateTimeChange}
                 onTimeSelected={handleTimeSelected}
+                selectedTime={formData.appointmentTime}
+                selectedDate={formData.appointmentDate ? new Date(formData.appointmentDate) : undefined}
+                className={errors.appointmentTime ? 'border-red-500' : ''}
               />
+              {errors.appointmentTime && (
+                <div className="text-red-600 text-sm mt-1">{errors.appointmentTime}</div>
+              )}
             </div>
 
             {/* Continue Button */}
