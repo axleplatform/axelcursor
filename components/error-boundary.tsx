@@ -1,100 +1,60 @@
-// @ts-nocheck
-"use client"
+'use client';
 
-import React from 'react'
-import { Button } from '@/components/ui/button'
-import { X } from 'lucide-react'
-
-interface ErrorBoundaryState {
-  hasError: boolean
-  error?: Error
-}
+import * as React from 'react';
+import type { ReactNode, ErrorInfo } from 'react';
 
 interface ErrorBoundaryProps {
-  children: React.ReactNode
-  fallback?: React.ComponentType<{ error: Error; resetError: () => void }>
+  children: ReactNode;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+  errorInfo: ErrorInfo | null;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
-    super(props)
-    this.state = { hasError: false }
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    // Suppress ALL DOM-related errors that are harmless
-    const isHarmlessDOMError = 
-      (error.message && error.message.includes('removeChild')) ||
-      (error.message && error.message.includes('NotFoundError')) ||
-      (error.message && error.message.includes('Failed to execute')) ||
-      (error.name === 'NotFoundError') ||
-      (error.name === 'DOMException' && error.message.includes('removeChild')) ||
-      (error.message && error.message.includes('not a child of this node')) ||
-      (error.message && error.message.includes('Node was not found'));
-    
-    if (isHarmlessDOMError) {
-      // Completely suppress these errors - don't even log them
-      return { hasError: false }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error, errorInfo: null };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    this.setState({ error, errorInfo });
+    // Optionally log error to an error reporting service
+  }
+
+  handleReload = () => {
+    if (typeof window !== 'undefined') {
+      window.location.reload();
     }
-    
-    return { hasError: true, error }
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Suppress ALL DOM-related errors that are harmless
-    const isHarmlessDOMError = 
-      (error.message && error.message.includes('removeChild')) ||
-      (error.message && error.message.includes('NotFoundError')) ||
-      (error.message && error.message.includes('Failed to execute')) ||
-      (error.name === 'NotFoundError') ||
-      (error.name === 'DOMException' && error.message.includes('removeChild')) ||
-      (error.message && error.message.includes('not a child of this node')) ||
-      (error.message && error.message.includes('Node was not found'));
-    
-    if (isHarmlessDOMError) {
-      // Completely suppress these errors - don't even log them
-      return
-    }
-    
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
-  }
-
-  resetError = () => {
-    this.setState({ hasError: false, error: undefined })
-  }
+  };
 
   render() {
     if (this.state.hasError) {
-      if (this.props.fallback) {
-        const FallbackComponent = this.props.fallback
-        return <FallbackComponent error={this.state.error!} resetError={this.resetError} />
-      }
-
       return (
-        <div className="flex flex-col min-h-screen">
-          <main className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <X className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">Something went wrong</h2>
-              <p className="text-gray-600 mb-4">
-                {this.state.error?.message || 'An unexpected error occurred'}
-              </p>
-              <div className="space-x-4">
-                <Button onClick={this.resetError} variant="outline">
-                  Try Again
-                </Button>
-                <Button onClick={() => window.location.href = '/'}>
-                  Go Home
-                </Button>
-              </div>
-            </div>
-          </main>
+        <div style={{ padding: 32, textAlign: 'center' }}>
+          <h1>Something went wrong.</h1>
+          <p>Sorry, an unexpected error occurred.</p>
+          <button onClick={this.handleReload} style={{ marginTop: 16, padding: '8px 16px', fontSize: 16 }}>
+            Reload Page
+          </button>
+          {process.env.NODE_ENV === 'development' && this.state.error && (
+            <details style={{ whiteSpace: 'pre-wrap', marginTop: 24, color: '#b91c1c' }}>
+              <summary style={{ cursor: 'pointer' }}>Error Details</summary>
+              <div>{this.state.error.toString()}</div>
+              <div>{this.state.errorInfo?.componentStack}</div>
+            </details>
+          )}
         </div>
-      )
+      );
     }
-
-    return this.props.children
+    return this.props.children;
   }
 }
 
-export default ErrorBoundary
+export default ErrorBoundary;
