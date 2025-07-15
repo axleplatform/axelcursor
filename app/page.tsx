@@ -52,6 +52,7 @@ interface AppointmentFormData {
   place_id?: string
   phone?: string
   email?: string | null | undefined
+  timezoneOffset?: number // Customer's timezone offset in minutes
 }
 
 // Define the update data type
@@ -1081,7 +1082,26 @@ function HomePageContent(): React.JSX.Element {
           appointmentDate = new Date()
           console.log('⚡ Using current time for ASAP appointment:', appointmentDate.toISOString())
         } else {
-          appointmentDate = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`)
+          // Create appointment date in customer's local timezone
+          // This ensures the appointment time is interpreted in the customer's timezone
+          const dateTimeString = `${formData.appointmentDate}T${formData.appointmentTime}`;
+          appointmentDate = new Date(dateTimeString);
+          
+          // If we have timezone offset, adjust to ensure proper timezone handling
+          if (formData.timezoneOffset !== undefined) {
+            // The date is already in local time, but we want to ensure it's stored correctly
+            // The database expects UTC, so we need to be explicit about the timezone
+            const localDate = new Date(dateTimeString);
+            const utcDate = new Date(localDate.getTime() - (formData.timezoneOffset * 60 * 1000));
+            appointmentDate = utcDate;
+          }
+          
+          console.log('📅 Created appointment date:', {
+            original: dateTimeString,
+            localDate: appointmentDate.toLocaleString(),
+            utcDate: appointmentDate.toISOString(),
+            timezoneOffset: formData.timezoneOffset
+          });
         }
         
         if (isNaN(appointmentDate.getTime())) {
@@ -1138,8 +1158,23 @@ function HomePageContent(): React.JSX.Element {
             .select('id')
             .eq('appointment_id', appointmentId);
           
-          // Always build the latest appointment_date from formData
-          const latestAppointmentDate = new Date(`${formData.appointmentDate}T${formData.appointmentTime}`);
+          // Always build the latest appointment_date from formData with proper timezone handling
+          let latestAppointmentDate: Date;
+          
+          if (formData.appointmentTime === "ASAP") {
+            latestAppointmentDate = new Date();
+          } else {
+            const dateTimeString = `${formData.appointmentDate}T${formData.appointmentTime}`;
+            latestAppointmentDate = new Date(dateTimeString);
+            
+            // If we have timezone offset, adjust to ensure proper timezone handling
+            if (formData.timezoneOffset !== undefined) {
+              const localDate = new Date(dateTimeString);
+              const utcDate = new Date(localDate.getTime() - (formData.timezoneOffset * 60 * 1000));
+              latestAppointmentDate = utcDate;
+            }
+          }
+          
           if (isNaN(latestAppointmentDate.getTime())) {
             throw new Error('Invalid appointment date');
           }
@@ -1493,10 +1528,15 @@ function HomePageContent(): React.JSX.Element {
         formattedTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
       }
     }
+    
+    // Store the customer's timezone offset for proper timezone handling
+    const timezoneOffset = new Date().getTimezoneOffset();
+    
     setFormData((prev: AppointmentFormData) => ({
       ...prev,
       appointmentDate: formattedDate,
       appointmentTime: formattedTime,
+      timezoneOffset: timezoneOffset, // Store timezone offset in minutes
     }));
   }, []);
 
