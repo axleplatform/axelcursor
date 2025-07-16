@@ -103,6 +103,13 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
   const selectedDate = controlledDate || internalDate;
   const selectedTime = controlledTime !== undefined ? controlledTime : internalTime;
 
+  // On mount, notify parent of default date if not controlled
+  useEffect(() => {
+    if (!controlledDate) {
+      onDateChange(getTodayLocal());
+    }
+  }, []);
+
   // Expose methods via ref for progressive navigation
   useImperativeHandle(ref, () => ({
     openDateDropdown: () => {

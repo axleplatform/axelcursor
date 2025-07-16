@@ -605,6 +605,17 @@ function HomePageContent(): React.JSX.Element {
   // Add ref to track if component is mounted
   const isMountedRef = useRef(true);
 
+  // Helper to format a date string as YYYY-MM-DD in local time
+  function formatLocalDateString(dateString: string): string {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
     if (!appointmentId || !isMountedRef.current) return;
@@ -642,7 +653,7 @@ function HomePageContent(): React.JSX.Element {
           make: data.vehicles?.make || "",
           model: data.vehicles?.model || "",
           mileage: data.vehicles?.mileage?.toString() || "",
-          appointmentDate: data.appointment_date ? data.appointment_date.split('T')[0] : "",
+          appointmentDate: formatLocalDateString(data.appointment_date),
           appointmentTime: data.appointment_date ? data.appointment_date.split('T')[1]?.substring(0, 5) : "",
           issueDescription: data.issue_description || "",
           selectedServices: data.selected_services || [],
@@ -691,7 +702,11 @@ function HomePageContent(): React.JSX.Element {
       try {
         const parsedData = JSON.parse(savedFormData)
         console.log("🔄 Restoring form data from sessionStorage:", parsedData)
-        setFormData(prev => ({ ...prev, ...parsedData }))
+        setFormData(prev => ({
+          ...prev,
+          ...parsedData,
+          appointmentDate: formatLocalDateString(parsedData.appointmentDate),
+        }))
         
         // Also restore selectedLocation if we have coordinates and address
         if (parsedData.latitude && parsedData.longitude && parsedData.location) {
