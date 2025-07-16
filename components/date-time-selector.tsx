@@ -127,10 +127,15 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
 
   // Get the start date of the week (Sunday) for a given date
   function getWeekStart(date: Date): Date {
-    const result = new Date(date)
-    const day = result.getDay()
-    result.setDate(result.getDate() - day)
-    return result
+    // Use local year/month/day constructor to avoid timezone issues
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate();
+    const dayOfWeek = date.getDay();
+    
+    // Calculate the start of the week (Sunday)
+    const startOfWeek = new Date(year, month, day - dayOfWeek);
+    return startOfWeek;
   }
 
   // Generate days for the current week view
@@ -147,8 +152,11 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
 
   // Navigate to previous week
   const goToPreviousWeek = () => {
-    const prevWeek = new Date(currentWeekStart)
-    prevWeek.setDate(prevWeek.getDate() - 7)
+    // Use local year/month/day constructor to avoid timezone issues
+    const year = currentWeekStart.getFullYear();
+    const month = currentWeekStart.getMonth();
+    const day = currentWeekStart.getDate();
+    const prevWeek = new Date(year, month, day - 7);
 
     // Don't allow navigating to weeks before the current week
     if (prevWeek >= getWeekStart(today)) {
@@ -158,8 +166,11 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
 
   // Navigate to next week
   const goToNextWeek = () => {
-    const nextWeek = new Date(currentWeekStart)
-    nextWeek.setDate(nextWeek.getDate() + 7)
+    // Use local year/month/day constructor to avoid timezone issues
+    const year = currentWeekStart.getFullYear();
+    const month = currentWeekStart.getMonth();
+    const day = currentWeekStart.getDate();
+    const nextWeek = new Date(year, month, day + 7);
     setCurrentWeekStart(nextWeek)
   }
 
