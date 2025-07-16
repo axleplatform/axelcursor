@@ -293,15 +293,22 @@ function HomePageContent(): React.JSX.Element {
       });
 
       // Suppress WebGL errors during initialization
-      const originalConsoleError = console.error;
-      console.error = (...args) => {
-        const message = args[0];
-        if (typeof message === 'string' && message.includes('Not initialized')) {
-          // Suppress WebGL "Not initialized" errors
-          return;
-        }
-        originalConsoleError.apply(console, args);
-      };
+      let originalConsoleError: typeof console.error;
+      try {
+        originalConsoleError = console.error;
+        console.error = (...args) => {
+          const message = args[0];
+          if (typeof message === 'string' && message.includes('Not initialized')) {
+            // Suppress WebGL "Not initialized" errors
+            return;
+          }
+          if (originalConsoleError) {
+            originalConsoleError.apply(console, args);
+          }
+        };
+      } catch (error) {
+        // Ignore console error setup issues
+      }
 
             console.log('🔍 Map init: Loading Google Maps...');
       // Load Google Maps using the safe loader
@@ -748,15 +755,19 @@ function HomePageContent(): React.JSX.Element {
     // Set mounted flag
     isMountedRef.current = true;
     
-    if (appointmentId) {
-      loadExistingAppointment()
-    } else {
-      loadDataFromStorage()
-    }
+    // Use setTimeout to ensure this runs after all hooks are initialized
+    const timer = setTimeout(() => {
+      if (appointmentId) {
+        loadExistingAppointment()
+      } else {
+        loadDataFromStorage()
+      }
+    }, 0);
 
     // Cleanup function
     return () => {
       isMountedRef.current = false;
+      clearTimeout(timer);
     };
   }, [appointmentId]) // Remove loadExistingAppointment and loadDataFromStorage from dependencies to prevent re-runs
 

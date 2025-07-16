@@ -106,9 +106,12 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
   // On mount, notify parent of default date if not controlled
   useEffect(() => {
     if (!controlledDate) {
-      onDateChange(getTodayLocal());
+      const todayDate = getTodayLocal();
+      onDateChange(todayDate);
+      // Also set internal date to ensure consistency
+      setInternalDate(todayDate);
     }
-  }, []);
+  }, [controlledDate, onDateChange]);
 
   // Expose methods via ref for progressive navigation
   useImperativeHandle(ref, () => ({
@@ -121,7 +124,8 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
       setShowCalendar(false)
     },
     isFormComplete: () => {
-      return !!(selectedTime && selectedTime !== "")
+      // Check for both date and time - parent form expects both
+      return !!(selectedDate && selectedTime && selectedTime !== "")
     }
   }))
 
