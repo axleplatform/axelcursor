@@ -119,9 +119,8 @@ function HomePageContent(): React.JSX.Element {
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
 
-  // Declare functions first to prevent circular dependencies
-  let updateMapLocation: (location: { lat: number; lng: number }) => void;
-  let handleLocationSelect: (place: google.maps.places.PlaceResult) => void;
+  // Add ref to track if component is mounted
+  const isMountedRef = useRef(true);
 
   // Show coordinates helper function
   const showCoordinates = useCallback((lat: number, lng: number) => {
@@ -293,7 +292,18 @@ function HomePageContent(): React.JSX.Element {
         }
       });
 
-      console.log('🔍 Map init: Loading Google Maps...');
+      // Suppress WebGL errors during initialization
+      const originalConsoleError = console.error;
+      console.error = (...args) => {
+        const message = args[0];
+        if (typeof message === 'string' && message.includes('Not initialized')) {
+          // Suppress WebGL "Not initialized" errors
+          return;
+        }
+        originalConsoleError.apply(console, args);
+      };
+
+            console.log('🔍 Map init: Loading Google Maps...');
       // Load Google Maps using the safe loader
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
@@ -363,14 +373,17 @@ function HomePageContent(): React.JSX.Element {
           markerRef.current = newMarker;
           console.log('✅ Marker added for saved location');
         }
+              }
+      } catch (error) {
+        console.error('❌ Map initialization error:', error);
+        console.error('❌ Error stack:', error.stack);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error name:', error.name);
+      } finally {
+        // Restore original console.error
+        console.error = originalConsoleError;
       }
-    } catch (error) {
-      console.error('❌ Map initialization error:', error);
-      console.error('❌ Error stack:', error.stack);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error name:', error.name);
-    }
-  }, [formData.latitude, formData.longitude, createDraggableMarker]); // Add createDraggableMarker dependency back
+    }, [formData.latitude, formData.longitude, createDraggableMarker]); // Add createDraggableMarker dependency back
 
   // Single consolidated map initialization effect
   useEffect(() => {
@@ -503,7 +516,7 @@ function HomePageContent(): React.JSX.Element {
   }, []);
 
   // Define updateMapLocation function (with animation for address selection)
-  updateMapLocation = useCallback(async (location: { lat: number; lng: number }) => {
+  const updateMapLocation = useCallback(async (location: { lat: number; lng: number }) => {
     if (!mapInstanceRef.current) return;
     if (markerRef.current) {
       markerRef.current.setMap(null);
@@ -1571,7 +1584,7 @@ function HomePageContent(): React.JSX.Element {
   }, []);
 
   // Define handleLocationSelect function
-  handleLocationSelect = useCallback((place: google.maps.places.PlaceResult) => {
+  const handleLocationSelect = useCallback((place: google.maps.places.PlaceResult) => {
     // Add null checks and validation
     if (!place || !place.geometry) {
       console.error('Invalid place data received:', place);
