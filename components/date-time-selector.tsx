@@ -89,11 +89,14 @@ interface DateTimeSelectorRef {
 export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelectorProps>(({ onDateChange, onTimeChange, onTimeSelected, selectedTime: controlledTime, selectedDate: controlledDate }, ref) => {
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimeSelector, setShowTimeSelector] = useState(false)
+  
+  // CRITICAL FIX: Create today's date using local timezone consistently
   const getTodayLocal = () => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
+    const now = new Date();
+    // Create date using local year/month/day to avoid timezone issues
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   };
+  
   const [internalDate, setInternalDate] = useState(getTodayLocal());
   const [internalTime, setInternalTime] = useState("")
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
@@ -129,7 +132,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     }
   }))
 
-  // Get the start date of the week (Sunday) for a given date
+  // CRITICAL FIX: Get the start date of the week (Sunday) for a given date
   function getWeekStart(date: Date): Date {
     // Use local year/month/day constructor to avoid timezone issues
     const year = date.getFullYear();
@@ -151,8 +154,9 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
   }
 
   const weekDays = generateWeekDays(currentWeekStart)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0) // Normalize today to start of day for comparison
+  
+  // CRITICAL FIX: Create today's date consistently for comparisons
+  const today = getTodayLocal();
 
   // Navigate to previous week
   const goToPreviousWeek = () => {
@@ -212,7 +216,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     }
   }
 
-  // Check if a date is today
+  // CRITICAL FIX: Check if a date is today using consistent date comparison
   const isToday = (date: Date) => {
     return (
       date.getDate() === today.getDate() &&
@@ -221,10 +225,10 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     )
   }
 
-  // Check if a date is in the past
+  // CRITICAL FIX: Check if a date is in the past using consistent date comparison
   const isPastDate = (date: Date) => {
-    const compareDate = new Date(date)
-    compareDate.setHours(0, 0, 0, 0) // Normalize to start of day
+    // Create a normalized date for comparison (start of day)
+    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     return compareDate < today
   }
 
@@ -386,6 +390,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
               {/* Day cells */}
               {weekDays.map((date, index) => {
                 const isDisabled = isPastDate(date)
+                // CRITICAL FIX: Use consistent date comparison for selection highlighting
                 const isSelected =
                   date.getDate() === selectedDate.getDate() &&
                   date.getMonth() === selectedDate.getMonth() &&
