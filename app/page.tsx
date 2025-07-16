@@ -615,9 +615,6 @@ function HomePageContent(): React.JSX.Element {
     }
   }, [isMobile, scrollToElement])
 
-  // Add ref to track if component is mounted
-  const isMountedRef = useRef(true);
-
   // Helper to format a date string as YYYY-MM-DD in local time
   function formatLocalDateString(dateString: string): string {
     if (!dateString) return '';
