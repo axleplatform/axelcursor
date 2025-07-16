@@ -393,6 +393,9 @@ function HomePageContent(): React.JSX.Element {
     return () => {
       console.log('🗺️ Landing page unmounting - cleaning up map');
       
+      // Set mounted flag to false to prevent state updates
+      isMountedRef.current = false;
+      
       // Clear any smooth zoom intervals
       if (window.smoothZoomInterval) {
         clearInterval(window.smoothZoomInterval);
@@ -599,9 +602,12 @@ function HomePageContent(): React.JSX.Element {
     }
   }, [isMobile, scrollToElement])
 
+  // Add ref to track if component is mounted
+  const isMountedRef = useRef(true);
+
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
-    if (!appointmentId) return;
+    if (!appointmentId || !isMountedRef.current) return;
 
     setIsLoadingExistingData(true)
     try {
@@ -615,6 +621,9 @@ function HomePageContent(): React.JSX.Element {
         `)
         .eq("id", appointmentId)
         .single()
+
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) return;
 
       if (error) {
         console.error("Error loading appointment:", error)
@@ -666,12 +675,17 @@ function HomePageContent(): React.JSX.Element {
     } catch (error) {
       console.error("Error loading appointment data:", error)
     } finally {
-      setIsLoadingExistingData(false)
+      // Only update loading state if component is still mounted
+      if (isMountedRef.current) {
+        setIsLoadingExistingData(false)
+      }
     }
   }, [appointmentId])
 
   // Load existing data on mount if appointment ID is present
   const loadDataFromStorage = useCallback(() => {
+    if (!isMountedRef.current) return;
+    
     const savedFormData = sessionStorage.getItem('axle-landing-form-data')
     if (savedFormData) {
       try {
@@ -704,27 +718,42 @@ function HomePageContent(): React.JSX.Element {
     }
   }, []);
 
+  // Consolidated data loading effect with proper cleanup
   useEffect(() => {
+    // Set mounted flag
+    isMountedRef.current = true;
+    
     if (appointmentId) {
       loadExistingAppointment()
     } else {
       loadDataFromStorage()
     }
-  }, [appointmentId, loadExistingAppointment, loadDataFromStorage])
+
+    // Cleanup function
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [appointmentId]) // Remove loadExistingAppointment and loadDataFromStorage from dependencies to prevent re-runs
 
   // Save form data to sessionStorage whenever it changes
   const saveFormDataToStorage = useCallback(() => {
+    if (!isMountedRef.current) return;
+    
     if (formData.location || formData.year || formData.make || formData.model) {
       sessionStorage.setItem('axle-landing-form-data', JSON.stringify(formData))
     }
   }, [formData]);
 
   useEffect(() => {
-    saveFormDataToStorage();
-  }, [saveFormDataToStorage]);
+    if (isMountedRef.current) {
+      saveFormDataToStorage();
+    }
+  }, [formData.location, formData.year, formData.make, formData.model, formData.vin, formData.mileage, formData.appointmentDate, formData.appointmentTime]); // Only depend on specific fields that matter
 
   // Load phone and email from sessionStorage on edit mode
   const loadPhoneEmailFromStorage = useCallback(() => {
+    if (!isMountedRef.current) return;
+    
     if (appointmentId && !formData.phone) {
       const savedPhone = sessionStorage.getItem('customer_phone');
       const savedEmail = sessionStorage.getItem('customer_email');
@@ -739,14 +768,20 @@ function HomePageContent(): React.JSX.Element {
   }, [appointmentId, formData.phone]);
 
   useEffect(() => {
-    loadPhoneEmailFromStorage();
-  }, [loadPhoneEmailFromStorage]);
+    if (isMountedRef.current) {
+      loadPhoneEmailFromStorage();
+    }
+  }, [appointmentId, formData.phone]); // Simplified dependencies
 
   // Add debug logging
   useEffect(() => {
+    if (!isMountedRef.current) return;
+    
     // Test Supabase connection
     supabase.from('appointments').select('count').then(
       ({ data, error }: SupabaseQueryResult) => {
+        if (!isMountedRef.current) return;
+        
         if (error) {
           console.error("Supabase connection error:", error)
         } else {
