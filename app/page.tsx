@@ -698,27 +698,46 @@ function HomePageContent(): React.JSX.Element {
 
   // Helper to format a date string as YYYY-MM-DD in local time
   const formatLocalDateString = useCallback((dateString: string): string => {
-    if (!dateString) return '';
+    console.log('🔍 [DATE DEBUG] formatLocalDateString called with:', dateString);
+    if (!dateString) {
+      console.log('🔍 [DATE DEBUG] Empty dateString, returning empty string');
+      return '';
+    }
     const d = new Date(dateString);
-    if (isNaN(d.getTime())) return '';
+    console.log('🔍 [DATE DEBUG] Parsed date object:', d);
+    console.log('🔍 [DATE DEBUG] Date is valid:', !isNaN(d.getTime()));
+    if (isNaN(d.getTime())) {
+      console.log('🔍 [DATE DEBUG] Invalid date, returning empty string');
+      return '';
+    }
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const result = `${year}-${month}-${day}`;
+    console.log('🔍 [DATE DEBUG] formatLocalDateString result:', result);
+    return result;
   }, []);
 
   // Format date as YYYY-MM-DD for storage (local date, no timezone issues)
   const formatLocalDate = useCallback((date: Date): string => {
+    console.log('🔍 [DATE DEBUG] formatLocalDate called with date:', date);
+    console.log('🔍 [DATE DEBUG] Date is valid:', !isNaN(date.getTime()));
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const result = `${year}-${month}-${day}`;
+    console.log('🔍 [DATE DEBUG] formatLocalDate result:', result);
+    return result;
   }, []);
 
   // Parse YYYY-MM-DD as local date (no timezone conversion)
   const parseLocalDate = useCallback((dateString: string): Date => {
+    console.log('🔍 [DATE DEBUG] parseLocalDate called with:', dateString);
     const [year, month, day] = dateString.split('-').map(Number);
-    return new Date(year, month - 1, day);
+    console.log('🔍 [DATE DEBUG] Parsed components:', { year, month, day });
+    const result = new Date(year, month - 1, day);
+    console.log('🔍 [DATE DEBUG] parseLocalDate result:', result);
+    return result;
   }, []);
 
   // Add ref to track loading state to prevent infinite loops
@@ -769,6 +788,9 @@ function HomePageContent(): React.JSX.Element {
         console.log("✅ Loaded appointment data:", data)
         console.log('🔍 [LOAD DEBUG] About to batch update form data');
         
+        console.log('🔍 [DATE DEBUG] Raw appointment_date from database:', data.appointment_date);
+        console.log('🔍 [DATE DEBUG] Type of appointment_date:', typeof data.appointment_date);
+        
         // BATCH ALL STATE UPDATES INTO ONE OPERATION
         const newFormData = {
           location: data.location || "",
@@ -786,6 +808,9 @@ function HomePageContent(): React.JSX.Element {
           longitude: data.longitude,
           place_id: data.place_id
         };
+        
+        console.log('🔍 [DATE DEBUG] Processed appointmentDate for form:', newFormData.appointmentDate);
+        console.log('🔍 [DATE DEBUG] Processed appointmentTime for form:', newFormData.appointmentTime);
         
         console.log('🔍 [LOAD DEBUG] Updating form data with:', newFormData);
         setFormData(prev => ({
@@ -1301,6 +1326,11 @@ function HomePageContent(): React.JSX.Element {
           console.log('⚠️ No location coordinates available, proceeding with address only');
         }
 
+        console.log('🔍 [DATE DEBUG] handleSubmit - appointmentDate from formData:', formData.appointmentDate);
+        console.log('🔍 [DATE DEBUG] handleSubmit - appointmentTime from formData:', formData.appointmentTime);
+        console.log('🔍 [DATE DEBUG] handleSubmit - appointmentDate object:', appointmentDate);
+        console.log('🔍 [DATE DEBUG] handleSubmit - appointmentDate type:', typeof appointmentDate);
+        
         // Create appointment with real user_id (never NULL!)
         let appointmentData = {
           user_id: tempUserId, // ALWAYS has a user_id
@@ -1322,6 +1352,8 @@ function HomePageContent(): React.JSX.Element {
             place_id: selectedLocation.place_id || null
           })
         }
+        
+        console.log('🔍 [DATE DEBUG] handleSubmit - appointment_date being saved to database:', appointmentData.appointment_date);
 
         let finalAppointmentId: string;
 
@@ -1335,14 +1367,20 @@ function HomePageContent(): React.JSX.Element {
             .select('id')
             .eq('appointment_id', appointmentId);
           
+          console.log('🔍 [DATE DEBUG] Edit mode - formData.appointmentDate:', formData.appointmentDate);
+          console.log('🔍 [DATE DEBUG] Edit mode - formData.appointmentTime:', formData.appointmentTime);
+          
           // Always build the latest appointment_date from formData with proper timezone handling
           let latestAppointmentDate: Date;
           
           if (formData.appointmentTime === "ASAP") {
             latestAppointmentDate = new Date();
+            console.log('🔍 [DATE DEBUG] Edit mode - ASAP selected, using current date:', latestAppointmentDate);
           } else {
             const dateTimeString = `${formData.appointmentDate}T${formData.appointmentTime}`;
+            console.log('🔍 [DATE DEBUG] Edit mode - Constructed dateTimeString:', dateTimeString);
             latestAppointmentDate = new Date(dateTimeString);
+            console.log('🔍 [DATE DEBUG] Edit mode - Created Date object:', latestAppointmentDate);
             
             // CRITICAL FIX: Store appointment in customer's local timezone
             // No timezone conversion - customer's local time is the intended appointment time
@@ -1350,8 +1388,11 @@ function HomePageContent(): React.JSX.Element {
           }
           
           if (isNaN(latestAppointmentDate.getTime())) {
+            console.error('🔍 [DATE DEBUG] Edit mode - Invalid appointment date:', latestAppointmentDate);
             throw new Error('Invalid appointment date');
           }
+          
+          console.log('🔍 [DATE DEBUG] Edit mode - Final latestAppointmentDate:', latestAppointmentDate);
           
           // Prepare update data
           const updateData: AppointmentUpdateData = {
@@ -1363,6 +1404,8 @@ function HomePageContent(): React.JSX.Element {
             selected_mechanic_id: null, // Clear selected mechanic
             edited_after_quotes: quotes && quotes.length > 0 ? true : false
           };
+          
+          console.log('🔍 [DATE DEBUG] Edit mode - updateData.appointment_date:', updateData.appointment_date);
           
           // If has quotes and significant changes, mark as edited
           if (quotes && quotes.length > 0) {
