@@ -258,6 +258,25 @@ function HomePageContent(): React.JSX.Element {
 
   // Initialize map on mount
   const initializeMap = useCallback(async () => {
+    // Suppress WebGL errors during initialization - declare at function scope
+    let originalConsoleError: typeof console.error | undefined = undefined;
+    try {
+      originalConsoleError = console.error;
+      console.error = (...args) => {
+        const message = args[0];
+        if (typeof message === 'string' && message.includes('Not initialized')) {
+          // Suppress WebGL "Not initialized" errors
+          return;
+        }
+        if (originalConsoleError) {
+          originalConsoleError.apply(console, args);
+        }
+      };
+    } catch (error) {
+      // Ignore console error setup issues
+      originalConsoleError = undefined;
+    }
+
     try {
       console.log('🔍 Map init: Starting initialization...');
       
@@ -292,26 +311,6 @@ function HomePageContent(): React.JSX.Element {
         }
       });
 
-      // Suppress WebGL errors during initialization
-      let originalConsoleError: typeof console.error | undefined = undefined;
-      try {
-        originalConsoleError = console.error;
-        console.error = (...args) => {
-          const message = args[0];
-          if (typeof message === 'string' && message.includes('Not initialized')) {
-            // Suppress WebGL "Not initialized" errors
-            return;
-          }
-          if (originalConsoleError) {
-            originalConsoleError.apply(console, args);
-          }
-        };
-      } catch (error) {
-        // Ignore console error setup issues
-        originalConsoleError = undefined;
-      }
-
-            console.log('🔍 Map init: Loading Google Maps...');
       // Load Google Maps using the safe loader
       const { loadGoogleMaps } = await import('@/lib/google-maps');
       const google = await loadGoogleMaps();
@@ -382,18 +381,18 @@ function HomePageContent(): React.JSX.Element {
           console.log('✅ Marker added for saved location');
         }
               }
-      } catch (error) {
-        console.error('❌ Map initialization error:', error);
-        console.error('❌ Error stack:', error.stack);
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Error name:', error.name);
-      } finally {
-        // Restore original console.error if it was set
-        if (originalConsoleError) {
-          console.error = originalConsoleError;
-        }
+    } catch (error) {
+      console.error('❌ Map initialization error:', error);
+      console.error('❌ Error stack:', error.stack);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error name:', error.name);
+    } finally {
+      // Restore original console.error if it was set
+      if (originalConsoleError) {
+        console.error = originalConsoleError;
       }
-    }, [formData.latitude, formData.longitude, createDraggableMarker]); // Add createDraggableMarker dependency back
+    }
+  }, [formData.latitude, formData.longitude, createDraggableMarker]); // Add createDraggableMarker dependency back
 
   // Single consolidated map initialization effect
   useEffect(() => {
