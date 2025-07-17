@@ -718,18 +718,28 @@ function HomePageContent(): React.JSX.Element {
     return result;
   }, []);
 
-  // Format date as YYYY-MM-DDTHH:MM:SS for storage (local datetime, no timezone issues)
+  // Format date as YYYY-MM-DDTHH:MM:SS with timezone for storage (explicit local timezone)
   const formatLocalDate = useCallback((date: Date): string => {
     console.log('🔍 [DATE DEBUG] formatLocalDate called with date:', date);
     console.log('🔍 [DATE DEBUG] Date is valid:', !isNaN(date.getTime()));
+    
+    // Get timezone offset in minutes and convert to hours
+    const timezoneOffset = date.getTimezoneOffset();
+    const offsetHours = Math.abs(Math.floor(timezoneOffset / 60));
+    const offsetMinutes = Math.abs(timezoneOffset % 60);
+    const offsetSign = timezoneOffset <= 0 ? '+' : '-';
+    const timezoneString = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`;
+    
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
-    const result = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-    console.log('🔍 [DATE DEBUG] formatLocalDate result:', result);
+    
+    const result = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${timezoneString}`;
+    console.log('🔍 [DATE DEBUG] formatLocalDate result with timezone:', result);
+    console.log('🔍 [DATE DEBUG] Timezone offset:', timezoneOffset, 'minutes =', timezoneString);
     return result;
   }, []);
 

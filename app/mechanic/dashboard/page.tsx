@@ -424,6 +424,14 @@ export default function MechanicDashboard() {
     
     // Check if it's a datetime string with 'T' separator
     if (dateTimeString.includes('T')) {
+      // Handle timezone-aware datetime strings (e.g., "2025-07-17T15:46:24-07:00")
+      if (dateTimeString.includes('+') || dateTimeString.includes('-') && dateTimeString.lastIndexOf('-') > 10) {
+        // Has timezone info, use regular Date constructor which will handle it correctly
+        console.log('🕒 [TIMEZONE DEBUG] Timezone-aware datetime, using Date constructor');
+        return new Date(dateTimeString);
+      }
+      
+      // No timezone info, parse manually as local time
       const [datePart, timePart] = dateTimeString.split('T');
       const [year, month, day] = datePart.split('-').map(Number);
       const timeParts = timePart.split(':');

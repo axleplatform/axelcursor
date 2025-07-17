@@ -6,13 +6,51 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Parse datetime string as local time (no timezone conversion)
+ * @param dateTimeString - The datetime string to parse
+ * @returns A Date object in local time
+ */
+export function parseLocalDateTime(dateTimeString: string): Date {
+  console.log('🕒 [TIMEZONE DEBUG] parseLocalDateTime called with:', dateTimeString);
+  
+  // Check if it's a datetime string with 'T' separator
+  if (dateTimeString.includes('T')) {
+    // Handle timezone-aware datetime strings (e.g., "2025-07-17T15:46:24-07:00")
+    if (dateTimeString.includes('+') || dateTimeString.includes('-') && dateTimeString.lastIndexOf('-') > 10) {
+      // Has timezone info, use regular Date constructor which will handle it correctly
+      console.log('🕒 [TIMEZONE DEBUG] Timezone-aware datetime, using Date constructor');
+      return new Date(dateTimeString);
+    }
+    
+    // No timezone info, parse manually as local time
+    const [datePart, timePart] = dateTimeString.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const timeParts = timePart.split(':');
+    const [hours, minutes] = timeParts.map(Number);
+    const seconds = timeParts[2] ? Number(timeParts[2]) : 0;
+    
+    console.log('🕒 [TIMEZONE DEBUG] Parsed components:', { year, month, day, hours, minutes, seconds });
+    
+    // Create date in local timezone (no timezone conversion)
+    const localDate = new Date(year, month - 1, day, hours, minutes, seconds);
+    console.log('🕒 [TIMEZONE DEBUG] Created local date:', localDate.toLocaleString());
+    return localDate;
+  } else {
+    // Fallback to regular Date constructor for other formats
+    console.log('🕒 [TIMEZONE DEBUG] Using fallback Date constructor');
+    return new Date(dateTimeString);
+  }
+}
+
+/**
  * Formats a date string into a readable format
  * @param dateString - The date string to format
  * @returns A formatted date string in the format "Tuesday, July 1st at 3:05 PM"
  */
 export function formatDate(dateString: string): string {
   try {
-    const date = new Date(dateString)
+    console.log('🕒 [TIMEZONE DEBUG] formatDate called with:', dateString);
+    const date = parseLocalDateTime(dateString);
     if (isNaN(date.getTime())) {
       return 'Invalid date'
     }
@@ -34,7 +72,9 @@ export function formatDate(dateString: string): string {
     const displayHour = hour % 12 || 12 // Convert 0 to 12 for 12 AM
     const displayMinute = minute < 10 ? `0${minute}` : `${minute}`
     
-    return `${dayOfWeek}, ${month} ${day}${ordinalSuffix} at ${displayHour}:${displayMinute} ${ampm}`
+    const result = `${dayOfWeek}, ${month} ${day}${ordinalSuffix} at ${displayHour}:${displayMinute} ${ampm}`;
+    console.log('🕒 [TIMEZONE DEBUG] formatDate result:', result);
+    return result;
   } catch (error: unknown) {
     return 'Invalid date'
   }
@@ -122,7 +162,7 @@ export function formatCarIssues(issues: string[]): string[] {
  */
 export function formatRelativeTime(dateString: string): string {
   try {
-    const date = new Date(dateString)
+    const date = parseLocalDateTime(dateString)
     const now = new Date()
     const diffInMs = now.getTime() - date.getTime()
     const diffInMinutes = Math.floor(diffInMs / (1000 * 60))

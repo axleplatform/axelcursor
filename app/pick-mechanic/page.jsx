@@ -417,16 +417,34 @@ function PickMechanicContent() {
  }
 
  const formatDate = (dateString) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString("en-US", {
-   weekday: "long",
-   year: "numeric",
-   month: "long",
-   day: "numeric",
-   hour: "numeric",
-   minute: "numeric",
-  })
+ console.log('🕒 [TIMEZONE DEBUG] pick-mechanic formatDate called with:', dateString);
+ 
+ // Parse as local time to avoid timezone conversion
+ let date;
+ if (dateString.includes('T')) {
+   const [datePart, timePart] = dateString.split('T');
+   const [year, month, day] = datePart.split('-').map(Number);
+   const timeParts = timePart.split(':');
+   const [hours, minutes] = timeParts.map(Number);
+   const seconds = timeParts[2] ? Number(timeParts[2]) : 0;
+   
+   console.log('🕒 [TIMEZONE DEBUG] Parsed components:', { year, month, day, hours, minutes, seconds });
+   date = new Date(year, month - 1, day, hours, minutes, seconds);
+ } else {
+   date = new Date(dateString);
  }
+ 
+ console.log('🕒 [TIMEZONE DEBUG] Created local date:', date.toLocaleString());
+ 
+ return date.toLocaleDateString("en-US", {
+  weekday: "long",
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+ })
+}
 
  // Handle back button - comprehensive workflow management
  const handleBack = async () => {
