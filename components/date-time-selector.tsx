@@ -102,8 +102,15 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(getTodayLocal()));
 
-  // Use controlled or internal state
-  const selectedDate = controlledDate || internalDate;
+  // SINGLE SOURCE OF TRUTH: Always use internalDate for all display and selection
+  // If controlledDate is provided, sync it to internalDate
+  useEffect(() => {
+    if (controlledDate && controlledDate.getTime() !== internalDate.getTime()) {
+      setInternalDate(new Date(controlledDate.getFullYear(), controlledDate.getMonth(), controlledDate.getDate()));
+    }
+  }, [controlledDate]);
+
+  const selectedDate = internalDate;
   const selectedTime = controlledTime !== undefined ? controlledTime : internalTime;
 
   // On mount, notify parent of default date if not controlled
@@ -291,12 +298,14 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
   // Handle date selection
   const handleDateSelect = (date: Date) => {
     if (!isPastDate(date)) {
-      setInternalDate(date)
-      setShowCalendar(false)
-      onDateChange(date)
+      // Always use local date (year, month, day)
+      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      setInternalDate(localDate);
+      setShowCalendar(false);
+      onDateChange(localDate);
       setTimeout(() => {
-        setShowTimeSelector(true)
-      }, 150)
+        setShowTimeSelector(true);
+      }, 150);
     }
   }
 
