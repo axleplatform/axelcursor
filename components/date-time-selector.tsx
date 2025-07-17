@@ -87,10 +87,10 @@ interface DateTimeSelectorRef {
 }
 
 export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelectorProps>(({ onDateChange, onTimeChange, onTimeSelected, selectedTime: controlledTime, selectedDate: controlledDate }, ref) => {
+  // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL RETURNS BEFORE THIS POINT
+  
   // SSR Hydration Protection
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimeSelector, setShowTimeSelector] = useState(false)
   
@@ -109,19 +109,8 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(today));
 
-  // Prevent SSR hydration mismatch
-  if (!mounted) {
-    return (
-      <div className="flex gap-4 mb-6">
-        <div className="relative flex-1 date-selector">
-          <div className="animate-pulse bg-gray-300 h-10 w-full rounded-md"></div>
-        </div>
-        <div className="relative flex-1 time-selector">
-          <div className="animate-pulse bg-gray-300 h-10 w-full rounded-md"></div>
-        </div>
-      </div>
-    );
-  }
+  // ALL useEffect hooks must be called before any conditional returns
+  useEffect(() => setMounted(true), []);
 
   // SINGLE SOURCE OF TRUTH: Always use internalDate for all display and selection
   // If controlledDate is provided, sync it to internalDate
@@ -130,9 +119,6 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
       setInternalDate(new Date(controlledDate.getFullYear(), controlledDate.getMonth(), controlledDate.getDate()));
     }
   }, [controlledDate]);
-
-  const selectedDate = internalDate;
-  const selectedTime = controlledTime !== undefined ? controlledTime : internalTime;
 
   // On mount, notify parent of default date if not controlled
   useEffect(() => {
@@ -159,6 +145,23 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
       return !!(selectedDate && selectedTime && selectedTime !== "")
     }
   }))
+
+  const selectedDate = internalDate;
+  const selectedTime = controlledTime !== undefined ? controlledTime : internalTime;
+
+  // NOW we can do conditional rendering after ALL hooks have been called
+  if (!mounted) {
+    return (
+      <div className="flex gap-4 mb-6">
+        <div className="relative flex-1 date-selector">
+          <div className="animate-pulse bg-gray-300 h-10 w-full rounded-md"></div>
+        </div>
+        <div className="relative flex-1 time-selector">
+          <div className="animate-pulse bg-gray-300 h-10 w-full rounded-md"></div>
+        </div>
+      </div>
+    );
+  }
 
   // CRITICAL FIX: Get the start date of the week (Sunday) for a given date
   function getWeekStart(date: Date): Date {
