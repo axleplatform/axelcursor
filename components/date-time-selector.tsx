@@ -150,20 +150,6 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     }
   }))
 
-  // NOW we can do conditional rendering after ALL hooks have been called
-  if (!mounted) {
-    return (
-      <div className="flex gap-4 mb-6">
-        <div className="relative flex-1 date-selector">
-          <div className="animate-pulse bg-gray-300 h-10 w-full rounded-md"></div>
-        </div>
-        <div className="relative flex-1 time-selector">
-          <div className="animate-pulse bg-gray-300 h-10 w-full rounded-md"></div>
-        </div>
-      </div>
-    );
-  }
-
   // CRITICAL FIX: Get the start date of the week (Sunday) for a given date
   function getWeekStart(date: Date): Date {
     // Use local year/month/day constructor to avoid timezone issues
@@ -393,6 +379,20 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [showCalendar, showTimeSelector])
+
+  // NOW we can do conditional rendering after ALL hooks have been called
+  if (!mounted) {
+    return (
+      <div className="flex gap-4 mb-6">
+        <div className="relative flex-1 date-selector">
+          <div className="animate-pulse bg-gray-300 h-10 w-full rounded-md"></div>
+        </div>
+        <div className="relative flex-1 time-selector">
+          <div className="animate-pulse bg-gray-300 h-10 w-full rounded-md"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-4 mb-6">
