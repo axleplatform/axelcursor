@@ -590,7 +590,10 @@ function HomePageContent(): React.JSX.Element {
   }, [formData.latitude, formData.longitude, formData.location, updateMapLocation]);
 
   // Mobile scrolling functionality
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768
+  const isMobile = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+  }, []);
 
   const scrollToElement = useCallback((element: HTMLElement | null, offset = 100) => {
     if (!element || !isMobile) return
@@ -625,7 +628,7 @@ function HomePageContent(): React.JSX.Element {
   }, [isMobile, scrollToElement])
 
   // Helper to format a date string as YYYY-MM-DD in local time
-  function formatLocalDateString(dateString: string): string {
+  const formatLocalDateString = useCallback((dateString: string): string => {
     if (!dateString) return '';
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return '';
@@ -633,21 +636,21 @@ function HomePageContent(): React.JSX.Element {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  }
+  }, []);
 
   // Format date as YYYY-MM-DD for storage (local date, no timezone issues)
-  function formatLocalDate(date: Date): string {
+  const formatLocalDate = useCallback((date: Date): string => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  }
+  }, []);
 
   // Parse YYYY-MM-DD as local date (no timezone conversion)
-  function parseLocalDate(dateString: string): Date {
+  const parseLocalDate = useCallback((dateString: string): Date => {
     const [year, month, day] = dateString.split('-').map(Number);
     return new Date(year, month - 1, day);
-  }
+  }, []);
 
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
@@ -724,7 +727,7 @@ function HomePageContent(): React.JSX.Element {
         setIsLoadingExistingData(false)
       }
     }
-  }, [appointmentId])
+  }, [appointmentId, formatLocalDateString])
 
   // Load existing data on mount if appointment ID is present
   const loadDataFromStorage = useCallback(() => {
@@ -764,7 +767,7 @@ function HomePageContent(): React.JSX.Element {
         console.error("Error parsing saved form data:", error)
       }
     }
-  }, []);
+  }, [formatLocalDateString]);
 
   // Consolidated data loading effect with proper cleanup
   useEffect(() => {
@@ -785,7 +788,7 @@ function HomePageContent(): React.JSX.Element {
       isMountedRef.current = false;
       clearTimeout(timer);
     };
-  }, [appointmentId]) // Remove loadExistingAppointment and loadDataFromStorage from dependencies to prevent re-runs
+  }, [appointmentId, loadExistingAppointment, loadDataFromStorage]) // Include dependencies to prevent stale closures
 
   // Save form data to sessionStorage whenever it changes
   const saveFormDataToStorage = useCallback(() => {
@@ -800,7 +803,7 @@ function HomePageContent(): React.JSX.Element {
     if (isMountedRef.current) {
       saveFormDataToStorage();
     }
-  }, [formData.location, formData.year, formData.make, formData.model, formData.vin, formData.mileage, formData.appointmentDate, formData.appointmentTime]); // Only depend on specific fields that matter
+  }, [formData.location, formData.year, formData.make, formData.model, formData.vin, formData.mileage, formData.appointmentDate, formData.appointmentTime, saveFormDataToStorage]); // Include saveFormDataToStorage dependency
 
   // Load phone and email from sessionStorage on edit mode
   const loadPhoneEmailFromStorage = useCallback(() => {
@@ -823,7 +826,7 @@ function HomePageContent(): React.JSX.Element {
     if (isMountedRef.current) {
       loadPhoneEmailFromStorage();
     }
-  }, [appointmentId, formData.phone]); // Simplified dependencies
+  }, [appointmentId, formData.phone, loadPhoneEmailFromStorage]); // Include loadPhoneEmailFromStorage dependency
 
   // Add debug logging
   useEffect(() => {
@@ -1442,7 +1445,7 @@ function HomePageContent(): React.JSX.Element {
       setErrors({ general: 'An unexpected error occurred. Please try again.' })
       setIsSubmitting(false)
     }
-  }, [formData, validateForm, router])
+  }, [formData, validateForm, router, formatLocalDate])
 
   // Check if all required fields are filled (for button state)
   const isFormComplete = React.useMemo((): boolean => {
@@ -1770,7 +1773,7 @@ function HomePageContent(): React.JSX.Element {
   }
 
   // Before rendering DateTimeSelector:
-  const selectedDateObj = useMemo(() => formData.appointmentDate ? parseLocalDate(formData.appointmentDate) : undefined, [formData.appointmentDate]);
+  const selectedDateObj = useMemo(() => formData.appointmentDate ? parseLocalDate(formData.appointmentDate) : undefined, [formData.appointmentDate, parseLocalDate]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
