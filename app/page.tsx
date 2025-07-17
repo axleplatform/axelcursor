@@ -1158,14 +1158,9 @@ function HomePageContent(): React.JSX.Element {
           const dateTimeString = `${formData.appointmentDate}T${formData.appointmentTime}`;
           appointmentDate = new Date(dateTimeString);
           
-          // If we have timezone offset, adjust to ensure proper timezone handling
-          if (formData.timezoneOffset !== undefined) {
-            // The date is already in local time, but we want to ensure it's stored correctly
-            // The database expects UTC, so we need to be explicit about the timezone
-            const localDate = new Date(dateTimeString);
-            const utcDate = new Date(localDate.getTime() - (formData.timezoneOffset * 60 * 1000));
-            appointmentDate = utcDate;
-          }
+          // CRITICAL FIX: Store appointment in customer's local timezone
+          // No timezone conversion - customer's local time is the intended appointment time
+          appointmentDate = new Date(dateTimeString);
           
           console.log('📅 Created appointment date:', {
             original: dateTimeString,
@@ -1238,12 +1233,9 @@ function HomePageContent(): React.JSX.Element {
             const dateTimeString = `${formData.appointmentDate}T${formData.appointmentTime}`;
             latestAppointmentDate = new Date(dateTimeString);
             
-            // If we have timezone offset, adjust to ensure proper timezone handling
-            if (formData.timezoneOffset !== undefined) {
-              const localDate = new Date(dateTimeString);
-              const utcDate = new Date(localDate.getTime() - (formData.timezoneOffset * 60 * 1000));
-              latestAppointmentDate = utcDate;
-            }
+            // CRITICAL FIX: Store appointment in customer's local timezone
+            // No timezone conversion - customer's local time is the intended appointment time
+            latestAppointmentDate = new Date(dateTimeString);
           }
           
           if (isNaN(latestAppointmentDate.getTime())) {
