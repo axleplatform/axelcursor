@@ -130,6 +130,10 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     }
   }, [controlledDate, onDateChange]);
 
+  // Define these variables BEFORE useImperativeHandle
+  const selectedDate = internalDate;
+  const selectedTime = controlledTime !== undefined ? controlledTime : internalTime;
+
   // Expose methods via ref for progressive navigation
   useImperativeHandle(ref, () => ({
     openDateDropdown: () => {
@@ -145,9 +149,6 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
       return !!(selectedDate && selectedTime && selectedTime !== "")
     }
   }))
-
-  const selectedDate = internalDate;
-  const selectedTime = controlledTime !== undefined ? controlledTime : internalTime;
 
   // NOW we can do conditional rendering after ALL hooks have been called
   if (!mounted) {
