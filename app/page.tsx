@@ -80,9 +80,9 @@ interface SupabaseQueryResult {
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function HomePageContent(): React.JSX.Element {
-  console.log('🔍 [LIFECYCLE] HomePageContent rendering, appointmentId:', searchParams?.get("appointment_id"));
   const router = useRouter()
   const searchParams = useSearchParams()
+  console.log('🔍 [LIFECYCLE] HomePageContent rendering, appointmentId:', searchParams?.get("appointment_id"));
   const pathname = usePathname()
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [isLoadingExistingData, setIsLoadingExistingData] = useState<boolean>(false)
@@ -109,9 +109,7 @@ function HomePageContent(): React.JSX.Element {
   const continueButtonRef = useRef<HTMLButtonElement>(null)
 
   // Get appointment ID from URL parameters for restoring state
-  const appointmentId = useMemo(() => {
-    return searchParams?.get("appointment_id") || null;
-  }, [searchParams]);
+  const appointmentId = searchParams?.get("appointment_id") || null;
 
   // Add selectedLocation state
   const [selectedLocation, setSelectedLocation] = useState<google.maps.places.PlaceResult | null>(null)
