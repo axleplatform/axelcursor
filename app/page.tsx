@@ -127,6 +127,10 @@ function HomePageContent(): React.JSX.Element {
 
   // Add ref to track if component is mounted
   const isMountedRef = useRef(true);
+  
+  // Add navigation guard to prevent rapid navigation
+  const [isNavigating, setIsNavigating] = useState(false);
+  const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Show coordinates helper function
   const showCoordinates = useCallback((lat: number, lng: number) => {
@@ -404,9 +408,15 @@ function HomePageContent(): React.JSX.Element {
   useEffect(() => {
     console.log('🗺️ Landing page mounted/active - initializing map');
     
+    // Check if component is still mounted before initializing
+    if (!isMountedRef.current) {
+      console.log('🗺️ Component unmounted during initialization, skipping map init');
+      return;
+    }
+    
     // Small delay to ensure DOM is ready
     const timer = setTimeout(() => {
-      if (mapRef.current) {
+      if (mapRef.current && isMountedRef.current) {
         initializeMap();
       }
     }, 50);
@@ -426,16 +436,25 @@ function HomePageContent(): React.JSX.Element {
       // Set mounted flag to false to prevent state updates
       isMountedRef.current = false;
       
+      // Clear navigation timeout
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+        navigationTimeoutRef.current = null;
+      }
+      
       // Clear any smooth zoom intervals
       if (window.smoothZoomInterval) {
         clearInterval(window.smoothZoomInterval);
         window.smoothZoomInterval = null;
       }
       
-      // Cleanup map instance and marker
+      // Cleanup map instance and marker with DOM safety checks
       if (markerRef.current) {
         try {
-          markerRef.current.setMap(null);
+          // Check if marker is still attached to map before removing
+          if (markerRef.current.map) {
+            markerRef.current.setMap(null);
+          }
         } catch (error) {
           console.warn('Error cleaning up marker:', error);
         }
@@ -454,13 +473,31 @@ function HomePageContent(): React.JSX.Element {
         mapInstanceRef.current = null;
       }
       
-      // Clean up Google Maps DOM elements
+      // Clean up Google Maps DOM elements with safety checks
       try {
         const { globalCleanup } = require('@/lib/google-maps');
         globalCleanup();
       } catch (error) {
         console.warn('Error during global cleanup:', error);
       }
+      
+      // Additional DOM cleanup for any lingering elements
+      setTimeout(() => {
+        try {
+          const pacElements = document.querySelectorAll('.pac-container, .pac-item, .google-maps-autocomplete-suggestions');
+          pacElements.forEach(el => {
+            try {
+              if (el && el.parentNode) {
+                el.parentNode.removeChild(el);
+              }
+            } catch (error) {
+              // Ignore DOM removal errors
+            }
+          });
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      }, 50);
     };
   }, []); // Run only on unmount
 
@@ -596,6 +633,30 @@ function HomePageContent(): React.JSX.Element {
       updateMapLocation(coordinates);
     }
   }, [formData.latitude, formData.longitude, formData.location, updateMapLocation]);
+
+  // Navigation guard to prevent rapid navigation
+  const safeNavigate = useCallback((url: string) => {
+    if (isNavigating) {
+      console.log('🔍 Navigation blocked - already navigating');
+      return;
+    }
+    
+    setIsNavigating(true);
+    
+    // Clear any existing timeout
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+    }
+    
+    // Set a timeout to reset navigation state
+    navigationTimeoutRef.current = setTimeout(() => {
+      setIsNavigating(false);
+      navigationTimeoutRef.current = null;
+    }, 2000);
+    
+    console.log('🔍 Navigating to:', url);
+    router.push(url);
+  }, [isNavigating, router]);
 
   // Mobile scrolling functionality
   const isMobile = useMemo(() => {
@@ -1417,7 +1478,7 @@ function HomePageContent(): React.JSX.Element {
           // Clear sessionStorage since we're moving to the next step
           sessionStorage.removeItem('axle-landing-form-data')
           
-          router.push(`/book-appointment?appointment_id=${finalAppointmentId}`)
+          safeNavigate(`/book-appointment?appointment_id=${finalAppointmentId}`)
           return;
         } else {
           // CREATE MODE - Create new appointment
@@ -1467,7 +1528,7 @@ function HomePageContent(): React.JSX.Element {
           // Clear sessionStorage since we're moving to the next step
           sessionStorage.removeItem('axle-landing-form-data')
           
-          router.push(`/book-appointment?appointment_id=${finalAppointmentId}`)
+          safeNavigate(`/book-appointment?appointment_id=${finalAppointmentId}`)
         }
         
       } catch (error: unknown) {

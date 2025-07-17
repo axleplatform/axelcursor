@@ -1415,8 +1415,13 @@ or type Oil Change"
             <div className="flex justify-center gap-4 pt-4">
               <button
                 type="button"
-                onClick={() => router.push(appointmentId ? `/?appointment_id=${appointmentId}` : '/')}
+                onClick={() => {
+                  // Add navigation guard to prevent rapid navigation
+                  if (isSubmitting) return;
+                  router.push(appointmentId ? `/?appointment_id=${appointmentId}` : '/');
+                }}
                 className="px-8 py-3 border border-[#294a46] text-[#294a46] rounded-full hover:bg-gray-50 transform transition-all duration-200 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]"
+                disabled={isSubmitting}
               >
                 Back
               </button>

@@ -753,6 +753,11 @@ export function globalCleanup(): void {
     // Clean up all autocomplete instances
     cleanupAllAutocompleteInstances();
     
+    // Use the window cleanup function if available (from dom-fixes.js)
+    if (typeof window !== 'undefined' && window.cleanupGoogleMapsDOM) {
+      window.cleanupGoogleMapsDOM();
+    }
+    
     // Clear any Google Maps DOM elements that might be lingering
     const selectors = [
       '.pac-container',
@@ -765,10 +770,7 @@ export function globalCleanup(): void {
       '.pac-item-text',
       '.pac-item-index',
       '.pac-item-selected',
-      '.pac-item-query',
-      '.pac-item-text',
-      '.pac-item-index',
-      '.pac-item-selected'
+      '.google-maps-autocomplete-suggestions'
     ];
     
     selectors.forEach(selector => {
@@ -794,7 +796,7 @@ export function globalCleanup(): void {
       allElements.forEach(el => {
         try {
           const className = el.className || '';
-          if (typeof className === 'string' && className.includes('pac-')) {
+          if (typeof className === 'string' && (className.includes('pac-') || className.includes('google-maps'))) {
             if (el.parentNode) {
               el.parentNode.removeChild(el);
             }
@@ -816,6 +818,16 @@ export function globalCleanup(): void {
       }
     } catch (error) {
       // Ignore Google Maps API errors
+    }
+    
+    // Clear any intervals or timeouts that might be running
+    try {
+      if (window.smoothZoomInterval) {
+        clearInterval(window.smoothZoomInterval);
+        window.smoothZoomInterval = null;
+      }
+    } catch (error) {
+      // Ignore interval cleanup errors
     }
     
     console.debug('Google Maps cleanup completed'); // Only shows in dev tools when verbose logging is on
