@@ -422,19 +422,33 @@ function PickMechanicContent() {
  // Parse as local time to avoid timezone conversion
  let date;
  if (dateString.includes('T')) {
-   const [datePart, timePart] = dateString.split('T');
-   const [year, month, day] = datePart.split('-').map(Number);
-   const timeParts = timePart.split(':');
-   const [hours, minutes] = timeParts.map(Number);
-   const seconds = timeParts[2] ? Number(timeParts[2]) : 0;
-   
-   console.log('🕒 [TIMEZONE DEBUG] Parsed components:', { year, month, day, hours, minutes, seconds });
-   date = new Date(year, month - 1, day, hours, minutes, seconds);
+   // Handle timezone-aware datetime strings (e.g., "2025-07-17T15:46:24-07:00")
+   if (dateString.includes('+') || dateString.includes('-') && dateString.lastIndexOf('-') > 10) {
+     // Has timezone info, use regular Date constructor which will handle it correctly
+     console.log('🕒 [TIMEZONE DEBUG] Timezone-aware datetime, using Date constructor');
+     date = new Date(dateString);
+   } else {
+     // No timezone info, parse manually as local time
+     const [datePart, timePart] = dateString.split('T');
+     const [year, month, day] = datePart.split('-').map(Number);
+     const timeParts = timePart.split(':');
+     const [hours, minutes] = timeParts.map(Number);
+     const seconds = timeParts[2] ? Number(timeParts[2]) : 0;
+     
+     console.log('🕒 [TIMEZONE DEBUG] Parsed components:', { year, month, day, hours, minutes, seconds });
+     date = new Date(year, month - 1, day, hours, minutes, seconds);
+   }
  } else {
    date = new Date(dateString);
  }
  
  console.log('🕒 [TIMEZONE DEBUG] Created local date:', date.toLocaleString());
+ console.log('🕒 [TIMEZONE DEBUG] Date is valid:', !isNaN(date.getTime()));
+ 
+ if (isNaN(date.getTime())) {
+   console.error('🕒 [TIMEZONE DEBUG] Invalid date created from:', dateString);
+   return 'Invalid date';
+ }
  
  return date.toLocaleDateString("en-US", {
   weekday: "long",
@@ -788,7 +802,16 @@ function PickMechanicContent() {
             <span className="text-base leading-none text-[#294a46] mt-0.5 flex-shrink-0 inline-flex items-center justify-center">📅</span>
             <div className="flex-1">
              <h3 className="font-semibold text-gray-800 text-sm sm:ml-0 ml-2">Appointment Details</h3>
-             <p className="text-xs text-gray-600 mt-1">{appointment?.appointment_date ? formatDate(appointment.appointment_date) : 'No date specified'}</p>
+             <p className="text-xs text-gray-600 mt-1">
+               {appointment?.appointment_date ? (
+                 (() => {
+                   console.log('🕒 [ORDER SUMMARY DEBUG] appointment_date:', appointment.appointment_date);
+                   const formatted = formatDate(appointment.appointment_date);
+                   console.log('🕒 [ORDER SUMMARY DEBUG] formatted result:', formatted);
+                   return formatted;
+                 })()
+               ) : 'No date specified'}
+             </p>
              <div className="flex items-start mt-1">
               <GoogleMapsLink 
                 address={appointment?.location || 'No location specified'}
