@@ -39,9 +39,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
+          {children}
           <Toaster />
           <ToastContainer
             position="top-right"

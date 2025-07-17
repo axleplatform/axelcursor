@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: false, // Temporarily disable to test if it's causing the issue
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,

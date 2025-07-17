@@ -80,6 +80,7 @@ interface SupabaseQueryResult {
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function HomePageContent(): React.JSX.Element {
+  console.log('🔍 [LIFECYCLE] HomePageContent rendering, appointmentId:', searchParams?.get("appointment_id"));
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
@@ -108,7 +109,9 @@ function HomePageContent(): React.JSX.Element {
   const continueButtonRef = useRef<HTMLButtonElement>(null)
 
   // Get appointment ID from URL parameters for restoring state
-  const appointmentId = searchParams?.get("appointment_id") || null
+  const appointmentId = useMemo(() => {
+    return searchParams?.get("appointment_id") || null;
+  }, [searchParams]);
 
   // Add selectedLocation state
   const [selectedLocation, setSelectedLocation] = useState<google.maps.places.PlaceResult | null>(null)
@@ -412,7 +415,9 @@ function HomePageContent(): React.JSX.Element {
 
   // Cleanup effect for component unmount
   useEffect(() => {
+    console.log('🔍 [LIFECYCLE] HomePageContent mounted');
     return () => {
+      console.log('🔍 [LIFECYCLE] HomePageContent unmounting');
       console.log('🗺️ Landing page unmounting - cleaning up map');
       
       // Set mounted flag to false to prevent state updates
@@ -771,20 +776,30 @@ function HomePageContent(): React.JSX.Element {
 
   // Consolidated data loading effect with proper cleanup
   useEffect(() => {
+    console.log('🔍 [HOOK DEBUG] Data loading effect triggered, appointmentId:', appointmentId);
+    
     // Set mounted flag
     isMountedRef.current = true;
     
     // Use setTimeout to ensure this runs after all hooks are initialized
     const timer = setTimeout(() => {
-      if (appointmentId) {
-        loadExistingAppointment()
-      } else {
-        loadDataFromStorage()
+      console.log('🔍 [HOOK DEBUG] setTimeout callback executing, appointmentId:', appointmentId);
+      try {
+        if (appointmentId) {
+          console.log('🔍 [HOOK DEBUG] Calling loadExistingAppointment');
+          loadExistingAppointment()
+        } else {
+          console.log('🔍 [HOOK DEBUG] Calling loadDataFromStorage');
+          loadDataFromStorage()
+        }
+      } catch (error) {
+        console.error('🔍 [HOOK DEBUG] Error in data loading:', error);
       }
     }, 0);
 
     // Cleanup function
     return () => {
+      console.log('🔍 [HOOK DEBUG] Data loading effect cleanup');
       isMountedRef.current = false;
       clearTimeout(timer);
     };
@@ -1776,7 +1791,7 @@ function HomePageContent(): React.JSX.Element {
   const selectedDateObj = useMemo(() => formData.appointmentDate ? parseLocalDate(formData.appointmentDate) : undefined, [formData.appointmentDate, parseLocalDate]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white" suppressHydrationWarning>
       {/* Header */}
       <SiteHeader />
 
