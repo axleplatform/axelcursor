@@ -82,7 +82,12 @@ interface SupabaseQueryResult {
 function HomePageContent(): React.JSX.Element {
   const router = useRouter()
   const searchParams = useSearchParams()
-  console.log('🔍 [LIFECYCLE] HomePageContent rendering, appointmentId:', searchParams?.get("appointment_id"));
+  
+  // Track render count to detect infinite loops
+  const renderCount = useRef(0);
+  renderCount.current += 1;
+  
+  console.log('🔍 [LIFECYCLE] HomePageContent rendering #', renderCount.current, 'appointmentId:', searchParams?.get("appointment_id"));
   const pathname = usePathname()
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [isLoadingExistingData, setIsLoadingExistingData] = useState<boolean>(false)
@@ -657,9 +662,19 @@ function HomePageContent(): React.JSX.Element {
 
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
-    if (!appointmentId || !isMountedRef.current) return;
+    console.log('🔍 [LOAD DEBUG] loadExistingAppointment called, appointmentId:', appointmentId);
+    console.log('🔍 [LOAD DEBUG] isMountedRef.current:', isMountedRef.current);
+    console.log('🔍 [LOAD DEBUG] isLoadingExistingData:', isLoadingExistingData);
+    
+    // Prevent re-execution if already loading
+    if (!appointmentId || !isMountedRef.current || isLoadingExistingData) {
+      console.log('🔍 [LOAD DEBUG] Early return - already loading or invalid state');
+      return;
+    }
 
-    setIsLoadingExistingData(true)
+    console.log('🔍 [LOAD DEBUG] Setting loading state to true');
+    setIsLoadingExistingData(true);
+    
     try {
       console.log("🔄 Loading existing appointment data for:", appointmentId)
       
@@ -672,8 +687,13 @@ function HomePageContent(): React.JSX.Element {
         .eq("id", appointmentId)
         .single()
 
+      console.log('🔍 [LOAD DEBUG] Supabase query completed, mounted:', isMountedRef.current);
+      
       // Check if component is still mounted before updating state
-      if (!isMountedRef.current) return;
+      if (!isMountedRef.current) {
+        console.log('🔍 [LOAD DEBUG] Component unmounted during query, aborting');
+        return;
+      }
 
       if (error) {
         console.error("Error loading appointment:", error)
@@ -682,10 +702,10 @@ function HomePageContent(): React.JSX.Element {
 
       if (data) {
         console.log("✅ Loaded appointment data:", data)
+        console.log('🔍 [LOAD DEBUG] About to batch update form data');
         
-        // Restore form data from existing appointment
-        setFormData(prev => ({
-          ...prev,
+        // BATCH ALL STATE UPDATES INTO ONE OPERATION
+        const newFormData = {
           location: data.location || "",
           vin: data.vehicles?.vin || "",
           year: data.vehicles?.year?.toString() || "",
@@ -700,12 +720,18 @@ function HomePageContent(): React.JSX.Element {
           latitude: data.latitude,
           longitude: data.longitude,
           place_id: data.place_id
-        }))
+        };
+        
+        console.log('🔍 [LOAD DEBUG] Updating form data with:', newFormData);
+        setFormData(prev => ({
+          ...prev,
+          ...newFormData
+        }));
 
         // Also restore selectedLocation if we have coordinates and address
         if (data.latitude && data.longitude && data.location) {
           console.log("🗺️ Restoring selectedLocation from appointment:", data.location)
-          setSelectedLocation({
+          const newSelectedLocation = {
             formatted_address: data.location,
             geometry: {
               location: {
@@ -714,9 +740,13 @@ function HomePageContent(): React.JSX.Element {
               }
             },
             place_id: data.place_id || null
-          } as google.maps.places.PlaceResult)
+          } as google.maps.places.PlaceResult;
+          
+          console.log('🔍 [LOAD DEBUG] Updating selectedLocation with:', newSelectedLocation);
+          setSelectedLocation(newSelectedLocation);
         }
         
+        console.log('🔍 [LOAD DEBUG] Showing toast notification');
         toast({
           title: "Form Restored",
           description: "Your previous information has been loaded.",
@@ -725,12 +755,13 @@ function HomePageContent(): React.JSX.Element {
     } catch (error) {
       console.error("Error loading appointment data:", error)
     } finally {
+      console.log('🔍 [LOAD DEBUG] Finally block - setting loading to false, mounted:', isMountedRef.current);
       // Only update loading state if component is still mounted
       if (isMountedRef.current) {
         setIsLoadingExistingData(false)
       }
     }
-  }, [appointmentId, formatLocalDateString])
+  }, [appointmentId, formatLocalDateString, isLoadingExistingData])
 
   // Load existing data on mount if appointment ID is present
   const loadDataFromStorage = useCallback(() => {
@@ -779,27 +810,23 @@ function HomePageContent(): React.JSX.Element {
     // Set mounted flag
     isMountedRef.current = true;
     
-    // Use setTimeout to ensure this runs after all hooks are initialized
-    const timer = setTimeout(() => {
-      console.log('🔍 [HOOK DEBUG] setTimeout callback executing, appointmentId:', appointmentId);
-      try {
-        if (appointmentId) {
-          console.log('🔍 [HOOK DEBUG] Calling loadExistingAppointment');
-          loadExistingAppointment()
-        } else {
-          console.log('🔍 [HOOK DEBUG] Calling loadDataFromStorage');
-          loadDataFromStorage()
-        }
-      } catch (error) {
-        console.error('🔍 [HOOK DEBUG] Error in data loading:', error);
+    // Direct execution without setTimeout to avoid timing issues
+    try {
+      if (appointmentId) {
+        console.log('🔍 [HOOK DEBUG] Calling loadExistingAppointment directly');
+        loadExistingAppointment()
+      } else {
+        console.log('🔍 [HOOK DEBUG] Calling loadDataFromStorage directly');
+        loadDataFromStorage()
       }
-    }, 0);
+    } catch (error) {
+      console.error('🔍 [HOOK DEBUG] Error in data loading:', error);
+    }
 
     // Cleanup function
     return () => {
       console.log('🔍 [HOOK DEBUG] Data loading effect cleanup');
       isMountedRef.current = false;
-      clearTimeout(timer);
     };
   }, [appointmentId, loadExistingAppointment, loadDataFromStorage]) // Include dependencies to prevent stale closures
 
