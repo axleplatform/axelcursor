@@ -1857,6 +1857,9 @@ function HomePageContent(): React.JSX.Element {
     console.log('🔘 Continue button onClick triggered - isSubmitting:', isSubmitting, 'isFormComplete:', isFormComplete);
   }, [isFormComplete, isSubmitting, handleDisabledContinueInteraction, missingFields, formData]);
 
+  // Before rendering DateTimeSelector:
+  const selectedDateObj = useMemo(() => formData.appointmentDate ? parseLocalDate(formData.appointmentDate) : undefined, [formData.appointmentDate, parseLocalDate]);
+
   // Show loading state while restoring data
   if (isLoadingExistingData) {
     return (
@@ -1872,9 +1875,6 @@ function HomePageContent(): React.JSX.Element {
       </div>
     )
   }
-
-  // Before rendering DateTimeSelector:
-  const selectedDateObj = useMemo(() => formData.appointmentDate ? parseLocalDate(formData.appointmentDate) : undefined, [formData.appointmentDate, parseLocalDate]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white" suppressHydrationWarning>
