@@ -635,6 +635,20 @@ function HomePageContent(): React.JSX.Element {
     return `${year}-${month}-${day}`;
   }
 
+  // Format date as YYYY-MM-DD for storage (local date, no timezone issues)
+  function formatLocalDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // Parse YYYY-MM-DD as local date (no timezone conversion)
+  function parseLocalDate(dateString: string): Date {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
     if (!appointmentId || !isMountedRef.current) return;
@@ -1185,7 +1199,7 @@ function HomePageContent(): React.JSX.Element {
         let appointmentData = {
           user_id: tempUserId, // ALWAYS has a user_id
           status: "pending",
-          appointment_date: appointmentDate.toISOString(),
+          appointment_date: formatLocalDate(appointmentDate),
           location: formData.location,
           issue_description: formData.issueDescription,
           selected_services: formData.selectedServices,
@@ -1239,7 +1253,7 @@ function HomePageContent(): React.JSX.Element {
           // Prepare update data
           const updateData: AppointmentUpdateData = {
             ...appointmentData,
-            appointment_date: latestAppointmentDate.toISOString(), // always use latest
+            appointment_date: formatLocalDate(latestAppointmentDate), // always use latest
             updated_at: new Date().toISOString(),
             is_being_edited: false,
             status: 'pending', // Reset to pending when edited

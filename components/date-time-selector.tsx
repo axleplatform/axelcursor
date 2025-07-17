@@ -87,6 +87,10 @@ interface DateTimeSelectorRef {
 }
 
 export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelectorProps>(({ onDateChange, onTimeChange, onTimeSelected, selectedTime: controlledTime, selectedDate: controlledDate }, ref) => {
+  // SSR Hydration Protection
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  
   const [showCalendar, setShowCalendar] = useState(false)
   const [showTimeSelector, setShowTimeSelector] = useState(false)
   
@@ -104,6 +108,20 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
   const [internalTime, setInternalTime] = useState("")
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
   const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(today));
+
+  // Prevent SSR hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="flex gap-4 mb-6">
+        <div className="relative flex-1 date-selector">
+          <div className="animate-pulse bg-gray-300 h-10 w-full rounded-md"></div>
+        </div>
+        <div className="relative flex-1 time-selector">
+          <div className="animate-pulse bg-gray-300 h-10 w-full rounded-md"></div>
+        </div>
+      </div>
+    );
+  }
 
   // SINGLE SOURCE OF TRUTH: Always use internalDate for all display and selection
   // If controlledDate is provided, sync it to internalDate
