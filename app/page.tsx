@@ -721,19 +721,23 @@ function HomePageContent(): React.JSX.Element {
     return new Date(year, month - 1, day);
   }, []);
 
+  // Add ref to track loading state to prevent infinite loops
+  const isLoadingRef = useRef(false);
+
   // Add function to load existing appointment data
   const loadExistingAppointment = useCallback(async () => {
     console.log('🔍 [LOAD DEBUG] loadExistingAppointment called, appointmentId:', appointmentId);
     console.log('🔍 [LOAD DEBUG] isMountedRef.current:', isMountedRef.current);
-    console.log('🔍 [LOAD DEBUG] isLoadingExistingData:', isLoadingExistingData);
+    console.log('🔍 [LOAD DEBUG] isLoadingRef.current:', isLoadingRef.current);
     
     // Prevent re-execution if already loading
-    if (!appointmentId || !isMountedRef.current || isLoadingExistingData) {
+    if (!appointmentId || !isMountedRef.current || isLoadingRef.current) {
       console.log('🔍 [LOAD DEBUG] Early return - already loading or invalid state');
       return;
     }
 
     console.log('🔍 [LOAD DEBUG] Setting loading state to true');
+    isLoadingRef.current = true;
     setIsLoadingExistingData(true);
     
     try {
@@ -819,10 +823,11 @@ function HomePageContent(): React.JSX.Element {
       console.log('🔍 [LOAD DEBUG] Finally block - setting loading to false, mounted:', isMountedRef.current);
       // Only update loading state if component is still mounted
       if (isMountedRef.current) {
+        isLoadingRef.current = false;
         setIsLoadingExistingData(false)
       }
     }
-  }, [appointmentId, formatLocalDateString, isLoadingExistingData])
+  }, [appointmentId, formatLocalDateString])
 
   // Load existing data on mount if appointment ID is present
   const loadDataFromStorage = useCallback(() => {
@@ -867,6 +872,8 @@ function HomePageContent(): React.JSX.Element {
   // Consolidated data loading effect with proper cleanup
   useEffect(() => {
     console.log('🔍 [HOOK DEBUG] Data loading effect triggered, appointmentId:', appointmentId);
+    console.log('🔍 [HOOK DEBUG] loadExistingAppointment function changed:', !!loadExistingAppointment);
+    console.log('🔍 [HOOK DEBUG] loadDataFromStorage function changed:', !!loadDataFromStorage);
     
     // Set mounted flag
     isMountedRef.current = true;
