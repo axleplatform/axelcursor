@@ -293,7 +293,7 @@ function HomePageContent(): React.JSX.Element {
       });
 
       // Suppress WebGL errors during initialization
-      let originalConsoleError: typeof console.error;
+      let originalConsoleError: typeof console.error | undefined = undefined;
       try {
         originalConsoleError = console.error;
         console.error = (...args) => {
@@ -308,6 +308,7 @@ function HomePageContent(): React.JSX.Element {
         };
       } catch (error) {
         // Ignore console error setup issues
+        originalConsoleError = undefined;
       }
 
             console.log('🔍 Map init: Loading Google Maps...');
@@ -387,8 +388,10 @@ function HomePageContent(): React.JSX.Element {
         console.error('❌ Error message:', error.message);
         console.error('❌ Error name:', error.name);
       } finally {
-        // Restore original console.error
-        console.error = originalConsoleError;
+        // Restore original console.error if it was set
+        if (originalConsoleError) {
+          console.error = originalConsoleError;
+        }
       }
     }, [formData.latitude, formData.longitude, createDraggableMarker]); // Add createDraggableMarker dependency back
 
