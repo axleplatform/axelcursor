@@ -97,10 +97,13 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   };
   
+  // CRITICAL FIX: Get today's date once and reuse it consistently
+  const today = getTodayLocal();
+  
   const [internalDate, setInternalDate] = useState(getTodayLocal());
   const [internalTime, setInternalTime] = useState("")
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
-  const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(getTodayLocal()));
+  const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(today));
 
   // SINGLE SOURCE OF TRUTH: Always use internalDate for all display and selection
   // If controlledDate is provided, sync it to internalDate
@@ -116,7 +119,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
   // On mount, notify parent of default date if not controlled
   useEffect(() => {
     if (!controlledDate) {
-      const todayDate = getTodayLocal();
+      const todayDate = today;
       onDateChange(todayDate);
       // Also set internal date to ensure consistency
       setInternalDate(todayDate);
@@ -162,9 +165,6 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
 
   const weekDays = generateWeekDays(currentWeekStart)
   
-  // CRITICAL FIX: Create today's date consistently for comparisons
-  const today = getTodayLocal();
-
   // Navigate to previous week
   const goToPreviousWeek = () => {
     // Use local year/month/day constructor to avoid timezone issues
@@ -232,11 +232,33 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     )
   }
 
+  // CRITICAL FIX: Check if a date is tomorrow
+  const isTomorrow = (date: Date) => {
+    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    return (
+      date.getDate() === tomorrow.getDate() &&
+      date.getMonth() === tomorrow.getMonth() &&
+      date.getFullYear() === tomorrow.getFullYear()
+    )
+  }
+
   // CRITICAL FIX: Check if a date is in the past using consistent date comparison
   const isPastDate = (date: Date) => {
     // Create a normalized date for comparison (start of day)
     const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     return compareDate < today
+  }
+
+  // CRITICAL FIX: Format date for display with "Today" and Tomorrow" labels
+  const formatDateForDisplay = (date: Date) => {
+    if (isToday(date)) {
+      return "Today";
+    } else if (isTomorrow(date)) {
+      return "Tomorrow";
+    } else {
+      const options: Intl.DateTimeFormatOptions = { weekday: "short", month: "short", day: "numeric" }
+      return date.toLocaleDateString("en-US", options)
+    }
   }
 
   // Format date for display
@@ -363,7 +385,7 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
           }}
         >
           <Calendar />
-          <span>{isToday(selectedDate) ? "Today" : formatDate(selectedDate)}</span>
+          <span>{formatDateForDisplay(selectedDate)}</span>
           <span className="ml-1">▼</span>
         </button>
 
