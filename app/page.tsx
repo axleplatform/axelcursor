@@ -1778,7 +1778,7 @@ function HomePageContent(): React.JSX.Element {
   }
 
   // Before rendering DateTimeSelector:
-  const selectedDateObj = useMemo(() => formData.appointmentDate ? new Date(formData.appointmentDate) : undefined, [formData.appointmentDate]);
+  const selectedDateObj = useMemo(() => formData.appointmentDate ? parseLocalDate(formData.appointmentDate) : undefined, [formData.appointmentDate]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
