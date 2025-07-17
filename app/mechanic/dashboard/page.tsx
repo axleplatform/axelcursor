@@ -418,11 +418,36 @@ export default function MechanicDashboard() {
     return num < 10 ? `0${num}` : `${num}`;
   };
 
+  // Helper function to parse datetime string as local time (no timezone conversion)
+  const parseLocalDateTime = (dateTimeString: string): Date => {
+    console.log('🕒 [TIMEZONE DEBUG] parseLocalDateTime called with:', dateTimeString);
+    
+    // Check if it's a datetime string with 'T' separator
+    if (dateTimeString.includes('T')) {
+      const [datePart, timePart] = dateTimeString.split('T');
+      const [year, month, day] = datePart.split('-').map(Number);
+      const timeParts = timePart.split(':');
+      const [hours, minutes] = timeParts.map(Number);
+      const seconds = timeParts[2] ? Number(timeParts[2]) : 0;
+      
+      console.log('🕒 [TIMEZONE DEBUG] Parsed components:', { year, month, day, hours, minutes, seconds });
+      
+      // Create date in local timezone (no timezone conversion)
+      const localDate = new Date(year, month - 1, day, hours, minutes, seconds);
+      console.log('🕒 [TIMEZONE DEBUG] Created local date:', localDate.toLocaleString());
+      return localDate;
+    } else {
+      // Fallback to regular Date constructor for other formats
+      console.log('🕒 [TIMEZONE DEBUG] Using fallback Date constructor');
+      return new Date(dateTimeString);
+    }
+  };
+
   const getDefaultTime = (appointment?: AppointmentWithRelations): string => {
     // If we have an appointment, use the customer's actual requested time
     if (appointment?.appointment_date) {
       try {
-        const appointmentDate = new Date(appointment.appointment_date);
+        const appointmentDate = parseLocalDateTime(appointment.appointment_date);
         const hours = pad(appointmentDate.getHours());
         const minutes = pad(appointmentDate.getMinutes());
         console.log('🕒 Using customer requested time:', `${hours}:${minutes}`, 'from appointment_date:', appointment.appointment_date);
@@ -496,7 +521,7 @@ export default function MechanicDashboard() {
 
   // Helper function to check if appointment is within 2 days (for schedule-accessed appointments)
   const isWithinTwoDays = (appointment: AppointmentWithRelations): boolean => {
-    const appointmentDate = new Date(appointment.appointment_date);
+    const appointmentDate = parseLocalDateTime(appointment.appointment_date);
     const today = new Date();
     
     // Set both dates to midnight for accurate day comparison
@@ -521,7 +546,7 @@ export default function MechanicDashboard() {
       // Update date to customer's requested date
       if (currentAppointment.appointment_date) {
         try {
-          const appointmentDate = new Date(currentAppointment.appointment_date);
+          const appointmentDate = parseLocalDateTime(currentAppointment.appointment_date);
           const dateString = appointmentDate.toISOString().split('T')[0];
           setSelectedDate(dateString);
           console.log('🕒 Set selectedDate to customer requested:', dateString);
@@ -587,8 +612,8 @@ export default function MechanicDashboard() {
         // Appointment details
         appointment.location || '',
         appointment.issue_description || '',
-        appointment.appointment_date ? new Date(appointment.appointment_date).toLocaleDateString() : '',
-        appointment.appointment_date ? new Date(appointment.appointment_date).toLocaleTimeString() : '',
+        appointment.appointment_date ? parseLocalDateTime(appointment.appointment_date).toLocaleDateString() : '',
+        appointment.appointment_date ? parseLocalDateTime(appointment.appointment_date).toLocaleTimeString() : '',
         
         // Services and issues
         ...(appointment.selected_services || []),
@@ -702,7 +727,7 @@ export default function MechanicDashboard() {
   function isPendingAndOverdue(appointment: AppointmentWithRelations) {
     if (appointment.status !== 'pending') return false;
     if (!appointment.appointment_date) return false;
-    const appointmentTime = new Date(appointment.appointment_date).getTime();
+    const appointmentTime = parseLocalDateTime(appointment.appointment_date).getTime();
     const now = Date.now();
     return now - appointmentTime > 15 * 60 * 1000; // 15 minutes in ms
   }
