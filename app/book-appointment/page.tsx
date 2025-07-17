@@ -644,7 +644,23 @@ function BookAppointmentContent() {
         // PRESERVE these values from existing appointment
         location: appointmentData.location || prev.location,
         preferredDate: appointmentData.appointment_date ? appointmentData.appointment_date.split('T')[0] : prev.preferredDate,
-        preferredTime: appointmentData.appointment_date ? appointmentData.appointment_date.split('T')[1]?.substring(0, 5) : prev.preferredTime,
+        preferredTime: appointmentData.appointment_date ? (() => {
+          // Parse the UTC datetime and convert to local time for time extraction
+          const utcDate = new Date(appointmentData.appointment_date);
+          console.log('🔍 [DATE DEBUG] UTC datetime from DB:', appointmentData.appointment_date);
+          console.log('🔍 [DATE DEBUG] Parsed UTC date object:', utcDate);
+          console.log('🔍 [DATE DEBUG] Local time components:', {
+            hours: utcDate.getHours(),
+            minutes: utcDate.getMinutes()
+          });
+          
+          // Extract local time in HH:MM format
+          const hours = String(utcDate.getHours()).padStart(2, '0');
+          const minutes = String(utcDate.getMinutes()).padStart(2, '0');
+          const localTime = `${hours}:${minutes}`;
+          console.log('🔍 [DATE DEBUG] Extracted local time:', localTime);
+          return localTime;
+        })() : prev.preferredTime,
         issueDescription: appointmentData.issue_description || prev.issueDescription,
         phoneNumber: appointmentData.phone_number || prev.phoneNumber,
         carRuns: appointmentData.car_runs !== null ? appointmentData.car_runs : prev.carRuns,

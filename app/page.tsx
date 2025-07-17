@@ -813,7 +813,23 @@ function HomePageContent(): React.JSX.Element {
           model: data.vehicles?.model || "",
           mileage: data.vehicles?.mileage?.toString() || "",
           appointmentDate: formatLocalDateString(data.appointment_date),
-          appointmentTime: data.appointment_date ? data.appointment_date.split('T')[1]?.substring(0, 5) : "",
+          appointmentTime: data.appointment_date ? (() => {
+            // Parse the UTC datetime and convert to local time for time extraction
+            const utcDate = new Date(data.appointment_date);
+            console.log('🔍 [DATE DEBUG] UTC datetime from DB:', data.appointment_date);
+            console.log('🔍 [DATE DEBUG] Parsed UTC date object:', utcDate);
+            console.log('🔍 [DATE DEBUG] Local time components:', {
+              hours: utcDate.getHours(),
+              minutes: utcDate.getMinutes()
+            });
+            
+            // Extract local time in HH:MM format
+            const hours = String(utcDate.getHours()).padStart(2, '0');
+            const minutes = String(utcDate.getMinutes()).padStart(2, '0');
+            const localTime = `${hours}:${minutes}`;
+            console.log('🔍 [DATE DEBUG] Extracted local time:', localTime);
+            return localTime;
+          })() : "",
           issueDescription: data.issue_description || "",
           selectedServices: data.selected_services || [],
           carRuns: data.car_runs,
