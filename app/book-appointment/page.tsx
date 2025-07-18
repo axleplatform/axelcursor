@@ -10,7 +10,7 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
-import MediaUpload from "@/components/MediaUpload"
+
 
 // Define types for form data
 interface BookingFormData {
@@ -1483,56 +1483,91 @@ function BookAppointmentContent() {
               {/* Left half - Car issue description */}
               <div className="space-y-4 md:w-1/2">
                 <p className="text-center md:text-left text-gray-600">Tell us what happened</p>
-                <textarea
-                  value={formData.issueDescription}
-                  onChange={handleDescriptionChange}
-                  onFocus={handleTextAreaFocus}
-                  placeholder="Example: My car won't start. When I turn the key, I hear a clicking sound.
-or type Oil Change"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
-                  style={{ lineHeight: 1.5 }}
-                />
-                
-                {/* Media Upload Section */}
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600 text-center md:text-left">
-                    Upload images, audio, or video to help diagnose your issue
-                  </p>
-                  <MediaUpload 
-                    onChange={handleMediaUpload}
-                    maxFiles={3}
+                <div className="relative">
+                  <textarea
+                    value={formData.issueDescription}
+                    onChange={handleDescriptionChange}
+                    onFocus={handleTextAreaFocus}
+                    placeholder="Example: My car won't start. When I turn the key, I hear a clicking sound.
+or type Oil Change.
+You can also upload media"
+                    className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
+                    style={{ lineHeight: 1.5 }}
                   />
-                  
-                  {/* Show uploaded media preview */}
-                  {uploadedFiles.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-xs text-gray-500 mb-2">Uploaded media ({uploadedFiles.length}):</p>
-                      <div className="flex flex-wrap gap-2">
-                        {uploadedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center space-x-2 bg-gray-50 px-2 py-1 rounded text-xs">
-                            <span>{file.type === 'image' ? '📷' : file.type === 'audio' ? '🎵' : '🎥'}</span>
-                            <span className="truncate max-w-20">{file.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Processing state */}
-                  {processingMedia && (
-                    <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
-                      <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-gray-600 rounded-full"></div>
-                      <span>Analyzing your input...</span>
-                    </div>
-                  )}
-                  
-                  {/* Error state */}
-                  {mediaError && (
-                    <div className="text-sm text-red-500 text-center">
-                      {mediaError}
-                    </div>
-                  )}
+                  {/* Plus button for file upload */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.multiple = true;
+                      input.accept = 'image/*,audio/*,video/*';
+                      input.onchange = async (e) => {
+                        const files = Array.from((e.target as HTMLInputElement).files || []);
+                        if (files.length > 0) {
+                          // Convert files to base64 and MediaFile format
+                          const mediaFiles: MediaFile[] = await Promise.all(
+                            files.map(async (file) => {
+                              const base64 = await new Promise<string>((resolve) => {
+                                const reader = new FileReader();
+                                reader.onload = () => resolve(reader.result as string);
+                                reader.readAsDataURL(file);
+                              });
+                              
+                              return {
+                                type: file.type.startsWith('image/') ? 'image' : 
+                                      file.type.startsWith('audio/') ? 'audio' : 'video',
+                                data: base64.split(',')[1], // Remove data URL prefix
+                                name: file.name,
+                                size: file.size,
+                                mimeType: file.type
+                              };
+                            })
+                          );
+                          
+                          // Add to existing files (respect max limit)
+                          const newFiles = [...uploadedFiles, ...mediaFiles].slice(0, 3);
+                          setUploadedFiles(newFiles);
+                        }
+                      };
+                      input.click();
+                    }}
+                    className="absolute bottom-3 right-3 w-8 h-8 bg-[#294a46] text-white rounded-full flex items-center justify-center hover:bg-[#1e3632] transition-colors shadow-sm"
+                    title="Upload media files"
+                  >
+                    <span className="text-lg">+</span>
+                  </button>
                 </div>
+                
+                {/* Show uploaded media preview */}
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs text-gray-500 mb-2">Uploaded media ({uploadedFiles.length}):</p>
+                    <div className="flex flex-wrap gap-2">
+                      {uploadedFiles.map((file, index) => (
+                        <div key={index} className="flex items-center space-x-2 bg-gray-50 px-2 py-1 rounded text-xs">
+                          <span>{file.type === 'image' ? '📷' : file.type === 'audio' ? '🎵' : '🎥'}</span>
+                          <span className="truncate max-w-20">{file.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Processing state */}
+                {processingMedia && (
+                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+                    <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-gray-600 rounded-full"></div>
+                    <span>Analyzing your input...</span>
+                  </div>
+                )}
+                
+                {/* Error state */}
+                {mediaError && (
+                  <div className="text-sm text-red-500 text-center">
+                    {mediaError}
+                  </div>
+                )}
               </div>
               {/* Right half - Phone Number and Car Runs */}
               <div className="space-y-3 md:w-1/2 flex flex-col items-center justify-center">
