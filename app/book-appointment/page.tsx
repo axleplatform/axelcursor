@@ -546,6 +546,14 @@ function BookAppointmentContent() {
   const [mediaError, setMediaError] = useState<string | null>(null)
   const [geminiDebounceTimer, setGeminiDebounceTimer] = useState<NodeJS.Timeout | null>(null)
   
+  // Voice recording states
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingTime, setRecordingTime] = useState(0)
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([])
+  const [recordedAudio, setRecordedAudio] = useState<MediaFile | null>(null)
+  const [recordingError, setRecordingError] = useState<string | null>(null)
+  
 
   
   // Fetch existing appointment and vehicle data ONLY if we have a valid appointment ID
@@ -786,6 +794,98 @@ function BookAppointmentContent() {
     }, 3000)
     
     setGeminiDebounceTimer(timer)
+  }
+
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      setRecordingError(null)
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      })
+      
+      const chunks: Blob[] = []
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data)
+        }
+      }
+      
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' })
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.readAsDataURL(audioBlob)
+        })
+        
+        const audioFile: MediaFile = {
+          type: 'audio',
+          data: base64.split(',')[1],
+          name: `voice-recording-${Date.now()}.webm`,
+          size: audioBlob.size,
+          mimeType: 'audio/webm'
+        }
+        
+        setRecordedAudio(audioFile)
+        setAudioChunks([])
+        
+        // Add to uploaded files
+        const newFiles = [...uploadedFiles, audioFile].slice(0, 3)
+        setUploadedFiles(newFiles)
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop())
+      }
+      
+      setMediaRecorder(recorder)
+      setAudioChunks(chunks)
+      recorder.start()
+      setIsRecording(true)
+      setRecordingTime(0)
+      
+      // Start timer
+      const timer = setInterval(() => {
+        setRecordingTime(prev => prev + 1)
+      }, 1000)
+      
+      // Store timer reference
+      ;(recorder as any).timer = timer
+      
+    } catch (error) {
+      console.error('Recording error:', error)
+      setRecordingError('Microphone access denied. Please allow microphone permissions.')
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop()
+      setIsRecording(false)
+      
+      // Clear timer
+      if ((mediaRecorder as any).timer) {
+        clearInterval((mediaRecorder as any).timer)
+      }
+    }
+  }
+
+  const deleteRecording = () => {
+    setRecordedAudio(null)
+    setRecordingTime(0)
+    setRecordingError(null)
+    
+    // Remove from uploaded files
+    const newFiles = uploadedFiles.filter(file => file !== recordedAudio)
+    setUploadedFiles(newFiles)
+  }
+
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
   // Analyze input with Gemini multimodal API
@@ -1514,10 +1614,23 @@ function BookAppointmentContent() {
 Example: Engine won't start, makes clicking noise
 or simply type: Oil Change, Brake Check, etc.
 
-💡 Tip: You can also upload photos/videos using the + button"
-                  className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
+💡 Tip: You can also upload photos/videos using the + button or record voice with 🎤"
+                  className="w-full px-4 py-3 pr-24 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
                   style={{ lineHeight: 1.5 }}
                 />
+                {/* Voice recording button */}
+                <button
+                  type="button"
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className={`absolute bottom-3 right-12 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-sm ${
+                    isRecording 
+                      ? "bg-red-500 text-white animate-pulse" 
+                      : "bg-[#294a46] text-white hover:bg-[#1e3632]"
+                  }`}
+                  title={isRecording ? "Stop recording" : "Record voice message"}
+                >
+                  <span className="text-lg">🎤</span>
+                </button>
                 {/* Plus button for file upload */}
                 <button
                   type="button"
@@ -1578,9 +1691,52 @@ or simply type: Oil Change, Brake Check, etc.
                 </div>
               )}
               
-
+              {/* Recording status and controls */}
+              {isRecording && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-red-700">Recording... {formatRecordingTime(recordingTime)}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={stopRecording}
+                      className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
+                    >
+                      Stop
+                    </button>
+                  </div>
+                </div>
+              )}
               
-              {/* Error state */}
+              {/* Recording error */}
+              {recordingError && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-700">{recordingError}</p>
+                </div>
+              )}
+              
+              {/* Recorded audio preview */}
+              {recordedAudio && !isRecording && (
+                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">🎵</span>
+                      <span className="text-sm text-green-700">Voice recording saved</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={deleteRecording}
+                      className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Media error state */}
               {mediaError && (
                 <div className="text-sm text-red-500 text-center">
                   {mediaError}
