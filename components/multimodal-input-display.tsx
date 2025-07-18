@@ -68,7 +68,7 @@ const MultimodalInputDisplay: React.FC<MultimodalInputDisplayProps> = ({
       {/* Customer Description */}
       {issueDescription && (
         <div className="mb-4">
-          <h4 className="font-semibold text-gray-700 mb-2">Issue Description:</h4>
+          <h4 className="font-semibold text-white mb-2">Issue Description:</h4>
           <p className="text-white">
             "{issueDescription}"
           </p>
