@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.21.0",
+    "@google/generative-ai": "latest",
     "@googlemaps/js-api-loader": "latest",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "latest",
@@ -64,7 +64,7 @@
     "react-resizable-panels": "latest",
     "react-toastify": "latest",
     "recharts": "latest",
-    "sharp": "^0.33.2",
+    "sharp": "latest",
     "sonner": "latest",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",

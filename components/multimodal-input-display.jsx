@@ -198,4 +198,4 @@ const MultimodalInputDisplay = ({
   );
 };
 
-export default MultimodalInputDisplay; 
+export default MultimodalInputDisplay;

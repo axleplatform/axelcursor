@@ -37,4 +37,4 @@ CREATE POLICY "Allow user deletes" ON storage.objects
 FOR DELETE USING (
   bucket_id = 'appointment-media' 
   AND auth.uid()::text = (storage.foldername(name))[1]
-); 
+);

@@ -286,4 +286,4 @@ const MediaUpload = ({ onChange, className, maxFiles = 5 }) => {
   );
 };
 
-export default MediaUpload; 
+export default MediaUpload;

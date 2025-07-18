@@ -19,4 +19,4 @@ ON appointments USING GIN (ai_analysis_results);
 
 -- Add comment for documentation
 COMMENT ON COLUMN appointments.media_files IS 'Array of media file objects with type, url, name, and size';
-COMMENT ON COLUMN appointments.ai_analysis_results IS 'Gemini AI analysis results with service recommendations'; 
+COMMENT ON COLUMN appointments.ai_analysis_results IS 'Gemini AI analysis results with service recommendations';
