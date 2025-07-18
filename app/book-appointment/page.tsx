@@ -1623,7 +1623,7 @@ or simply type the service you want.
                   className={`absolute bottom-3 left-3 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm ${
                     isRecording 
                       ? "bg-transparent border-2 border-red-500 text-red-500 animate-pulse" 
-                      : "bg-transparent border-2 border-green-500 text-green-500 hover:bg-green-50"
+                      : "bg-transparent border-2 border-[#294a46] text-[#294a46] hover:bg-[#294a46]/10"
                   }`}
                   title={isRecording ? "Stop recording" : "Record voice message"}
                 >
