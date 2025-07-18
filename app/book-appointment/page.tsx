@@ -46,6 +46,13 @@ interface UploadedMediaFile {
   size: number
   mimeType: string
 }
+
+interface GeminiService {
+  service: string
+  description: string
+  confidence: string
+}
+
 // Define database schema types
 interface AppointmentData {
   id: string
@@ -831,7 +838,7 @@ function BookAppointmentContent() {
       
       if (result.success && result.data.services) {
         // Convert Gemini response to match existing AI suggestions format
-        const geminiSuggestions = result.data.services.map(service => ({
+        const geminiSuggestions = result.data.services.map((service: GeminiService) => ({
           service: service.service,
           description: service.description,
           confidence: parseInt(service.confidence) / 100 // Convert percentage to decimal
