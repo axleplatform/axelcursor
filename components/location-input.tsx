@@ -5,6 +5,7 @@ import { MapPin, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import GoogleMapsMap from './google-maps-map'
 import { GooglePlacesAutocomplete } from './google-places-autocomplete'
+import { getGoogleMapsApiKey } from '@/lib/google-maps'
 
 interface LocationInputProps {
   value: string
@@ -122,8 +123,9 @@ export default function LocationInput({
                     
                     // Use reverse geocoding to get address
                     try {
+                      const apiKey = await getGoogleMapsApiKey();
                       const response = await fetch(
-                        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+                        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
                       )
                       const data = await response.json()
                       
