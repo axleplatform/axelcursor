@@ -22,6 +22,7 @@ import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { ProfileDropdown } from "@/components/profile-dropdown"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { GoogleMapsLink } from "@/components/google-maps-link"
+import MultimodalInputDisplay from "@/components/multimodal-input-display"
 import {
   Dialog,
   DialogContent,
@@ -2447,12 +2448,13 @@ export default function MechanicDashboard() {
                             </div>
                           </div>
 
-                          {/* Issue Description */}
+                          {/* Multimodal Input Display */}
                           <div className="mb-6">
-                            <h4 className="text-sm font-medium mb-2 text-gray-900">Issue Description</h4>
-                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-                              {appointment.issue_description || "No description provided"}
-                            </p>
+                            <MultimodalInputDisplay
+                              issueDescription={appointment.issue_description}
+                              mediaFiles={appointment.media_files || []}
+                              aiAnalysisResults={appointment.ai_analysis_results}
+                            />
                           </div>
 
                           {/* Selected Services - UPCOMING APPOINTMENTS (around line 2257) */}
@@ -2890,12 +2892,14 @@ export default function MechanicDashboard() {
                       </div>
                     )}
 
-                    {/* Issue Description */}
+                    {/* Multimodal Input Display */}
                     <div className="mb-6">
-                      <h4 className="text-sm font-medium mb-2">Issue Description</h4>
-                      <p className="text-sm text-white/70 bg-white/5 p-3 rounded-md">
-                        {availableAppointments[currentAvailableIndex].issue_description || "No description provided"}
-                      </p>
+                      <MultimodalInputDisplay
+                        issueDescription={availableAppointments[currentAvailableIndex].issue_description}
+                        mediaFiles={availableAppointments[currentAvailableIndex].media_files || []}
+                        aiAnalysisResults={availableAppointments[currentAvailableIndex].ai_analysis_results}
+                        className="text-white"
+                      />
                     </div>
 
                     {/* Edit Timestamp */}

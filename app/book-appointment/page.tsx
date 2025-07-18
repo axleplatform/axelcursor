@@ -10,6 +10,7 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
+import MediaUpload from "@/components/MediaUpload"
 
 // Define types for form data
 interface BookingFormData {
@@ -514,6 +515,12 @@ function BookAppointmentContent() {
   const [appointmentData, setAppointmentData] = useState<AppointmentData | null>(null)
   const [hadPreviousQuotes, setHadPreviousQuotes] = useState(false)
   
+  // Media upload states
+  const [uploadedFiles, setUploadedFiles] = useState([])
+  const [processingMedia, setProcessingMedia] = useState(false)
+  const [mediaError, setMediaError] = useState(null)
+  const [geminiDebounceTimer, setGeminiDebounceTimer] = useState(null)
+  
 
   
   // Fetch existing appointment and vehicle data ONLY if we have a valid appointment ID
@@ -737,28 +744,180 @@ function BookAppointmentContent() {
   const handleCarRunsChange = (value: boolean) => {
     setFormData((prev) => ({ ...prev, carRuns: value }))
   }
-  // Update AI suggestions based on issue description
+
+  // Handle media upload changes
+  const handleMediaUpload = (files) => {
+    setUploadedFiles(files)
+    setMediaError(null)
+    
+    // Clear existing debounce timer
+    if (geminiDebounceTimer) {
+      clearTimeout(geminiDebounceTimer)
+    }
+    
+    // Set new debounce timer for 3 seconds
+    const timer = setTimeout(() => {
+      analyzeWithGemini(files)
+    }, 3000)
+    
+    setGeminiDebounceTimer(timer)
+  }
+
+  // Analyze input with Gemini multimodal API
+  const analyzeWithGemini = async (files) => {
+    // Only analyze if we have text description OR media files
+    if (!formData.issueDescription.trim() && (!files || files.length === 0)) {
+      return
+    }
+
+    setProcessingMedia(true)
+    setMediaError(null)
+
+    try {
+      const formDataToSend = new FormData()
+      
+      // Add vehicle data
+      formDataToSend.append('year', formData.year || '')
+      formDataToSend.append('make', formData.make || '')
+      formDataToSend.append('model', formData.model || '')
+      formDataToSend.append('mileage', formData.mileage || '')
+      
+      // Add text description
+      formDataToSend.append('description', formData.issueDescription)
+      
+      // Add media files
+      if (files && files.length > 0) {
+        files.forEach(file => {
+          // Convert base64 back to file for FormData
+          const byteCharacters = atob(file.data)
+          const byteNumbers = new Array(byteCharacters.length)
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i)
+          }
+          const byteArray = new Uint8Array(byteNumbers)
+          const blob = new Blob([byteArray], { type: file.mimeType })
+          const fileObj = new File([blob], file.name, { type: file.mimeType })
+          formDataToSend.append('files', fileObj)
+        })
+      }
+
+      const response = await fetch('/api/gemini-multimodal', {
+        method: 'POST',
+        body: formDataToSend
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      if (result.success && result.data.services) {
+        // Convert Gemini response to match existing AI suggestions format
+        const geminiSuggestions = result.data.services.map(service => ({
+          service: service.service,
+          description: service.description,
+          confidence: parseInt(service.confidence) / 100 // Convert percentage to decimal
+        }))
+        
+        setAiSuggestions(geminiSuggestions)
+      }
+    } catch (error) {
+      console.error('Gemini analysis error:', error)
+      setMediaError('Failed to analyze media. Using default recommendations.')
+    } finally {
+      setProcessingMedia(false)
+    }
+  }
+
+  // Upload media files to Supabase storage
+  const uploadMediaToStorage = async (files) => {
+    if (!files || files.length === 0) return []
+    
+    const uploadedFiles = []
+    
+    for (const file of files) {
+      try {
+        // Convert base64 to blob
+        const byteCharacters = atob(file.data)
+        const byteNumbers = new Array(byteCharacters.length)
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i)
+        }
+        const byteArray = new Uint8Array(byteNumbers)
+        const blob = new Blob([byteArray], { type: file.mimeType })
+        
+        // Generate unique filename
+        const timestamp = Date.now()
+        const randomId = Math.random().toString(36).substring(2, 15)
+        const fileExtension = file.name.split('.').pop()
+        const fileName = `${timestamp}-${randomId}.${fileExtension}`
+        
+        // Upload to Supabase storage
+        const { data, error } = await supabase.storage
+          .from('appointment-media')
+          .upload(fileName, blob, {
+            contentType: file.mimeType,
+            cacheControl: '3600'
+          })
+        
+        if (error) {
+          console.error('Storage upload error:', error)
+          continue
+        }
+        
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('appointment-media')
+          .getPublicUrl(fileName)
+        
+        uploadedFiles.push({
+          type: file.type,
+          url: urlData.publicUrl,
+          name: file.name,
+          size: file.size,
+          mimeType: file.mimeType
+        })
+        
+      } catch (error) {
+        console.error('File upload error:', error)
+      }
+    }
+    
+    return uploadedFiles
+  }
+  // Update AI suggestions based on issue description and media
   useEffect(() => {
     // Skip this effect if we're still loading initial data
     if (!hasInteractedWithTextArea && !formData.issueDescription) {
       return
     }
-    // Update AI suggestions if there's text in the description
-    if (formData.issueDescription.trim().length > 0) {
-      const result = getAIDiagnostics(formData.issueDescription)
-      if (result) {
-        // Only update if different from current suggestions
-        if (!aiSuggestions || JSON.stringify(result) !== JSON.stringify(aiSuggestions)) {
-          setAiSuggestions(result)
+
+    // Clear existing debounce timer
+    if (geminiDebounceTimer) {
+      clearTimeout(geminiDebounceTimer)
+    }
+
+    // Set new debounce timer for 3 seconds
+    const timer = setTimeout(() => {
+      // Use Gemini if we have text OR media files
+      if (formData.issueDescription.trim().length > 0 || uploadedFiles.length > 0) {
+        analyzeWithGemini(uploadedFiles)
+      } else if (hasInteractedWithTextArea) {
+        // Show default recommendations if no input
+        if (JSON.stringify(aiSuggestions) !== JSON.stringify(defaultRecommendedServices)) {
+          setAiSuggestions(defaultRecommendedServices)
         }
       }
-    } else if (hasInteractedWithTextArea) {
-      // Show default recommendations if text area is empty and user has interacted
-      if (JSON.stringify(aiSuggestions) !== JSON.stringify(defaultRecommendedServices)) {
-        setAiSuggestions(defaultRecommendedServices)
-      }
+    }, 3000)
+
+    setGeminiDebounceTimer(timer)
+
+    // Cleanup timer on unmount
+    return () => {
+      if (timer) clearTimeout(timer)
     }
-  }, [formData.issueDescription, hasInteractedWithTextArea, aiSuggestions])
+  }, [formData.issueDescription, uploadedFiles, hasInteractedWithTextArea])
   // Save form data to sessionStorage whenever it changes
   useEffect(() => {
     if (formData.issueDescription || formData.selectedServices.length > 0 || formData.selectedCarIssues.length > 0) {
@@ -813,6 +972,19 @@ function BookAppointmentContent() {
       // Update appointment with phone number and final user ID
       const now = new Date().toISOString()
       
+      // Upload media files to storage if any
+      const mediaFilesData = await uploadMediaToStorage(uploadedFiles)
+      
+      // Prepare AI analysis results
+      const aiAnalysisResults = aiSuggestions ? {
+        services: aiSuggestions.map(suggestion => ({
+          service: suggestion.service,
+          description: suggestion.description,
+          confidence: Math.round(suggestion.confidence * 100) + '%'
+        })),
+        analyzed_at: now
+      } : null
+      
       // Update appointment data (never upsert - appointment already exists from landing page)
       const { data: appointment, error: appointmentError } = await supabase
         .from("appointments")
@@ -824,6 +996,9 @@ function BookAppointmentContent() {
           selected_services: formData.selectedServices,
           selected_car_issues: formData.selectedCarIssues,
           phone_number: formData.phoneNumber,
+          // Media files and AI analysis
+          media_files: mediaFilesData,
+          ai_analysis_results: aiAnalysisResults,
           // Clear any previous selections to ensure fresh start
           selected_quote_id: null,
           mechanic_id: null,
@@ -1282,7 +1457,7 @@ function BookAppointmentContent() {
           }} className="space-y-6">
             <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
               {/* Left half - Car issue description */}
-              <div className="space-y-2 md:w-1/2">
+              <div className="space-y-4 md:w-1/2">
                 <p className="text-center md:text-left text-gray-600">Tell us what happened</p>
                 <textarea
                   value={formData.issueDescription}
@@ -1293,6 +1468,47 @@ or type Oil Change"
                   className="w-full px-4 py-3 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
                   style={{ lineHeight: 1.5 }}
                 />
+                
+                {/* Media Upload Section */}
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600 text-center md:text-left">
+                    Upload images, audio, or video to help diagnose your issue
+                  </p>
+                  <MediaUpload 
+                    onChange={handleMediaUpload}
+                    maxFiles={3}
+                  />
+                  
+                  {/* Show uploaded media preview */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-xs text-gray-500 mb-2">Uploaded media ({uploadedFiles.length}):</p>
+                      <div className="flex flex-wrap gap-2">
+                        {uploadedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center space-x-2 bg-gray-50 px-2 py-1 rounded text-xs">
+                            <span>{file.type === 'image' ? '📷' : file.type === 'audio' ? '🎵' : '🎥'}</span>
+                            <span className="truncate max-w-20">{file.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Processing state */}
+                  {processingMedia && (
+                    <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+                      <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-gray-600 rounded-full"></div>
+                      <span>Analyzing your input...</span>
+                    </div>
+                  )}
+                  
+                  {/* Error state */}
+                  {mediaError && (
+                    <div className="text-sm text-red-500 text-center">
+                      {mediaError}
+                    </div>
+                  )}
+                </div>
               </div>
               {/* Right half - Phone Number and Car Runs */}
               <div className="space-y-3 md:w-1/2 flex flex-col items-center justify-center">
