@@ -1853,7 +1853,7 @@ or simply type the service you want.
                       <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-[#294a46] rounded-full"></div>
                       <span>🤖 AI is analyzing your vehicle issue...</span>
                     </div>
-                    <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                    <div className="flex flex-row space-x-4">
                       {[1, 2, 3].map((index) => (
                         <div key={`loading-${index}`} className="flex-1 p-3 sm:p-2 rounded-md border border-gray-200 bg-gray-50">
                           <div className="flex flex-col h-full">
@@ -1874,7 +1874,7 @@ or simply type the service you want.
                     </div>
                   </div>
                 ) : aiSuggestions && aiSuggestions.length > 0 ? (
-                  <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                  <div className="flex flex-row space-x-4">
                     {aiSuggestions.map((suggestion, index) => (
                       <div
                         key={`ai-${index}`}
