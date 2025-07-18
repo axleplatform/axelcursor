@@ -9,6 +9,24 @@ let autocompleteInstances = new Map<HTMLElement, any>();
 let placesAPINewAvailable: boolean | null = null;
 let placesAPITestPromise: Promise<boolean> | null = null;
 
+// Simple cache for API responses to reduce costs
+const searchCache = new Map<string, any>();
+const MAX_CACHE_SIZE = 100;
+
+// Cache management functions
+function addToCache(query: string, result: any) {
+  // Remove oldest entry if cache is full
+  if (searchCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = searchCache.keys().next().value;
+    searchCache.delete(firstKey);
+  }
+  searchCache.set(query.toLowerCase().trim(), result);
+}
+
+function getFromCache(query: string): any | null {
+  return searchCache.get(query.toLowerCase().trim()) || null;
+}
+
 export async function getGoogleMapsApiKey(): Promise<string> {
   if (cachedApiKey) return cachedApiKey;
   
@@ -111,6 +129,13 @@ function generateSecureSessionToken(): string {
 // New Places API autocomplete using HTTP POST
 export async function searchPlacesNew(input: string, sessionToken: string, signal?: AbortSignal): Promise<any> {
   try {
+    // Check cache first to reduce API calls
+    const cachedResult = getFromCache(input);
+    if (cachedResult) {
+      console.log('💾 Using cached result for:', input);
+      return cachedResult;
+    }
+    
     const apiKey = await getGoogleMapsApiKey();
     
     const requestBody = {
@@ -146,6 +171,10 @@ export async function searchPlacesNew(input: string, sessionToken: string, signa
     
     const data = JSON.parse(responseText);
     console.log('📍 New Places API parsed response:', data);
+    
+    // Cache the successful result
+    addToCache(input, data);
+    
     return data;
   } catch (error: any) {
     // Ignore abort errors - they're expected when debouncing
@@ -434,8 +463,8 @@ export async function createNewPlacesAutocomplete(
         currentAbortController = null;
       }
       
-      // Don't make API calls for inputs less than 3 characters
-      if (query.length < 3) {
+      // Don't make API calls for inputs less than 5 characters (increased from 3)
+      if (query.length < 5) {
         if (suggestionsContainer) {
           suggestionsContainer.style.display = 'none';
         }
@@ -465,7 +494,7 @@ export async function createNewPlacesAutocomplete(
         } finally {
           currentAbortController = null;
         }
-      }, 500); // 500ms debounce (increased from 300ms)
+      }, 1000); // 1000ms debounce (increased from 500ms to reduce API calls by 50%)
     };
     
     // Disable browser's native autocomplete
@@ -522,7 +551,7 @@ export async function createNewPlacesAutocomplete(
             } else {
               // No suggestions - geocode the current text
               const currentText = inputElement.value.trim();
-              if (currentText.length >= 3) {
+              if (currentText.length >= 5) {
                 // Trigger geocoding for the current text
                 handleEnterOnEmptySuggestions(currentText);
               }
@@ -752,6 +781,9 @@ export function globalCleanup(): void {
   try {
     // Clean up all autocomplete instances
     cleanupAllAutocompleteInstances();
+    
+    // Clear search cache to free memory
+    searchCache.clear();
     
     // Use the window cleanup function if available (from dom-fixes.js)
     if (typeof window !== 'undefined' && window.cleanupGoogleMapsDOM) {

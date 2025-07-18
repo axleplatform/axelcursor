@@ -174,7 +174,7 @@ export default function LocationInput({
           title="Get my current location"
         >
           <div className="w-6 h-6 text-[#294a46] hover:text-[#1e3632] transition-colors">
-            📍
+            📌
           </div>
         </button>
       </div>
