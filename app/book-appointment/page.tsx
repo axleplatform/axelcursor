@@ -806,6 +806,9 @@ function BookAppointmentContent() {
       formDataToSend.append('model', formData.model || '')
       formDataToSend.append('mileage', formData.mileage || '')
       
+      // Add car running status
+      formDataToSend.append('carRuns', formData.carRuns?.toString() || '')
+      
       // Add text description
       formDataToSend.append('description', formData.issueDescription)
       
@@ -910,7 +913,7 @@ function BookAppointmentContent() {
     
     return uploadedFiles
   }
-  // Update AI suggestions based on issue description and media
+  // Update AI suggestions based on issue description, media, and car running status
   useEffect(() => {
     // Skip this effect if we're still loading initial data
     if (!hasInteractedWithTextArea && !formData.issueDescription) {
@@ -941,7 +944,7 @@ function BookAppointmentContent() {
     return () => {
       if (timer) clearTimeout(timer)
     }
-  }, [formData.issueDescription, uploadedFiles, hasInteractedWithTextArea])
+  }, [formData.issueDescription, uploadedFiles, formData.carRuns, hasInteractedWithTextArea])
   // Save form data to sessionStorage whenever it changes
   useEffect(() => {
     if (formData.issueDescription || formData.selectedServices.length > 0 || formData.selectedCarIssues.length > 0) {

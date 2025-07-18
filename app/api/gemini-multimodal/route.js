@@ -78,6 +78,10 @@ export async function POST(request) {
       mileage: parseInt(formData.get('mileage'))
     };
     
+    // Extract car running status
+    const carRuns = formData.get('carRuns');
+    const isCarRunning = carRuns === 'true';
+    
     // Extract text description
     const textDescription = formData.get('description') || '';
     
@@ -112,7 +116,8 @@ export async function POST(request) {
     const recommendations = await generateServiceRecommendations(
       vehicleData,
       textDescription,
-      mediaFiles
+      mediaFiles,
+      isCarRunning
     );
     
     return NextResponse.json({
@@ -132,7 +137,7 @@ export async function POST(request) {
   }
 }
 
-async function generateServiceRecommendations(vehicleData, textDescription, mediaFiles) {
+async function generateServiceRecommendations(vehicleData, textDescription, mediaFiles, isCarRunning) {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
     
@@ -148,18 +153,27 @@ async function generateServiceRecommendations(vehicleData, textDescription, medi
     - Make: ${vehicleData.make}
     - Model: ${vehicleData.model}
     - Mileage: ${vehicleData.mileage} miles
+    - Vehicle Status: ${isCarRunning ? 'Vehicle is currently running' : 'Vehicle is NOT running'}
     
     CUSTOMER DESCRIPTION:
     ${textDescription}
     
     MEDIA FILES: ${mediaFiles.length} file(s) provided for analysis
     
+    VEHICLE OPERABILITY ANALYSIS:
+    Based on the vehicle's current running condition, provide targeted recommendations:
+    ${isCarRunning ? 
+      'If RUNNING: Focus on maintenance, performance optimization, and preventive services. Consider routine maintenance, performance issues, and preventive care.' :
+      'If NOT RUNNING: Prioritize diagnostic, electrical, starter, and battery services. Consider urgent repairs, towing needs, and critical system failures.'
+    }
+    
     INSTRUCTIONS:
     1. Analyze any images for visual issues (damage, wear, leaks, etc.)
     2. Listen to audio files for sound-based problems (noises, rattles, etc.)
     3. Review video files for motion/behavior issues (vibration, handling, etc.)
     4. Consider vehicle age, mileage, and common problems for this make/model
-    5. Provide exactly 3 service recommendations
+    5. Prioritize services based on vehicle running status
+    6. Provide exactly 3 service recommendations
     
     RESPONSE FORMAT (JSON only):
     {
@@ -173,7 +187,7 @@ async function generateServiceRecommendations(vehicleData, textDescription, medi
       ]
     }
     
-    Focus on practical, actionable services that address the specific issues identified.
+    Focus on practical, actionable services that address the specific issues identified and consider the vehicle's current operational status.
     `;
     
     contentParts.push({ text: textPrompt });
@@ -217,7 +231,7 @@ async function generateServiceRecommendations(vehicleData, textDescription, medi
     if (recommendations.services.length > 3) {
       recommendations.services = recommendations.services.slice(0, 3);
     } else if (recommendations.services.length < 3) {
-      const defaultServices = getDefaultServices(vehicleData);
+      const defaultServices = getDefaultServices(vehicleData, isCarRunning);
       while (recommendations.services.length < 3) {
         recommendations.services.push(defaultServices.services[recommendations.services.length]);
       }
@@ -227,31 +241,58 @@ async function generateServiceRecommendations(vehicleData, textDescription, medi
     
   } catch (error) {
     console.error('Gemini API Error:', error);
-    return getDefaultServices(vehicleData);
+    return getDefaultServices(vehicleData, isCarRunning);
   }
 }
 
-function getDefaultServices(vehicleData) {
-  return {
-    services: [
-      {
-        service: "General Vehicle Inspection",
-        description: "Comprehensive check of all systems",
-        confidence: "90%",
-        evidence: "Standard maintenance recommendation"
-      },
-      {
-        service: "Oil Change Service",
-        description: "Regular maintenance for engine health",
-        confidence: "85%",
-        evidence: "Based on vehicle age and mileage"
-      },
-      {
-        service: "Tire Pressure Check",
-        description: "Ensure proper inflation and safety",
-        confidence: "80%",
-        evidence: "Basic safety maintenance item"
-      }
-    ]
-  };
+function getDefaultServices(vehicleData, isCarRunning) {
+  if (isCarRunning) {
+    // Default services for running vehicles - maintenance focused
+    return {
+      services: [
+        {
+          service: "General Vehicle Inspection",
+          description: "Comprehensive check of all systems",
+          confidence: "90%",
+          evidence: "Standard maintenance recommendation"
+        },
+        {
+          service: "Oil Change Service",
+          description: "Regular maintenance for engine health",
+          confidence: "85%",
+          evidence: "Based on vehicle age and mileage"
+        },
+        {
+          service: "Brake System Inspection",
+          description: "Ensure braking system safety and performance",
+          confidence: "80%",
+          evidence: "Critical safety maintenance item"
+        }
+      ]
+    };
+  } else {
+    // Default services for non-running vehicles - diagnostic focused
+    return {
+      services: [
+        {
+          service: "Battery Test & Replacement",
+          description: "Check battery condition and charge",
+          confidence: "95%",
+          evidence: "Most common cause of non-starting vehicles"
+        },
+        {
+          service: "Starter Motor Inspection",
+          description: "Diagnose starter system issues",
+          confidence: "85%",
+          evidence: "Critical for engine starting"
+        },
+        {
+          service: "Electrical System Diagnostic",
+          description: "Comprehensive electrical troubleshooting",
+          confidence: "80%",
+          evidence: "Essential for non-running vehicle diagnosis"
+        }
+      ]
+    };
+  }
 }
