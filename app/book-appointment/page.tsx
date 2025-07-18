@@ -29,6 +29,23 @@ interface BookingFormData {
   mileage: string
   licensePlate: string
 }
+
+// Define types for media files
+interface MediaFile {
+  type: string
+  data: string // base64 data
+  name: string
+  size: number
+  mimeType?: string
+}
+
+interface UploadedMediaFile {
+  type: string
+  url: string
+  name: string
+  size: number
+  mimeType: string
+}
 // Define database schema types
 interface AppointmentData {
   id: string
@@ -516,10 +533,10 @@ function BookAppointmentContent() {
   const [hadPreviousQuotes, setHadPreviousQuotes] = useState(false)
   
   // Media upload states
-  const [uploadedFiles, setUploadedFiles] = useState([])
+  const [uploadedFiles, setUploadedFiles] = useState<MediaFile[]>([])
   const [processingMedia, setProcessingMedia] = useState(false)
-  const [mediaError, setMediaError] = useState(null)
-  const [geminiDebounceTimer, setGeminiDebounceTimer] = useState(null)
+  const [mediaError, setMediaError] = useState<string | null>(null)
+  const [geminiDebounceTimer, setGeminiDebounceTimer] = useState<NodeJS.Timeout | null>(null)
   
 
   
@@ -746,7 +763,7 @@ function BookAppointmentContent() {
   }
 
   // Handle media upload changes
-  const handleMediaUpload = (files) => {
+  const handleMediaUpload = (files: MediaFile[]) => {
     setUploadedFiles(files)
     setMediaError(null)
     
@@ -764,7 +781,7 @@ function BookAppointmentContent() {
   }
 
   // Analyze input with Gemini multimodal API
-  const analyzeWithGemini = async (files) => {
+  const analyzeWithGemini = async (files: MediaFile[]) => {
     // Only analyze if we have text description OR media files
     if (!formData.issueDescription.trim() && (!files || files.length === 0)) {
       return
@@ -831,7 +848,7 @@ function BookAppointmentContent() {
   }
 
   // Upload media files to Supabase storage
-  const uploadMediaToStorage = async (files) => {
+  const uploadMediaToStorage = async (files: MediaFile[]): Promise<UploadedMediaFile[]> => {
     if (!files || files.length === 0) return []
     
     const uploadedFiles = []

@@ -5,11 +5,25 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const MediaUpload = ({ onChange, className, maxFiles = 5 }) => {
-  const [files, setFiles] = useState([]);
+interface MediaFile {
+  type: string;
+  data: string; // base64 data
+  name: string;
+  size: number;
+  mimeType?: string;
+}
+
+interface MediaUploadProps {
+  onChange?: (files: MediaFile[]) => void;
+  className?: string;
+  maxFiles?: number;
+}
+
+const MediaUpload: React.FC<MediaUploadProps> = ({ onChange, className, maxFiles = 5 }) => {
+  const [files, setFiles] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [errors, setErrors] = useState([]);
-  const fileInputRef = useRef(null);
+  const [errors, setErrors] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fileTypes = {
     image: {
@@ -32,13 +46,13 @@ const MediaUpload = ({ onChange, className, maxFiles = 5 }) => {
     }
   };
 
-  const validateFile = (file) => {
-    const errors = [];
+  const validateFile = (file: File): string[] => {
+    const errors: string[] = [];
     
     // Check file type
     const fileType = Object.keys(fileTypes).find(type => 
-      fileTypes[type].accept.includes(file.type) || 
-      fileTypes[type].accept.includes('.' + file.name.split('.').pop())
+      fileTypes[type as keyof typeof fileTypes].accept.includes(file.type) || 
+      fileTypes[type as keyof typeof fileTypes].accept.includes('.' + file.name.split('.').pop())
     );
     
     if (!fileType) {
@@ -47,18 +61,18 @@ const MediaUpload = ({ onChange, className, maxFiles = 5 }) => {
     }
 
     // Check file size
-    if (file.size > fileTypes[fileType].maxSize) {
-      const maxSizeMB = fileTypes[fileType].maxSize / (1024 * 1024);
+    if (file.size > fileTypes[fileType as keyof typeof fileTypes].maxSize) {
+      const maxSizeMB = fileTypes[fileType as keyof typeof fileTypes].maxSize / (1024 * 1024);
       errors.push(`${file.name} exceeds maximum size of ${maxSizeMB}MB`);
     }
 
     return errors;
   };
 
-  const processFiles = useCallback((newFiles) => {
+  const processFiles = useCallback((newFiles: FileList | File[]) => {
     const fileArray = Array.from(newFiles);
-    const newErrors = [];
-    const validFiles = [];
+    const newErrors: string[] = [];
+    const validFiles: File[] = [];
 
     fileArray.forEach(file => {
       const fileErrors = validateFile(file);
@@ -82,14 +96,15 @@ const MediaUpload = ({ onChange, className, maxFiles = 5 }) => {
           updatedFiles.map(async (file) => {
             const base64 = await fileToBase64(file);
             const fileType = Object.keys(fileTypes).find(type => 
-              fileTypes[type].accept.includes(file.type) || 
-              fileTypes[type].accept.includes('.' + file.name.split('.').pop())
+              fileTypes[type as keyof typeof fileTypes].accept.includes(file.type) || 
+              fileTypes[type as keyof typeof fileTypes].accept.includes('.' + file.name.split('.').pop())
             );
             return {
-              type: fileType,
+              type: fileType || 'unknown',
               data: base64,
               name: file.name,
-              size: file.size
+              size: file.size,
+              mimeType: file.type
             };
           })
         );
@@ -101,41 +116,43 @@ const MediaUpload = ({ onChange, className, maxFiles = 5 }) => {
     setErrors(newErrors);
   }, [files, maxFiles, onChange]);
 
-  const fileToBase64 = (file) => {
+  const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
-        const base64 = reader.result.split(',')[1]; // Remove data URL prefix
+        const base64 = (reader.result as string).split(',')[1]; // Remove data URL prefix
         resolve(base64);
       };
       reader.onerror = error => reject(error);
     });
   };
 
-  const handleDrop = useCallback((e) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
     const droppedFiles = e.dataTransfer.files;
     processFiles(droppedFiles);
   }, [processFiles]);
 
-  const handleDragOver = useCallback((e) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
   }, []);
 
-  const handleDragLeave = useCallback((e) => {
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
   }, []);
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
-    processFiles(selectedFiles);
+    if (selectedFiles) {
+      processFiles(selectedFiles);
+    }
   };
 
-  const removeFile = (index) => {
+  const removeFile = (index: number) => {
     const updatedFiles = files.filter((_, i) => i !== index);
     setFiles(updatedFiles);
     
@@ -145,14 +162,15 @@ const MediaUpload = ({ onChange, className, maxFiles = 5 }) => {
         updatedFiles.map(async (file) => {
           const base64 = await fileToBase64(file);
           const fileType = Object.keys(fileTypes).find(type => 
-            fileTypes[type].accept.includes(file.type) || 
-            fileTypes[type].accept.includes('.' + file.name.split('.').pop())
+            fileTypes[type as keyof typeof fileTypes].accept.includes(file.type) || 
+            fileTypes[type as keyof typeof fileTypes].accept.includes('.' + file.name.split('.').pop())
           );
           return {
-            type: fileType,
+            type: fileType || 'unknown',
             data: base64,
             name: file.name,
-            size: file.size
+            size: file.size,
+            mimeType: file.type
           };
         })
       );
@@ -161,10 +179,10 @@ const MediaUpload = ({ onChange, className, maxFiles = 5 }) => {
     processFilesAsync();
   };
 
-  const renderFilePreview = (file, index) => {
+  const renderFilePreview = (file: File, index: number) => {
     const fileType = Object.keys(fileTypes).find(type => 
-      fileTypes[type].accept.includes(file.type) || 
-      fileTypes[type].accept.includes('.' + file.name.split('.').pop())
+      fileTypes[type as keyof typeof fileTypes].accept.includes(file.type) || 
+      fileTypes[type as keyof typeof fileTypes].accept.includes('.' + file.name.split('.').pop())
     );
 
     return (
@@ -182,7 +200,7 @@ const MediaUpload = ({ onChange, className, maxFiles = 5 }) => {
                 </div>
               ) : (
                 <div className="w-16 h-16 rounded-md bg-gray-100 flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">{fileTypes[fileType]?.icon || '📄'}</span>
+                  <span className="text-2xl">{fileTypes[fileType as keyof typeof fileTypes]?.icon || '📄'}</span>
                 </div>
               )}
               
