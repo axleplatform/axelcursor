@@ -228,4 +228,4 @@ const MultimodalInputDisplay: React.FC<MultimodalInputDisplayProps> = ({
   );
 };
 
-export default MultimodalInputDisplay; 
+export default MultimodalInputDisplay;
