@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Input } from "@/components/ui/input"
 import { MapPin, Loader2 } from 'lucide-react'
 import { cleanupAllAutocompleteInstances } from '@/lib/google-maps'
-import { getGoogleMapsApiKey } from '@/lib/google-maps'
 
 interface HomepageLocationInputProps {
   value: string
@@ -127,25 +126,11 @@ export default function HomepageLocationInput({
 
       const { latitude, longitude } = position.coords;
       
-      // Use reverse geocoding to get address
-      try {
-        const apiKey = await getGoogleMapsApiKey();
-        const response = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
-        );
-        const data = await response.json();
-        
-        if (data.results && data.results.length > 0) {
-          const address = data.results[0].formatted_address;
-          onChange(address);
-          console.log('📍 GPS location set:', address);
-        } else {
-          setError('Could not find address for your location');
-        }
-      } catch (geocodeError) {
-        console.error('Reverse geocoding error:', geocodeError);
-        setError('Could not get address for your location');
-      }
+      // Store coordinates directly instead of converting to address
+      const coordinates = `${latitude}, ${longitude}`;
+      onChange(coordinates);
+      console.log('📍 GPS coordinates set:', coordinates);
+      
     } catch (locationError) {
       console.error('Geolocation error:', locationError);
       setError('Could not get your current location. Please check your browser permissions.');
@@ -175,7 +160,7 @@ export default function HomepageLocationInput({
           type="text"
           value={value}
           onChange={handleInputChange}
-          placeholder="Type your address here..."
+          placeholder="Type your address or click 📌 for GPS coordinates..."
           className="location-input w-full h-[50px] pl-10 pr-12 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-0 focus:ring-offset-0 focus:border-gray-300 focus:shadow-none transition-none"
           style={{
             paddingLeft: '2.5rem',
