@@ -107,8 +107,76 @@ export default function LocationInput({
         <GooglePlacesAutocomplete
           onPlaceSelect={handlePlaceSelect}
           placeholder={placeholder}
-          className="pl-10"
+          className="pl-10 pr-12"
         />
+        {/* GPS Location Button */}
+        <button
+          type="button"
+          onClick={async () => {
+            setIsLoading(true)
+            try {
+              if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                  async (position) => {
+                    const { latitude, longitude } = position.coords
+                    
+                    // Use reverse geocoding to get address
+                    try {
+                      const response = await fetch(
+                        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+                      )
+                      const data = await response.json()
+                      
+                      if (data.results && data.results[0]) {
+                        const address = data.results[0].formatted_address
+                        setCoordinates({ lat: latitude, lng: longitude })
+                        onChange(address)
+                        
+                        if (onLocationSelect) {
+                          onLocationSelect({ lat: latitude, lng: longitude, address })
+                        }
+                      }
+                    } catch (error) {
+                      console.error('Error getting address:', error)
+                      // Fallback to coordinates if geocoding fails
+                      const address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+                      setCoordinates({ lat: latitude, lng: longitude })
+                      onChange(address)
+                      
+                      if (onLocationSelect) {
+                        onLocationSelect({ lat: latitude, lng: longitude, address })
+                      }
+                    }
+                    setIsLoading(false)
+                  },
+                  (error) => {
+                    console.error('Error getting location:', error)
+                    setIsLoading(false)
+                    alert('Unable to get your location. Please check your browser permissions.')
+                  },
+                  {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 300000
+                  }
+                )
+              } else {
+                setIsLoading(false)
+                alert('Geolocation is not supported by this browser.')
+              }
+            } catch (error) {
+              console.error('Error accessing geolocation:', error)
+              setIsLoading(false)
+              alert('Error accessing location. Please check your browser permissions.')
+            }
+          }}
+          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+          title="Get my current location"
+        >
+          <div className="w-6 h-6 text-[#294a46] hover:text-[#1e3632] transition-colors">
+            📍
+          </div>
+        </button>
       </div>
 
       {/* Error Message */}
