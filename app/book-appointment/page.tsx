@@ -44,7 +44,7 @@ interface UploadedMediaFile {
   url: string
   name: string
   size: number
-  mimeType: string
+  mimeType?: string
 }
 
 interface GeminiService {
