@@ -1610,22 +1610,20 @@ function BookAppointmentContent() {
                   onChange={handleDescriptionChange}
                   onFocus={handleTextAreaFocus}
                   placeholder="Describe your car's issue in detail...
+or simply type the service you want.
 
-Example: Engine won't start, makes clicking noise
-or simply type: Oil Change, Brake Check, etc.
-
-💡 Tip: You can also upload photos/videos using the + button or record voice with 🎤"
-                  className="w-full px-4 py-3 pr-24 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
+💡 Tip: You can also upload media to help diagnose the issue"
+                  className="w-full px-4 py-3 pr-24 pl-12 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
                   style={{ lineHeight: 1.5 }}
                 />
-                {/* Voice recording button */}
+                {/* Voice recording button - Bottom left corner */}
                 <button
                   type="button"
                   onClick={isRecording ? stopRecording : startRecording}
-                  className={`absolute bottom-3 right-12 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-sm ${
+                  className={`absolute bottom-3 left-3 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm ${
                     isRecording 
-                      ? "bg-red-500 text-white animate-pulse" 
-                      : "bg-[#294a46] text-white hover:bg-[#1e3632]"
+                      ? "bg-transparent border-2 border-red-500 text-red-500 animate-pulse" 
+                      : "bg-transparent border-2 border-green-500 text-green-500 hover:bg-green-50"
                   }`}
                   title={isRecording ? "Stop recording" : "Record voice message"}
                 >
