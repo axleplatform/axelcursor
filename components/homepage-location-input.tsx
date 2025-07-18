@@ -159,7 +159,7 @@ export default function HomepageLocationInput({
                   getCurrentLocation();
                 }}
                 disabled={isGpsLoading}
-                className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer p-1 rounded hover:bg-gray-100 animate-bounce"
+                className="text-gray-400 hover:text-gray-600 transition-all duration-200 cursor-pointer p-1 rounded hover:bg-gray-100 hover:scale-110"
                 title="Click for exact coordinates"
               >
                 <span className="text-lg">📍</span>
@@ -174,10 +174,10 @@ export default function HomepageLocationInput({
           value={value}
           onChange={handleInputChange}
           placeholder="Click Pin or Enter Address"
-          className="location-input w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-0 focus:ring-offset-0 focus:border-gray-300 focus:shadow-none transition-none"
+          className="location-input w-full h-[50px] pl-12 pr-4 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-0 focus:ring-offset-0 focus:border-gray-300 focus:shadow-none transition-none"
           style={{
-            paddingLeft: '2.5rem',
-            background: 'linear-gradient(to right, transparent 2.5rem, white 2.5rem)'
+            paddingLeft: '3rem',
+            background: 'linear-gradient(to right, transparent 3rem, white 3rem)'
           }}
           required={required}
         />
