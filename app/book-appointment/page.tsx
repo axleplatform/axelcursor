@@ -1853,11 +1853,11 @@ or simply type the service you want.
                       <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-[#294a46] rounded-full"></div>
                       <span>🤖 AI is analyzing your vehicle issue...</span>
                     </div>
-                    <div className="flex flex-row space-x-4">
+                    <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                       {[1, 2, 3].map((index) => (
-                        <div key={`loading-${index}`} className="flex-1 p-2 rounded-md border border-gray-200 bg-gray-50">
+                        <div key={`loading-${index}`} className="flex-1 p-3 sm:p-2 rounded-md border border-gray-200 bg-gray-50">
                           <div className="flex flex-col h-full">
-                            <div className="flex items-start justify-between mb-1">
+                            <div className="flex items-start justify-between mb-2 sm:mb-1">
                               <div className="flex items-center space-x-1">
                                 <div className="h-3 w-3 bg-gray-300 rounded animate-pulse"></div>
                                 <div className="h-3 w-16 bg-gray-300 rounded animate-pulse"></div>
@@ -1874,19 +1874,19 @@ or simply type the service you want.
                     </div>
                   </div>
                 ) : aiSuggestions && aiSuggestions.length > 0 ? (
-                  <div className="flex flex-row space-x-4">
+                  <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                     {aiSuggestions.map((suggestion, index) => (
                       <div
                         key={`ai-${index}`}
                         onClick={() => toggleService(suggestion.service)}
-                        className={`flex-1 p-2 rounded-md border cursor-pointer transition-colors ${
+                        className={`flex-1 p-3 sm:p-2 rounded-md border cursor-pointer transition-colors ${
                           formData.selectedServices.includes(suggestion.service)
                             ? "bg-[#e6eeec] border-[#294a46]/20"
                             : "bg-gray-50 border-gray-100 hover:bg-gray-100"
                         }`}
                       >
                         <div className="flex flex-col h-full">
-                          <div className="flex items-start justify-between mb-1">
+                          <div className="flex items-start justify-between mb-2 sm:mb-1">
                             <h4 className="font-medium text-[#294a46] text-sm">{suggestion.service}</h4>
                             <div
                               className={`w-4 h-4 ml-1 rounded-full flex items-center justify-center ${
@@ -1898,7 +1898,7 @@ or simply type the service you want.
                               {formData.selectedServices.includes(suggestion.service) && <Check className="h-2 w-2" />}
                             </div>
                           </div>
-                          <p className="text-xs text-gray-600 line-clamp-2">{suggestion.description}</p>
+                          <p className="text-xs text-gray-600 leading-relaxed">{suggestion.description}</p>
                         </div>
                       </div>
                     ))}
