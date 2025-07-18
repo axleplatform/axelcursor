@@ -5,22 +5,48 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const MultimodalInputDisplay = ({ 
+interface MediaFile {
+  type: string;
+  url: string;
+  name: string;
+  size: number;
+  mimeType?: string;
+}
+
+interface AIService {
+  service: string;
+  description: string;
+  confidence: string;
+}
+
+interface AIAnalysisResults {
+  services: AIService[];
+  analyzed_at?: string;
+}
+
+interface MultimodalInputDisplayProps {
+  issueDescription?: string;
+  mediaFiles?: MediaFile[];
+  aiAnalysisResults?: AIAnalysisResults | null;
+  className?: string;
+}
+
+const MultimodalInputDisplay: React.FC<MultimodalInputDisplayProps> = ({ 
   issueDescription, 
   mediaFiles = [], 
   aiAnalysisResults = null,
   className 
 }) => {
-  const [expandedMedia, setExpandedMedia] = useState({});
+  const [expandedMedia, setExpandedMedia] = useState<Record<number, boolean>>({});
 
-  const toggleMediaExpansion = (index) => {
+  const toggleMediaExpansion = (index: number) => {
     setExpandedMedia(prev => ({
       ...prev,
       [index]: !prev[index]
     }));
   };
 
-  const getMediaIcon = (type) => {
+  const getMediaIcon = (type: string) => {
     switch (type) {
       case 'image': return '📷';
       case 'audio': return '🎵';
@@ -29,7 +55,7 @@ const MultimodalInputDisplay = ({
     }
   };
 
-  const formatFileSize = (bytes) => {
+  const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -95,8 +121,12 @@ const MultimodalInputDisplay = ({
                             alt={file.name}
                             className="max-w-full max-h-64 rounded-lg shadow-sm"
                             onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'block';
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const nextSibling = target.nextSibling as HTMLElement;
+                              if (nextSibling) {
+                                nextSibling.style.display = 'block';
+                              }
                             }}
                           />
                           <div className="hidden text-center text-gray-500">
@@ -198,4 +228,4 @@ const MultimodalInputDisplay = ({
   );
 };
 
-export default MultimodalInputDisplay;
+export default MultimodalInputDisplay; 
