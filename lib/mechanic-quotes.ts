@@ -93,6 +93,22 @@ interface AppointmentWithRelations {
     price: number
     created_at: string
   }
+  // Multimodal support fields
+  media_files?: Array<{
+    type: string
+    url: string
+    name: string
+    size: number
+    mimeType?: string
+  }> | null
+  ai_analysis_results?: {
+    services: Array<{
+      service: string
+      description: string
+      confidence: string
+    }>
+    analyzed_at?: string
+  } | null
 }
 
 interface GetAppointmentsResponse {
@@ -129,6 +145,22 @@ interface RawAppointment {
     created_at: string
     status?: "pending" | "accepted" | "rejected"
   }>
+  // Multimodal support fields
+  media_files?: Array<{
+    type: string
+    url: string
+    name: string
+    size: number
+    mimeType?: string
+  }> | null
+  ai_analysis_results?: {
+    services: Array<{
+      service: string
+      description: string
+      confidence: string
+    }>
+    analyzed_at?: string
+  } | null
 }
 
 /**

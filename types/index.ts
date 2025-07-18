@@ -160,4 +160,20 @@ export interface AppointmentWithRelations {
   // Edit tracking fields
   edited_after_quotes?: boolean
   mechanic_notified_of_edit?: boolean
+  // Multimodal support fields
+  media_files?: Array<{
+    type: string
+    url: string
+    name: string
+    size: number
+    mimeType?: string
+  }> | null
+  ai_analysis_results?: {
+    services: Array<{
+      service: string
+      description: string
+      confidence: string
+    }>
+    analyzed_at?: string
+  } | null
 }
