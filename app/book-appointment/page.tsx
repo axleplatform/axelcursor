@@ -1574,8 +1574,8 @@ You can also upload media"
 
             {/* Phone Number and Car Runs - Two Column Layout on Desktop */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Phone Number Input - First on mobile, Left Column on desktop */}
-              <div className="flex flex-col items-center md:items-start space-y-2 order-1 md:order-2">
+              {/* Phone Number Input - Second on mobile, Left Column on desktop */}
+              <div className="flex flex-col items-center md:items-start space-y-2 order-2 md:order-2">
                 <div className="flex items-center mb-1">
                   <div className="h-4 w-4 text-gray-500 mr-2 -translate-y-0.5">📞</div>
                   <p className="text-gray-600 text-sm">
@@ -1594,8 +1594,8 @@ You can also upload media"
                 </div>
               </div>
               
-              {/* Does your car run? - Second on mobile, Right Column on desktop */}
-              <div className="flex flex-col items-center md:items-start space-y-2 order-2 md:order-1">
+              {/* Does your car run? - First on mobile, Right Column on desktop */}
+              <div className="flex flex-col items-center md:items-start space-y-2 order-1 md:order-1">
                 <p className="text-gray-600 text-sm">Does your car run?</p>
                 <div className="flex space-x-4">
                   <button
