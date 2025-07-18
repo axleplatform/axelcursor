@@ -99,7 +99,7 @@ export function useGoogleMapsAutocomplete({
     }, 200);
 
     return () => clearTimeout(timer);
-  }, [initializeAutocomplete]);
+  }, []); // CHANGE TO EMPTY ARRAY - NO DEPENDENCIES
 
   // Improved cleanup on unmount
   useEffect(() => {
@@ -136,7 +136,7 @@ export function useGoogleMapsAutocomplete({
         }
       };
     }
-  }, [handleInputChange, onInputChange]);
+  }, []); // CHANGE TO EMPTY ARRAY - NO DEPENDENCIES
 
   return {
     inputRef,

@@ -13,6 +13,16 @@ let placesAPITestPromise: Promise<boolean> | null = null;
 const searchCache = new Map<string, any>();
 const MAX_CACHE_SIZE = 100;
 
+// Request tracking to prevent duplicates
+const requestTracker = new Map();
+
+// Request monitoring stats
+let requestStats = {
+  total: 0,
+  unique: new Set(),
+  duplicates: 0
+};
+
 // Cache management functions
 function addToCache(query: string, result: any) {
   // Remove oldest entry if cache is full
@@ -129,10 +139,29 @@ function generateSecureSessionToken(): string {
 // New Places API autocomplete using HTTP POST
 export async function searchPlacesNew(input: string, sessionToken: string, signal?: AbortSignal): Promise<any> {
   try {
+    // Track request stats
+    requestStats.total++;
+    
+    // Check for duplicate requests
+    const requestKey = `${input}-${sessionToken}`;
+    const now = Date.now();
+    const lastRequest = requestTracker.get(requestKey);
+    
+    if (lastRequest && (now - lastRequest < 2000)) {
+      console.log('🚫 Duplicate request blocked:', requestKey);
+      requestStats.duplicates++;
+      console.log(`📊 API Stats - Total: ${requestStats.total}, Unique: ${requestStats.unique.size}, Duplicates: ${requestStats.duplicates}`);
+      return { suggestions: [] }; // Return empty result
+    }
+    
+    requestTracker.set(requestKey, now);
+    requestStats.unique.add(requestKey);
+    
     // Check cache first to reduce API calls
     const cachedResult = getFromCache(input);
     if (cachedResult) {
       console.log('💾 Using cached result for:', input);
+      console.log(`📊 API Stats - Total: ${requestStats.total}, Unique: ${requestStats.unique.size}, Duplicates: ${requestStats.duplicates}`);
       return cachedResult;
     }
     
@@ -171,6 +200,7 @@ export async function searchPlacesNew(input: string, sessionToken: string, signa
     
     const data = JSON.parse(responseText);
     console.log('📍 New Places API parsed response:', data);
+    console.log(`📊 API Stats - Total: ${requestStats.total}, Unique: ${requestStats.unique.size}, Duplicates: ${requestStats.duplicates}`);
     
     // Cache the successful result
     addToCache(input, data);
@@ -255,6 +285,13 @@ export async function createNewPlacesAutocomplete(
 ): Promise<any> {
   try {
     console.log('🔍 createNewPlacesAutocomplete: Starting...');
+    
+    // ADD INSTANCE CHECK FIRST
+    const existingInstance = autocompleteInstances.get(inputElement);
+    if (existingInstance) {
+      console.log('🔍 Reusing existing autocomplete instance');
+      return { success: true, autocomplete: existingInstance };
+    }
     
     // Check if inputElement exists
     if (!inputElement) {
@@ -784,6 +821,16 @@ export function globalCleanup(): void {
     
     // Clear search cache to free memory
     searchCache.clear();
+    
+    // Clear request tracker
+    requestTracker.clear();
+    
+    // Reset request stats
+    requestStats = {
+      total: 0,
+      unique: new Set(),
+      duplicates: 0
+    };
     
     // Use the window cleanup function if available (from dom-fixes.js)
     if (typeof window !== 'undefined' && window.cleanupGoogleMapsDOM) {
