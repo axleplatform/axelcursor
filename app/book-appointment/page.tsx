@@ -1619,7 +1619,6 @@ or simply type: Oil Change, Brake Check, etc.
                   {carRunsValidationError && (
                     <p className="text-red-500 text-xs mt-1">{carRunsValidationError}</p>
                   )}
-                  <p className="text-gray-500 text-xs mt-1">Please answer to get accurate recommendations</p>
                 </div>
                 <div className={`flex space-x-4 justify-center ${carRunsValidationError ? 'ring-2 ring-red-500 rounded-lg p-1' : ''}`}>
                   <button

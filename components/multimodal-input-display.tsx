@@ -67,17 +67,12 @@ const MultimodalInputDisplay: React.FC<MultimodalInputDisplayProps> = ({
     <div className={cn("space-y-4", className)}>
       {/* Customer Description */}
       {issueDescription && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <span>📝</span>
-              Customer Description
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-700 whitespace-pre-wrap">{issueDescription}</p>
-          </CardContent>
-        </Card>
+        <div className="mb-4">
+          <h4 className="font-semibold text-gray-700 mb-2">Issue Description:</h4>
+          <p className="text-gray-600 italic">
+            "{issueDescription}"
+          </p>
+        </div>
       )}
 
       {/* Media Files */}
