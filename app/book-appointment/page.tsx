@@ -1490,9 +1490,12 @@ function BookAppointmentContent() {
                   value={formData.issueDescription}
                   onChange={handleDescriptionChange}
                   onFocus={handleTextAreaFocus}
-                  placeholder="Example: My car won't start. When I turn the key, I hear a clicking sound.
-or type Oil Change.
-You can also upload media"
+                  placeholder="Describe your car's issue in detail...
+
+Example: Engine won't start, makes clicking noise
+or simply type: Oil Change, Brake Check, etc.
+
+💡 Tip: You can also upload photos/videos using the + button"
                   className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
                   style={{ lineHeight: 1.5 }}
                 />
@@ -1556,13 +1559,7 @@ You can also upload media"
                 </div>
               )}
               
-              {/* Processing state */}
-              {processingMedia && (
-                <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
-                  <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-gray-600 rounded-full"></div>
-                  <span>Analyzing your input...</span>
-                </div>
-              )}
+
               
               {/* Error state */}
               {mediaError && (
@@ -1575,14 +1572,14 @@ You can also upload media"
             {/* Phone Number and Car Runs - Two Column Layout on Desktop */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Phone Number Input - Second on mobile, Left Column on desktop */}
-              <div className="flex flex-col items-center md:items-start space-y-2 order-2 md:order-2">
-                <div className="flex items-center mb-1">
+              <div className="flex flex-col items-center justify-center space-y-2 order-2 md:order-2">
+                <div className="flex items-center justify-center mb-1 text-center">
                   <div className="h-4 w-4 text-gray-500 mr-2 -translate-y-0.5">📞</div>
                   <p className="text-gray-600 text-sm">
                     Phone Number <span className="text-red-500">*</span>
                   </p>
                 </div>
-                <div className="w-full max-w-[200px]">
+                <div className="w-full max-w-[200px] mx-auto">
                   <input
                     type="tel"
                     value={formData.phoneNumber}
@@ -1595,9 +1592,9 @@ You can also upload media"
               </div>
               
               {/* Does your car run? - First on mobile, Right Column on desktop */}
-              <div className="flex flex-col items-center md:items-start space-y-2 order-1 md:order-1">
-                <p className="text-gray-600 text-sm">Does your car run?</p>
-                <div className="flex space-x-4">
+              <div className="flex flex-col items-center justify-center space-y-2 order-1 md:order-1">
+                <p className="text-gray-600 text-sm text-center">Does your car run?</p>
+                <div className="flex space-x-4 justify-center">
                   <button
                     type="button"
                     onClick={() => handleCarRunsChange(true)}
@@ -1670,7 +1667,33 @@ You can also upload media"
                 </div>
               </h4>
               <div className="p-4">
-                {aiSuggestions && aiSuggestions.length > 0 ? (
+                {processingMedia ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-center space-x-2 text-sm text-gray-600 mb-4">
+                      <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-[#294a46] rounded-full"></div>
+                      <span>🤖 AI is analyzing your vehicle issue...</span>
+                    </div>
+                    <div className="flex flex-row space-x-4">
+                      {[1, 2, 3].map((index) => (
+                        <div key={`loading-${index}`} className="flex-1 p-2 rounded-md border border-gray-200 bg-gray-50">
+                          <div className="flex flex-col h-full">
+                            <div className="flex items-start justify-between mb-1">
+                              <div className="flex items-center space-x-1">
+                                <div className="h-3 w-3 bg-gray-300 rounded animate-pulse"></div>
+                                <div className="h-3 w-16 bg-gray-300 rounded animate-pulse"></div>
+                              </div>
+                              <div className="w-4 h-4 ml-1 rounded-full border border-gray-300 bg-gray-200 animate-pulse"></div>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="h-2 w-full bg-gray-300 rounded animate-pulse"></div>
+                              <div className="h-2 w-3/4 bg-gray-300 rounded animate-pulse"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : aiSuggestions && aiSuggestions.length > 0 ? (
                   <div className="flex flex-row space-x-4">
                     {aiSuggestions.map((suggestion, index) => (
                       <div
