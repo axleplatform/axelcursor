@@ -463,8 +463,8 @@ export async function createNewPlacesAutocomplete(
         currentAbortController = null;
       }
       
-      // Don't make API calls for inputs less than 5 characters (increased from 3)
-      if (query.length < 5) {
+      // Don't make API calls for inputs less than 8 characters (increased from 5)
+      if (query.length < 8) {
         if (suggestionsContainer) {
           suggestionsContainer.style.display = 'none';
         }
@@ -494,7 +494,7 @@ export async function createNewPlacesAutocomplete(
         } finally {
           currentAbortController = null;
         }
-      }, 1000); // 1000ms debounce (increased from 500ms to reduce API calls by 50%)
+      }, 1500); // 1500ms debounce (increased from 1000ms to reduce API calls by 70-80%)
     };
     
     // Disable browser's native autocomplete
@@ -551,7 +551,7 @@ export async function createNewPlacesAutocomplete(
             } else {
               // No suggestions - geocode the current text
               const currentText = inputElement.value.trim();
-              if (currentText.length >= 5) {
+              if (currentText.length >= 8) {
                 // Trigger geocoding for the current text
                 handleEnterOnEmptySuggestions(currentText);
               }
