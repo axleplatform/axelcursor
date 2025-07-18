@@ -1613,14 +1613,14 @@ function BookAppointmentContent() {
 or simply type the service you want.
 
 💡 Tip: You can also upload media to help diagnose the issue"
-                  className="w-full px-4 py-3 pb-12 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
+                  className="w-full px-4 py-3 pr-24 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
                   style={{ lineHeight: 1.5 }}
                 />
-                {/* Voice recording button - Bottom left corner */}
+                {/* Voice recording button - Above + button */}
                 <button
                   type="button"
                   onClick={isRecording ? stopRecording : startRecording}
-                  className={`absolute bottom-3 left-3 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm ${
+                  className={`absolute bottom-12 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm ${
                     isRecording 
                       ? "bg-transparent border-2 border-red-500 text-red-500 animate-pulse" 
                       : "bg-transparent border-2 border-[#294a46] text-[#294a46] hover:bg-[#294a46]/10"
