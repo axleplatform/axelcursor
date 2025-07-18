@@ -20,6 +20,7 @@ export default function HomepageLocationInput({
   required
 }: HomepageLocationInputProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isGpsLoading, setIsGpsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
@@ -112,7 +113,7 @@ export default function HomepageLocationInput({
       return;
     }
 
-    setIsLoading(true);
+    setIsGpsLoading(true);
     setError(null);
 
     try {
@@ -126,16 +127,15 @@ export default function HomepageLocationInput({
 
       const { latitude, longitude } = position.coords;
       
-      // Store coordinates directly instead of converting to address
+      // Store coordinates directly
       const coordinates = `${latitude}, ${longitude}`;
       onChange(coordinates);
       console.log('📍 GPS coordinates set:', coordinates);
-      
     } catch (locationError) {
       console.error('Geolocation error:', locationError);
       setError('Could not get your current location. Please check your browser permissions.');
     } finally {
-      setIsLoading(false);
+      setIsGpsLoading(false);
     }
   };
 
@@ -147,11 +147,19 @@ export default function HomepageLocationInput({
         </label>
       )}
       <div className="relative location-input-wrapper">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style={{ zIndex: 15 }}>
-          {isLoading ? (
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center" style={{ zIndex: 15 }}>
+          {isGpsLoading ? (
             <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
           ) : (
-            <span className="text-gray-400">📍</span>
+            <button
+              type="button"
+              onClick={getCurrentLocation}
+              disabled={isGpsLoading}
+              className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              title="Click for exact coordinates"
+            >
+              <span className="text-lg">📍</span>
+            </button>
           )}
         </div>
         <Input
@@ -160,26 +168,15 @@ export default function HomepageLocationInput({
           type="text"
           value={value}
           onChange={handleInputChange}
-          placeholder="Type your address or click 📌 for GPS coordinates..."
-          className="location-input w-full h-[50px] pl-10 pr-12 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-0 focus:ring-offset-0 focus:border-gray-300 focus:shadow-none transition-none"
+          placeholder="Click for exact coordinates or type"
+          className="location-input w-full h-[50px] pl-10 pr-4 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-0 focus:ring-offset-0 focus:border-gray-300 focus:shadow-none transition-none"
           style={{
             paddingLeft: '2.5rem',
-            paddingRight: '3rem',
             background: 'linear-gradient(to right, transparent 2.5rem, white 2.5rem)'
           }}
           required={required}
           disabled={isLoading}
         />
-        <button
-          type="button"
-          onClick={getCurrentLocation}
-          disabled={isLoading}
-          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-          style={{ zIndex: 15 }}
-          title="Get current location"
-        >
-          <span className="text-lg">📌</span>
-        </button>
       </div>
       {error && (
         <p className="text-sm text-red-600 mt-1">{error}</p>
