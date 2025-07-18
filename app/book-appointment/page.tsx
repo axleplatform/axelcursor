@@ -1620,6 +1620,43 @@ You can also upload media"
                 </div>
               </div>
             </div>
+            {/* Car Issues Section with Multiple Selection - Now Optional */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-center text-gray-600">Select Car Issues</p>
+                {formData.selectedCarIssues.length > 0 && (
+                  <div className="bg-[#e6eeec] text-[#294a46] text-xs px-2 py-1 rounded-full">
+                    {formData.selectedCarIssues.length} selected
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 w-full">
+                {[...carIssueOptions]
+                  .sort((a, b) => {
+                    // Sort by label length to put shorter labels (one line) first
+                    return a.label.length - b.label.length
+                  })
+                  .map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => toggleCarIssue(option.id)}
+                      className={`px-2 py-3 rounded-lg border text-center transition-colors ${
+                        formData.selectedCarIssues.includes(option.id)
+                          ? "bg-[#294a46] text-white border-[#294a46]"
+                          : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
+                      }`}
+                    >
+                      <div className="flex flex-col items-center justify-center">
+                        <span className="h-5 w-5 mb-1">
+                          <option.icon />
+                        </span>
+                        <span className="text-sm">{option.label}</span>
+                      </div>
+                    </button>
+                  ))}
+              </div>
+            </div>
             {/* AI Recommendations - Now full width */}
             <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden mb-4">
               <h4 className="text-sm font-medium text-gray-700 px-3 py-2 border-b border-gray-100 flex items-center justify-between">
@@ -1663,43 +1700,6 @@ You can also upload media"
                 ) : (
                   <div className="text-gray-500 text-center py-6">No recommendations available</div>
                 )}
-              </div>
-            </div>
-            {/* Car Issues Section with Multiple Selection - Now Optional */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-center gap-2">
-                <p className="text-center text-gray-600">Select Car Issues</p>
-                {formData.selectedCarIssues.length > 0 && (
-                  <div className="bg-[#e6eeec] text-[#294a46] text-xs px-2 py-1 rounded-full">
-                    {formData.selectedCarIssues.length} selected
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 w-full">
-                {[...carIssueOptions]
-                  .sort((a, b) => {
-                    // Sort by label length to put shorter labels (one line) first
-                    return a.label.length - b.label.length
-                  })
-                  .map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => toggleCarIssue(option.id)}
-                      className={`px-2 py-3 rounded-lg border text-center transition-colors ${
-                        formData.selectedCarIssues.includes(option.id)
-                          ? "bg-[#294a46] text-white border-[#294a46]"
-                          : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
-                      }`}
-                    >
-                      <div className="flex flex-col items-center justify-center">
-                        <span className="h-5 w-5 mb-1">
-                          <option.icon />
-                        </span>
-                        <span className="text-sm">{option.label}</span>
-                      </div>
-                    </button>
-                  ))}
               </div>
             </div>
             {validationError && <div className="text-red-500 text-center font-medium mb-2">{validationError}</div>}
