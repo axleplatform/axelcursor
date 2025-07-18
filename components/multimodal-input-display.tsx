@@ -177,49 +177,14 @@ const MultimodalInputDisplay: React.FC<MultimodalInputDisplayProps> = ({
         </Card>
       )}
 
-      {/* AI Analysis Results */}
-      {aiAnalysisResults && aiAnalysisResults.services && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <span>🤖</span>
-              AI Analysis Results
-              {aiAnalysisResults.analyzed_at && (
-                <span className="text-sm font-normal text-gray-500">
-                  (Analyzed {new Date(aiAnalysisResults.analyzed_at).toLocaleString()})
-                </span>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {aiAnalysisResults.services.map((service, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 font-medium">{index + 1}</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="font-medium text-gray-900">{service.service}</h4>
-                      <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                        {service.confidence}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">{service.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* No Content State */}
-      {!issueDescription && (!mediaFiles || mediaFiles.length === 0) && (!aiAnalysisResults || !aiAnalysisResults.services) && (
+      {!issueDescription && (!mediaFiles || mediaFiles.length === 0) && (
         <Card>
           <CardContent className="py-8">
             <div className="text-center text-gray-500">
-              <p>No customer input or analysis available</p>
+              <p>No customer input available</p>
             </div>
           </CardContent>
         </Card>

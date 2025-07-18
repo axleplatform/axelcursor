@@ -2453,7 +2453,6 @@ export default function MechanicDashboard() {
                             <MultimodalInputDisplay
                               issueDescription={appointment.issue_description}
                               mediaFiles={appointment.media_files || []}
-                              aiAnalysisResults={appointment.ai_analysis_results}
                             />
                           </div>
 
@@ -2897,7 +2896,6 @@ export default function MechanicDashboard() {
                       <MultimodalInputDisplay
                         issueDescription={availableAppointments[currentAvailableIndex].issue_description}
                         mediaFiles={availableAppointments[currentAvailableIndex].media_files || []}
-                        aiAnalysisResults={availableAppointments[currentAvailableIndex].ai_analysis_results}
                         className="text-white"
                       />
                     </div>

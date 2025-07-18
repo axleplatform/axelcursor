@@ -536,6 +536,7 @@ function BookAppointmentContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [hasInteractedWithTextArea, setHasInteractedWithTextArea] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [carRunsValidationError, setCarRunsValidationError] = useState<string | null>(null)
   const [appointmentData, setAppointmentData] = useState<AppointmentData | null>(null)
   const [hadPreviousQuotes, setHadPreviousQuotes] = useState(false)
   
@@ -789,11 +790,18 @@ function BookAppointmentContent() {
 
   // Analyze input with Gemini multimodal API
   const analyzeWithGemini = async (files: MediaFile[]) => {
-    // Only analyze if we have text description OR media files
+    // Only analyze if we have text description OR media files AND car runs is answered
     if (!formData.issueDescription.trim() && (!files || files.length === 0)) {
       return
     }
 
+    // Check if car runs is answered
+    if (formData.carRuns === null) {
+      setCarRunsValidationError("Please answer if your car runs to get accurate recommendations")
+      return
+    }
+
+    setCarRunsValidationError(null)
     setProcessingMedia(true)
     setMediaError(null)
 
@@ -927,8 +935,8 @@ function BookAppointmentContent() {
 
     // Set new debounce timer for 3 seconds
     const timer = setTimeout(() => {
-      // Use Gemini if we have text OR media files
-      if (formData.issueDescription.trim().length > 0 || uploadedFiles.length > 0) {
+      // Only call API if description exists AND carRunning is answered
+      if ((formData.issueDescription.trim().length > 0 || uploadedFiles.length > 0) && formData.carRuns !== null) {
         analyzeWithGemini(uploadedFiles)
       } else if (hasInteractedWithTextArea) {
         // Show default recommendations if no input
@@ -965,6 +973,7 @@ function BookAppointmentContent() {
     e.preventDefault()
     setIsSubmitting(true)
     setValidationError(null)
+    setCarRunsValidationError(null)
     try {
       // Check if we're in edit mode
       const isEditMode = searchParams.get('edit') === 'true'
@@ -1137,7 +1146,8 @@ function BookAppointmentContent() {
   // Check if form is valid
   const isFormValid =
     formData.phoneNumber && // Phone number is required
-    (formData.issueDescription || formData.selectedServices.length > 0) // Either description OR service selection
+    (formData.issueDescription || formData.selectedServices.length > 0) && // Either description OR service selection
+    formData.carRuns !== null; // Car runs must be selected
 
   // Handle appointment updates (separate from initial submission)
   const handleUpdateAppointment = async () => {
@@ -1164,6 +1174,15 @@ function BookAppointmentContent() {
       toast({
         title: "Error",
         description: "Please provide either an issue description or select services.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (formData.carRuns === null) {
+      toast({
+        title: "Error",
+        description: "Please select if your car runs or not.",
         variant: "destructive"
       })
       return
@@ -1593,8 +1612,16 @@ or simply type: Oil Change, Brake Check, etc.
               
               {/* Does your car run? - First on mobile, Right Column on desktop */}
               <div className="flex flex-col items-center justify-center space-y-2 order-1 md:order-1">
-                <p className="text-gray-600 text-sm text-center">Does your car run?</p>
-                <div className="flex space-x-4 justify-center">
+                <div className="text-center">
+                  <p className={`text-gray-600 text-sm ${carRunsValidationError ? 'text-red-500' : ''}`}>
+                    Does your car run? <span className="text-red-500">*</span>
+                  </p>
+                  {carRunsValidationError && (
+                    <p className="text-red-500 text-xs mt-1">{carRunsValidationError}</p>
+                  )}
+                  <p className="text-gray-500 text-xs mt-1">Please answer to get accurate recommendations</p>
+                </div>
+                <div className={`flex space-x-4 justify-center ${carRunsValidationError ? 'ring-2 ring-red-500 rounded-lg p-1' : ''}`}>
                   <button
                     type="button"
                     onClick={() => handleCarRunsChange(true)}
@@ -1722,6 +1749,11 @@ or simply type: Oil Change, Brake Check, etc.
                         </div>
                       </div>
                     ))}
+                  </div>
+                ) : formData.carRuns === null ? (
+                  <div className="text-center py-6">
+                    <div className="text-gray-500 mb-2">Answer "Does your car run?" to get AI recommendations</div>
+                    <div className="text-xs text-gray-400">This helps provide more accurate service suggestions</div>
                   </div>
                 ) : (
                   <div className="text-gray-500 text-center py-6">No recommendations available</div>
