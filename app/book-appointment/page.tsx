@@ -1479,144 +1479,144 @@ function BookAppointmentContent() {
               handleSubmit(e)
             }
           }} className="space-y-6">
-            <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
-              {/* Left half - Car issue description */}
-              <div className="space-y-4 md:w-1/2">
-                <p className="text-center md:text-left text-gray-600">Tell us what happened</p>
-                <div className="relative">
-                  <textarea
-                    value={formData.issueDescription}
-                    onChange={handleDescriptionChange}
-                    onFocus={handleTextAreaFocus}
-                    placeholder="Example: My car won't start. When I turn the key, I hear a clicking sound.
+            {/* Description Box - Full Width */}
+            <div className="space-y-4">
+              <p className="text-center md:text-left text-gray-600">Tell us what happened</p>
+              <div className="relative">
+                <textarea
+                  value={formData.issueDescription}
+                  onChange={handleDescriptionChange}
+                  onFocus={handleTextAreaFocus}
+                  placeholder="Example: My car won't start. When I turn the key, I hear a clicking sound.
 or type Oil Change.
 You can also upload media"
-                    className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
-                    style={{ lineHeight: 1.5 }}
+                  className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-md bg-gray-50 min-h-[110px]"
+                  style={{ lineHeight: 1.5 }}
+                />
+                {/* Plus button for file upload */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.multiple = true;
+                    input.accept = 'image/*,audio/*,video/*';
+                    input.onchange = async (e) => {
+                      const files = Array.from((e.target as HTMLInputElement).files || []);
+                      if (files.length > 0) {
+                        // Convert files to base64 and MediaFile format
+                        const mediaFiles: MediaFile[] = await Promise.all(
+                          files.map(async (file) => {
+                            const base64 = await new Promise<string>((resolve) => {
+                              const reader = new FileReader();
+                              reader.onload = () => resolve(reader.result as string);
+                              reader.readAsDataURL(file);
+                            });
+                            
+                            return {
+                              type: file.type.startsWith('image/') ? 'image' : 
+                                    file.type.startsWith('audio/') ? 'audio' : 'video',
+                              data: base64.split(',')[1], // Remove data URL prefix
+                              name: file.name,
+                              size: file.size,
+                              mimeType: file.type
+                            };
+                          })
+                        );
+                        
+                        // Add to existing files (respect max limit)
+                        const newFiles = [...uploadedFiles, ...mediaFiles].slice(0, 3);
+                        setUploadedFiles(newFiles);
+                      }
+                    };
+                    input.click();
+                  }}
+                  className="absolute bottom-3 right-3 w-8 h-8 bg-[#294a46] text-white rounded-full flex items-center justify-center hover:bg-[#1e3632] transition-colors shadow-sm"
+                  title="Upload media files"
+                >
+                  <span className="text-lg">+</span>
+                </button>
+              </div>
+              
+              {/* Show uploaded media preview */}
+              {uploadedFiles.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs text-gray-500 mb-2">Uploaded media ({uploadedFiles.length}):</p>
+                  <div className="flex flex-wrap gap-2">
+                    {uploadedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center space-x-2 bg-gray-50 px-2 py-1 rounded text-xs">
+                        <span>{file.type === 'image' ? '📷' : file.type === 'audio' ? '🎵' : '🎥'}</span>
+                        <span className="truncate max-w-20">{file.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Processing state */}
+              {processingMedia && (
+                <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+                  <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-gray-600 rounded-full"></div>
+                  <span>Analyzing your input...</span>
+                </div>
+              )}
+              
+              {/* Error state */}
+              {mediaError && (
+                <div className="text-sm text-red-500 text-center">
+                  {mediaError}
+                </div>
+              )}
+            </div>
+
+            {/* Phone Number and Car Runs - Two Column Layout on Desktop */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Phone Number Input - Left Column */}
+              <div className="flex flex-col items-center md:items-start space-y-2">
+                <div className="flex items-center mb-1">
+                  <div className="h-4 w-4 text-gray-500 mr-2 -translate-y-0.5">📞</div>
+                  <p className="text-gray-600 text-sm">
+                    Phone Number <span className="text-red-500">*</span>
+                  </p>
+                </div>
+                <div className="w-full max-w-[200px]">
+                  <input
+                    type="tel"
+                    value={formData.phoneNumber}
+                    onChange={handlePhoneChange}
+                    placeholder="(###)-### ####"
+                    className="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-center"
+                    required
                   />
-                  {/* Plus button for file upload */}
+                </div>
+              </div>
+              
+              {/* Does your car run? - Right Column */}
+              <div className="flex flex-col items-center md:items-start space-y-2">
+                <p className="text-gray-600 text-sm">Does your car run?</p>
+                <div className="flex space-x-4">
                   <button
                     type="button"
-                    onClick={() => {
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.multiple = true;
-                      input.accept = 'image/*,audio/*,video/*';
-                      input.onchange = async (e) => {
-                        const files = Array.from((e.target as HTMLInputElement).files || []);
-                        if (files.length > 0) {
-                          // Convert files to base64 and MediaFile format
-                          const mediaFiles: MediaFile[] = await Promise.all(
-                            files.map(async (file) => {
-                              const base64 = await new Promise<string>((resolve) => {
-                                const reader = new FileReader();
-                                reader.onload = () => resolve(reader.result as string);
-                                reader.readAsDataURL(file);
-                              });
-                              
-                              return {
-                                type: file.type.startsWith('image/') ? 'image' : 
-                                      file.type.startsWith('audio/') ? 'audio' : 'video',
-                                data: base64.split(',')[1], // Remove data URL prefix
-                                name: file.name,
-                                size: file.size,
-                                mimeType: file.type
-                              };
-                            })
-                          );
-                          
-                          // Add to existing files (respect max limit)
-                          const newFiles = [...uploadedFiles, ...mediaFiles].slice(0, 3);
-                          setUploadedFiles(newFiles);
-                        }
-                      };
-                      input.click();
-                    }}
-                    className="absolute bottom-3 right-3 w-8 h-8 bg-[#294a46] text-white rounded-full flex items-center justify-center hover:bg-[#1e3632] transition-colors shadow-sm"
-                    title="Upload media files"
+                    onClick={() => handleCarRunsChange(true)}
+                    className={`px-8 py-2 rounded-full border transition-colors ${
+                      formData.carRuns === true
+                        ? "bg-[#294a46] text-white border-[#294a46]"
+                        : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
+                    }`}
                   >
-                    <span className="text-lg">+</span>
+                    Yes
                   </button>
-                </div>
-                
-                {/* Show uploaded media preview */}
-                {uploadedFiles.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-xs text-gray-500 mb-2">Uploaded media ({uploadedFiles.length}):</p>
-                    <div className="flex flex-wrap gap-2">
-                      {uploadedFiles.map((file, index) => (
-                        <div key={index} className="flex items-center space-x-2 bg-gray-50 px-2 py-1 rounded text-xs">
-                          <span>{file.type === 'image' ? '📷' : file.type === 'audio' ? '🎵' : '🎥'}</span>
-                          <span className="truncate max-w-20">{file.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Processing state */}
-                {processingMedia && (
-                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
-                    <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-gray-600 rounded-full"></div>
-                    <span>Analyzing your input...</span>
-                  </div>
-                )}
-                
-                {/* Error state */}
-                {mediaError && (
-                  <div className="text-sm text-red-500 text-center">
-                    {mediaError}
-                  </div>
-                )}
-              </div>
-              {/* Right half - Phone Number and Car Runs */}
-              <div className="space-y-3 md:w-1/2 flex flex-col items-center justify-center">
-                {/* Phone Number Input */}
-                <div className="space-y-0.5 w-full flex flex-col items-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <div className="h-4 w-4 text-gray-500 mr-2 -translate-y-0.5">📞</div>
-                    <p className="text-gray-600 text-sm">
-                      Phone Number <span className="text-red-500">*</span>
-                    </p>
-                  </div>
-                  <div className="relative max-w-[200px] w-full">
-                    <input
-                      type="tel"
-                      value={formData.phoneNumber}
-                      onChange={handlePhoneChange}
-                      placeholder="(###)-### ####"
-                      className="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-center"
-                      required
-                    />
-                  </div>
-                </div>
-                {/* Does your car run? - Updated to use boolean values */}
-                <div className="space-y-1 w-full flex flex-col items-center">
-                  <p className="text-center text-gray-600 text-sm">Does your car run?</p>
-                  <div className="flex justify-center space-x-4">
-                    <button
-                      type="button"
-                      onClick={() => handleCarRunsChange(true)}
-                      className={`px-8 py-2 rounded-full border transition-colors ${
-                        formData.carRuns === true
-                          ? "bg-[#294a46] text-white border-[#294a46]"
-                          : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
-                      }`}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCarRunsChange(false)}
-                      className={`px-8 py-2 rounded-full border transition-colors ${
-                        formData.carRuns === false
-                          ? "bg-[#294a46] text-white border-[#294a46]"
-                          : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
-                      }`}
-                    >
-                      No
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCarRunsChange(false)}
+                    className={`px-8 py-2 rounded-full border transition-colors ${
+                      formData.carRuns === false
+                        ? "bg-[#294a46] text-white border-[#294a46]"
+                        : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200"
+                    }`}
+                  >
+                    No
+                  </button>
                 </div>
               </div>
             </div>
