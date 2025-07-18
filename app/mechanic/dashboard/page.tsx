@@ -2453,6 +2453,7 @@ export default function MechanicDashboard() {
                             <MultimodalInputDisplay
                               issueDescription={appointment.issue_description}
                               mediaFiles={appointment.media_files || []}
+                              className="text-white"
                             />
                           </div>
 
