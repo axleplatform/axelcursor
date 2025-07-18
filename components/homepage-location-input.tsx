@@ -147,19 +147,24 @@ export default function HomepageLocationInput({
         </label>
       )}
       <div className="relative location-input-wrapper">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center" style={{ zIndex: 15 }}>
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" style={{ zIndex: 15 }}>
           {isGpsLoading ? (
             <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
           ) : (
-            <button
-              type="button"
-              onClick={getCurrentLocation}
-              disabled={isGpsLoading}
-              className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-              title="Click for exact coordinates"
-            >
-              <span className="text-lg">📍</span>
-            </button>
+            <div className="pointer-events-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  console.log('📍 GPS button clicked!');
+                  getCurrentLocation();
+                }}
+                disabled={isGpsLoading}
+                className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer p-1 rounded hover:bg-gray-100"
+                title="Click for exact coordinates"
+              >
+                <span className="text-lg">📍</span>
+              </button>
+            </div>
           )}
         </div>
         <Input
@@ -175,7 +180,6 @@ export default function HomepageLocationInput({
             background: 'linear-gradient(to right, transparent 2.5rem, white 2.5rem)'
           }}
           required={required}
-          disabled={isLoading}
         />
       </div>
       {error && (
