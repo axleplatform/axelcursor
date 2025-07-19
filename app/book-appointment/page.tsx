@@ -11,6 +11,8 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
 import MediaUpload from "@/components/MediaUpload"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 
 
 // Common service patterns for instant recommendations (mobile-friendly only)
@@ -309,6 +311,7 @@ const typoPatterns = {
 // - Fuzzy matching: Fixes common typos like "break" → "brake", "battry" → "battery"
 // - Duplicate removal: Returns top 3 unique services when multiple patterns match
 // - Mobile-friendly: All services doable by mobile mechanics without shop equipment
+// - Priority system: Pattern first, then media files, then complex descriptions
 const findMatchingServices = (description: string) => {
   const lowerDesc = description.toLowerCase()
   const words = lowerDesc.split(/\s+/)
@@ -323,33 +326,29 @@ const findMatchingServices = (description: string) => {
     }
   }
   
-  // Check each service category for multiple matches
+  // Check each service category for matches (use first match only for priority)
   for (const [category, data] of Object.entries(COMMON_SERVICE_PATTERNS)) {
     // Check if any pattern matches
     for (const pattern of data.patterns) {
       if (correctedDescription.includes(pattern)) {
+        console.log('Pattern matched:', pattern)
         console.log(`✅ Matched pattern: "${pattern}" → ${category} services`)
-        matches.push(...data.services)
+        
+        // Return first match only for priority system
+        let services = [...data.services]
+        
+        // Error handling: If less than 3 services, duplicate to fill
+        while (services.length < 3) {
+          services.push(...data.services.slice(0, 3 - services.length))
+        }
+        
+        return {
+          services: services.slice(0, 3),
+          matchedPattern: pattern,
+          category: category,
+          skipGemini: true
+        }
       }
-    }
-  }
-  
-  // If multiple matches found, return top 3 unique services
-  if (matches.length > 0) {
-    // Remove duplicates based on service name
-    const uniqueServices = matches.filter((service, index, self) => 
-      index === self.findIndex(s => s.service === service.service)
-    )
-    
-    const topServices = uniqueServices.slice(0, 3)
-    
-    console.log(`🎯 Multiple patterns detected: ${matches.length} total, returning top ${topServices.length} unique services`)
-    
-    return {
-      services: topServices,
-      matchedPatterns: matches.length,
-      category: 'multiple',
-      skipGemini: true
     }
   }
   
@@ -999,100 +998,199 @@ function BookAppointmentContent() {
     const value = e.target.value
     setFormData((prev) => ({ ...prev, issueDescription: value }))
     
-    // Check if we should call API when description reaches 50+ chars and car runs is answered
-    if (value.length >= 50 && formData.carRuns !== null) {
-      // Clear any existing validation error
-      setCarRunsValidationError(null)
+    // PATTERN PRIORITY SYSTEM:
+    // 1. First check: Does description match any pattern?
+    const patternMatch = findMatchingServices(value)
+    if (patternMatch) {
+      console.log('🎯 Pattern priority: Using pattern match, skipping Gemini')
+      setAiSuggestions(patternMatch.services)
+      setPatternMatched(true)
+      setAiSuggestionsLoading(false) // Remove loading state for instant feedback
       
-      // Check patterns first
-      const patternMatch = findMatchingServices(value)
-      
-      if (patternMatch && uploadedFiles.length === 0) {
-        // Show pattern results immediately
-        setAiSuggestions(patternMatch.services)
-        setIsFromPattern(true)
-        console.log('✨ Instant recommendations from pattern match:', patternMatch.services)
-        
-        // Show toast notification
-        toast({
-          title: "✨ Instant Recommendations",
-          description: patternMatch.category === 'multiple' 
-            ? `Multiple services detected: ${patternMatch.matchedPatterns} patterns matched`
-            : `Common service detected: ${patternMatch.category} services`,
-          duration: 3000,
-        })
-        
-        // DO NOT call Gemini API
-        return
-      } else {
-        // No pattern or has media - use Gemini
-        setIsFromPattern(false)
-        analyzeWithGemini(uploadedFiles)
-      }
+      // Show toast notification
+      toast({
+        title: "✨ Instant Recommendations",
+        description: `Common service detected: ${patternMatch.category} services`,
+        duration: 3000,
+      })
+      return // Exit early, don't call Gemini
     }
+
+    // 2. Second check: Are there media files? (If yes, use Gemini according to rules)
+    if (mediaFiles.length > 0) {
+      console.log('📷 Media priority: Media files detected, using Gemini')
+      setPatternMatched(false)
+      setAiSuggestionsLoading(true)
+      analyzeWithGemini(value, mediaFiles)
+      return
+    }
+
+    // 3. Third check: Is description complex? (50+ characters)
+    if (value.length >= 50) {
+      console.log('📝 Complexity priority: Complex description (50+ chars), using Gemini')
+      setPatternMatched(false)
+      setAiSuggestionsLoading(true)
+      analyzeWithGemini(value, mediaFiles)
+      return
+    }
+
+    // 4. Default: Show pattern results to save API calls
+    console.log('💡 Default priority: No pattern, no media, not complex - showing pattern suggestions')
+    setPatternMatched(false)
+    setAiSuggestionsLoading(false)
+    
+    // Show default pattern-based suggestions
+    const defaultSuggestions = [
+      {
+        service: "General Inspection",
+        description: "Identify specific issues with your vehicle.",
+        confidence: 0.8,
+      },
+      {
+        service: "Diagnostic Scan",
+        description: "Computer scan to identify error codes and electronic issues.",
+        confidence: 0.7,
+      },
+      {
+        service: "Maintenance Check",
+        description: "Review of vehicle's maintenance needs and requirements.",
+        confidence: 0.6,
+      },
+    ]
+    setAiSuggestions(defaultSuggestions)
   }
   // Handle car runs selection - now using boolean values
   const handleCarRunsChange = (value: boolean) => {
     setFormData((prev) => ({ ...prev, carRuns: value }))
-    
-    // Check if ready for API call (description >= 50 chars OR media exists)
-    const hasEnoughDescription = formData.issueDescription.length >= 50
-    const hasMedia = uploadedFiles.length > 0
-    
-    if (hasEnoughDescription || hasMedia) {
-      // Check patterns first (only if no media files)
-      if (hasEnoughDescription && !hasMedia) {
-        const patternMatch = findMatchingServices(formData.issueDescription)
-        
-        if (patternMatch) {
-          // Show pattern results immediately
-          setAiSuggestions(patternMatch.services)
-          setIsFromPattern(true)
-          console.log('✨ Instant recommendations from pattern match:', patternMatch.services)
-          
-          // Show toast notification
-          toast({
-            title: "✨ Instant Recommendations",
-            description: patternMatch.category === 'multiple' 
-              ? `Multiple services detected: ${patternMatch.matchedPatterns} patterns matched`
-              : `Common service detected: ${patternMatch.category} services`,
-            duration: 3000,
-          })
-          
-          // DO NOT call Gemini API
-          return
-        }
-      }
+    setCarRunsValidationError(null)
+
+    // PATTERN PRIORITY SYSTEM (same as description change):
+    // 1. First check: Does description match any pattern?
+    const patternMatch = findMatchingServices(formData.issueDescription)
+    if (patternMatch) {
+      console.log('🎯 Pattern priority: Using pattern match, skipping Gemini')
+      setAiSuggestions(patternMatch.services)
+      setPatternMatched(true)
+      setAiSuggestionsLoading(false) // Remove loading state for instant feedback
       
-      // No pattern or has media - use Gemini
-      setIsFromPattern(false)
-      analyzeWithGemini(uploadedFiles)
-    } else {
-      // Show validation message
-      setCarRunsValidationError("Please provide more details (50+ characters) or upload media to get accurate recommendations")
+      // Show toast notification
+      toast({
+        title: "✨ Instant Recommendations",
+        description: `Common service detected: ${patternMatch.category} services`,
+        duration: 3000,
+      })
+      return // Exit early, don't call Gemini
     }
+
+    // 2. Second check: Are there media files? (If yes, use Gemini)
+    if (mediaFiles.length > 0) {
+      console.log('📷 Media priority: Media files detected, using Gemini')
+      setPatternMatched(false)
+      setAiSuggestionsLoading(true)
+      analyzeWithGemini(formData.issueDescription, mediaFiles)
+      return
+    }
+
+    // 3. Third check: Is description complex? (50+ characters)
+    if (formData.issueDescription.length >= 50) {
+      console.log('📝 Complexity priority: Complex description (50+ chars), using Gemini')
+      setPatternMatched(false)
+      setAiSuggestionsLoading(true)
+      analyzeWithGemini(formData.issueDescription, mediaFiles)
+      return
+    }
+
+    // 4. Default: Show pattern results to save API calls
+    console.log('💡 Default priority: No pattern, no media, not complex - showing pattern suggestions')
+    setPatternMatched(false)
+    setAiSuggestionsLoading(false)
+    
+    // Show default pattern-based suggestions
+    const defaultSuggestions = [
+      {
+        service: "General Inspection",
+        description: "Identify specific issues with your vehicle.",
+        confidence: 0.8,
+      },
+      {
+        service: "Diagnostic Scan",
+        description: "Computer scan to identify error codes and electronic issues.",
+        confidence: 0.7,
+      },
+      {
+        service: "Maintenance Check",
+        description: "Review of vehicle's maintenance needs and requirements.",
+        confidence: 0.6,
+      },
+    ]
+    setAiSuggestions(defaultSuggestions)
   }
 
   // Handle media upload changes
-  const handleMediaUpload = (files: MediaFile[]) => {
-    setUploadedFiles(files)
-    setMediaError(null)
-    
-    // Clear existing debounce timer
-    if (geminiDebounceTimer) {
-      clearTimeout(geminiDebounceTimer)
-      setGeminiDebounceTimer(null)
+  const handleMediaUpload = (files: File[]) => {
+    setMediaFiles(files)
+    setValidationError('')
+
+    // PATTERN PRIORITY SYSTEM (same as description change):
+    // 1. First check: Does description match any pattern?
+    const patternMatch = findMatchingServices(issueDescription)
+    if (patternMatch) {
+      console.log('🎯 Pattern priority: Using pattern match, skipping Gemini')
+      setAiSuggestions(patternMatch.services)
+      setPatternMatched(true)
+      setAiSuggestionsLoading(false) // Remove loading state for instant feedback
+      
+      // Show toast notification
+      toast({
+        title: "✨ Instant Recommendations",
+        description: `Common service detected: ${patternMatch.category} services`,
+        duration: 3000,
+      })
+      return // Exit early, don't call Gemini
     }
-    
-    // Check if we should call API immediately (media uploaded AND car runs answered)
-    if (formData.carRuns !== null) {
-      // Clear any existing validation error
-      setCarRunsValidationError(null)
-      // Reset pattern state since we have media (need visual analysis)
-      setIsFromPattern(false)
-      // Call Gemini API immediately - no debounce
-      analyzeWithGemini(files)
+
+    // 2. Second check: Are there media files? (If yes, use Gemini)
+    if (files.length > 0) {
+      console.log('📷 Media priority: Media files detected, using Gemini')
+      setPatternMatched(false)
+      setAiSuggestionsLoading(true)
+      analyzeWithGemini(issueDescription, files)
+      return
     }
+
+    // 3. Third check: Is description complex? (50+ characters)
+    if (issueDescription.length >= 50) {
+      console.log('📝 Complexity priority: Complex description (50+ chars), using Gemini')
+      setPatternMatched(false)
+      setAiSuggestionsLoading(true)
+      analyzeWithGemini(issueDescription, files)
+      return
+    }
+
+    // 4. Default: Show pattern results to save API calls
+    console.log('💡 Default priority: No pattern, no media, not complex - showing pattern suggestions')
+    setPatternMatched(false)
+    setAiSuggestionsLoading(false)
+    
+    // Show default pattern-based suggestions
+    const defaultSuggestions = [
+      {
+        service: "General Inspection",
+        description: "Identify specific issues with your vehicle.",
+        confidence: 0.8,
+      },
+      {
+        service: "Diagnostic Scan",
+        description: "Computer scan to identify error codes and electronic issues.",
+        confidence: 0.7,
+      },
+      {
+        service: "Maintenance Check",
+        description: "Review of vehicle's maintenance needs and requirements.",
+        confidence: 0.6,
+      },
+    ]
+    setAiSuggestions(defaultSuggestions)
   }
 
   // Voice recording functions
