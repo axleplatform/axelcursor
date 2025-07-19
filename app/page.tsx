@@ -128,8 +128,8 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
   // Add map initialization flag to prevent multiple initializations
   const mapInitializedRef = useRef(false);
   
-  // Add lazy loading state to prevent map loading until user interaction
-  const [shouldLoadMap, setShouldLoadMap] = useState(false);
+  // Map loading state - now loads immediately
+  const [shouldLoadMap, setShouldLoadMap] = useState(true);
 
   // Add ref to track if component is mounted
   const isMountedRef = useRef(true);
@@ -280,9 +280,9 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
       return;
     }
     
-    // Lazy loading check - only load if user has interacted
+    // Map initialization check
     if (!shouldLoadMap) {
-      console.log('🔍 Map init: Lazy loading - waiting for user interaction');
+      console.log('🔍 Map init: Map loading disabled');
       return;
     }
     
@@ -306,7 +306,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
     }
 
     try {
-      console.log('🔍 Map init: Starting initialization...');
+      console.log('🗺️ Map initializing immediately');
       
       if (!mapRef.current) {
         console.log('🔍 Map init: Map ref not ready, retrying...');
@@ -439,9 +439,9 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
       return;
     }
     
-    // Lazy loading check - only initialize if user has interacted
+    // Map initialization check
     if (!shouldLoadMap) {
-      console.log('🗺️ Lazy loading - waiting for user interaction');
+      console.log('🗺️ Map loading disabled');
       return;
     }
     
@@ -455,7 +455,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
     return () => {
       clearTimeout(timer);
     };
-  }, [shouldLoadMap]); // Only run when shouldLoadMap changes
+  }, [shouldLoadMap]); // Run when shouldLoadMap changes (now always true)
 
   // Cleanup effect for component unmount
   useEffect(() => {
@@ -539,7 +539,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
     }
-  }, [shouldLoadMap]); // Only set up listeners when shouldLoadMap is true
+  }, [shouldLoadMap]); // Set up listeners when shouldLoadMap is true (now always true)
 
   // Smooth animation to location with professional easing
   const animateToLocation = useCallback((map: google.maps.Map, location: { lat: number; lng: number }) => {
@@ -1995,13 +1995,10 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
     )
   }
 
-  // Handle location input focus to trigger map loading
+  // Handle location input focus (no longer needed for map loading)
   const handleLocationFocus = useCallback(() => {
-    if (!shouldLoadMap) {
-      console.log('🗺️ Location input focused - triggering map loading');
-      setShouldLoadMap(true);
-    }
-  }, [shouldLoadMap]);
+    console.log('🗺️ Location input focused');
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-white" suppressHydrationWarning>
