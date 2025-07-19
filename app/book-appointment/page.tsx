@@ -1034,11 +1034,10 @@ function BookAppointmentContent() {
       }
     }
     
-    // Default to Gemini if no pattern match
-    console.log('🤖 Defaulting to Gemini API: No pattern match')
+    // No pattern match - let the 3-second debounce handle Gemini API call
+    console.log('⏳ No pattern match - waiting for debounce timer')
     setPatternMatched(false)
-    setAiSuggestionsLoading(true)
-    analyzeWithGemini(uploadedFiles)
+    setAiSuggestionsLoading(false) // Don't show loading immediately
   }
   // Handle car runs selection - now using boolean values
   const handleCarRunsChange = (value: boolean) => {
@@ -1078,11 +1077,10 @@ function BookAppointmentContent() {
       }
     }
     
-    // Default to Gemini if no pattern match
-    console.log('🤖 Defaulting to Gemini API: No pattern match')
+    // No pattern match - let the 3-second debounce handle Gemini API call
+    console.log('⏳ No pattern match - waiting for debounce timer')
     setPatternMatched(false)
-    setAiSuggestionsLoading(true)
-    analyzeWithGemini(uploadedFiles)
+    setAiSuggestionsLoading(false) // Don't show loading immediately
   }
 
   // Handle media upload changes
@@ -1128,11 +1126,10 @@ function BookAppointmentContent() {
         }
       }
       
-      // Default to Gemini if no pattern match
-      console.log('🤖 Defaulting to Gemini API: No pattern match')
+      // No pattern match - let the 3-second debounce handle Gemini API call
+      console.log('⏳ No pattern match - waiting for debounce timer')
       setPatternMatched(false)
-      setAiSuggestionsLoading(true)
-      analyzeWithGemini(mediaFiles)
+      setAiSuggestionsLoading(false) // Don't show loading immediately
     } catch (error) {
       console.error('Error converting files:', error)
     }
@@ -1290,7 +1287,7 @@ function BookAppointmentContent() {
       }
     } catch (error) {
       console.error('Gemini analysis error:', error)
-      setMediaError('Failed to analyze media. Using default recommendations.')
+      // Silent fallback - no error message shown
     } finally {
       setProcessingMedia(false)
     }
