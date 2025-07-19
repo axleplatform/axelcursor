@@ -13,7 +13,7 @@
 - **Problem**: Map loaded immediately on page load (wasting API calls)
 - **Solution**: Map only loads when user focuses on location input
 - **Implementation**:
-  ```javascript
+  \`\`\`javascript
   const [shouldLoadMap, setShouldLoadMap] = useState(false);
   
   const handleLocationFocus = useCallback(() => {
@@ -21,41 +21,41 @@
       setShouldLoadMap(true);
     }
   }, [shouldLoadMap]);
-  ```
+  \`\`\`
 - **Impact**: Map loads only when needed (user interaction)
 
 #### 3. **🗺️ Fixed Map Re-initialization Loop**
 - **Problem**: Map initialized 5x due to aggressive event handlers
 - **Solution**: Added `mapInitializedRef` flag and conservative reinitialization
 - **Implementation**:
-  ```javascript
+  \`\`\`javascript
   const mapInitializedRef = useRef(false);
   
   if (mapInitializedRef.current) {
     console.log('🚫 Map already initialized - skipping');
     return;
   }
-  ```
+  \`\`\`
 - **Impact**: Map initializes only ONCE per session
 
 #### 4. **⚡ Removed Aggressive Focus Handlers**
 - **Problem**: Window focus immediately reinitialized map
 - **Solution**: Removed window focus handler, made visibility change conservative
 - **Implementation**:
-  ```javascript
+  \`\`\`javascript
   // REMOVED: window.addEventListener('focus', reinitMap);
   // REMOVED: document.addEventListener('visibilitychange', reinitMap);
   
   // REPLACED WITH: Conservative visibility handler
   setTimeout(() => initializeMap(), 1000); // 1 second delay
-  ```
+  \`\`\`
 - **Impact**: Eliminated 90% of unnecessary reinitializations
 
 #### 5. **💾 Improved Google Maps Caching**
 - **Problem**: Multiple Google Maps instances being created
 - **Solution**: Enhanced caching with global window object
 - **Implementation**:
-  ```javascript
+  \`\`\`javascript
   // Check global cached instance first
   if (typeof window !== 'undefined' && window.googleMapsInstance) {
     return window.googleMapsInstance;
@@ -63,7 +63,7 @@
   
   // Store in global window object
   window.googleMapsInstance = googleMapsInstance;
-  ```
+  \`\`\`
 - **Impact**: Single Google Maps instance across entire app
 
 ### **API Call Reduction Breakdown:**
@@ -87,21 +87,21 @@
 4. Map cached globally → No more API calls
 
 #### **Conservative Reinitialization:**
-```javascript
+\`\`\`javascript
 // Only reinitialize if:
 // 1. User has interacted (shouldLoadMap = true)
 // 2. Map not already initialized
 // 3. Map instance doesn't exist
 // 4. 1 second delay to prevent aggressive calls
-```
+\`\`\`
 
 #### **Enhanced Caching:**
-```javascript
+\`\`\`javascript
 // Multiple cache layers:
 // 1. Global window.googleMapsInstance
 // 2. Module-level googleMapsInstance
 // 3. Loading promise cache
-```
+\`\`\`
 
 ### **Performance Metrics:**
 
@@ -113,21 +113,21 @@
 ### **Browser Console Results:**
 
 **Before Fixes:**
-```
+\`\`\`
 🔍 Google Maps: Starting new loading process...
 🔍 Google Maps: Starting new loading process...
 🔍 Google Maps: Starting new loading process...
 🔍 Google Maps: Starting new loading process...
 🔍 Google Maps: Starting new loading process...
 🔍 Places API request body: {"input":"test"}
-```
+\`\`\`
 
 **After Fixes:**
-```
+\`\`\`
 🗺️ Location input focused - triggering map loading
 🔍 Google Maps: Returning global cached instance
 ✅ Map initialized successfully
-```
+\`\`\`
 
 ### **Cost Savings:**
 
@@ -146,4 +146,4 @@
 - [ ] **Performance**: Significantly faster page loads
 - [ ] **User Experience**: Smooth interaction flow
 
-The Google Maps API costs have been dramatically reduced while maintaining full functionality! 🚀💰 
+The Google Maps API costs have been dramatically reduced while maintaining full functionality! 🚀💰

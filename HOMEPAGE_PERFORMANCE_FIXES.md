@@ -42,7 +42,7 @@
 ### **Technical Implementation:**
 
 #### **Map Initialization Flag:**
-```javascript
+\`\`\`javascript
 const mapInitializedRef = useRef(false);
 
 // In initializeMap:
@@ -52,27 +52,27 @@ if (mapInitializedRef.current) {
 }
 // ... initialization logic ...
 mapInitializedRef.current = true;
-```
+\`\`\`
 
 #### **Debounced Event Handlers:**
-```javascript
+\`\`\`javascript
 const debouncedReinit = debounce(() => {
   if (mapRef.current && !mapInstanceRef.current && !mapInitializedRef.current) {
     console.log('🗺️ Debounced map reinitialization');
     initializeMap();
   }
 }, 300); // 300ms debounce
-```
+\`\`\`
 
 #### **React.memo Optimization:**
-```javascript
+\`\`\`javascript
 const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element {
   // Component logic
 });
-```
+\`\`\`
 
 #### **Proper Cleanup:**
-```javascript
+\`\`\`javascript
 useEffect(() => {
   return () => {
     isMountedRef.current = false;
@@ -84,7 +84,7 @@ useEffect(() => {
     // ... other cleanup
   };
 }, []);
-```
+\`\`\`
 
 ### **Performance Improvements:**
 
@@ -97,7 +97,7 @@ useEffect(() => {
 ### **Browser Console Results:**
 
 **Before Fixes:**
-```
+\`\`\`
 🔍 [LIFECYCLE] HomePageContent rendering # 1
 🔍 [LIFECYCLE] HomePageContent rendering # 2
 🔍 [LIFECYCLE] HomePageContent rendering # 3
@@ -107,14 +107,14 @@ useEffect(() => {
 🗺️ Map init: Starting initialization...
 🗺️ Map init: Starting initialization...
 🗺️ Map init: Starting initialization...
-```
+\`\`\`
 
 **After Fixes:**
-```
+\`\`\`
 🔍 [LIFECYCLE] HomePageContent rendering # 1
 🗺️ Map init: Starting initialization...
 ✅ Map initialized successfully
-```
+\`\`\`
 
 ### **Testing Checklist:**
 
@@ -134,4 +134,4 @@ useEffect(() => {
 - **Memory Usage**: ~60% reduction
 - **Event Handler Calls**: ~90% reduction
 
-The homepage now loads efficiently with proper initialization, cleanup, and error handling! 🚀 
+The homepage now loads efficiently with proper initialization, cleanup, and error handling! 🚀
