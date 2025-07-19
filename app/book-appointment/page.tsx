@@ -10,213 +10,298 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
+import MediaUpload from "@/components/MediaUpload"
 
 
-// Common service patterns for instant recommendations
+// Common service patterns for instant recommendations (mobile-friendly only)
 const COMMON_SERVICE_PATTERNS = {
-  'oil change': {
+  // OIL CHANGE PATTERNS
+  oil: {
+    patterns: ['oil change', 'change oil', 'oil service', 'need oil', 'oil due'],
     services: [
       {
-        service: 'Oil Change',
-        description: 'Full synthetic oil change with filter replacement',
+        service: 'Full Synthetic Oil Change',
+        description: 'Complete oil and filter replacement with full synthetic',
         confidence: 0.95
       },
       {
-        service: 'Oil Filter Replacement',
-        description: 'Replace oil filter with high-quality filter',
+        service: 'Synthetic Blend Oil Change',
+        description: 'Oil and filter change with synthetic blend',
         confidence: 0.90
       },
       {
-        service: 'Multi-Point Inspection',
-        description: 'Complete vehicle inspection with oil change',
+        service: 'Oil System Inspection',
+        description: 'Check oil level, condition, and look for leaks',
         confidence: 0.85
       }
     ]
   },
-  'brake': {
+  
+  // BRAKE PATTERNS
+  brake: {
+    patterns: ['brake', 'braking', 'stop', 'pedal', 'squeak', 'grinding'],
     services: [
       {
-        service: 'Brake Inspection',
-        description: 'Complete brake system inspection and assessment',
+        service: 'Brake Pad Inspection',
+        description: 'Visual inspection of brake pad thickness and condition',
         confidence: 0.95
       },
       {
         service: 'Brake Pad Replacement',
-        description: 'Replace worn brake pads with quality parts',
+        description: 'Replace front or rear brake pads',
         confidence: 0.90
       },
       {
         service: 'Brake Fluid Service',
-        description: 'Brake fluid flush and system bleeding',
+        description: 'Brake fluid replacement and system bleeding',
         confidence: 0.85
       }
     ]
   },
-  'tire': {
+  
+  // BATTERY PATTERNS
+  battery: {
+    patterns: ['battery', 'start', 'dead', 'jump', 'clicking', 'won\'t start'],
     services: [
       {
-        service: 'Tire Rotation',
-        description: 'Rotate tires for even wear and extend life',
-        confidence: 0.95
-      },
-      {
-        service: 'Tire Replacement',
-        description: 'Replace worn tires with new quality tires',
-        confidence: 0.90
-      },
-      {
-        service: 'Tire Pressure Check',
-        description: 'Check and adjust tire pressure to specifications',
-        confidence: 0.85
-      }
-    ]
-  },
-  'battery': {
-    services: [
-      {
-        service: 'Battery Test',
-        description: 'Test battery health and charging system',
+        service: 'Battery Testing',
+        description: 'Test battery condition and charging system',
         confidence: 0.95
       },
       {
         service: 'Battery Replacement',
-        description: 'Replace dead or weak battery with new one',
+        description: 'Remove old battery and install new one',
         confidence: 0.90
       },
       {
-        service: 'Terminal Cleaning',
-        description: 'Clean battery terminals and connections',
+        service: 'Battery Terminal Service',
+        description: 'Clean terminals and check connections',
         confidence: 0.85
       }
     ]
   },
-  'ac': {
+  
+  // TIRE PATTERNS (mobile-friendly only)
+  tire: {
+    patterns: ['tire', 'flat', 'pressure', 'tpms', 'spare'],
     services: [
       {
-        service: 'AC System Check',
-        description: 'Diagnose AC system and identify issues',
+        service: 'Tire Pressure Check',
+        description: 'Check and adjust all tire pressures',
         confidence: 0.95
       },
       {
-        service: 'AC Recharge',
-        description: 'Recharge AC system with refrigerant',
+        service: 'Tire Rotation',
+        description: 'Rotate tires for even wear',
         confidence: 0.90
       },
       {
-        service: 'AC Filter Replacement',
-        description: 'Replace cabin air filter for better air quality',
+        service: 'Spare Tire Installation',
+        description: 'Remove flat and install spare tire',
         confidence: 0.85
       }
     ]
   },
-  'check engine': {
+  
+  // AIR FILTER PATTERNS
+  filter: {
+    patterns: ['filter', 'air filter', 'cabin', 'dusty', 'airflow'],
     services: [
       {
-        service: 'Diagnostic Scan',
-        description: 'Scan for trouble codes and identify issues',
+        service: 'Engine Air Filter',
+        description: 'Replace engine air filter',
         confidence: 0.95
       },
       {
-        service: 'Engine Tune-Up',
-        description: 'Complete engine tune-up and maintenance',
+        service: 'Cabin Air Filter',
+        description: 'Replace interior cabin air filter',
         confidence: 0.90
       },
       {
-        service: 'Spark Plug Replacement',
-        description: 'Replace worn spark plugs for better performance',
+        service: 'Filter Inspection',
+        description: 'Check all filters and recommend if needed',
         confidence: 0.85
       }
     ]
   },
-  'transmission': {
+  
+  // COOLANT PATTERNS
+  coolant: {
+    patterns: ['coolant', 'antifreeze', 'overheat', 'temperature', 'radiator'],
     services: [
       {
-        service: 'Transmission Fluid Check',
-        description: 'Check transmission fluid level and condition',
-        confidence: 0.95
-      },
-      {
-        service: 'Transmission Service',
-        description: 'Transmission fluid and filter change',
-        confidence: 0.90
-      },
-      {
-        service: 'Transmission Inspection',
-        description: 'Complete transmission system inspection',
-        confidence: 0.85
-      }
-    ]
-  },
-  'alignment': {
-    services: [
-      {
-        service: 'Wheel Alignment',
-        description: 'Adjust wheel alignment for proper handling',
-        confidence: 0.95
-      },
-      {
-        service: 'Tire Balance',
-        description: 'Balance tires for smooth ride',
-        confidence: 0.90
-      },
-      {
-        service: 'Suspension Check',
-        description: 'Inspect suspension components',
-        confidence: 0.85
-      }
-    ]
-  },
-  'coolant': {
-    services: [
-      {
-        service: 'Coolant Check',
+        service: 'Coolant Level Check',
         description: 'Check coolant level and condition',
         confidence: 0.95
       },
       {
-        service: 'Coolant Flush',
-        description: 'Flush and replace coolant system',
+        service: 'Coolant Top-Off',
+        description: 'Add coolant to proper level',
         confidence: 0.90
       },
       {
-        service: 'Thermostat Replacement',
-        description: 'Replace faulty thermostat',
+        service: 'Cooling System Inspection',
+        description: 'Check for leaks and test coolant strength',
         confidence: 0.85
       }
     ]
   },
-  'exhaust': {
+  
+  // WIPER PATTERNS
+  wiper: {
+    patterns: ['wiper', 'windshield', 'streak', 'rain', 'visibility'],
     services: [
       {
-        service: 'Exhaust Inspection',
-        description: 'Inspect exhaust system for leaks and damage',
+        service: 'Wiper Blade Replacement',
+        description: 'Replace front windshield wiper blades',
         confidence: 0.95
       },
       {
-        service: 'Muffler Replacement',
-        description: 'Replace damaged or noisy muffler',
+        service: 'Rear Wiper Replacement',
+        description: 'Replace rear windshield wiper blade',
         confidence: 0.90
       },
       {
-        service: 'Catalytic Converter Check',
-        description: 'Check catalytic converter function',
+        service: 'Washer Fluid Service',
+        description: 'Fill windshield washer fluid reservoir',
+        confidence: 0.85
+      }
+    ]
+  },
+  
+  // BELT PATTERNS
+  belt: {
+    patterns: ['belt', 'squeal', 'serpentine', 'broken belt'],
+    services: [
+      {
+        service: 'Serpentine Belt Inspection',
+        description: 'Check belt condition for cracks or wear',
+        confidence: 0.95
+      },
+      {
+        service: 'Belt Replacement',
+        description: 'Replace worn or damaged belt',
+        confidence: 0.90
+      },
+      {
+        service: 'Belt Tension Adjustment',
+        description: 'Adjust belt tension to specification',
+        confidence: 0.85
+      }
+    ]
+  },
+  
+  // FLUID CHECK PATTERNS
+  fluid: {
+    patterns: ['fluid', 'leak', 'low', 'check fluids', 'top off'],
+    services: [
+      {
+        service: 'Fluid Level Check',
+        description: 'Check all fluid levels and conditions',
+        confidence: 0.95
+      },
+      {
+        service: 'Fluid Top-Off Service',
+        description: 'Top off low fluids as needed',
+        confidence: 0.90
+      },
+      {
+        service: 'Leak Inspection',
+        description: 'Identify source of fluid leaks',
+        confidence: 0.85
+      }
+    ]
+  },
+  
+  // SPARK PLUG PATTERNS
+  spark: {
+    patterns: ['spark plug', 'misfire', 'rough idle', 'tune up'],
+    services: [
+      {
+        service: 'Spark Plug Replacement',
+        description: 'Replace spark plugs',
+        confidence: 0.95
+      },
+      {
+        service: 'Ignition System Check',
+        description: 'Test spark plug wires and coils',
+        confidence: 0.90
+      },
+      {
+        service: 'Engine Performance Check',
+        description: 'Basic engine performance evaluation',
+        confidence: 0.85
+      }
+    ]
+  },
+  
+  // LIGHT PATTERNS
+  light: {
+    patterns: ['headlight', 'taillight', 'bulb', 'light out', 'blinker'],
+    services: [
+      {
+        service: 'Headlight Bulb Replacement',
+        description: 'Replace headlight bulbs',
+        confidence: 0.95
+      },
+      {
+        service: 'Taillight Bulb Replacement',
+        description: 'Replace brake or taillight bulbs',
+        confidence: 0.90
+      },
+      {
+        service: 'Turn Signal Bulb Service',
+        description: 'Replace turn signal bulbs',
+        confidence: 0.85
+      }
+    ]
+  },
+  
+  // INSPECTION PATTERNS
+  inspection: {
+    patterns: ['inspect', 'check', 'diagnose', 'look at', 'evaluate'],
+    services: [
+      {
+        service: 'General Vehicle Inspection',
+        description: 'Visual inspection of major components',
+        confidence: 0.95
+      },
+      {
+        service: 'Maintenance Check',
+        description: 'Review maintenance needs and recommendations',
+        confidence: 0.90
+      },
+      {
+        service: 'Safety Inspection',
+        description: 'Check safety-related components',
         confidence: 0.85
       }
     ]
   }
 }
 
-// Pattern matching function
+// Smart pattern matching function
 const findMatchingServices = (description: string) => {
-  const lowerDescription = description.toLowerCase()
+  const lowerDesc = description.toLowerCase()
+  const words = lowerDesc.split(/\s+/)
   
-  for (const [pattern, data] of Object.entries(COMMON_SERVICE_PATTERNS)) {
-    if (lowerDescription.includes(pattern)) {
-      return data
+  // Check each service category
+  for (const [category, data] of Object.entries(COMMON_SERVICE_PATTERNS)) {
+    // Check if any pattern matches
+    for (const pattern of data.patterns) {
+      if (lowerDesc.includes(pattern)) {
+        console.log(`✅ Matched pattern: "${pattern}" → ${category} services`)
+        return {
+          services: data.services,
+          matchedPattern: pattern,
+          category: category,
+          skipGemini: true
+        }
+      }
     }
   }
   
-  return null
+  return null // No pattern matched
 }
 
 // Define types for form data
@@ -994,6 +1079,14 @@ function BookAppointmentContent() {
         setAiSuggestions(patternMatch.services)
         setIsFromPattern(true)
         console.log('✨ Instant recommendations from pattern match:', patternMatch.services)
+        
+        // Show toast notification
+        toast({
+          title: "✨ Instant Recommendations",
+          description: `Common service detected: ${patternMatch.category} services`,
+          duration: 3000,
+        })
+        
         // DO NOT call Gemini API
         return
       } else {
@@ -1021,6 +1114,14 @@ function BookAppointmentContent() {
           setAiSuggestions(patternMatch.services)
           setIsFromPattern(true)
           console.log('✨ Instant recommendations from pattern match:', patternMatch.services)
+          
+          // Show toast notification
+          toast({
+            title: "✨ Instant Recommendations",
+            description: `Common service detected: ${patternMatch.category} services`,
+            duration: 3000,
+          })
+          
           // DO NOT call Gemini API
           return
         }
