@@ -12,6 +12,213 @@ import { supabase } from "@/lib/supabase"
 import { toast } from "@/components/ui/use-toast"
 
 
+// Common service patterns for instant recommendations
+const COMMON_SERVICE_PATTERNS = {
+  'oil change': {
+    services: [
+      {
+        service: 'Oil Change',
+        description: 'Full synthetic oil change with filter replacement',
+        confidence: 0.95
+      },
+      {
+        service: 'Oil Filter Replacement',
+        description: 'Replace oil filter with high-quality filter',
+        confidence: 0.90
+      },
+      {
+        service: 'Multi-Point Inspection',
+        description: 'Complete vehicle inspection with oil change',
+        confidence: 0.85
+      }
+    ]
+  },
+  'brake': {
+    services: [
+      {
+        service: 'Brake Inspection',
+        description: 'Complete brake system inspection and assessment',
+        confidence: 0.95
+      },
+      {
+        service: 'Brake Pad Replacement',
+        description: 'Replace worn brake pads with quality parts',
+        confidence: 0.90
+      },
+      {
+        service: 'Brake Fluid Service',
+        description: 'Brake fluid flush and system bleeding',
+        confidence: 0.85
+      }
+    ]
+  },
+  'tire': {
+    services: [
+      {
+        service: 'Tire Rotation',
+        description: 'Rotate tires for even wear and extend life',
+        confidence: 0.95
+      },
+      {
+        service: 'Tire Replacement',
+        description: 'Replace worn tires with new quality tires',
+        confidence: 0.90
+      },
+      {
+        service: 'Tire Pressure Check',
+        description: 'Check and adjust tire pressure to specifications',
+        confidence: 0.85
+      }
+    ]
+  },
+  'battery': {
+    services: [
+      {
+        service: 'Battery Test',
+        description: 'Test battery health and charging system',
+        confidence: 0.95
+      },
+      {
+        service: 'Battery Replacement',
+        description: 'Replace dead or weak battery with new one',
+        confidence: 0.90
+      },
+      {
+        service: 'Terminal Cleaning',
+        description: 'Clean battery terminals and connections',
+        confidence: 0.85
+      }
+    ]
+  },
+  'ac': {
+    services: [
+      {
+        service: 'AC System Check',
+        description: 'Diagnose AC system and identify issues',
+        confidence: 0.95
+      },
+      {
+        service: 'AC Recharge',
+        description: 'Recharge AC system with refrigerant',
+        confidence: 0.90
+      },
+      {
+        service: 'AC Filter Replacement',
+        description: 'Replace cabin air filter for better air quality',
+        confidence: 0.85
+      }
+    ]
+  },
+  'check engine': {
+    services: [
+      {
+        service: 'Diagnostic Scan',
+        description: 'Scan for trouble codes and identify issues',
+        confidence: 0.95
+      },
+      {
+        service: 'Engine Tune-Up',
+        description: 'Complete engine tune-up and maintenance',
+        confidence: 0.90
+      },
+      {
+        service: 'Spark Plug Replacement',
+        description: 'Replace worn spark plugs for better performance',
+        confidence: 0.85
+      }
+    ]
+  },
+  'transmission': {
+    services: [
+      {
+        service: 'Transmission Fluid Check',
+        description: 'Check transmission fluid level and condition',
+        confidence: 0.95
+      },
+      {
+        service: 'Transmission Service',
+        description: 'Transmission fluid and filter change',
+        confidence: 0.90
+      },
+      {
+        service: 'Transmission Inspection',
+        description: 'Complete transmission system inspection',
+        confidence: 0.85
+      }
+    ]
+  },
+  'alignment': {
+    services: [
+      {
+        service: 'Wheel Alignment',
+        description: 'Adjust wheel alignment for proper handling',
+        confidence: 0.95
+      },
+      {
+        service: 'Tire Balance',
+        description: 'Balance tires for smooth ride',
+        confidence: 0.90
+      },
+      {
+        service: 'Suspension Check',
+        description: 'Inspect suspension components',
+        confidence: 0.85
+      }
+    ]
+  },
+  'coolant': {
+    services: [
+      {
+        service: 'Coolant Check',
+        description: 'Check coolant level and condition',
+        confidence: 0.95
+      },
+      {
+        service: 'Coolant Flush',
+        description: 'Flush and replace coolant system',
+        confidence: 0.90
+      },
+      {
+        service: 'Thermostat Replacement',
+        description: 'Replace faulty thermostat',
+        confidence: 0.85
+      }
+    ]
+  },
+  'exhaust': {
+    services: [
+      {
+        service: 'Exhaust Inspection',
+        description: 'Inspect exhaust system for leaks and damage',
+        confidence: 0.95
+      },
+      {
+        service: 'Muffler Replacement',
+        description: 'Replace damaged or noisy muffler',
+        confidence: 0.90
+      },
+      {
+        service: 'Catalytic Converter Check',
+        description: 'Check catalytic converter function',
+        confidence: 0.85
+      }
+    ]
+  }
+}
+
+// Pattern matching function
+const findMatchingServices = (description: string) => {
+  const lowerDescription = description.toLowerCase()
+  
+  for (const [pattern, data] of Object.entries(COMMON_SERVICE_PATTERNS)) {
+    if (lowerDescription.includes(pattern)) {
+      return data
+    }
+  }
+  
+  return null
+}
+
 // Define types for form data
 interface BookingFormData {
   issueDescription: string
@@ -531,7 +738,8 @@ function BookAppointmentContent() {
     service: string
     description: string
     confidence: number
-  }> | null>(defaultRecommendedServices)
+  }> | null>(null)
+  const [isFromPattern, setIsFromPattern] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [hasInteractedWithTextArea, setHasInteractedWithTextArea] = useState(false)
@@ -777,8 +985,22 @@ function BookAppointmentContent() {
     if (value.length >= 50 && formData.carRuns !== null) {
       // Clear any existing validation error
       setCarRunsValidationError(null)
-      // Call API immediately
-      analyzeWithGemini(uploadedFiles)
+      
+      // Check patterns first
+      const patternMatch = findMatchingServices(value)
+      
+      if (patternMatch && uploadedFiles.length === 0) {
+        // Show pattern results immediately
+        setAiSuggestions(patternMatch.services)
+        setIsFromPattern(true)
+        console.log('✨ Instant recommendations from pattern match:', patternMatch.services)
+        // DO NOT call Gemini API
+        return
+      } else {
+        // No pattern or has media - use Gemini
+        setIsFromPattern(false)
+        analyzeWithGemini(uploadedFiles)
+      }
     }
   }
   // Handle car runs selection - now using boolean values
@@ -790,7 +1012,22 @@ function BookAppointmentContent() {
     const hasMedia = uploadedFiles.length > 0
     
     if (hasEnoughDescription || hasMedia) {
-      // Call API IMMEDIATELY - no debounce
+      // Check patterns first (only if no media files)
+      if (hasEnoughDescription && !hasMedia) {
+        const patternMatch = findMatchingServices(formData.issueDescription)
+        
+        if (patternMatch) {
+          // Show pattern results immediately
+          setAiSuggestions(patternMatch.services)
+          setIsFromPattern(true)
+          console.log('✨ Instant recommendations from pattern match:', patternMatch.services)
+          // DO NOT call Gemini API
+          return
+        }
+      }
+      
+      // No pattern or has media - use Gemini
+      setIsFromPattern(false)
       analyzeWithGemini(uploadedFiles)
     } else {
       // Show validation message
@@ -813,7 +1050,9 @@ function BookAppointmentContent() {
     if (formData.carRuns !== null) {
       // Clear any existing validation error
       setCarRunsValidationError(null)
-      // Call API immediately - no debounce
+      // Reset pattern state since we have media (need visual analysis)
+      setIsFromPattern(false)
+      // Call Gemini API immediately - no debounce
       analyzeWithGemini(files)
     }
   }
@@ -930,6 +1169,7 @@ function BookAppointmentContent() {
     setCarRunsValidationError(null)
     setProcessingMedia(true)
     setMediaError(null)
+    setIsFromPattern(false) // Reset pattern state when using Gemini
 
     try {
       const formDataToSend = new FormData()
@@ -1868,8 +2108,17 @@ or simply type the service you want.
               <h4 className="text-sm font-medium text-gray-700 px-3 py-2 border-b border-gray-100 flex items-center justify-between">
                 Recommended Services
                 <div className="flex items-center text-[#294a46] text-[10px]">
-                  <div className="h-2 w-2 mr-1 -translate-y-0.5">💡</div>
-                  <p className="font-medium">axle ai recommends</p>
+                  {isFromPattern ? (
+                    <>
+                      <div className="h-2 w-2 mr-1 -translate-y-0.5">✨</div>
+                      <p className="font-medium">instant recommendations</p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="h-2 w-2 mr-1 -translate-y-0.5">💡</div>
+                      <p className="font-medium">axle ai recommends</p>
+                    </>
+                  )}
                 </div>
               </h4>
               <div className="p-4">
