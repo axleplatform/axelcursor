@@ -1087,49 +1087,58 @@ function BookAppointmentContent() {
   }
 
   // Handle media upload changes
-  const handleMediaUpload = (files: File[]) => {
-    setUploadedFiles(files as MediaFile[])
-    setValidationError('')
+  const handleMediaUpload = async (files: File[]) => {
+    try {
+      // Convert File[] to MediaFile[] properly
+      const mediaFiles: MediaFile[] = await Promise.all(
+        files.map(file => convertFileToMediaFile(file))
+      )
+      setUploadedFiles(mediaFiles)
+      setValidationError('')
 
-    // NEW DECISION FLOW: Gemini overrides patterns for complex cases
-    const hasMedia = files.length > 0 || recordedAudio !== null
-    const isComplex = formData.issueDescription.length >= 50
-    
-    console.log(`🔍 Analysis decision: Media=${hasMedia}, Complex=${isComplex}, Length=${formData.issueDescription.length}`)
-    
-    // ALWAYS use Gemini for complex cases
-    if (hasMedia || isComplex) {
-      console.log('🎯 Using Gemini API: Complex issue or media present')
-      setPatternMatched(false)
-      setAiSuggestionsLoading(true)
-      analyzeWithGemini(uploadedFiles)
-      return
-    }
-    
-    // Only check patterns for simple text under 50 chars
-    if (formData.issueDescription.length < 50) {
-      const patternMatch = findMatchingServices(formData.issueDescription)
-      if (patternMatch) {
-        console.log('✅ Pattern matched for simple query:', formData.issueDescription)
-        setAiSuggestions(patternMatch.services)
-        setPatternMatched(true)
-        setAiSuggestionsLoading(false)
-        
-        // Show toast notification
-        toast({
-          title: "✨ Instant Recommendations",
-          description: `Common service detected: ${patternMatch.category} services`,
-          duration: 3000,
-        })
+      // NEW DECISION FLOW: Gemini overrides patterns for complex cases
+      const hasMedia = files.length > 0 || recordedAudio !== null
+      const isComplex = formData.issueDescription.length >= 50
+      
+      console.log(`🔍 Analysis decision: Media=${hasMedia}, Complex=${isComplex}, Length=${formData.issueDescription.length}`)
+      
+      // ALWAYS use Gemini for complex cases
+      if (hasMedia || isComplex) {
+        console.log('🎯 Using Gemini API: Complex issue or media present')
+        setPatternMatched(false)
+        setAiSuggestionsLoading(true)
+        analyzeWithGemini(mediaFiles)
         return
       }
+      
+      // Only check patterns for simple text under 50 chars
+      if (formData.issueDescription.length < 50) {
+        const patternMatch = findMatchingServices(formData.issueDescription)
+        if (patternMatch) {
+          console.log('✅ Pattern matched for simple query:', formData.issueDescription)
+          setAiSuggestions(patternMatch.services)
+          setPatternMatched(true)
+          setAiSuggestionsLoading(false)
+          
+          // Show toast notification
+          toast({
+            title: "✨ Instant Recommendations",
+            description: `Common service detected: ${patternMatch.category} services`,
+            duration: 3000,
+          })
+          return
+        }
+      }
+      
+      // Default to Gemini if no pattern match
+      console.log('🤖 Defaulting to Gemini API: No pattern match')
+      setPatternMatched(false)
+      setAiSuggestionsLoading(true)
+      analyzeWithGemini(mediaFiles)
+    } catch (error) {
+      console.error('Error converting files:', error)
+      setValidationError('Error processing uploaded files')
     }
-    
-    // Default to Gemini if no pattern match
-    console.log('🤖 Defaulting to Gemini API: No pattern match')
-    setPatternMatched(false)
-    setAiSuggestionsLoading(true)
-    analyzeWithGemini(uploadedFiles)
   }
 
   // Voice recording functions
@@ -2320,4 +2329,33 @@ export default function BookAppointment() {
       <BookAppointmentContent />
     </Suspense>
   )
+}
+
+// Helper function to convert File to base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = () => {
+      const result = reader.result as string
+      // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+      const base64 = result.split(',')[1]
+      resolve(base64)
+    }
+    reader.onerror = error => reject(error)
+  })
+}
+
+// Helper function to convert File to MediaFile
+const convertFileToMediaFile = async (file: File): Promise<MediaFile> => {
+  const base64Data = await fileToBase64(file)
+  return {
+    type: file.type.startsWith('image/') ? 'image' : 
+          file.type.startsWith('video/') ? 'video' : 
+          file.type.startsWith('audio/') ? 'audio' : 'other',
+    data: base64Data,
+    name: file.name,
+    size: file.size,
+    mimeType: file.type
+  }
 }
