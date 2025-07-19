@@ -280,24 +280,76 @@ const COMMON_SERVICE_PATTERNS = {
   }
 }
 
-// Smart pattern matching function
+// Fuzzy matching for common typos
+const typoPatterns = {
+  'break': 'brake',  // Common typo
+  'breakpad': 'brake pad',
+  'oilchnage': 'oil change',
+  'battry': 'battery',
+  'tyre': 'tire',
+  'wiperblade': 'wiper blade',
+  'sparkplug': 'spark plug',
+  'headlight': 'head light',
+  'taillight': 'tail light',
+  'turn signal': 'turn signal',
+  'air filter': 'air filter',
+  'cabin filter': 'cabin filter',
+  'serpentine belt': 'serpentine belt',
+  'coolant level': 'coolant level',
+  'brake fluid': 'brake fluid',
+  'oil filter': 'oil filter',
+  'transmission fluid': 'transmission fluid',
+  'power steering': 'power steering',
+  'washer fluid': 'washer fluid'
+}
+
+// Smart pattern matching function with multiple detection and fuzzy matching
+// Features:
+// - Multiple pattern detection: "I need an oil change and my brakes are squeaking" matches both oil and brake patterns
+// - Fuzzy matching: Fixes common typos like "break" → "brake", "battry" → "battery"
+// - Duplicate removal: Returns top 3 unique services when multiple patterns match
+// - Mobile-friendly: All services doable by mobile mechanics without shop equipment
 const findMatchingServices = (description: string) => {
   const lowerDesc = description.toLowerCase()
   const words = lowerDesc.split(/\s+/)
+  const matches: any[] = []
   
-  // Check each service category
+  // First, apply fuzzy matching to fix common typos
+  let correctedDescription = lowerDesc
+  for (const [typo, correction] of Object.entries(typoPatterns)) {
+    if (correctedDescription.includes(typo)) {
+      correctedDescription = correctedDescription.replace(new RegExp(typo, 'g'), correction)
+      console.log(`🔧 Fixed typo: "${typo}" → "${correction}"`)
+    }
+  }
+  
+  // Check each service category for multiple matches
   for (const [category, data] of Object.entries(COMMON_SERVICE_PATTERNS)) {
     // Check if any pattern matches
     for (const pattern of data.patterns) {
-      if (lowerDesc.includes(pattern)) {
+      if (correctedDescription.includes(pattern)) {
         console.log(`✅ Matched pattern: "${pattern}" → ${category} services`)
-        return {
-          services: data.services,
-          matchedPattern: pattern,
-          category: category,
-          skipGemini: true
-        }
+        matches.push(...data.services)
       }
+    }
+  }
+  
+  // If multiple matches found, return top 3 unique services
+  if (matches.length > 0) {
+    // Remove duplicates based on service name
+    const uniqueServices = matches.filter((service, index, self) => 
+      index === self.findIndex(s => s.service === service.service)
+    )
+    
+    const topServices = uniqueServices.slice(0, 3)
+    
+    console.log(`🎯 Multiple patterns detected: ${matches.length} total, returning top ${topServices.length} unique services`)
+    
+    return {
+      services: topServices,
+      matchedPatterns: matches.length,
+      category: 'multiple',
+      skipGemini: true
     }
   }
   
@@ -650,125 +702,6 @@ interface AppointmentData {
   } | null
 }
 // Define database schema types
-// Enhance the getAIDiagnostics function to return at least 3 relevant services
-function getAIDiagnostics(carIssue: string): Array<{ service: string; description: string; confidence: number }> | null {
-  if (!carIssue.trim()) {
-    return null
-  }
-  const issue = carIssue.toLowerCase()
-  let possibleServices: { service: string; description: string; confidence: number }[] = []
-  // Default services if no specific matches are found
-  const defaultServices = [
-    {
-      service: "General Inspection",
-      description: "Identify specific issues with your vehicle.",
-      confidence: 0.5,
-    },
-    {
-      service: "Diagnostic Scan",
-      description: "Computer scan to identify error codes and electronic issues.",
-      confidence: 0.45,
-    },
-    {
-      service: "Maintenance Check",
-      description: "Review of vehicle's maintenance needs and requirements.",
-      confidence: 0.4,
-    },
-  ]
-  // Analyze each category
-  for (const category of diagnosticSystem.categories) {
-    // Check how many keywords match
-    const matchingKeywords = category.keywords.filter((keyword) => issue.includes(keyword))
-    if (matchingKeywords.length > 0) {
-      // Calculate match confidence based on keyword matches
-      const keywordConfidence = matchingKeywords.length / category.keywords.length
-      // Check specific conditions within the category
-      for (const response of category.responses) {
-        const matchingConditions = response.conditions.filter((condition) => issue.includes(condition))
-        if (matchingConditions.length > 0) {
-          const conditionConfidence = matchingConditions.length / response.conditions.length
-          const totalConfidence = (keywordConfidence + conditionConfidence) / 2
-          possibleServices.push({
-            service: response.service,
-            description: response.description,
-            confidence: totalConfidence,
-          })
-        }
-      }
-      // If no specific conditions matched but we matched keywords, add a general category service
-      if (
-        possibleServices.filter((s) => s.service.includes(category.name)).length === 0 &&
-        matchingKeywords.length > 1
-      ) {
-        possibleServices.push({
-          service: `${category.name} System Inspection`,
-          description: `Complete inspection of your vehicle's ${category.name.toLowerCase()} system.`,
-          confidence: keywordConfidence * 0.8,
-        })
-      }
-    }
-  }
-  // Sort by confidence
-  possibleServices.sort((a, b) => b.confidence - a.confidence)
-  // If we don't have enough services, add some defaults
-  if (possibleServices.length === 0) {
-    possibleServices = [...defaultServices]
-  } else if (possibleServices.length < 3) {
-    // Add related services based on the matched category
-    const highestConfidenceService = possibleServices[0]
-    // Find which category the highest confidence service belongs to
-    let relatedCategory = null
-    for (const category of diagnosticSystem.categories) {
-      if (highestConfidenceService.service.includes(category.name)) {
-        relatedCategory = category.name
-        break
-      }
-    }
-    // Add related services from default list
-    let remainingDefaultsToAdd = 3 - possibleServices.length
-    for (const defaultService of defaultServices) {
-      // Skip if already have a similar service
-      if (possibleServices.some((s) => s.service === defaultService.service)) {
-        continue
-      }
-      possibleServices.push({
-        ...defaultService,
-        description: relatedCategory
-          ? defaultService.description + ` Focus on ${relatedCategory.toLowerCase()} components.`
-          : defaultService.description,
-      })
-      remainingDefaultsToAdd--
-      if (remainingDefaultsToAdd <= 0) break
-    }
-  }
-  // Return top 3 services instead of 2
-  return possibleServices.slice(0, 3)
-}
-// Define database schema types
-interface AppointmentData {
-  id: string
-  user_id: string
-  location: string
-  appointment_date: string
-  status: string
-  source: string
-  is_guest: boolean
-  created_at: string
-  updated_at: string
-  car_runs: boolean | null
-  issue_description: string
-  selected_services: string[]
-  selected_car_issues: string[]
-  phone_number: string
-  vehicles: {
-    vin: string
-    year: string
-    make: string
-    model: string
-    mileage: string
-  } | null
-}
-// Define database schema types
 // Define database schema types
 interface AppointmentData {
   id: string
@@ -1083,7 +1016,9 @@ function BookAppointmentContent() {
         // Show toast notification
         toast({
           title: "✨ Instant Recommendations",
-          description: `Common service detected: ${patternMatch.category} services`,
+          description: patternMatch.category === 'multiple' 
+            ? `Multiple services detected: ${patternMatch.matchedPatterns} patterns matched`
+            : `Common service detected: ${patternMatch.category} services`,
           duration: 3000,
         })
         
@@ -1118,7 +1053,9 @@ function BookAppointmentContent() {
           // Show toast notification
           toast({
             title: "✨ Instant Recommendations",
-            description: `Common service detected: ${patternMatch.category} services`,
+            description: patternMatch.category === 'multiple' 
+              ? `Multiple services detected: ${patternMatch.matchedPatterns} patterns matched`
+              : `Common service detected: ${patternMatch.category} services`,
             duration: 3000,
           })
           
