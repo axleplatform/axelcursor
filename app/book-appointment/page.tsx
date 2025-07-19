@@ -1359,6 +1359,12 @@ function BookAppointmentContent() {
       return
     }
 
+    // Skip if we have pattern-based recommendations (don't override them)
+    if (patternMatched) {
+      console.log('🛡️ Skipping useEffect - pattern-based recommendations active')
+      return
+    }
+
     // Clear existing debounce timer
     if (geminiDebounceTimer) {
       clearTimeout(geminiDebounceTimer)
@@ -1383,7 +1389,7 @@ function BookAppointmentContent() {
     return () => {
       if (timer) clearTimeout(timer)
     }
-  }, [formData.issueDescription, uploadedFiles, formData.carRuns, hasInteractedWithTextArea])
+  }, [formData.issueDescription, uploadedFiles, formData.carRuns, hasInteractedWithTextArea, patternMatched])
   // Save form data to sessionStorage whenever it changes
   useEffect(() => {
     if (formData.issueDescription || formData.selectedServices.length > 0 || formData.selectedCarIssues.length > 0) {
