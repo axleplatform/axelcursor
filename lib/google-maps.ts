@@ -60,6 +60,13 @@ export async function getGoogleMapsApiKey(): Promise<string> {
 export async function loadGoogleMaps(): Promise<any> {
   try {
     console.log('🔍 Google Maps: Checking cached instance...');
+    
+    // Check for global cached instance first
+    if (typeof window !== 'undefined' && window.googleMapsInstance) {
+      console.log('🔍 Google Maps: Returning global cached instance');
+      return window.googleMapsInstance;
+    }
+    
     if (googleMapsInstance) {
       console.log('🔍 Google Maps: Returning cached instance');
       return googleMapsInstance;
@@ -88,6 +95,12 @@ export async function loadGoogleMaps(): Promise<any> {
 
         console.log('🔍 Google Maps: Loading Google Maps...');
         googleMapsInstance = await loader.load();
+        
+        // Store in global window object for better caching
+        if (typeof window !== 'undefined') {
+          window.googleMapsInstance = googleMapsInstance;
+        }
+        
         console.log('✅ Google Maps loaded successfully (Core + Geometry + Marker)');
         return googleMapsInstance;
       } catch (error) {
@@ -216,37 +229,11 @@ export async function searchPlacesNew(input: string, sessionToken: string, signa
   }
 }
 
-// Test if Places API (New) is enabled
-export async function testPlacesAPINew(): Promise<boolean> {
-  try {
-    const apiKey = await getGoogleMapsApiKey();
-    
-    const response = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': apiKey,
-      },
-      body: JSON.stringify({
-        input: "test",
-      })
-    });
-    
-    console.log('🔍 Places API (New) test response status:', response.status);
-    
-    if (response.ok) {
-      console.log('✅ Places API (New) is available');
-      return true;
-    } else {
-      const errorText = await response.text();
-      console.log('❌ Places API (New) test failed:', response.status, errorText);
-      return false;
-    }
-  } catch (error) {
-    console.error('❌ Places API (New) not available:', error);
-    return false;
-  }
-}
+// Test if Places API (New) is enabled - REMOVED TO SAVE API COSTS
+// This function was making unnecessary API calls and has been removed
+// export async function testPlacesAPINew(): Promise<boolean> {
+//   // REMOVED - This was wasting API calls
+// }
 
 
 

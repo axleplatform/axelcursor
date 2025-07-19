@@ -8,6 +8,7 @@ interface HomepageLocationInputProps {
   value: string
   onChange: (value: string) => void
   onLocationSelect?: (place: any) => void
+  onFocus?: () => void
   label?: string
   required?: boolean
 }
@@ -16,6 +17,7 @@ export default function HomepageLocationInput({
   value,
   onChange,
   onLocationSelect,
+  onFocus,
   label,
   required
 }: HomepageLocationInputProps) {
@@ -173,6 +175,7 @@ export default function HomepageLocationInput({
           type="text"
           value={value}
           onChange={handleInputChange}
+          onFocus={onFocus}
           placeholder="Click Pin or Enter Address"
           className="location-input w-full h-[50px] pl-12 pr-4 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-0 focus:ring-offset-0 focus:border-gray-300 focus:shadow-none transition-none"
           style={{

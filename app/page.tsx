@@ -79,7 +79,7 @@ interface SupabaseQueryResult {
 }
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
-function HomePageContent(): React.JSX.Element {
+const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element {
   const router = useRouter()
   const searchParams = useSearchParams()
   
@@ -124,6 +124,12 @@ function HomePageContent(): React.JSX.Element {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
+  
+  // Add map initialization flag to prevent multiple initializations
+  const mapInitializedRef = useRef(false);
+  
+  // Add lazy loading state to prevent map loading until user interaction
+  const [shouldLoadMap, setShouldLoadMap] = useState(false);
 
   // Add ref to track if component is mounted
   const isMountedRef = useRef(true);
@@ -268,6 +274,18 @@ function HomePageContent(): React.JSX.Element {
 
   // Initialize map on mount
   const initializeMap = useCallback(async () => {
+    // Prevent multiple initializations
+    if (mapInitializedRef.current) {
+      console.log('🔍 Map init: Already initialized, skipping');
+      return;
+    }
+    
+    // Lazy loading check - only load if user has interacted
+    if (!shouldLoadMap) {
+      console.log('🔍 Map init: Lazy loading - waiting for user interaction');
+      return;
+    }
+    
     // Suppress WebGL errors during initialization - declare at function scope
     let originalConsoleError: typeof console.error | undefined = undefined;
     try {
@@ -347,6 +365,7 @@ function HomePageContent(): React.JSX.Element {
       
       mapInstanceRef.current = map;
       setMapLoaded(true);
+      mapInitializedRef.current = true; // Mark as initialized
       console.log('✅ Map initialized successfully');
 
       // If we have saved location data, add the marker immediately
@@ -390,7 +409,7 @@ function HomePageContent(): React.JSX.Element {
           markerRef.current = newMarker;
           console.log('✅ Marker added for saved location');
         }
-              }
+      }
     } catch (error) {
       console.error('❌ Map initialization error:', error);
       console.error('❌ Error stack:', error.stack);
@@ -402,11 +421,11 @@ function HomePageContent(): React.JSX.Element {
         console.error = originalConsoleError;
       }
     }
-  }, [formData.latitude, formData.longitude, createDraggableMarker]); // Add createDraggableMarker dependency back
+  }, [formData.latitude, formData.longitude, createDraggableMarker, shouldLoadMap]); // Add shouldLoadMap dependency
 
   // Single consolidated map initialization effect
   useEffect(() => {
-    console.log('🗺️ Landing page mounted/active - initializing map');
+    console.log('🗺️ Landing page mounted/active - checking map initialization');
     
     // Check if component is still mounted before initializing
     if (!isMountedRef.current) {
@@ -414,9 +433,21 @@ function HomePageContent(): React.JSX.Element {
       return;
     }
     
+    // Check if already initialized
+    if (mapInitializedRef.current) {
+      console.log('🗺️ Map already initialized, skipping');
+      return;
+    }
+    
+    // Lazy loading check - only initialize if user has interacted
+    if (!shouldLoadMap) {
+      console.log('🗺️ Lazy loading - waiting for user interaction');
+      return;
+    }
+    
     // Small delay to ensure DOM is ready
     const timer = setTimeout(() => {
-      if (mapRef.current && isMountedRef.current) {
+      if (mapRef.current && isMountedRef.current && !mapInitializedRef.current && shouldLoadMap) {
         initializeMap();
       }
     }, 50);
@@ -424,7 +455,7 @@ function HomePageContent(): React.JSX.Element {
     return () => {
       clearTimeout(timer);
     };
-  }, [initializeMap]);
+  }, [shouldLoadMap]); // Only run when shouldLoadMap changes
 
   // Cleanup effect for component unmount
   useEffect(() => {
@@ -435,6 +466,9 @@ function HomePageContent(): React.JSX.Element {
       
       // Set mounted flag to false to prevent state updates
       isMountedRef.current = false;
+      
+      // Reset initialization flag
+      mapInitializedRef.current = false;
       
       // Clear navigation timeout
       if (navigationTimeoutRef.current) {
@@ -467,67 +501,45 @@ function HomePageContent(): React.JSX.Element {
           if (window.google?.maps?.event) {
             window.google.maps.event.clearInstanceListeners(mapInstanceRef.current);
           }
+          
+          // Properly destroy the map
+          mapInstanceRef.current.setMap(null);
         } catch (error) {
-          console.warn('Error clearing map listeners:', error);
+          console.warn('Error cleaning up map:', error);
         }
         mapInstanceRef.current = null;
       }
       
-      // Clean up Google Maps DOM elements with safety checks
-      try {
-        const { globalCleanup } = require('@/lib/google-maps');
-        globalCleanup();
-      } catch (error) {
-        console.warn('Error during global cleanup:', error);
-      }
-      
-      // Additional DOM cleanup for any lingering elements
-      setTimeout(() => {
-        try {
-          const pacElements = document.querySelectorAll('.pac-container, .pac-item, .google-maps-autocomplete-suggestions');
-          pacElements.forEach(el => {
-            try {
-              if (el && el.parentNode) {
-                el.parentNode.removeChild(el);
-              }
-            } catch (error) {
-              // Ignore DOM removal errors
-            }
-          });
-        } catch (error) {
-          // Ignore cleanup errors
-        }
-      }, 50);
+      // Reset map loaded state
+      setMapLoaded(false);
     };
-  }, []); // Run only on unmount
+  }, []); // Empty dependency array - only run on mount/unmount
 
   // Handle visibility changes and focus events to reinitialize map (simplified)
   useEffect(() => {
+    // Only reinitialize if map was not properly initialized and user has interacted
     const handleVisibilityChange = () => {
-      if (!document.hidden && mapRef.current && !mapInstanceRef.current) {
-        console.log('🗺️ Page became visible - reinitializing map');
-        setTimeout(() => initializeMap(), 100);
+      if (!document.hidden && shouldLoadMap && !mapInstanceRef.current && !mapInitializedRef.current) {
+        console.log('🗺️ Page became visible - checking map initialization (conservative)');
+        // Use a longer delay to prevent aggressive reinitialization
+        setTimeout(() => {
+          if (shouldLoadMap && !mapInstanceRef.current && !mapInitializedRef.current) {
+            initializeMap();
+          }
+        }, 1000); // 1 second delay instead of immediate
       }
     };
 
-    const handleFocus = () => {
-      if (mapRef.current && !mapInstanceRef.current) {
-        console.log('🗺️ Window gained focus - reinitializing map');
-        setTimeout(() => initializeMap(), 100);
-      }
-    };
-
-    // Listen for visibility changes
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Listen for window focus (useful for browser back button)
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [initializeMap]);
+    // Only set up listeners if user has interacted
+    if (shouldLoadMap) {
+      // Listen for visibility changes
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+    }
+  }, [shouldLoadMap]); // Only set up listeners when shouldLoadMap is true
 
   // Smooth animation to location with professional easing
   const animateToLocation = useCallback((map: google.maps.Map, location: { lat: number; lng: number }) => {
@@ -571,38 +583,66 @@ function HomePageContent(): React.JSX.Element {
 
   // Define updateMapLocation function (with animation for address selection)
   const updateMapLocation = useCallback(async (location: { lat: number; lng: number }) => {
-    if (!mapInstanceRef.current) return;
+    // Add null checks to prevent WebGL errors
+    if (!mapInstanceRef.current || !location || typeof location.lat !== 'number' || typeof location.lng !== 'number') {
+      console.warn('updateMapLocation: Invalid map instance or location data');
+      return;
+    }
+    
+    // Clean up existing marker safely
     if (markerRef.current) {
-      markerRef.current.setMap(null);
+      try {
+        markerRef.current.setMap(null);
+      } catch (error) {
+        console.warn('Error cleaning up marker:', error);
+      }
       markerRef.current = null;
     }
-    await animateToLocation(mapInstanceRef.current, location);
+    
+    // Animate to location with error handling
+    try {
+      await animateToLocation(mapInstanceRef.current, location);
+    } catch (error) {
+      console.warn('Error animating to location:', error);
+      // Fallback: just set center without animation
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.setCenter(location);
+        mapInstanceRef.current.setZoom(17);
+      }
+    }
+    
+    // Create new marker with error handling
     if (mapInstanceRef.current) {
-      const newMarker = createDraggableMarker(mapInstanceRef.current, location, (newPos) => {
-        setFormData(prev => ({
-          ...prev,
-          latitude: newPos.lat,
-          longitude: newPos.lng,
-          location: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
-        }));
-        setSelectedLocation(prevSelectedLocation => {
-          if (prevSelectedLocation) {
-            return {
-              ...prevSelectedLocation,
-              geometry: {
-                ...prevSelectedLocation.geometry,
-                location: { lat: newPos.lat, lng: newPos.lng }
-              },
-              formatted_address: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
-            };
-          }
-          return prevSelectedLocation;
+      try {
+        const newMarker = createDraggableMarker(mapInstanceRef.current, location, (newPos) => {
+          setFormData(prev => ({
+            ...prev,
+            latitude: newPos.lat,
+            longitude: newPos.lng,
+            location: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
+          }));
+          setSelectedLocation(prevSelectedLocation => {
+            if (prevSelectedLocation) {
+              return {
+                ...prevSelectedLocation,
+                geometry: {
+                  ...prevSelectedLocation.geometry,
+                  location: { lat: newPos.lat, lng: newPos.lng }
+                },
+                formatted_address: newPos.address || `${newPos.lat.toFixed(6)}, ${newPos.lng.toFixed(6)}`
+              };
+            }
+            return prevSelectedLocation;
+          });
         });
-      });
-      if (newMarker) {
-        markerRef.current = newMarker;
-      } else {
-        console.error('Failed to create draggable marker');
+        
+        if (newMarker) {
+          markerRef.current = newMarker;
+        } else {
+          console.error('Failed to create draggable marker');
+        }
+      } catch (error) {
+        console.error('Error creating marker:', error);
       }
     }
   }, [animateToLocation, createDraggableMarker]);
@@ -1955,6 +1995,21 @@ function HomePageContent(): React.JSX.Element {
     )
   }
 
+  // Handle location input focus to trigger map loading
+  const handleLocationFocus = useCallback(() => {
+    if (!shouldLoadMap) {
+      console.log('🗺️ Location input focused - triggering map loading');
+      setShouldLoadMap(true);
+    }
+  }, [shouldLoadMap]);
+
+  // Handle location change
+  const handleLocationChange = useCallback((val: string | React.ChangeEvent<HTMLInputElement>) => {
+    const value = typeof val === 'string' ? val : val.target.value;
+    setFormData(f => ({ ...f, location: value }));
+    // No automatic geocoding - only update when user selects from dropdown
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-white" suppressHydrationWarning>
       {/* Header */}
@@ -1983,6 +2038,7 @@ function HomePageContent(): React.JSX.Element {
               onLocationSelect={handleLocationSelect}
               label="Enter your location"
               required
+              onFocus={handleLocationFocus}
             />
 
 
@@ -2632,7 +2688,7 @@ function HomePageContent(): React.JSX.Element {
       `}</style>
     </div>
   )
-}
+})
 
 // Loading fallback component
 function HomePageLoading(): React.JSX.Element {
