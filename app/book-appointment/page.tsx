@@ -772,6 +772,7 @@ function BookAppointmentContent() {
   const [processingMedia, setProcessingMedia] = useState(false)
   const [mediaError, setMediaError] = useState<string | null>(null)
   const [geminiDebounceTimer, setGeminiDebounceTimer] = useState<NodeJS.Timeout | null>(null)
+  const [patternDebounceTimer, setPatternDebounceTimer] = useState<NodeJS.Timeout | null>(null)
   
   // Voice recording states
   const [isRecording, setIsRecording] = useState(false)
@@ -1000,44 +1001,54 @@ function BookAppointmentContent() {
     const value = e.target.value
     setFormData((prev) => ({ ...prev, issueDescription: value }))
     
-    // NEW DECISION FLOW: Gemini overrides patterns for complex cases
-    const hasMedia = uploadedFiles.length > 0 || recordedAudio !== null
-    const isComplex = value.length >= 50
-    
-    console.log(`🔍 Analysis decision: Media=${hasMedia}, Complex=${isComplex}, Length=${value.length}`)
-    
-    // ALWAYS use Gemini for complex cases
-    if (hasMedia || isComplex) {
-      console.log('🎯 Using Gemini API: Complex issue or media present')
-      setPatternMatched(false)
-      setAiSuggestionsLoading(true)
-      analyzeWithGemini(uploadedFiles)
-      return
+    // Clear existing pattern debounce timer
+    if (patternDebounceTimer) {
+      clearTimeout(patternDebounceTimer)
     }
     
-    // Only check patterns for simple text under 50 chars
-    if (value.length < 50) {
-      const patternMatch = findMatchingServices(value)
-      if (patternMatch) {
-        console.log('✅ Pattern matched for simple query:', value)
-        setAiSuggestions(patternMatch.services)
-        setPatternMatched(true)
-        setAiSuggestionsLoading(false)
-        
-        // Show toast notification
-        toast({
-          title: "✨ Instant Recommendations",
-          description: `Common service detected: ${patternMatch.category} services`,
-          duration: 3000,
-        })
+    // Set new pattern debounce timer for 1 second
+    const timer = setTimeout(() => {
+      // NEW DECISION FLOW: Gemini overrides patterns for complex cases
+      const hasMedia = uploadedFiles.length > 0 || recordedAudio !== null
+      const isComplex = value.length >= 50
+      
+      console.log(`🔍 Analysis decision: Media=${hasMedia}, Complex=${isComplex}, Length=${value.length}`)
+      
+      // ALWAYS use Gemini for complex cases
+      if (hasMedia || isComplex) {
+        console.log('🎯 Using Gemini API: Complex issue or media present')
+        setPatternMatched(false)
+        setAiSuggestionsLoading(true)
+        analyzeWithGemini(uploadedFiles)
         return
       }
-    }
+      
+      // Only check patterns for simple text under 50 chars
+      if (value.length < 50) {
+        const patternMatch = findMatchingServices(value)
+        if (patternMatch) {
+          console.log('✅ Pattern matched for simple query:', value)
+          setAiSuggestions(patternMatch.services)
+          setPatternMatched(true)
+          setAiSuggestionsLoading(false)
+          
+          // Show toast notification
+          toast({
+            title: "✨ Instant Recommendations",
+            description: `Common service detected: ${patternMatch.category} services`,
+            duration: 3000,
+          })
+          return
+        }
+      }
+      
+      // No pattern match - let the 3-second debounce handle Gemini API call
+      console.log('⏳ No pattern match - waiting for debounce timer')
+      setPatternMatched(false)
+      setAiSuggestionsLoading(false) // Don't show loading immediately
+    }, 1000) // 1 second debounce for pattern matching
     
-    // No pattern match - let the 3-second debounce handle Gemini API call
-    console.log('⏳ No pattern match - waiting for debounce timer')
-    setPatternMatched(false)
-    setAiSuggestionsLoading(false) // Don't show loading immediately
+    setPatternDebounceTimer(timer)
   }
   // Handle car runs selection - now using boolean values
   const handleCarRunsChange = (value: boolean) => {
@@ -1385,6 +1396,7 @@ function BookAppointmentContent() {
     // Cleanup timer on unmount
     return () => {
       if (timer) clearTimeout(timer)
+      if (patternDebounceTimer) clearTimeout(patternDebounceTimer)
     }
   }, [formData.issueDescription, uploadedFiles, formData.carRuns, hasInteractedWithTextArea, patternMatched])
   // Save form data to sessionStorage whenever it changes
