@@ -670,15 +670,14 @@ export async function createAutocomplete(
       return { success: false, error: 'onPlaceSelect must be a function' };
     }
     
-    // Test if new Places API is available
-    const isNewAPIEnabled = await testPlacesAPINew();
-    
-    if (isNewAPIEnabled) {
-      console.log('🔍 createAutocomplete: Using new Places API');
+    // Assume Places API is available and try to use it directly
+    try {
+      console.log('🔍 createAutocomplete: Attempting to use new Places API');
       return await createNewPlacesAutocomplete(inputElement, onPlaceSelect, finalOptions);
-    } else {
-      console.log('🔍 createAutocomplete: New Places API not available, using fallback');
-      // For now, return a simple success response since we're not using the old API
+    } catch (error) {
+      console.error('❌ Places API error:', error);
+      console.log('🔍 createAutocomplete: Places API failed, returning fallback');
+      // Return a simple success response since we're not using the old API
       return { success: true, autocomplete: null };
     }
   } catch (error) {
