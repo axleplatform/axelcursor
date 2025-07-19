@@ -2003,13 +2003,6 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
     }
   }, [shouldLoadMap]);
 
-  // Handle location change
-  const handleLocationChange = useCallback((val: string | React.ChangeEvent<HTMLInputElement>) => {
-    const value = typeof val === 'string' ? val : val.target.value;
-    setFormData(f => ({ ...f, location: value }));
-    // No automatic geocoding - only update when user selects from dropdown
-  }, []);
-
   return (
     <div className="min-h-screen flex flex-col bg-white" suppressHydrationWarning>
       {/* Header */}
