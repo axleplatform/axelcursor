@@ -1032,12 +1032,7 @@ function BookAppointmentContent() {
           setPatternMatched(true)
           setAiSuggestionsLoading(false)
           
-          // Show toast notification
-          toast({
-            title: "✨ Instant Recommendations",
-            description: `Common service detected: ${patternMatch.category} services`,
-            duration: 3000,
-          })
+          // No toast notification - silent pattern match
           return
         }
       }
@@ -1078,12 +1073,7 @@ function BookAppointmentContent() {
         setPatternMatched(true)
         setAiSuggestionsLoading(false)
         
-        // Show toast notification
-        toast({
-          title: "✨ Instant Recommendations",
-          description: `Common service detected: ${patternMatch.category} services`,
-          duration: 3000,
-        })
+        // No toast notification - silent pattern match
         return
       }
     }
@@ -1127,12 +1117,7 @@ function BookAppointmentContent() {
           setPatternMatched(true)
           setAiSuggestionsLoading(false)
           
-          // Show toast notification
-          toast({
-            title: "✨ Instant Recommendations",
-            description: `Common service detected: ${patternMatch.category} services`,
-            duration: 3000,
-          })
+          // No toast notification - silent pattern match
           return
         }
       }
@@ -2262,9 +2247,25 @@ or simply type the service you want.
                     ))}
                   </div>
                 ) : formData.carRuns === null ? (
-                  <div className="text-center py-6">
-                    <div className="text-gray-500 mb-2">Answer "Does your car run?" to get AI recommendations</div>
-                    <div className="text-xs text-gray-400">This helps provide more accurate service suggestions</div>
+                  <div className="flex flex-row space-x-2 sm:space-x-4">
+                    {defaultRecommendedServices.map((service, index) => (
+                      <div
+                        key={`default-${index}`}
+                        onClick={() => toggleService(service.service)}
+                        className={`flex-1 p-2 rounded-md border cursor-pointer transition-colors ${
+                          formData.selectedServices.includes(service.service)
+                            ? "bg-[#e6eeec] border-[#294a46]/20"
+                            : "bg-gray-50 border-gray-100 hover:bg-gray-100"
+                        }`}
+                      >
+                        <div className="flex flex-col h-full">
+                          <div className="mb-1">
+                            <h4 className="font-medium text-[#294a46] text-sm">{service.service}</h4>
+                          </div>
+                          <p className="text-xs text-gray-600 leading-relaxed">{service.description}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="text-gray-500 text-center py-6">No recommendations available</div>
