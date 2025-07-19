@@ -84,4 +84,4 @@
 4. Scroll down to see more dates
 5. Continue scrolling to load up to 60 days total
 
-The implementation follows the exact pattern requested in the requirements and provides a smooth, performant infinite scroll experience for mechanics to select dates further in the future. 
+The implementation follows the exact pattern requested in the requirements and provides a smooth, performant infinite scroll experience for mechanics to select dates further in the future.
