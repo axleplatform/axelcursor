@@ -1043,7 +1043,6 @@ function BookAppointmentContent() {
   // Handle car runs selection - now using boolean values
   const handleCarRunsChange = (value: boolean) => {
     setFormData((prev) => ({ ...prev, carRuns: value }))
-    setCarRunsValidationError(null)
 
     // NEW DECISION FLOW: Gemini overrides patterns for complex cases
     const hasMedia = uploadedFiles.length > 0 || recordedAudio !== null
@@ -1094,7 +1093,6 @@ function BookAppointmentContent() {
         files.map(file => convertFileToMediaFile(file))
       )
       setUploadedFiles(mediaFiles)
-      setValidationError('')
 
       // NEW DECISION FLOW: Gemini overrides patterns for complex cases
       const hasMedia = files.length > 0 || recordedAudio !== null
@@ -1137,7 +1135,6 @@ function BookAppointmentContent() {
       analyzeWithGemini(mediaFiles)
     } catch (error) {
       console.error('Error converting files:', error)
-      setValidationError('Error processing uploaded files')
     }
   }
 
@@ -1235,22 +1232,6 @@ function BookAppointmentContent() {
 
   // Analyze input with Gemini multimodal API
   const analyzeWithGemini = async (files: MediaFile[]) => {
-    // Check if car runs is answered
-    if (formData.carRuns === null) {
-      setCarRunsValidationError("Please answer if your car runs to get accurate recommendations")
-      return
-    }
-
-    // Check if we have enough information (50+ chars description OR media files)
-    const hasEnoughDescription = formData.issueDescription.length >= 50
-    const hasMedia = files && files.length > 0
-    
-    if (!hasEnoughDescription && !hasMedia) {
-      setCarRunsValidationError("Please provide more details (50+ characters) or upload media to get accurate recommendations")
-      return
-    }
-
-    setCarRunsValidationError(null)
     setProcessingMedia(true)
     setMediaError(null)
     setIsFromPattern(false) // Reset pattern state when using Gemini
@@ -1423,7 +1404,6 @@ function BookAppointmentContent() {
     e.preventDefault()
     setIsSubmitting(true)
     setValidationError(null)
-    setCarRunsValidationError(null)
     try {
       // Check if we're in edit mode
       const isEditMode = searchParams.get('edit') === 'true'
@@ -2117,14 +2097,11 @@ or simply type the service you want.
               {/* Does your car run? - First on mobile, Right Column on desktop */}
               <div className="flex flex-col items-center justify-center space-y-2 order-1 md:order-1">
                 <div className="text-center">
-                  <p className={`text-gray-600 text-sm ${carRunsValidationError ? 'text-red-500' : ''}`}>
+                  <p className="text-gray-600 text-sm">
                     Does your car run? <span className="text-red-500">*</span>
                   </p>
-                  {carRunsValidationError && (
-                    <p className="text-red-500 text-xs mt-1">{carRunsValidationError}</p>
-                  )}
                 </div>
-                <div className={`flex space-x-4 justify-center ${carRunsValidationError ? 'ring-2 ring-red-500 rounded-lg p-1' : ''}`}>
+                <div className="flex space-x-4 justify-center">
                   <button
                     type="button"
                     onClick={() => handleCarRunsChange(true)}
