@@ -772,10 +772,30 @@ function BookAppointmentContent() {
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     setFormData((prev) => ({ ...prev, issueDescription: value }))
+    
+    // Check if we should call API when description reaches 50+ chars and car runs is answered
+    if (value.length >= 50 && formData.carRuns !== null) {
+      // Clear any existing validation error
+      setCarRunsValidationError(null)
+      // Call API immediately
+      analyzeWithGemini(uploadedFiles)
+    }
   }
   // Handle car runs selection - now using boolean values
   const handleCarRunsChange = (value: boolean) => {
     setFormData((prev) => ({ ...prev, carRuns: value }))
+    
+    // Check if ready for API call (description >= 50 chars OR media exists)
+    const hasEnoughDescription = formData.issueDescription.length >= 50
+    const hasMedia = uploadedFiles.length > 0
+    
+    if (hasEnoughDescription || hasMedia) {
+      // Call API IMMEDIATELY - no debounce
+      analyzeWithGemini(uploadedFiles)
+    } else {
+      // Show validation message
+      setCarRunsValidationError("Please provide more details (50+ characters) or upload media to get accurate recommendations")
+    }
   }
 
   // Handle media upload changes
@@ -786,14 +806,16 @@ function BookAppointmentContent() {
     // Clear existing debounce timer
     if (geminiDebounceTimer) {
       clearTimeout(geminiDebounceTimer)
+      setGeminiDebounceTimer(null)
     }
     
-    // Set new debounce timer for 3 seconds
-    const timer = setTimeout(() => {
+    // Check if we should call API immediately (media uploaded AND car runs answered)
+    if (formData.carRuns !== null) {
+      // Clear any existing validation error
+      setCarRunsValidationError(null)
+      // Call API immediately - no debounce
       analyzeWithGemini(files)
-    }, 3000)
-    
-    setGeminiDebounceTimer(timer)
+    }
   }
 
   // Voice recording functions
@@ -890,14 +912,18 @@ function BookAppointmentContent() {
 
   // Analyze input with Gemini multimodal API
   const analyzeWithGemini = async (files: MediaFile[]) => {
-    // Only analyze if we have text description OR media files AND car runs is answered
-    if (!formData.issueDescription.trim() && (!files || files.length === 0)) {
-      return
-    }
-
     // Check if car runs is answered
     if (formData.carRuns === null) {
       setCarRunsValidationError("Please answer if your car runs to get accurate recommendations")
+      return
+    }
+
+    // Check if we have enough information (50+ chars description OR media files)
+    const hasEnoughDescription = formData.issueDescription.length >= 50
+    const hasMedia = files && files.length > 0
+    
+    if (!hasEnoughDescription && !hasMedia) {
+      setCarRunsValidationError("Please provide more details (50+ characters) or upload media to get accurate recommendations")
       return
     }
 
