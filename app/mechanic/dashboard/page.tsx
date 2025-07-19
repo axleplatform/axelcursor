@@ -81,6 +81,10 @@ export default function MechanicDashboard() {
   const [currentUpcomingIndex, setCurrentUpcomingIndex] = useState(0)
   const [priceInput, setPriceInput] = useState<string>("")
   
+  // Infinite scroll date selection states
+  const [displayDays, setDisplayDays] = useState(7)
+  const [isLoadingMoreDates, setIsLoadingMoreDates] = useState(false)
+  
   // Appointment visibility logic state
   const [restoredToday, setRestoredToday] = useState<Set<string>>(new Set())
   // Helper functions for appointment visibility logic
@@ -678,12 +682,12 @@ export default function MechanicDashboard() {
     return price % 1 === 0 ? `$${price.toFixed(0)}` : `$${price.toFixed(2)}`;
   };
 
-  // Generate available dates (next 7 days)
+  // Generate available dates with infinite scroll support
   const getAvailableDates = (): DateOption[] => {
     const dates: DateOption[] = [];
     const today = new Date();
     
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < displayDays; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() + i);
       dates.push({
@@ -696,6 +700,28 @@ export default function MechanicDashboard() {
       });
     }
     return dates;
+  };
+
+  // Load more dates when user scrolls near bottom
+  const loadMoreDates = () => {
+    if (displayDays < 60 && !isLoadingMoreDates) { // Max 60 days
+      setIsLoadingMoreDates(true);
+      setTimeout(() => {
+        setDisplayDays(prev => prev + 7); // Add 7 more days
+        setIsLoadingMoreDates(false);
+      }, 100);
+    }
+  };
+
+  // Handle scroll event for infinite loading
+  const handleDateSelectScroll = (e: React.UIEvent<HTMLSelectElement>) => {
+    const target = e.target as HTMLSelectElement;
+    const { scrollTop, scrollHeight, clientHeight } = target;
+    
+    // Check if user scrolled near bottom (within 50px)
+    if (scrollTop + clientHeight >= scrollHeight - 50) {
+      loadMoreDates();
+    }
   };
 
   // Generate time slots (8 AM to 8 PM, 15-minute increments)
@@ -2948,9 +2974,11 @@ export default function MechanicDashboard() {
                               setSelectedDate(e.target.value);
                               setShowETAError(false);
                             }}
+                            onScroll={handleDateSelectScroll}
                             className={`w-full bg-white/20 border border-white/30 rounded-md px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-white/50 ${
                               showETAError && !selectedDate ? 'border-red-500 animate-pulse' : ''
                             }`}
+                            style={{ maxHeight: '300px', overflowY: 'auto' }}
                             disabled={isProcessing}
                           >
                             <option value="" className="bg-[#294a46]">Choose a date</option>
@@ -2959,6 +2987,11 @@ export default function MechanicDashboard() {
                                 {date.label}
                               </option>
                             ))}
+                            {isLoadingMoreDates && (
+                              <option disabled className="bg-[#294a46] text-white/70">
+                                📅 Loading more dates...
+                              </option>
+                            )}
                           </select>
                         </div>
 
@@ -3201,7 +3234,9 @@ export default function MechanicDashboard() {
                     <select
                       value={editDate}
                       onChange={(e) => setEditDate(e.target.value)}
+                      onScroll={handleDateSelectScroll}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#294a46]"
+                      style={{ maxHeight: '300px', overflowY: 'auto' }}
                       required
                     >
                       <option value="">Choose a date</option>
@@ -3210,6 +3245,11 @@ export default function MechanicDashboard() {
                           {date.label}
                         </option>
                       ))}
+                      {isLoadingMoreDates && (
+                        <option disabled className="text-gray-500">
+                          📅 Loading more dates...
+                        </option>
+                      )}
                     </select>
                   </div>
 
@@ -3391,7 +3431,9 @@ export default function MechanicDashboard() {
                     <select
                       value={selectedDate}
                       onChange={(e) => setSelectedDate(e.target.value)}
+                      onScroll={handleDateSelectScroll}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#294a46]"
+                      style={{ maxHeight: '300px', overflowY: 'auto' }}
                       required
                     >
                       <option value="">Choose a date</option>
@@ -3400,6 +3442,11 @@ export default function MechanicDashboard() {
                           {date.label}
                         </option>
                       ))}
+                      {isLoadingMoreDates && (
+                        <option disabled className="text-gray-500">
+                          📅 Loading more dates...
+                        </option>
+                      )}
                     </select>
                   </div>
 
