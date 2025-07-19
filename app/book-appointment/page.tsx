@@ -1411,21 +1411,18 @@ function BookAppointmentContent() {
     setIsSubmitting(true)
     setValidationError(null)
     
-    // VALIDATION: Check required fields before proceeding
+    // VALIDATION: Check required fields before proceeding (silent - no error messages)
     if (formData.carRuns === null) {
-      setValidationError("Please answer whether your car runs or not.")
       setIsSubmitting(false)
       return
     }
     
     if (!formData.phoneNumber) {
-      setValidationError("Phone number is required.")
       setIsSubmitting(false)
       return
     }
     
     if (!formData.issueDescription && formData.selectedServices.length === 0) {
-      setValidationError("Please describe your issue or select services.")
       setIsSubmitting(false)
       return
     }
