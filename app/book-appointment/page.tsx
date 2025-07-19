@@ -999,7 +999,7 @@ function BookAppointmentContent() {
     setFormData((prev) => ({ ...prev, issueDescription: value }))
     
     // NEW DECISION FLOW: Gemini overrides patterns for complex cases
-    const hasMedia = mediaFiles.length > 0 || recording !== null
+    const hasMedia = uploadedFiles.length > 0 || recordedAudio !== null
     const isComplex = value.length >= 50
     
     console.log(`🔍 Analysis decision: Media=${hasMedia}, Complex=${isComplex}, Length=${value.length}`)
@@ -1009,7 +1009,7 @@ function BookAppointmentContent() {
       console.log('🎯 Using Gemini API: Complex issue or media present')
       setPatternMatched(false)
       setAiSuggestionsLoading(true)
-      analyzeWithGemini(value, mediaFiles)
+      analyzeWithGemini(value, uploadedFiles)
       return
     }
     
@@ -1036,7 +1036,7 @@ function BookAppointmentContent() {
     console.log('🤖 Defaulting to Gemini API: No pattern match')
     setPatternMatched(false)
     setAiSuggestionsLoading(true)
-    analyzeWithGemini(value, mediaFiles)
+    analyzeWithGemini(value, uploadedFiles)
   }
   // Handle car runs selection - now using boolean values
   const handleCarRunsChange = (value: boolean) => {
@@ -1044,7 +1044,7 @@ function BookAppointmentContent() {
     setCarRunsValidationError(null)
 
     // NEW DECISION FLOW: Gemini overrides patterns for complex cases
-    const hasMedia = mediaFiles.length > 0 || recording !== null
+    const hasMedia = uploadedFiles.length > 0 || recordedAudio !== null
     const isComplex = formData.issueDescription.length >= 50
     
     console.log(`🔍 Analysis decision: Media=${hasMedia}, Complex=${isComplex}, Length=${formData.issueDescription.length}`)
@@ -1054,7 +1054,7 @@ function BookAppointmentContent() {
       console.log('🎯 Using Gemini API: Complex issue or media present')
       setPatternMatched(false)
       setAiSuggestionsLoading(true)
-      analyzeWithGemini(formData.issueDescription, mediaFiles)
+      analyzeWithGemini(formData.issueDescription, uploadedFiles)
       return
     }
     
@@ -1081,7 +1081,7 @@ function BookAppointmentContent() {
     console.log('🤖 Defaulting to Gemini API: No pattern match')
     setPatternMatched(false)
     setAiSuggestionsLoading(true)
-    analyzeWithGemini(formData.issueDescription, mediaFiles)
+    analyzeWithGemini(formData.issueDescription, uploadedFiles)
   }
 
   // Handle media upload changes
@@ -1090,7 +1090,7 @@ function BookAppointmentContent() {
     setValidationError('')
 
     // NEW DECISION FLOW: Gemini overrides patterns for complex cases
-    const hasMedia = files.length > 0 || recording !== null
+    const hasMedia = files.length > 0 || recordedAudio !== null
     const isComplex = issueDescription.length >= 50
     
     console.log(`🔍 Analysis decision: Media=${hasMedia}, Complex=${isComplex}, Length=${issueDescription.length}`)
