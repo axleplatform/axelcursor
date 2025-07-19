@@ -311,7 +311,7 @@ const typoPatterns = {
 // - Fuzzy matching: Fixes common typos like "break" → "brake", "battry" → "battery"
 // - Duplicate removal: Returns top 3 unique services when multiple patterns match
 // - Mobile-friendly: All services doable by mobile mechanics without shop equipment
-// - Priority system: Pattern first, then media files, then complex descriptions
+// - Gemini override: Only used for simple text queries under 50 characters with no media
 const findMatchingServices = (description: string) => {
   const lowerDesc = description.toLowerCase()
   const words = lowerDesc.split(/\s+/)
@@ -998,132 +998,90 @@ function BookAppointmentContent() {
     const value = e.target.value
     setFormData((prev) => ({ ...prev, issueDescription: value }))
     
-    // PATTERN PRIORITY SYSTEM:
-    // 1. First check: Does description match any pattern?
-    const patternMatch = findMatchingServices(value)
-    if (patternMatch) {
-      console.log('🎯 Pattern priority: Using pattern match, skipping Gemini')
-      setAiSuggestions(patternMatch.services)
-      setPatternMatched(true)
-      setAiSuggestionsLoading(false) // Remove loading state for instant feedback
-      
-      // Show toast notification
-      toast({
-        title: "✨ Instant Recommendations",
-        description: `Common service detected: ${patternMatch.category} services`,
-        duration: 3000,
-      })
-      return // Exit early, don't call Gemini
-    }
-
-    // 2. Second check: Are there media files? (If yes, use Gemini according to rules)
-    if (mediaFiles.length > 0) {
-      console.log('📷 Media priority: Media files detected, using Gemini')
-      setPatternMatched(false)
-      setAiSuggestionsLoading(true)
-      analyzeWithGemini(value, mediaFiles)
-      return
-    }
-
-    // 3. Third check: Is description complex? (50+ characters)
-    if (value.length >= 50) {
-      console.log('📝 Complexity priority: Complex description (50+ chars), using Gemini')
-      setPatternMatched(false)
-      setAiSuggestionsLoading(true)
-      analyzeWithGemini(value, mediaFiles)
-      return
-    }
-
-    // 4. Default: Show pattern results to save API calls
-    console.log('💡 Default priority: No pattern, no media, not complex - showing pattern suggestions')
-    setPatternMatched(false)
-    setAiSuggestionsLoading(false)
+    // NEW DECISION FLOW: Gemini overrides patterns for complex cases
+    const hasMedia = mediaFiles.length > 0 || recording !== null
+    const isComplex = value.length >= 50
     
-    // Show default pattern-based suggestions
-    const defaultSuggestions = [
-      {
-        service: "General Inspection",
-        description: "Identify specific issues with your vehicle.",
-        confidence: 0.8,
-      },
-      {
-        service: "Diagnostic Scan",
-        description: "Computer scan to identify error codes and electronic issues.",
-        confidence: 0.7,
-      },
-      {
-        service: "Maintenance Check",
-        description: "Review of vehicle's maintenance needs and requirements.",
-        confidence: 0.6,
-      },
-    ]
-    setAiSuggestions(defaultSuggestions)
+    console.log(`🔍 Analysis decision: Media=${hasMedia}, Complex=${isComplex}, Length=${value.length}`)
+    
+    // ALWAYS use Gemini for complex cases
+    if (hasMedia || isComplex) {
+      console.log('🎯 Using Gemini API: Complex issue or media present')
+      setPatternMatched(false)
+      setAiSuggestionsLoading(true)
+      analyzeWithGemini(value, mediaFiles)
+      return
+    }
+    
+    // Only check patterns for simple text under 50 chars
+    if (value.length < 50) {
+      const patternMatch = findMatchingServices(value)
+      if (patternMatch) {
+        console.log('✅ Pattern matched for simple query:', value)
+        setAiSuggestions(patternMatch.services)
+        setPatternMatched(true)
+        setAiSuggestionsLoading(false)
+        
+        // Show toast notification
+        toast({
+          title: "✨ Instant Recommendations",
+          description: `Common service detected: ${patternMatch.category} services`,
+          duration: 3000,
+        })
+        return
+      }
+    }
+    
+    // Default to Gemini if no pattern match
+    console.log('🤖 Defaulting to Gemini API: No pattern match')
+    setPatternMatched(false)
+    setAiSuggestionsLoading(true)
+    analyzeWithGemini(value, mediaFiles)
   }
   // Handle car runs selection - now using boolean values
   const handleCarRunsChange = (value: boolean) => {
     setFormData((prev) => ({ ...prev, carRuns: value }))
     setCarRunsValidationError(null)
 
-    // PATTERN PRIORITY SYSTEM (same as description change):
-    // 1. First check: Does description match any pattern?
-    const patternMatch = findMatchingServices(formData.issueDescription)
-    if (patternMatch) {
-      console.log('🎯 Pattern priority: Using pattern match, skipping Gemini')
-      setAiSuggestions(patternMatch.services)
-      setPatternMatched(true)
-      setAiSuggestionsLoading(false) // Remove loading state for instant feedback
-      
-      // Show toast notification
-      toast({
-        title: "✨ Instant Recommendations",
-        description: `Common service detected: ${patternMatch.category} services`,
-        duration: 3000,
-      })
-      return // Exit early, don't call Gemini
-    }
-
-    // 2. Second check: Are there media files? (If yes, use Gemini)
-    if (mediaFiles.length > 0) {
-      console.log('📷 Media priority: Media files detected, using Gemini')
-      setPatternMatched(false)
-      setAiSuggestionsLoading(true)
-      analyzeWithGemini(formData.issueDescription, mediaFiles)
-      return
-    }
-
-    // 3. Third check: Is description complex? (50+ characters)
-    if (formData.issueDescription.length >= 50) {
-      console.log('📝 Complexity priority: Complex description (50+ chars), using Gemini')
-      setPatternMatched(false)
-      setAiSuggestionsLoading(true)
-      analyzeWithGemini(formData.issueDescription, mediaFiles)
-      return
-    }
-
-    // 4. Default: Show pattern results to save API calls
-    console.log('💡 Default priority: No pattern, no media, not complex - showing pattern suggestions')
-    setPatternMatched(false)
-    setAiSuggestionsLoading(false)
+    // NEW DECISION FLOW: Gemini overrides patterns for complex cases
+    const hasMedia = mediaFiles.length > 0 || recording !== null
+    const isComplex = formData.issueDescription.length >= 50
     
-    // Show default pattern-based suggestions
-    const defaultSuggestions = [
-      {
-        service: "General Inspection",
-        description: "Identify specific issues with your vehicle.",
-        confidence: 0.8,
-      },
-      {
-        service: "Diagnostic Scan",
-        description: "Computer scan to identify error codes and electronic issues.",
-        confidence: 0.7,
-      },
-      {
-        service: "Maintenance Check",
-        description: "Review of vehicle's maintenance needs and requirements.",
-        confidence: 0.6,
-      },
-    ]
-    setAiSuggestions(defaultSuggestions)
+    console.log(`🔍 Analysis decision: Media=${hasMedia}, Complex=${isComplex}, Length=${formData.issueDescription.length}`)
+    
+    // ALWAYS use Gemini for complex cases
+    if (hasMedia || isComplex) {
+      console.log('🎯 Using Gemini API: Complex issue or media present')
+      setPatternMatched(false)
+      setAiSuggestionsLoading(true)
+      analyzeWithGemini(formData.issueDescription, mediaFiles)
+      return
+    }
+    
+    // Only check patterns for simple text under 50 chars
+    if (formData.issueDescription.length < 50) {
+      const patternMatch = findMatchingServices(formData.issueDescription)
+      if (patternMatch) {
+        console.log('✅ Pattern matched for simple query:', formData.issueDescription)
+        setAiSuggestions(patternMatch.services)
+        setPatternMatched(true)
+        setAiSuggestionsLoading(false)
+        
+        // Show toast notification
+        toast({
+          title: "✨ Instant Recommendations",
+          description: `Common service detected: ${patternMatch.category} services`,
+          duration: 3000,
+        })
+        return
+      }
+    }
+    
+    // Default to Gemini if no pattern match
+    console.log('🤖 Defaulting to Gemini API: No pattern match')
+    setPatternMatched(false)
+    setAiSuggestionsLoading(true)
+    analyzeWithGemini(formData.issueDescription, mediaFiles)
   }
 
   // Handle media upload changes
@@ -1131,66 +1089,45 @@ function BookAppointmentContent() {
     setMediaFiles(files)
     setValidationError('')
 
-    // PATTERN PRIORITY SYSTEM (same as description change):
-    // 1. First check: Does description match any pattern?
-    const patternMatch = findMatchingServices(issueDescription)
-    if (patternMatch) {
-      console.log('🎯 Pattern priority: Using pattern match, skipping Gemini')
-      setAiSuggestions(patternMatch.services)
-      setPatternMatched(true)
-      setAiSuggestionsLoading(false) // Remove loading state for instant feedback
-      
-      // Show toast notification
-      toast({
-        title: "✨ Instant Recommendations",
-        description: `Common service detected: ${patternMatch.category} services`,
-        duration: 3000,
-      })
-      return // Exit early, don't call Gemini
-    }
-
-    // 2. Second check: Are there media files? (If yes, use Gemini)
-    if (files.length > 0) {
-      console.log('📷 Media priority: Media files detected, using Gemini')
-      setPatternMatched(false)
-      setAiSuggestionsLoading(true)
-      analyzeWithGemini(issueDescription, files)
-      return
-    }
-
-    // 3. Third check: Is description complex? (50+ characters)
-    if (issueDescription.length >= 50) {
-      console.log('📝 Complexity priority: Complex description (50+ chars), using Gemini')
-      setPatternMatched(false)
-      setAiSuggestionsLoading(true)
-      analyzeWithGemini(issueDescription, files)
-      return
-    }
-
-    // 4. Default: Show pattern results to save API calls
-    console.log('💡 Default priority: No pattern, no media, not complex - showing pattern suggestions')
-    setPatternMatched(false)
-    setAiSuggestionsLoading(false)
+    // NEW DECISION FLOW: Gemini overrides patterns for complex cases
+    const hasMedia = files.length > 0 || recording !== null
+    const isComplex = issueDescription.length >= 50
     
-    // Show default pattern-based suggestions
-    const defaultSuggestions = [
-      {
-        service: "General Inspection",
-        description: "Identify specific issues with your vehicle.",
-        confidence: 0.8,
-      },
-      {
-        service: "Diagnostic Scan",
-        description: "Computer scan to identify error codes and electronic issues.",
-        confidence: 0.7,
-      },
-      {
-        service: "Maintenance Check",
-        description: "Review of vehicle's maintenance needs and requirements.",
-        confidence: 0.6,
-      },
-    ]
-    setAiSuggestions(defaultSuggestions)
+    console.log(`🔍 Analysis decision: Media=${hasMedia}, Complex=${isComplex}, Length=${issueDescription.length}`)
+    
+    // ALWAYS use Gemini for complex cases
+    if (hasMedia || isComplex) {
+      console.log('🎯 Using Gemini API: Complex issue or media present')
+      setPatternMatched(false)
+      setAiSuggestionsLoading(true)
+      analyzeWithGemini(issueDescription, files)
+      return
+    }
+    
+    // Only check patterns for simple text under 50 chars
+    if (issueDescription.length < 50) {
+      const patternMatch = findMatchingServices(issueDescription)
+      if (patternMatch) {
+        console.log('✅ Pattern matched for simple query:', issueDescription)
+        setAiSuggestions(patternMatch.services)
+        setPatternMatched(true)
+        setAiSuggestionsLoading(false)
+        
+        // Show toast notification
+        toast({
+          title: "✨ Instant Recommendations",
+          description: `Common service detected: ${patternMatch.category} services`,
+          duration: 3000,
+        })
+        return
+      }
+    }
+    
+    // Default to Gemini if no pattern match
+    console.log('🤖 Defaulting to Gemini API: No pattern match')
+    setPatternMatched(false)
+    setAiSuggestionsLoading(true)
+    analyzeWithGemini(issueDescription, files)
   }
 
   // Voice recording functions
