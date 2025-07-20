@@ -41,17 +41,15 @@ export async function middleware(request: NextRequest) {
       }
     )
 
-    // Handle welcome page routing for new users
+    // Handle root path - redirect ALL users to welcome page
+    if (request.nextUrl.pathname === '/') {
+      console.log("🔄 Redirecting all users to welcome page")
+      return NextResponse.redirect(new URL('/welcome', request.url))
+    }
+
+    // Handle welcome page - allow ALL users to access
     if (request.nextUrl.pathname === '/welcome') {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      // If user is authenticated and on welcome page, redirect to home
-      if (session) {
-        console.log("🔄 Redirecting authenticated user to home page")
-        return NextResponse.redirect(new URL('/', request.url))
-      }
-      
-      // Allow access to welcome page for unauthenticated users
+      // Allow access to welcome page for all users
       return response
     }
 
@@ -126,6 +124,7 @@ export async function middleware(request: NextRequest) {
 // Configure which routes to run middleware on
 export const config = {
   matcher: [
+    "/",
     "/welcome",
     "/mechanic/:path*",
     "/onboarding-mechanic-:path*"

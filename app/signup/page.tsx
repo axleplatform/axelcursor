@@ -14,16 +14,7 @@ export default function SignupPage() {
 
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 py-12 max-w-3xl">
-        <div className="flex justify-center mb-8">
-          <Image
-            src="/images/axle-logo-green.png"
-            alt="Axle"
-            width={150}
-            height={60}
-            priority
-            className="object-contain"
-          />
-        </div>
+
 
         <h1 className="text-3xl font-bold text-center text-[#294a46] mb-8">Sign Up</h1>
         <p className="text-center text-gray-600 mb-12">Choose your account type to get started</p>
