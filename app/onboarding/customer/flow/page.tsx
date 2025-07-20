@@ -822,18 +822,30 @@ const DashboardRedirect = ({ onboardingData }: { onboardingData: OnboardingData 
 // Helper function to create user with onboarding data
 const createUserWithOnboardingData = async (userId: string, onboardingData: OnboardingData) => {
   try {
-    const { error } = await supabase.from('users').insert({
-      id: userId,
-      email: onboardingData.email || '',
-      name: onboardingData.name || '',
+    // First get the user's auth data
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      console.error('No authenticated user found');
+      return;
+    }
+
+    // Now insert/update user data
+    const { error } = await supabase.from('users').upsert({
+      id: user.id,
+      email: user.email || '',
+      name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
       role: 'customer',
       vehicles: [onboardingData.vehicle, ...onboardingData.additionalVehicles],
       referral_source: onboardingData.referralSource,
       last_service: onboardingData.lastService,
       location: onboardingData.location,
-      notifications_enabled: onboardingData.notifications,
       phone: onboardingData.phoneNumber,
+      notifications_enabled: onboardingData.notifications,
       subscription_plan: onboardingData.plan,
+      subscription_status: onboardingData.freeTrial ? 'trial' : 'inactive',
+      free_trial_ends_at: onboardingData.freeTrial ? 
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
       onboarding_completed: true,
       onboarding_data: onboardingData,
       created_at: new Date().toISOString()
