@@ -584,7 +584,13 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData }: StepProps) =>
       if (error) throw error
       
       // Create user in database with onboarding data
-      await createUserWithOnboardingData(authData.user.id, onboardingData)
+      if (onboardingData) {
+        await createUserWithOnboardingData(authData.user.id, onboardingData)
+      } else {
+        console.error('No onboarding data available')
+        // Handle the error case - maybe show an error message
+        throw new Error('Onboarding data is required')
+      }
       
       updateData({ userId: authData.user.id })
       onNext()
