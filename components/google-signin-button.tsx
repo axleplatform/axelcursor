@@ -8,6 +8,7 @@ interface GoogleSignInButtonProps {
   from?: 'appointment'
   appointmentId?: string
   className?: string
+  disabled?: boolean
   children?: React.ReactNode
 }
 
@@ -16,11 +17,14 @@ export function GoogleSignInButton({
   from, 
   appointmentId, 
   className = "",
+  disabled = false,
   children 
 }: GoogleSignInButtonProps) {
   const [isLoading, setIsLoading] = React.useState(false)
 
   const handleGoogleSignIn = async () => {
+    if (disabled) return; // Prevent action when disabled
+    
     setIsLoading(true)
     
     try {
@@ -64,15 +68,12 @@ export function GoogleSignInButton({
   return (
     <button
       onClick={handleGoogleSignIn}
-      disabled={isLoading}
+      disabled={disabled}
       className={`
-        w-full flex items-center justify-center gap-3 px-4 py-3 
-        border border-gray-300 rounded-md shadow-sm 
-        bg-white text-gray-700 font-medium
-        hover:bg-gray-50 focus:outline-none focus:ring-2 
-        focus:ring-offset-2 focus:ring-[#294a46]
-        disabled:opacity-50 disabled:cursor-not-allowed
-        transition-all duration-200
+        flex items-center justify-center gap-3 w-full px-4 py-3 
+        ${disabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-gray-50 text-gray-700'} 
+        border border-gray-300 rounded-lg transition-colors
+        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294a46]
         ${className}
       `}
     >
@@ -101,7 +102,9 @@ export function GoogleSignInButton({
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          {children || 'Sign in with Google'}
+          <span className={disabled ? 'opacity-50' : ''}>
+            {children || 'Continue with Google'}
+          </span>
         </>
       )}
     </button>
