@@ -31,7 +31,7 @@ export default function SignupPage() {
         <div className="grid md:grid-cols-2 gap-8">
           {/* Car Owner Option */}
           <Link
-            href="/onboarding/customer/signup"
+            href="/onboarding/customer/flow"
             className="flex flex-col items-center p-8 border-2 border-gray-200 rounded-xl hover:border-[#294a46] hover:shadow-md transition-all duration-200"
           >
             <div

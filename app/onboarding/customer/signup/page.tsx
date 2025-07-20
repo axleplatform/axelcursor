@@ -11,7 +11,17 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { GoogleSignInButton } from "@/components/google-signin-button"
 
-export default function CustomerSignupPage() {
+interface CustomerSignupPageProps {
+  isOnboarding?: boolean;
+  onboardingData?: any;
+  onSuccess?: (userId: string) => void;
+}
+
+export default function CustomerSignupPage({ 
+  isOnboarding = false, 
+  onboardingData, 
+  onSuccess 
+}: CustomerSignupPageProps) {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -94,8 +104,14 @@ export default function CustomerSignupPage() {
 
         if (profileError) throw profileError
 
-        // Redirect to home page
-        router.push("/")
+        // Handle success based on context
+        if (isOnboarding && onSuccess) {
+          // Continue onboarding flow
+          onSuccess(data.user.id)
+        } else {
+          // Normal redirect to home page
+          router.push("/")
+        }
       }
     } catch (error: unknown) {
       console.error("Error during signup:", error)
@@ -259,12 +275,14 @@ export default function CustomerSignupPage() {
                   Sign in
                 </Link>
               </p>
-              <p className="text-gray-600 mt-2">
-                Or{" "}
-                <Link href="/onboarding/customer/flow" className="font-medium text-[#294a46] hover:text-[#1e3632]">
-                  start the guided onboarding
-                </Link>
-              </p>
+              {!isOnboarding && (
+                <p className="text-gray-600 mt-2">
+                  Or{" "}
+                  <Link href="/onboarding/customer/flow" className="font-medium text-[#294a46] hover:text-[#1e3632]">
+                    start the guided onboarding
+                  </Link>
+                </p>
+              )}
             </div>
           </div>
 

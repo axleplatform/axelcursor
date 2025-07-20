@@ -555,30 +555,10 @@ const PlanReadyStep = ({ onNext }: StepProps) => {
 }
 
 const CreateAccountStep = ({ onNext, updateData, onboardingData }: StepProps) => {
-  const handleEmailSignUp = async (email: string, password: string) => {
-    try {
-      const { data: authData, error } = await supabase.auth.signUp({
-        email,
-        password,
-      })
-
-      if (error) throw error
-      
-      // Create user in database with onboarding data
-      if (onboardingData) {
-        await createUserWithOnboardingData(authData.user.id, onboardingData)
-      } else {
-        console.error('No onboarding data available')
-        // Handle the error case - maybe show an error message
-        throw new Error('Onboarding data is required')
-      }
-      
-      updateData({ userId: authData.user.id })
-      onNext()
-    } catch (error) {
-      console.error('Sign up error:', error)
-    }
-  }
+  const handleSuccess = (userId: string) => {
+    updateData({ userId });
+    onNext();
+  };
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -591,7 +571,28 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData }: StepProps) =>
       
       <div className="my-4 text-center text-gray-500">or</div>
       
-      <EmailSignUpForm onSubmit={handleEmailSignUp} />
+      <EmailSignUpForm onSubmit={async (email: string, password: string) => {
+        try {
+          const { data: authData, error } = await supabase.auth.signUp({
+            email,
+            password,
+          })
+
+          if (error) throw error
+          
+          // Create user in database with onboarding data
+          if (onboardingData) {
+            await createUserWithOnboardingData(authData.user.id, onboardingData)
+          } else {
+            console.error('No onboarding data available')
+            throw new Error('Onboarding data is required')
+          }
+          
+          handleSuccess(authData.user.id)
+        } catch (error) {
+          console.error('Sign up error:', error)
+        }
+      }} />
     </div>
   )
 }
