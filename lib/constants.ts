@@ -10,4 +10,4 @@ export const MAP_CENTERS = {
   LOS_ANGELES: { lat: 34.0522, lng: -118.2437 },
   SAN_FRANCISCO: { lat: 37.7749, lng: -122.4194 },
   NEW_YORK: { lat: 40.7128, lng: -74.0060 }
-}; 
+};
