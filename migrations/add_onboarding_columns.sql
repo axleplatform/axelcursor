@@ -40,4 +40,4 @@ COMMENT ON COLUMN users.subscription_plan IS 'User subscription plan (basic, pre
 COMMENT ON COLUMN users.subscription_status IS 'Subscription status (active, inactive, cancelled)';
 COMMENT ON COLUMN users.free_trial_ends_at IS 'When the free trial expires';
 COMMENT ON COLUMN users.onboarding_completed IS 'Whether the user has completed the onboarding flow';
-COMMENT ON COLUMN users.onboarding_data IS 'Complete onboarding data collected during the 20-step flow'; 
+COMMENT ON COLUMN users.onboarding_data IS 'Complete onboarding data collected during the 20-step flow';

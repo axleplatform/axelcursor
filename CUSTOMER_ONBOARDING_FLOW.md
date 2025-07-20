@@ -81,4 +81,4 @@ New columns added to `users` table:
 - **Reduced friction** - Google Auth not required upfront
 - **Comprehensive data** - 20 steps capture detailed information
 - **User-friendly** - Progress indicator and emoji UI
-- **Data persistence** - No data loss during auth process 
+- **Data persistence** - No data loss during auth process

@@ -2,10 +2,10 @@
 
 ## Problem
 The app was crashing when returning from book-appointment to landing page with appointment ID, showing:
-```
+\`\`\`
 ERROR: React Error #300 (Rendered more hooks than during previous render)
 CAUSE: Conditional hook usage when appointment ID exists
-```
+\`\`\`
 
 ## Root Cause Analysis
 The issue was caused by unstable dependencies in `useCallback` hooks that were causing functions to be recreated on every render, leading to infinite re-renders and React Error #300.
@@ -21,7 +21,7 @@ The issue was caused by unstable dependencies in `useCallback` hooks that were c
 ### 1. **Stabilized Function Dependencies**
 
 **Before (❌ Problematic):**
-```javascript
+\`\`\`javascript
 const loadExistingAppointment = useCallback(async () => {
   // ... function body
 }, [appointmentId, formatLocalDateString]) // formatLocalDateString causes recreation
@@ -29,10 +29,10 @@ const loadExistingAppointment = useCallback(async () => {
 const loadDataFromStorage = useCallback(() => {
   // ... function body
 }, [formatLocalDateString]) // formatLocalDateString causes recreation
-```
+\`\`\`
 
 **After (✅ Fixed):**
-```javascript
+\`\`\`javascript
 const loadExistingAppointment = useCallback(async () => {
   // ... function body with inline date formatting
 }, [appointmentId]) // Only depend on appointmentId
@@ -40,19 +40,19 @@ const loadExistingAppointment = useCallback(async () => {
 const loadDataFromStorage = useCallback(() => {
   // ... function body with inline date formatting
 }, []) // No dependencies - stable function
-```
+\`\`\`
 
 ### 2. **Inline Date Formatting**
 
 Replaced function calls with inline date formatting to eliminate dependencies:
 
 **Before:**
-```javascript
+\`\`\`javascript
 appointmentDate: formatLocalDateString(data.appointment_date),
-```
+\`\`\`
 
 **After:**
-```javascript
+\`\`\`javascript
 appointmentDate: (() => {
   if (!data.appointment_date) return '';
   const d = new Date(data.appointment_date);
@@ -62,29 +62,29 @@ appointmentDate: (() => {
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 })(),
-```
+\`\`\`
 
 ### 3. **Simplified useEffect Dependencies**
 
 **Before (❌ Problematic):**
-```javascript
+\`\`\`javascript
 useEffect(() => {
   // ... effect body
 }, [appointmentId, loadExistingAppointment, loadDataFromStorage]) // Functions as dependencies
-```
+\`\`\`
 
 **After (✅ Fixed):**
-```javascript
+\`\`\`javascript
 useEffect(() => {
   // ... effect body
 }, [appointmentId]) // Only depend on appointmentId
-```
+\`\`\`
 
 ### 4. **Enhanced Map Cleanup**
 
 Added proper function existence checks for map cleanup:
 
-```javascript
+\`\`\`javascript
 if (mapInstanceRef.current && typeof mapInstanceRef.current.setMap === 'function') {
   try {
     // Clear all listeners from the map
@@ -99,7 +99,7 @@ if (mapInstanceRef.current && typeof mapInstanceRef.current.setMap === 'function
   }
   mapInstanceRef.current = null;
 }
-```
+\`\`\`
 
 ## Key Principles Applied
 
@@ -137,4 +137,4 @@ To verify the fix:
 6. Check that form data loads correctly
 7. Verify map initializes properly
 
-The fix ensures stable hook execution regardless of whether an appointment ID is present in the URL! 🎯✨ 
+The fix ensures stable hook execution regardless of whether an appointment ID is present in the URL! 🎯✨

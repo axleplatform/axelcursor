@@ -44,4 +44,4 @@ export async function POST(request: Request) {
     console.error('Error in onboarding completion:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-} 
+}

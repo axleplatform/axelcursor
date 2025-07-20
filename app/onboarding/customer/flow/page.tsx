@@ -935,4 +935,4 @@ export default function CustomerOnboarding() {
       </div>
     </div>
   )
-} 
+}
