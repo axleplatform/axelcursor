@@ -181,8 +181,7 @@ async function generateServiceRecommendations(vehicleData, textDescription, medi
         {
           "service": "Service Name (5-6 words max)",
           "description": "Short reason why needed (10-15 words max)",
-          "confidence": "XX%",
-          "evidence": "What from the analysis supports this recommendation"
+          "confidence": "XX%"
         }
       ]
     }
@@ -253,20 +252,17 @@ function getDefaultServices(vehicleData, isCarRunning) {
         {
           service: "General Vehicle Inspection",
           description: "Comprehensive check of all systems",
-          confidence: "90%",
-          evidence: "Standard maintenance recommendation"
+          confidence: "90%"
         },
         {
           service: "Oil Change Service",
           description: "Regular maintenance for engine health",
-          confidence: "85%",
-          evidence: "Based on vehicle age and mileage"
+          confidence: "85%"
         },
         {
           service: "Brake System Inspection",
           description: "Ensure braking system safety and performance",
-          confidence: "80%",
-          evidence: "Critical safety maintenance item"
+          confidence: "80%"
         }
       ]
     };
@@ -277,20 +273,17 @@ function getDefaultServices(vehicleData, isCarRunning) {
         {
           service: "Battery Test & Replacement",
           description: "Check battery condition and charge",
-          confidence: "95%",
-          evidence: "Most common cause of non-starting vehicles"
+          confidence: "95%"
         },
         {
           service: "Starter Motor Inspection",
           description: "Diagnose starter system issues",
-          confidence: "85%",
-          evidence: "Critical for engine starting"
+          confidence: "85%"
         },
         {
           service: "Electrical System Diagnostic",
           description: "Comprehensive electrical troubleshooting",
-          confidence: "80%",
-          evidence: "Essential for non-running vehicle diagnosis"
+          confidence: "80%"
         }
       ]
     };
