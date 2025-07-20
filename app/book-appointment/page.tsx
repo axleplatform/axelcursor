@@ -393,7 +393,6 @@ interface UploadedMediaFile {
 interface GeminiService {
   service: string
   description: string
-  confidence: string
 }
 
 // Define database schema types
@@ -1221,7 +1220,7 @@ function BookAppointmentContent() {
         const geminiSuggestions = result.data.services.map((service: GeminiService) => ({
           service: service.service,
           description: service.description,
-          confidence: parseInt(service.confidence) / 100 // Convert percentage to decimal
+          confidence: 0.9 // Default confidence since we removed it from API
         }))
         
         setAiSuggestions(geminiSuggestions)
@@ -1404,8 +1403,7 @@ function BookAppointmentContent() {
       const aiAnalysisResults = aiSuggestions ? {
         services: aiSuggestions.map(suggestion => ({
           service: suggestion.service,
-          description: suggestion.description,
-          confidence: Math.round(suggestion.confidence * 100) + '%'
+          description: suggestion.description
         })),
         analyzed_at: now
       } : null

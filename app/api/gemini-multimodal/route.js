@@ -180,8 +180,7 @@ async function generateServiceRecommendations(vehicleData, textDescription, medi
       "services": [
         {
           "service": "Service Name (5-6 words max)",
-          "description": "Short reason why needed (10-15 words max)",
-          "confidence": "XX%"
+          "description": "Short reason why needed (10-15 words max)"
         }
       ]
     }
@@ -251,18 +250,15 @@ function getDefaultServices(vehicleData, isCarRunning) {
       services: [
         {
           service: "General Vehicle Inspection",
-          description: "Comprehensive check of all systems",
-          confidence: "90%"
+          description: "Comprehensive check of all systems"
         },
         {
           service: "Oil Change Service",
-          description: "Regular maintenance for engine health",
-          confidence: "85%"
+          description: "Regular maintenance for engine health"
         },
         {
           service: "Brake System Inspection",
-          description: "Ensure braking system safety and performance",
-          confidence: "80%"
+          description: "Ensure braking system safety and performance"
         }
       ]
     };
@@ -272,18 +268,15 @@ function getDefaultServices(vehicleData, isCarRunning) {
       services: [
         {
           service: "Battery Test & Replacement",
-          description: "Check battery condition and charge",
-          confidence: "95%"
+          description: "Check battery condition and charge"
         },
         {
           service: "Starter Motor Inspection",
-          description: "Diagnose starter system issues",
-          confidence: "85%"
+          description: "Diagnose starter system issues"
         },
         {
           service: "Electrical System Diagnostic",
-          description: "Comprehensive electrical troubleshooting",
-          confidence: "80%"
+          description: "Comprehensive electrical troubleshooting"
         }
       ]
     };

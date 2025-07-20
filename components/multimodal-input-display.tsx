@@ -16,7 +16,6 @@ interface MediaFile {
 interface AIService {
   service: string;
   description: string;
-  confidence: string;
 }
 
 interface AIAnalysisResults {
