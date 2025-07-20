@@ -6,15 +6,17 @@ import { supabase } from '@/lib/supabase'
 import { GoogleSignInButton } from '@/components/google-signin-button'
 
 // Type definitions
+type Vehicle = {
+  year: string;
+  make: string;
+  model: string;
+  vin?: string;
+  mileage?: string;
+  licensePlate?: string;
+};
+
 type OnboardingData = {
-  vehicle: {
-    year: string;
-    make: string;
-    model: string;
-    vin: string;
-    mileage: string;
-    licensePlate: string;
-  };
+  vehicle: Vehicle;
   referralSource: string;
   usedOtherApps: boolean | null;
   lastService: {
@@ -25,7 +27,7 @@ type OnboardingData = {
   };
   location: string | null;
   notifications: boolean;
-  additionalVehicles: any[];
+  additionalVehicles: Vehicle[];
   userId: string | null;
   phoneNumber: string;
   plan: string | null;
@@ -40,7 +42,7 @@ type StepProps = {
 
 // Step Components
 const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
-  const [vehicle, setVehicle] = useState({
+  const [vehicle, setVehicle] = useState<Vehicle>({
     year: '',
     make: '',
     model: '',
@@ -397,17 +399,27 @@ const NotificationsStep = ({ onNext, updateData }: StepProps) => {
 }
 
 const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
-  const [additionalVehicles, setAdditionalVehicles] = useState([])
-  const [currentVehicle, setCurrentVehicle] = useState({
+  const [additionalVehicles, setAdditionalVehicles] = useState<Vehicle[]>([])
+  const [currentVehicle, setCurrentVehicle] = useState<Vehicle>({
     year: '',
     make: '',
-    model: ''
+    model: '',
+    vin: '',
+    mileage: '',
+    licensePlate: ''
   })
 
   const addVehicle = () => {
     if (currentVehicle.year && currentVehicle.make && currentVehicle.model) {
       setAdditionalVehicles([...additionalVehicles, currentVehicle])
-      setCurrentVehicle({ year: '', make: '', model: '' })
+      setCurrentVehicle({ 
+        year: '', 
+        make: '', 
+        model: '', 
+        vin: '', 
+        mileage: '', 
+        licensePlate: '' 
+      })
     }
   }
 
