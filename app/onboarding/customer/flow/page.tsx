@@ -53,65 +53,105 @@ const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
   })
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">🚗 Input your vehicle information</h2>
-      
-      <div className="space-y-4">
-        <input 
-          type="number" 
-          placeholder="Year" 
-          value={vehicle.year}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, year: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-        
-        <input 
-          type="text" 
-          placeholder="Make" 
-          value={vehicle.make}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, make: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-        
-        <input 
-          type="text" 
-          placeholder="Model" 
-          value={vehicle.model}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, model: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-        
-        <input 
-          type="text" 
-          placeholder="VIN" 
-          value={vehicle.vin}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, vin: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-        
-        <input 
-          type="number" 
-          placeholder="Mileage" 
-          value={vehicle.mileage}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, mileage: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-        
-        <input 
-          type="text" 
-          placeholder="License Plate (Optional)" 
-          value={vehicle.licensePlate}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, licensePlate: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
+    <div>
+      {/* Header like book appointment */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Input Your Vehicle Information
+        </h2>
+        <p className="text-gray-600">
+          Tell us about your car so we can provide accurate service recommendations
+        </p>
       </div>
 
+      {/* Form fields with book appointment styling */}
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Year
+          </label>
+          <input 
+            type="number" 
+            placeholder="2020"
+            value={vehicle.year}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, year: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Make
+          </label>
+          <input 
+            type="text" 
+            placeholder="Toyota"
+            value={vehicle.make}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, make: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Model
+          </label>
+          <input 
+            type="text" 
+            placeholder="Camry"
+            value={vehicle.model}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, model: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            VIN (Optional)
+          </label>
+          <input 
+            type="text" 
+            placeholder="1HGBH41JXMN109186"
+            value={vehicle.vin}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, vin: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Mileage
+          </label>
+          <input 
+            type="number" 
+            placeholder="50000"
+            value={vehicle.mileage}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, mileage: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            License Plate (Optional)
+          </label>
+          <input 
+            type="text" 
+            placeholder="ABC123"
+            value={vehicle.licensePlate}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, licensePlate: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+      </div>
+
+      {/* Button matching book appointment */}
       <button 
         onClick={() => {
           updateData({ vehicle })
           onNext()
         }}
-        className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+        className="mt-8 w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Continue
       </button>
@@ -130,10 +170,17 @@ const ReferralSourceStep = ({ onNext, updateData }: StepProps) => {
   ]
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">🔍 Where did you hear from us?</h2>
-      
-      <div className="space-y-3">
+    <div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Where did you hear from us?
+        </h2>
+        <p className="text-gray-600">
+          Help us understand how you found Axle
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {sources.map(source => (
           <button
             key={source}
@@ -141,9 +188,11 @@ const ReferralSourceStep = ({ onNext, updateData }: StepProps) => {
               updateData({ referralSource: source })
               onNext()
             }}
-            className="w-full p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
+            className="p-6 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
           >
-            {source}
+            <h3 className="font-medium text-gray-900 group-hover:text-blue-600">
+              {source}
+            </h3>
           </button>
         ))}
       </div>
@@ -153,8 +202,15 @@ const ReferralSourceStep = ({ onNext, updateData }: StepProps) => {
 
 const PreviousAppsStep = ({ onNext, updateData }: StepProps) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">📱 Have you used other car service apps?</h2>
+    <div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Have you used other car service apps?
+        </h2>
+        <p className="text-gray-600">
+          We'd like to understand your experience with similar services
+        </p>
+      </div>
       
       <div className="space-y-4">
         <button
@@ -162,9 +218,11 @@ const PreviousAppsStep = ({ onNext, updateData }: StepProps) => {
             updateData({ usedOtherApps: true })
             onNext()
           }}
-          className="w-full p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
+          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
         >
-          Yes, I have
+          <h3 className="font-medium text-gray-900 group-hover:text-blue-600">
+            Yes, I have
+          </h3>
         </button>
         
         <button
@@ -172,9 +230,11 @@ const PreviousAppsStep = ({ onNext, updateData }: StepProps) => {
             updateData({ usedOtherApps: false })
             onNext()
           }}
-          className="w-full p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
+          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
         >
-          No, this is my first time
+          <h3 className="font-medium text-gray-900 group-hover:text-blue-600">
+            No, this is my first time
+          </h3>
         </button>
       </div>
     </div>
@@ -183,40 +243,43 @@ const PreviousAppsStep = ({ onNext, updateData }: StepProps) => {
 
 const WhyAxleStep = ({ onNext }: StepProps) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">💡 Why Axle AI is Better</h2>
+    <div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Why Axle AI is Better
+        </h2>
+        <p className="text-gray-600">
+          See how Axle AI creates long-term results for car owners
+        </p>
+      </div>
       
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Axle AI creates long-term results</h3>
-          
-          {/* Car Health Graph */}
-          <div className="bg-gray-100 rounded-lg p-4">
-            <div className="flex justify-between items-end h-32">
-              <div className="text-center">
-                <div className="bg-red-500 w-16 h-24 rounded-t"></div>
-                <p className="text-sm mt-2">Without Axle</p>
-                <p className="text-xs text-gray-600">Higher costs</p>
-              </div>
-              <div className="text-center">
-                <div className="bg-green-500 w-16 h-16 rounded-t"></div>
-                <p className="text-sm mt-2">With Axle</p>
-                <p className="text-xs text-gray-600">Lower costs</p>
-              </div>
-            </div>
-          </div>
+      {/* Visual comparison cards like book appointment */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-red-50 border-2 border-red-200 rounded-lg p-6">
+          <div className="text-red-600 text-3xl mb-3">📉</div>
+          <h3 className="font-semibold text-red-900 mb-2">Without Axle</h3>
+          <p className="text-red-700">Higher maintenance costs</p>
+          <div className="text-2xl font-bold text-red-600 mt-4">$$$</div>
         </div>
+        
+        <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
+          <div className="text-green-600 text-3xl mb-3">📈</div>
+          <h3 className="font-semibold text-green-900 mb-2">With Axle</h3>
+          <p className="text-green-700">Lower maintenance costs</p>
+          <div className="text-2xl font-bold text-green-600 mt-4">$</div>
+        </div>
+      </div>
 
-        <div className="bg-blue-50 rounded-lg p-4">
-          <p className="text-lg font-semibold text-blue-900">
-            Over 87% of people save money when tracking car health
-          </p>
-        </div>
+      {/* Info card */}
+      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
+        <p className="text-lg font-semibold text-blue-900">
+          Over 87% of people save money when tracking car health
+        </p>
       </div>
 
       <button 
         onClick={onNext}
-        className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Continue
       </button>
@@ -233,41 +296,67 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
   })
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">🔧 Tell us about your last service</h2>
+    <div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Tell us about your last service
+        </h2>
+        <p className="text-gray-600">
+          This helps us understand your car's maintenance history
+        </p>
+      </div>
       
       <div className="space-y-4">
-        <input 
-          type="date" 
-          placeholder="Service Date" 
-          value={lastService.date}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, date: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Service Date
+          </label>
+          <input 
+            type="date" 
+            value={lastService.date}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, date: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
         
-        <input 
-          type="text" 
-          placeholder="Service Type (e.g., Oil Change, Brake Service)" 
-          value={lastService.type}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, type: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Service Type
+          </label>
+          <input 
+            type="text" 
+            placeholder="e.g., Oil Change, Brake Service"
+            value={lastService.type}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, type: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
         
-        <input 
-          type="number" 
-          placeholder="Cost ($)" 
-          value={lastService.cost}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, cost: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Cost ($)
+          </label>
+          <input 
+            type="number" 
+            placeholder="150"
+            value={lastService.cost}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, cost: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
         
-        <input 
-          type="number" 
-          placeholder="Mileage at Service" 
-          value={lastService.mileage}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, mileage: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Mileage at Service
+          </label>
+          <input 
+            type="number" 
+            placeholder="45000"
+            value={lastService.mileage}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, mileage: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
       </div>
 
       <button 
@@ -275,7 +364,7 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
           updateData({ lastService })
           onNext()
         }}
-        className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+        className="mt-8 w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Continue
       </button>
@@ -285,13 +374,17 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
 
 const ThankYouStep = ({ onNext }: StepProps) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6 text-center">
-      <h2 className="text-2xl font-bold mb-6">🙏 Thank You!</h2>
-      <p className="text-gray-600 mb-6">We're excited to help you take better care of your vehicle.</p>
+    <div className="text-center">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h2>
+        <p className="text-gray-600">
+          We're excited to help you take better care of your vehicle.
+        </p>
+      </div>
       
       <button 
         onClick={onNext}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Continue
       </button>
@@ -301,30 +394,35 @@ const ThankYouStep = ({ onNext }: StepProps) => {
 
 const BenefitsStep = ({ onNext }: StepProps) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">🤖 Axle AI Benefits</h2>
+    <div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Axle AI Benefits</h2>
+        <p className="text-gray-600">
+          Discover what makes Axle AI the smart choice for car maintenance
+        </p>
+      </div>
       
-      <div className="space-y-4">
-        <div className="flex items-start space-x-3">
+      <div className="space-y-4 mb-8">
+        <div className="flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg">
           <div className="text-2xl">🎯</div>
           <div>
-            <h3 className="font-semibold">Predictive Maintenance</h3>
+            <h3 className="font-semibold text-gray-900">Predictive Maintenance</h3>
             <p className="text-gray-600">AI predicts when your car needs service</p>
           </div>
         </div>
         
-        <div className="flex items-start space-x-3">
+        <div className="flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg">
           <div className="text-2xl">💰</div>
           <div>
-            <h3 className="font-semibold">Cost Savings</h3>
+            <h3 className="font-semibold text-gray-900">Cost Savings</h3>
             <p className="text-gray-600">Save up to 40% on car maintenance</p>
           </div>
         </div>
         
-        <div className="flex items-start space-x-3">
+        <div className="flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg">
           <div className="text-2xl">🔧</div>
           <div>
-            <h3 className="font-semibold">Expert Mechanics</h3>
+            <h3 className="font-semibold text-gray-900">Expert Mechanics</h3>
             <p className="text-gray-600">Vetted professionals in your area</p>
           </div>
         </div>
@@ -332,7 +430,7 @@ const BenefitsStep = ({ onNext }: StepProps) => {
 
       <button 
         onClick={onNext}
-        className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Continue
       </button>
@@ -344,23 +442,33 @@ const LocationStep = ({ onNext, updateData }: StepProps) => {
   const [location, setLocation] = useState('')
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">📍 Where are you located?</h2>
+    <div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Where are you located?</h2>
+        <p className="text-gray-600">
+          Help us find mechanics and services near you
+        </p>
+      </div>
       
-      <input 
-        type="text" 
-        placeholder="Enter your city or zip code" 
-        value={location}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)}
-        className="w-full px-4 py-2 border rounded-lg mb-4"
-      />
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          City or Zip Code
+        </label>
+        <input 
+          type="text" 
+          placeholder="Enter your city or zip code" 
+          value={location}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-8"
+        />
+      </div>
       
       <button 
         onClick={() => {
           updateData({ location })
           onNext()
         }}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Continue
       </button>
@@ -370,9 +478,13 @@ const LocationStep = ({ onNext, updateData }: StepProps) => {
 
 const NotificationsStep = ({ onNext, updateData }: StepProps) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">🔔 Stay Updated</h2>
-      <p className="text-gray-600 mb-6">Get notified about maintenance reminders and service updates</p>
+    <div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Stay Updated</h2>
+        <p className="text-gray-600">
+          Get notified about maintenance reminders and service updates
+        </p>
+      </div>
       
       <div className="space-y-4">
         <button
@@ -380,9 +492,11 @@ const NotificationsStep = ({ onNext, updateData }: StepProps) => {
             updateData({ notifications: true })
             onNext()
           }}
-          className="w-full p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
+          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
         >
-          Yes, keep me updated
+          <h3 className="font-medium text-gray-900 group-hover:text-blue-600">
+            Yes, keep me updated
+          </h3>
         </button>
         
         <button
@@ -390,9 +504,11 @@ const NotificationsStep = ({ onNext, updateData }: StepProps) => {
             updateData({ notifications: false })
             onNext()
           }}
-          className="w-full p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
+          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
         >
-          Maybe later
+          <h3 className="font-medium text-gray-900 group-hover:text-blue-600">
+            Maybe later
+          </h3>
         </button>
       </div>
     </div>
@@ -425,37 +541,57 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">🚙 Add Another Vehicle</h2>
+    <div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Add Another Vehicle</h2>
+        <p className="text-gray-600">
+          Do you have additional vehicles you'd like to track?
+        </p>
+      </div>
       
       <div className="space-y-4 mb-6">
-        <input 
-          type="number" 
-          placeholder="Year" 
-          value={currentVehicle.year}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, year: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Year
+          </label>
+          <input 
+            type="number" 
+            placeholder="2020"
+            value={currentVehicle.year}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, year: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
         
-        <input 
-          type="text" 
-          placeholder="Make" 
-          value={currentVehicle.make}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, make: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Make
+          </label>
+          <input 
+            type="text" 
+            placeholder="Toyota"
+            value={currentVehicle.make}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, make: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
         
-        <input 
-          type="text" 
-          placeholder="Model" 
-          value={currentVehicle.model}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, model: e.target.value})}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Model
+          </label>
+          <input 
+            type="text" 
+            placeholder="Camry"
+            value={currentVehicle.model}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, model: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
         
         <button 
           onClick={addVehicle}
-          className="w-full bg-gray-600 text-white py-2 rounded-lg hover:bg-gray-700"
+          className="w-full bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors font-medium"
         >
           Add Vehicle
         </button>
@@ -463,9 +599,9 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
 
       {additionalVehicles.length > 0 && (
         <div className="mb-6">
-          <h3 className="font-semibold mb-2">Added Vehicles:</h3>
+          <h3 className="font-semibold mb-2 text-gray-900">Added Vehicles:</h3>
           {additionalVehicles.map((vehicle, index) => (
-            <div key={index} className="p-2 bg-gray-100 rounded mb-2">
+            <div key={index} className="p-4 bg-gray-100 rounded-lg mb-2">
               {vehicle.year} {vehicle.make} {vehicle.model}
             </div>
           ))}
@@ -477,7 +613,7 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
           updateData({ additionalVehicles })
           onNext()
         }}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Continue
       </button>
@@ -487,23 +623,39 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
 
 const MaintenanceStep = ({ onNext }: StepProps) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">📅 Maintenance Schedule</h2>
-      <p className="text-gray-600 mb-6">We'll create a personalized maintenance schedule for your vehicle</p>
+    <div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Maintenance Schedule</h2>
+        <p className="text-gray-600">
+          We'll create a personalized maintenance schedule for your vehicle
+        </p>
+      </div>
       
-      <div className="bg-blue-50 rounded-lg p-4 mb-6">
-        <h3 className="font-semibold text-blue-900">Your personalized schedule will include:</h3>
-        <ul className="mt-2 text-blue-800 space-y-1">
-          <li>• Oil change reminders</li>
-          <li>• Tire rotation schedule</li>
-          <li>• Brake inspection dates</li>
-          <li>• Fluid level checks</li>
+      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
+        <h3 className="font-semibold text-blue-900 mb-4">Your personalized schedule will include:</h3>
+        <ul className="text-blue-800 space-y-2">
+          <li className="flex items-center">
+            <span className="mr-2">•</span>
+            Oil change reminders
+          </li>
+          <li className="flex items-center">
+            <span className="mr-2">•</span>
+            Tire rotation schedule
+          </li>
+          <li className="flex items-center">
+            <span className="mr-2">•</span>
+            Brake inspection dates
+          </li>
+          <li className="flex items-center">
+            <span className="mr-2">•</span>
+            Fluid level checks
+          </li>
         </ul>
       </div>
 
       <button 
         onClick={onNext}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Continue
       </button>
@@ -513,17 +665,21 @@ const MaintenanceStep = ({ onNext }: StepProps) => {
 
 const SettingUpStep = ({ onNext }: StepProps) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6 text-center">
-      <h2 className="text-2xl font-bold mb-6">⚙️ Setting Up Your Account</h2>
-      <p className="text-gray-600 mb-6">We're configuring your personalized experience...</p>
+    <div className="text-center">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Setting Up Your Account</h2>
+        <p className="text-gray-600">
+          We're configuring your personalized experience...
+        </p>
+      </div>
       
-      <div className="animate-pulse">
+      <div className="animate-pulse mb-8">
         <div className="w-16 h-16 bg-blue-200 rounded-full mx-auto mb-4"></div>
       </div>
 
       <button 
         onClick={onNext}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Continue
       </button>
@@ -533,21 +689,35 @@ const SettingUpStep = ({ onNext }: StepProps) => {
 
 const PlanReadyStep = ({ onNext }: StepProps) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">✅ Your Plan is Ready!</h2>
+    <div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Plan is Ready!</h2>
+        <p className="text-gray-600">
+          Based on your vehicle information, here's your personalized maintenance plan
+        </p>
+      </div>
       
-      <div className="bg-green-50 rounded-lg p-4 mb-6">
-        <h3 className="font-semibold text-green-900">Based on your vehicle information:</h3>
-        <ul className="mt-2 text-green-800 space-y-1">
-          <li>• Next oil change: 3,000 miles</li>
-          <li>• Tire rotation: 6,000 miles</li>
-          <li>• Brake inspection: 12,000 miles</li>
+      <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 mb-8">
+        <h3 className="font-semibold text-green-900 mb-4">Based on your vehicle information:</h3>
+        <ul className="text-green-800 space-y-2">
+          <li className="flex items-center">
+            <span className="mr-2">•</span>
+            Next oil change: 3,000 miles
+          </li>
+          <li className="flex items-center">
+            <span className="mr-2">•</span>
+            Tire rotation: 6,000 miles
+          </li>
+          <li className="flex items-center">
+            <span className="mr-2">•</span>
+            Brake inspection: 12,000 miles
+          </li>
         </ul>
       </div>
 
       <button 
         onClick={onNext}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Continue
       </button>
@@ -587,24 +757,33 @@ const PhoneNumberStep = ({ onNext, updateData }: StepProps) => {
   const [phoneNumber, setPhoneNumber] = useState('')
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">📞 Phone Number</h2>
-      <p className="text-gray-600 mb-6">Add your phone number for appointment notifications</p>
+    <div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Phone Number</h2>
+        <p className="text-gray-600">
+          Add your phone number for appointment notifications
+        </p>
+      </div>
       
-      <input 
-        type="tel" 
-        placeholder="(555) 123-4567" 
-        value={phoneNumber}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhoneNumber(e.target.value)}
-        className="w-full px-4 py-2 border rounded-lg mb-4"
-      />
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Phone Number
+        </label>
+        <input 
+          type="tel" 
+          placeholder="(555) 123-4567" 
+          value={phoneNumber}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhoneNumber(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-8"
+        />
+      </div>
       
       <button 
         onClick={() => {
           updateData({ phoneNumber })
           onNext()
         }}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Continue
       </button>
@@ -614,17 +793,33 @@ const PhoneNumberStep = ({ onNext, updateData }: StepProps) => {
 
 const FreeTrialStep = ({ onNext, updateData }: StepProps) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">🎁 Start Your Free Trial</h2>
-      <p className="text-gray-600 mb-6">Try Axle Premium free for 30 days</p>
+    <div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Start Your Free Trial</h2>
+        <p className="text-gray-600">
+          Try Axle Premium free for 30 days
+        </p>
+      </div>
       
-      <div className="bg-blue-50 rounded-lg p-4 mb-6">
-        <h3 className="font-semibold text-blue-900">Free Trial Includes:</h3>
-        <ul className="mt-2 text-blue-800 space-y-1">
-          <li>• Unlimited maintenance tracking</li>
-          <li>• Priority customer support</li>
-          <li>• Advanced AI insights</li>
-          <li>• No credit card required</li>
+      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
+        <h3 className="font-semibold text-blue-900 mb-4">Free Trial Includes:</h3>
+        <ul className="text-blue-800 space-y-2">
+          <li className="flex items-center">
+            <span className="mr-2">✓</span>
+            Unlimited maintenance tracking
+          </li>
+          <li className="flex items-center">
+            <span className="mr-2">✓</span>
+            Priority customer support
+          </li>
+          <li className="flex items-center">
+            <span className="mr-2">✓</span>
+            Advanced AI insights
+          </li>
+          <li className="flex items-center">
+            <span className="mr-2">✓</span>
+            No credit card required
+          </li>
         </ul>
       </div>
 
@@ -633,7 +828,7 @@ const FreeTrialStep = ({ onNext, updateData }: StepProps) => {
           updateData({ freeTrial: true })
           onNext()
         }}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Start Free Trial
       </button>
@@ -648,8 +843,13 @@ const ChoosePlanStep = ({ onNext, updateData }: StepProps) => {
   ]
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">💳 Choose Your Plan</h2>
+    <div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Plan</h2>
+        <p className="text-gray-600">
+          Select the plan that best fits your needs
+        </p>
+      </div>
       
       <div className="space-y-4">
         {plans.map(plan => (
@@ -659,11 +859,11 @@ const ChoosePlanStep = ({ onNext, updateData }: StepProps) => {
               updateData({ plan: plan.id })
               onNext()
             }}
-            className="w-full p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
           >
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-semibold">{plan.name}</h3>
+                <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">{plan.name}</h3>
                 <p className="text-gray-600">{plan.price}</p>
               </div>
               <div className="text-right">
@@ -681,17 +881,21 @@ const ChoosePlanStep = ({ onNext, updateData }: StepProps) => {
 
 const LimitedOfferStep = ({ onNext }: StepProps) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6 text-center">
-      <h2 className="text-2xl font-bold mb-6">🔥 Limited Time Offer!</h2>
-      <p className="text-gray-600 mb-6">Get 50% off your first 3 months of Premium</p>
+    <div className="text-center">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Limited Time Offer!</h2>
+        <p className="text-gray-600">
+          Get 50% off your first 3 months of Premium
+        </p>
+      </div>
       
-      <div className="bg-red-50 rounded-lg p-4 mb-6">
+      <div className="bg-red-50 border-2 border-red-200 rounded-lg p-6 mb-8">
         <p className="text-red-900 font-semibold">Offer expires in 24 hours</p>
       </div>
 
       <button 
         onClick={onNext}
-        className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700"
+        className="w-full bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 transition-colors font-medium"
       >
         Claim Offer
       </button>
@@ -701,17 +905,21 @@ const LimitedOfferStep = ({ onNext }: StepProps) => {
 
 const SuccessStep = ({ onNext }: StepProps) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6 text-center">
-      <h2 className="text-2xl font-bold mb-6">�� Welcome to Axle!</h2>
-      <p className="text-gray-600 mb-6">Your account has been created successfully</p>
+    <div className="text-center">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Axle!</h2>
+        <p className="text-gray-600">
+          Your account has been created successfully
+        </p>
+      </div>
       
-      <div className="bg-green-50 rounded-lg p-4 mb-6">
+      <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 mb-8">
         <p className="text-green-900">You're all set to start tracking your vehicle maintenance!</p>
       </div>
 
       <button 
         onClick={onNext}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
+        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Go to Dashboard
       </button>
@@ -917,13 +1125,17 @@ export default function CustomerOnboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Progress Bar */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Progress Bar - Style like book appointment */}
+        <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-600">Step {currentStep} of 20</span>
-            <span className="text-sm text-gray-600">{Math.round((currentStep / 20) * 100)}%</span>
+            <span className="text-sm font-medium text-gray-700">
+              Step {currentStep} of 20
+            </span>
+            <span className="text-sm font-medium text-gray-700">
+              {Math.round((currentStep / 20) * 100)}% Complete
+            </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
@@ -932,11 +1144,13 @@ export default function CustomerOnboarding() {
             />
           </div>
         </div>
-      </div>
 
-      {/* Step Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {renderCurrentStep()}
+        {/* Step Content in Card */}
+        <div className="bg-white rounded-lg shadow-xl border-0">
+          <div className="p-8">
+            {renderCurrentStep()}
+          </div>
+        </div>
       </div>
     </div>
   )
