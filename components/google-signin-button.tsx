@@ -4,7 +4,7 @@ import React from 'react'
 import { supabase } from '@/lib/supabase'
 
 interface GoogleSignInButtonProps {
-  role?: 'customer' | 'mechanic'
+  userType?: 'customer' | 'mechanic'
   from?: 'appointment'
   appointmentId?: string
   className?: string
@@ -12,7 +12,7 @@ interface GoogleSignInButtonProps {
 }
 
 export function GoogleSignInButton({ 
-  role, 
+  userType, 
   from, 
   appointmentId, 
   className = "",
@@ -28,8 +28,8 @@ export function GoogleSignInButton({
       let redirectUrl = `${window.location.origin}/auth/callback`
       const params = new URLSearchParams()
       
-      if (role) {
-        params.append('role', role)
+      if (userType) {
+        params.append('userType', userType)
       }
       
       if (from) {

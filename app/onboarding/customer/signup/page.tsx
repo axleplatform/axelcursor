@@ -244,7 +244,7 @@ export default function CustomerSignupPage() {
 
               <div className="mt-6">
                 <GoogleSignInButton 
-                  role="customer"
+                  userType="customer"
                   disabled={isLoading || isRateLimited}
                 >
                   Continue with Google

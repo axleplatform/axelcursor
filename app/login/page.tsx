@@ -226,7 +226,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <GoogleSignInButton>
+            <GoogleSignInButton userType="customer">
               Sign in with Google
             </GoogleSignInButton>
           </form>

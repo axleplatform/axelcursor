@@ -338,7 +338,7 @@ export default function MechanicSignupPage() {
 
               <div className="mt-6">
                 <GoogleSignInButton 
-                  role="mechanic"
+                  userType="mechanic"
                   disabled={isLoading || isRateLimited}
                 >
                   Continue with Google

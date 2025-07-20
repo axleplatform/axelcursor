@@ -240,36 +240,7 @@ export default function AppointmentConfirmationPage() {
     }
   }
 
-  // Handle Google signup
-  const handleGoogleSignup = async () => {
-    // Save appointment data to localStorage for post-auth linking
-    if (appointmentData) {
-      localStorage.setItem('pendingAppointment', JSON.stringify({
-        id: appointmentData.id,
-        appointmentId: appointmentId
-      }))
-    }
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?from=appointment&appointment=${appointmentId}`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        }
-      }
-    })
-    
-    if (error) {
-      console.error('Google signup error:', error)
-      toast({
-        title: "Error",
-        description: "Failed to sign up with Google. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
 
   // Handle appointment cancellation
   const handleCancelAppointment = async () => {
@@ -648,6 +619,7 @@ export default function AppointmentConfirmationPage() {
                     </div>
                     
                     <GoogleSignInButton
+                      userType="customer"
                       from="appointment"
                       appointmentId={appointmentId}
                       className="w-full mt-4"
