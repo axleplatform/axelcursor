@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
+import { GoogleSignInButton } from "@/components/google-signin-button"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -215,6 +216,19 @@ export default function LoginPage() {
                 )}
               </button>
             </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-white px-2 text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
+            <GoogleSignInButton>
+              Sign in with Google
+            </GoogleSignInButton>
           </form>
         </div>
       </div>

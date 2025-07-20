@@ -1,8 +1,7 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import React from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -12,7 +11,7 @@ import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { GoogleSignInButton } from "@/components/google-signin-button"
 
-export default function MechanicSignupPage() {
+export default function CustomerSignupPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -20,118 +19,6 @@ export default function MechanicSignupPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isRateLimited, setIsRateLimited] = useState(false)
-  const [submitAttempt, setSubmitAttempt] = useState(0)
-
-  // Prevent multiple simultaneous requests
-  useEffect(() => {
-    let isActive = true
-
-    if (submitAttempt > 0) {
-      handleSignupAttempt()
-
-      return () => {
-        isActive = false
-      }
-    }
-
-    // Return undefined for the case when submitAttempt <= 0
-    return
-
-    async function handleSignupAttempt() {
-      if (!isActive) return
-
-      // Validate inputs
-      if (!isEmailValid(email)) {
-        setError("Please enter a valid email address")
-        setSubmitAttempt(0)
-        return
-      }
-
-      if (!isPasswordValid(password)) {
-        setError("Password must be at least 8 characters long")
-        setSubmitAttempt(0)
-        return
-      }
-
-      setIsLoading(true)
-      setError(null)
-
-      try {
-        // Sign up with Supabase Auth
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              user_type: "mechanic",
-              onboarding_step: "personal_info",
-            },
-          },
-        })
-
-        if (!isActive) return
-
-        if (signUpError) {
-          // Check for rate limit errors
-          if (
-            signUpError.message.toLowerCase().includes("rate limit") ||
-            signUpError.message.toLowerCase().includes("too many requests") ||
-            signUpError.message.toLowerCase().includes("exceeded")
-          ) {
-            console.warn("Rate limit hit during signup:", signUpError.message)
-            setIsRateLimited(true)
-            setError("Too many signup attempts. Please wait a few minutes and try again.")
-          } else {
-            throw signUpError
-          }
-          return
-        }
-
-        if (data.user) {
-          // Create a mechanic profile in the database
-          const { error: profileError } = await supabase.from("mechanic_profiles").insert([
-            {
-              user_id: data.user.id,
-              email: email,
-              onboarding_completed: false,
-              onboarding_step: "personal_info",
-            },
-          ])
-
-          if (!isActive) return
-
-          if (profileError) throw profileError
-
-          // Redirect to the next onboarding step
-          router.push("/onboarding-mechanic-1")
-        }
-      } catch (error: unknown) {
-        if (!isActive) return
-
-        console.error("Error during signup:", error)
-
-        // Check for rate limit errors in the caught error
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        if (
-          errorMessage &&
-          (errorMessage.toLowerCase().includes("rate limit") ||
-            errorMessage.toLowerCase().includes("too many requests") ||
-            errorMessage.toLowerCase().includes("exceeded"))
-        ) {
-          console.warn("Rate limit hit during signup:", errorMessage)
-          setIsRateLimited(true)
-          setError("Too many signup attempts. Please wait a few minutes and try again.")
-        } else {
-          setError(errorMessage || "An error occurred during signup. Please try again.")
-        }
-      } finally {
-        if (isActive) {
-          setIsLoading(false)
-          setSubmitAttempt(0)
-        }
-      }
-    }
-  }, [submitAttempt, email, password, router])
 
   // Validate email format
   const isEmailValid = (email: string) => {
@@ -145,54 +32,73 @@ export default function MechanicSignupPage() {
   }
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Prevent multiple submissions
     if (isLoading) return
 
-    // Reset error state
-    setError(null)
+    // Validate inputs
+    if (!isEmailValid(email)) {
+      setError("Please enter a valid email address")
+      return
+    }
 
-    // Trigger the signup attempt
-    setSubmitAttempt((prev) => prev + 1)
-  }
+    if (!isPasswordValid(password)) {
+      setError("Password must be at least 8 characters long")
+      return
+    }
 
-  // Handle Google sign-in
-  const handleGoogleSignIn = async () => {
-    if (isLoading || isRateLimited) return
-
-    setError(null)
     setIsLoading(true)
+    setError(null)
 
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+      // Sign up with Supabase Auth
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
         options: {
-          queryParams: {
-            access_type: "offline",
-            prompt: "consent",
+          data: {
+            user_type: "customer",
           },
-          redirectTo: `${window.location.origin}/onboarding/mechanic/auth-callback?user_type=mechanic&redirect=/onboarding-mechanic-1`,
         },
       })
 
-      if (error) {
+      if (signUpError) {
         // Check for rate limit errors
         if (
-          error.message.toLowerCase().includes("rate limit") ||
-          error.message.toLowerCase().includes("too many requests") ||
-          error.message.toLowerCase().includes("exceeded")
+          signUpError.message.toLowerCase().includes("rate limit") ||
+          signUpError.message.toLowerCase().includes("too many requests") ||
+          signUpError.message.toLowerCase().includes("exceeded")
         ) {
-          console.warn("Rate limit hit during Google sign-in:", error.message)
+          console.warn("Rate limit hit during signup:", signUpError.message)
           setIsRateLimited(true)
-          setError("Too many sign-in attempts. Please wait a few minutes and try again.")
+          setError("Too many signup attempts. Please wait a few minutes and try again.")
         } else {
-          throw error
+          throw signUpError
         }
+        return
+      }
+
+      if (data.user) {
+        // Create a customer profile in the database
+        const { error: profileError } = await supabase.from("users").insert([
+          {
+            id: data.user.id,
+            email: email,
+            role: "customer",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+        ])
+
+        if (profileError) throw profileError
+
+        // Redirect to home page
+        router.push("/")
       }
     } catch (error: unknown) {
-      console.error("Error during Google sign-in:", error)
+      console.error("Error during signup:", error)
 
       // Check for rate limit errors in the caught error
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -202,11 +108,11 @@ export default function MechanicSignupPage() {
           errorMessage.toLowerCase().includes("too many requests") ||
           errorMessage.toLowerCase().includes("exceeded"))
       ) {
-        console.warn("Rate limit hit during Google sign-in:", errorMessage)
+        console.warn("Rate limit hit during signup:", errorMessage)
         setIsRateLimited(true)
-        setError("Too many sign-in attempts. Please wait a few minutes and try again.")
+        setError("Too many signup attempts. Please wait a few minutes and try again.")
       } else {
-        setError(errorMessage || "An error occurred during sign-in. Please try again.")
+        setError(errorMessage || "An error occurred during signup. Please try again.")
       }
     } finally {
       setIsLoading(false)
@@ -228,8 +134,8 @@ export default function MechanicSignupPage() {
               className="mx-auto object-contain"
               priority
             />
-            <h2 className="mt-6 text-3xl font-bold tracking-tight text-gray-900">Join as a Mobile Mechanic</h2>
-            <p className="mt-2 text-sm text-gray-600">Create your account to start receiving service requests</p>
+            <h2 className="mt-6 text-3xl font-bold tracking-tight text-gray-900">Create Your Account</h2>
+            <p className="mt-2 text-sm text-gray-600">Join thousands of car owners who trust Axle for their repairs</p>
           </div>
 
           <div className="mt-8 bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
@@ -338,7 +244,7 @@ export default function MechanicSignupPage() {
 
               <div className="mt-6">
                 <GoogleSignInButton 
-                  role="mechanic"
+                  role="customer"
                   disabled={isLoading || isRateLimited}
                 >
                   Continue with Google
@@ -359,11 +265,11 @@ export default function MechanicSignupPage() {
           <div className="text-center text-sm text-gray-500">
             <p>
               By creating an account, you agree to our{" "}
-              <Link href="/terms" className="font-medium text-[#294a46] hover:text-[#1e3632]">
+              <Link href="/legal/terms" className="font-medium text-[#294a46] hover:text-[#1e3632]">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="/privacy" className="font-medium text-[#294a46] hover:text-[#1e3632]">
+              <Link href="/legal/privacy" className="font-medium text-[#294a46] hover:text-[#1e3632]">
                 Privacy Policy
               </Link>
             </p>
@@ -374,4 +280,4 @@ export default function MechanicSignupPage() {
       <Footer />
     </div>
   )
-}
+} 
