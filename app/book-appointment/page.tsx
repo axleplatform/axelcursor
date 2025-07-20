@@ -996,7 +996,7 @@ function BookAppointmentContent() {
       setAiSuggestions(defaultRecommendedServices)
     }
   }
-  // Handle car issue description changes
+  // Handle car issue description changes - just save data, no API calls
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     setFormData((prev) => ({ ...prev, issueDescription: value }))
@@ -1006,24 +1006,8 @@ function BookAppointmentContent() {
       clearTimeout(patternDebounceTimer)
     }
     
-    // Set new pattern debounce timer for 1 second
+    // Only check patterns for simple text under 50 chars (no API calls)
     const timer = setTimeout(() => {
-      // NEW DECISION FLOW: Gemini overrides patterns for complex cases
-      const hasMedia = uploadedFiles.length > 0 || recordedAudio !== null
-      const isComplex = value.length >= 50
-      
-      console.log(`🔍 Analysis decision: Media=${hasMedia}, Complex=${isComplex}, Length=${value.length}`)
-      
-      // ALWAYS use Gemini for complex cases
-      if (hasMedia || isComplex) {
-        console.log('🎯 Using Gemini API: Complex issue or media present')
-        setPatternMatched(false)
-        setAiSuggestionsLoading(true)
-        analyzeWithGemini(uploadedFiles)
-        return
-      }
-      
-      // Only check patterns for simple text under 50 chars
       if (value.length < 50) {
         const patternMatch = findMatchingServices(value)
         if (patternMatch) {
@@ -1031,60 +1015,53 @@ function BookAppointmentContent() {
           setAiSuggestions(patternMatch.services)
           setPatternMatched(true)
           setAiSuggestionsLoading(false)
-          
-          // No toast notification - silent pattern match
-          return
+        } else {
+          setPatternMatched(false)
+          setAiSuggestionsLoading(false)
         }
+      } else {
+        setPatternMatched(false)
+        setAiSuggestionsLoading(false)
       }
-      
-      // No pattern match - let the 3-second debounce handle Gemini API call
-      console.log('⏳ No pattern match - waiting for debounce timer')
-      setPatternMatched(false)
-      setAiSuggestionsLoading(false) // Don't show loading immediately
     }, 1000) // 1 second debounce for pattern matching
     
     setPatternDebounceTimer(timer)
   }
-  // Handle car runs selection - now using boolean values
+  // Handle car runs selection - SINGLE TRIGGER POINT for Gemini API
   const handleCarRunsChange = (value: boolean) => {
     setFormData((prev) => ({ ...prev, carRuns: value }))
-
-    // NEW DECISION FLOW: Gemini overrides patterns for complex cases
-    const hasMedia = uploadedFiles.length > 0 || recordedAudio !== null
-    const isComplex = formData.issueDescription.length >= 50
     
-    console.log(`🔍 Analysis decision: Media=${hasMedia}, Complex=${isComplex}, Length=${formData.issueDescription.length}`)
+    // NOW check all conditions for API call
+    const hasValidInput = formData.issueDescription.length >= 50 || uploadedFiles.length > 0 || recordedAudio !== null
     
-    // ALWAYS use Gemini for complex cases
-    if (hasMedia || isComplex) {
+    if (hasValidInput) {
+      console.log('🎯 Car runs answered - checking conditions for API call')
+      
+      // Check patterns first for simple text
+      if (!uploadedFiles.length && !recordedAudio && formData.issueDescription.length < 50) {
+        const patternMatch = findMatchingServices(formData.issueDescription)
+        if (patternMatch) {
+          console.log('✅ Pattern matched for simple query:', formData.issueDescription)
+          setAiSuggestions(patternMatch.services)
+          setPatternMatched(true)
+          setAiSuggestionsLoading(false)
+          return
+        }
+      }
+      
+      // Call Gemini for complex/media cases
       console.log('🎯 Using Gemini API: Complex issue or media present')
       setPatternMatched(false)
       setAiSuggestionsLoading(true)
       analyzeWithGemini(uploadedFiles)
-      return
+    } else {
+      console.log('⏳ Car runs answered but no valid input yet')
+      setPatternMatched(false)
+      setAiSuggestionsLoading(false)
     }
-    
-    // Only check patterns for simple text under 50 chars
-    if (formData.issueDescription.length < 50) {
-      const patternMatch = findMatchingServices(formData.issueDescription)
-      if (patternMatch) {
-        console.log('✅ Pattern matched for simple query:', formData.issueDescription)
-        setAiSuggestions(patternMatch.services)
-        setPatternMatched(true)
-        setAiSuggestionsLoading(false)
-        
-        // No toast notification - silent pattern match
-        return
-      }
-    }
-    
-    // No pattern match - let the 3-second debounce handle Gemini API call
-    console.log('⏳ No pattern match - waiting for debounce timer')
-    setPatternMatched(false)
-    setAiSuggestionsLoading(false) // Don't show loading immediately
   }
 
-  // Handle media upload changes
+  // Handle media upload changes - just save data, no API calls
   const handleMediaUpload = async (files: File[]) => {
     try {
       // Convert File[] to MediaFile[] properly
@@ -1092,40 +1069,8 @@ function BookAppointmentContent() {
         files.map(file => convertFileToMediaFile(file))
       )
       setUploadedFiles(mediaFiles)
-
-      // NEW DECISION FLOW: Gemini overrides patterns for complex cases
-      const hasMedia = files.length > 0 || recordedAudio !== null
-      const isComplex = formData.issueDescription.length >= 50
       
-      console.log(`🔍 Analysis decision: Media=${hasMedia}, Complex=${isComplex}, Length=${formData.issueDescription.length}`)
-      
-      // ALWAYS use Gemini for complex cases
-      if (hasMedia || isComplex) {
-        console.log('🎯 Using Gemini API: Complex issue or media present')
-        setPatternMatched(false)
-        setAiSuggestionsLoading(true)
-        analyzeWithGemini(mediaFiles)
-        return
-      }
-      
-      // Only check patterns for simple text under 50 chars
-      if (formData.issueDescription.length < 50) {
-        const patternMatch = findMatchingServices(formData.issueDescription)
-        if (patternMatch) {
-          console.log('✅ Pattern matched for simple query:', formData.issueDescription)
-          setAiSuggestions(patternMatch.services)
-          setPatternMatched(true)
-          setAiSuggestionsLoading(false)
-          
-          // No toast notification - silent pattern match
-          return
-        }
-      }
-      
-      // No pattern match - let the 3-second debounce handle Gemini API call
-      console.log('⏳ No pattern match - waiting for debounce timer')
-      setPatternMatched(false)
-      setAiSuggestionsLoading(false) // Don't show loading immediately
+      console.log('📁 Media files uploaded - waiting for car runs answer')
     } catch (error) {
       console.error('Error converting files:', error)
     }
@@ -1365,11 +1310,8 @@ function BookAppointmentContent() {
 
     // Set new debounce timer for 3 seconds
     const timer = setTimeout(() => {
-      // Only call API if description exists AND carRunning is answered
-      if ((formData.issueDescription.trim().length > 0 || uploadedFiles.length > 0) && formData.carRuns !== null) {
-        analyzeWithGemini(uploadedFiles)
-      } else if (hasInteractedWithTextArea) {
-        // Show default recommendations if no input
+      // Only show default recommendations if no input and user has interacted
+      if (hasInteractedWithTextArea && !formData.issueDescription.trim() && uploadedFiles.length === 0) {
         if (JSON.stringify(aiSuggestions) !== JSON.stringify(defaultRecommendedServices)) {
           setAiSuggestions(defaultRecommendedServices)
         }
@@ -1383,7 +1325,7 @@ function BookAppointmentContent() {
       if (timer) clearTimeout(timer)
       if (patternDebounceTimer) clearTimeout(patternDebounceTimer)
     }
-  }, [formData.issueDescription, uploadedFiles, formData.carRuns, hasInteractedWithTextArea, patternMatched])
+  }, [formData.issueDescription, uploadedFiles, hasInteractedWithTextArea, patternMatched])
   // Save form data to sessionStorage whenever it changes
   useEffect(() => {
     if (formData.issueDescription || formData.selectedServices.length > 0 || formData.selectedCarIssues.length > 0) {
