@@ -144,6 +144,27 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
     return `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
   }, []);
 
+  // Helper function to check if time is "Now" (ASAP)
+  const isNowTime = useCallback((time: string) => {
+    return time === "ASAP" || time === "now" || time === "⚡ Now";
+  }, []);
+
+  // Validation function to prevent past times
+  const validateTime = useCallback(() => {
+    if (formData.appointmentTime && !isNowTime(formData.appointmentTime)) {
+      const selectedTime = new Date();
+      const [hours, minutes] = formData.appointmentTime.split(':').map(Number);
+      selectedTime.setHours(hours, minutes, 0, 0);
+      const now = new Date();
+      
+      if (selectedTime < now) {
+        setErrors(prev => ({ ...prev, appointmentTime: 'Please select a future time' }));
+        return false;
+      }
+    }
+    return true;
+  }, [formData.appointmentTime, isNowTime]);
+
   // Reverse geocode helper function
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
     try {
@@ -518,8 +539,8 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
 
   // Handle visibility changes and focus events to reinitialize map (simplified)
   useEffect(() => {
-    // Only reinitialize if map was not properly initialized and user has interacted
-    const handleVisibilityChange = () => {
+    // Handle visibility change for map initialization
+    const handleMapVisibilityChange = () => {
       if (!document.hidden && shouldLoadMap && !mapInstanceRef.current && !mapInitializedRef.current) {
         console.log('🗺️ Page became visible - checking map initialization (conservative)');
         // Use a longer delay to prevent aggressive reinitialization
@@ -531,16 +552,41 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
       }
     };
 
-    // Only set up listeners if user has interacted
+    // Handle visibility change for "Now" time updates
+    const handleTimeVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Check if time was set to "ASAP" (Now)
+        if (formData.appointmentTime === "ASAP") {
+          console.log('🕐 Updating "Now" time to current time');
+          setFormData(prev => ({
+            ...prev,
+            appointmentTime: "ASAP" // Keep as ASAP, but this will trigger time slot regeneration
+          }));
+        }
+      }
+    };
+
+    // Set up listeners
     if (shouldLoadMap) {
-      // Listen for visibility changes
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      
-      return () => {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-      };
+      // Listen for visibility changes for map
+      document.addEventListener('visibilitychange', handleMapVisibilityChange);
     }
-  }, [shouldLoadMap]); // Set up listeners when shouldLoadMap is true (now always true)
+    
+    // Always listen for visibility changes for time updates
+    document.addEventListener('visibilitychange', handleTimeVisibilityChange);
+    window.addEventListener('focus', handleTimeVisibilityChange);
+    
+    // Also update on mount if coming back
+    handleTimeVisibilityChange();
+    
+    return () => {
+      if (shouldLoadMap) {
+        document.removeEventListener('visibilitychange', handleMapVisibilityChange);
+      }
+      document.removeEventListener('visibilitychange', handleTimeVisibilityChange);
+      window.removeEventListener('focus', handleTimeVisibilityChange);
+    };
+  }, [shouldLoadMap, formData.appointmentTime]); // Include formData.appointmentTime dependency
 
   // Smooth animation to location with professional easing
   const animateToLocation = useCallback((map: google.maps.Map, location: { lat: number; lng: number }) => {

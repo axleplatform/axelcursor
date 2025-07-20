@@ -319,6 +319,28 @@ export const DateTimeSelector = forwardRef<DateTimeSelectorRef, DateTimeSelector
     }
   }, [selectedDate])
 
+  // Handle visibility change to refresh "Now" time when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isToday(selectedDate) && selectedTime === "ASAP") {
+        console.log('🕐 Refreshing "Now" time slots when page becomes visible');
+        // Force regeneration of time slots to update the "Now" time
+        const { index } = getNextTimeSlot();
+        const futureTimeSlots = allTimeSlots.slice(index);
+        const todayTimeSlots = ["ASAP", ...futureTimeSlots];
+        setAvailableTimeSlots(todayTimeSlots);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
+  }, [selectedDate, selectedTime, allTimeSlots]);
+
   // When controlled props change, update internal state for backward compatibility
   useEffect(() => {
     if (controlledDate && controlledDate.getTime() !== internalDate.getTime()) setInternalDate(controlledDate)
