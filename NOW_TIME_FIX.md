@@ -8,7 +8,7 @@ When users selected "Now" (⚡ Now) for appointment time and navigated away from
 ### 1. Landing Page (`app/page.tsx`)
 Added visibility change handlers to update "Now" time when page becomes visible:
 
-```javascript
+\`\`\`javascript
 // Handle visibility change for "Now" time updates
 const handleTimeVisibilityChange = () => {
   if (document.visibilityState === 'visible') {
@@ -22,12 +22,12 @@ const handleTimeVisibilityChange = () => {
     }
   }
 };
-```
+\`\`\`
 
 ### 2. DateTime Selector (`components/date-time-selector.tsx`)
 Added visibility change handler to refresh time slots when page becomes visible:
 
-```javascript
+\`\`\`javascript
 // Handle visibility change to refresh "Now" time when page becomes visible
 useEffect(() => {
   const handleVisibilityChange = () => {
@@ -49,12 +49,12 @@ useEffect(() => {
     window.removeEventListener('focus', handleVisibilityChange);
   };
 }, [selectedDate, selectedTime, allTimeSlots]);
-```
+\`\`\`
 
 ### 3. Helper Functions
 Added utility functions for time validation:
 
-```javascript
+\`\`\`javascript
 // Helper function to check if time is "Now" (ASAP)
 const isNowTime = useCallback((time: string) => {
   return time === "ASAP" || time === "now" || time === "⚡ Now";
@@ -75,7 +75,7 @@ const validateTime = useCallback(() => {
   }
   return true;
 }, [formData.appointmentTime, isNowTime]);
-```
+\`\`\`
 
 ## How It Works
 
@@ -99,4 +99,4 @@ To test the fix:
 2. Navigate away from the page (open new tab, switch apps, etc.)
 3. Return to the page after a few minutes
 4. Verify that the time still shows "⚡ Now" and allows continuing
-5. Check browser console for "🕐 Updating 'Now' time" log messages 
+5. Check browser console for "🕐 Updating 'Now' time" log messages
