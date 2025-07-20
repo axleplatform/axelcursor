@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabase"
 import { DateTimeSelector } from "@/components/date-time-selector"
 import { toast } from "@/components/ui/use-toast"
 import HomepageLocationInput from "@/components/homepage-location-input"
+import { DEFAULT_MAP_CENTER } from "@/lib/constants"
 
 
 // Simple debounce function
@@ -344,7 +345,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
       const google = await loadGoogleMaps();
 
       // Determine initial center based on saved location data
-      let initialCenter = { lat: 40.7128, lng: -74.0060 }; // NYC default
+      let initialCenter = DEFAULT_MAP_CENTER; // San Diego default
       let initialZoom = 12;
       
       // Check if we have saved location data to restore

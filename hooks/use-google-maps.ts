@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { loadGoogleMaps, geocodeAddress, extractCoordinates, reverseGeocode, formatAddress } from '@/lib/google-maps';
+import { DEFAULT_MAP_CENTER } from '@/lib/constants';
 
 interface UseGoogleMapsOptions {
   center?: { lat: number; lng: number };
@@ -20,7 +21,7 @@ interface UseGoogleMapsReturn {
 }
 
 export function useGoogleMaps({
-  center = { lat: 37.7749, lng: -122.4194 },
+  center = DEFAULT_MAP_CENTER,
   zoom = 13,
   onLocationSelect,
   draggable = true,

@@ -4,6 +4,7 @@
 import React from 'react'
 import { MapPin, Loader2 } from 'lucide-react'
 import { useGoogleMaps } from '@/hooks/use-google-maps';
+import { DEFAULT_MAP_CENTER } from '@/lib/constants';
 
 interface GoogleMapsMapProps {
   center?: { lat: number; lng: number }
@@ -18,7 +19,7 @@ interface GoogleMapsMapProps {
 }
 
 export default function GoogleMapsMap({
-  center = { lat: 37.7749, lng: -122.4194 },
+  center = DEFAULT_MAP_CENTER,
   zoom = 13,
   height = "400px",
   className = "",

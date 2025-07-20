@@ -3,6 +3,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { MapPin, Loader2 } from 'lucide-react';
 import GoogleMapsMap from '../google-maps-map';
 import { useGoogleMapsAutocomplete } from '@/hooks/use-google-maps-autocomplete';
+import { DEFAULT_MAP_CENTER } from '@/lib/constants';
 
 interface AddressPickerProps { 
   onLocationSelect: (location: { 
@@ -14,7 +15,7 @@ interface AddressPickerProps {
 
 export function AddressPicker({ onLocationSelect }: AddressPickerProps) { 
   const [address, setAddress] = useState('');
-  const [center, setCenter] = useState({ lat: 40.7128, lng: -74.0060 }); // NYC default
+  const [center, setCenter] = useState(DEFAULT_MAP_CENTER); // San Diego default
   const [isUpdating, setIsUpdating] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
 
