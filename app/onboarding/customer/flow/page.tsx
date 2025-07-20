@@ -555,25 +555,6 @@ const PlanReadyStep = ({ onNext }: StepProps) => {
 }
 
 const CreateAccountStep = ({ onNext, updateData, onboardingData }: StepProps) => {
-  const handleGoogleSignIn = async () => {
-    try {
-      // Save current onboarding data to localStorage
-      localStorage.setItem('pendingOnboarding', JSON.stringify(onboardingData))
-      
-      // Initiate Google OAuth
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?from=onboarding&userType=customer`,
-        }
-      })
-      
-      if (error) throw error
-    } catch (error) {
-      console.error('Google sign in error:', error)
-    }
-  }
-
   const handleEmailSignUp = async (email: string, password: string) => {
     try {
       const { data: authData, error } = await supabase.auth.signUp({
@@ -604,10 +585,7 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData }: StepProps) =>
       <h2 className="text-2xl font-bold mb-6">🔐 Create Your Account</h2>
       <p className="text-gray-600 mb-6">Log in to save your information and get started</p>
       
-      <GoogleSignInButton 
-        userType="customer"
-        onClick={handleGoogleSignIn}
-      >
+      <GoogleSignInButton userType="customer">
         Continue with Google
       </GoogleSignInButton>
       

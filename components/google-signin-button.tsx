@@ -28,6 +28,15 @@ export function GoogleSignInButton({
     setIsLoading(true)
     
     try {
+      // Save current onboarding data to localStorage if on onboarding flow
+      const currentPath = window.location.pathname;
+      if (currentPath.includes('/onboarding/customer/flow')) {
+        const onboardingData = localStorage.getItem('onboardingData');
+        if (onboardingData) {
+          localStorage.setItem('pendingOnboarding', onboardingData);
+        }
+      }
+      
       // Build redirect URL with parameters
       let redirectUrl = `${window.location.origin}/auth/callback`
       const params = new URLSearchParams()
