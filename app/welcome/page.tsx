@@ -3,6 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+import { SiteHeader } from '@/components/site-header';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import Footer from '@/components/footer';
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -18,102 +23,128 @@ export default function WelcomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Logo Header */}
-      <div className="absolute top-0 left-0 right-0 p-6 z-10">
-        <div className="max-w-7xl mx-auto flex justify-center">
-          <img src="/images/axle-logo-green.png" alt="Axle" className="h-12" />
-        </div>
-      </div>
+    <div className="flex flex-col min-h-screen">
+      <SiteHeader />
+      
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-6xl">
+          {/* Logo */}
+          <div className="flex justify-center mb-12">
+            <Image src="/images/axle-logo-green.png" alt="Axle" width={120} height={48} priority />
+          </div>
 
-      {/* Split Screen Container */}
-      <div className={`min-h-screen flex ${isMobile ? 'flex-col' : 'flex-row'}`}>
-        
-        {/* Left/Top Section - Book Appointment */}
-        <div className="flex-1 flex items-center justify-center p-8 relative bg-white/50">
-          <div className="max-w-md w-full text-center">
-            {/* Icon */}
-            <div className="mb-8">
-              <div className="w-24 h-24 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
-                <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+          {/* Welcome Title */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold tracking-tight text-gray-900 mb-4">
+              Welcome to Axle
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Your car's health matters. Choose how you'd like to get started with Axle.
+            </p>
+          </div>
+
+          {/* Split Screen Container */}
+          <div className={`flex ${isMobile ? 'flex-col gap-8' : 'flex-row gap-8'}`}>
+            
+            {/* Left/Top Section - Book Appointment */}
+            <Card className="flex-1 p-8 hover:shadow-lg transition-shadow">
+              <div className="text-center">
+                {/* Icon */}
+                <div className="mb-6">
+                  <div className="w-20 h-20 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-3xl">🔧</span>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  Need Service Now?
+                </h2>
+                
+                <p className="text-gray-600 mb-6">
+                  Get immediate help from our mobile mechanics
+                </p>
+                
+                <Link href="/">
+                  <Button 
+                    size="lg" 
+                    className="w-full bg-[#294a46] hover:bg-[#1a2f2c] text-white font-semibold"
+                  >
+                    Book an Appointment
+                  </Button>
+                </Link>
               </div>
-            </div>
+            </Card>
 
-            {/* Content */}
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Need Service Now?
-            </h2>
+            {/* Divider */}
+            {!isMobile && (
+              <div className="flex items-center justify-center">
+                <div className="w-px h-32 bg-gray-300 relative">
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-4 py-2 rounded-full border border-gray-300">
+                    <span className="text-gray-500 font-medium text-sm">OR</span>
+                  </div>
+                </div>
+              </div>
+            )}
             
-            <Link href="/">
-              <button className="w-full max-w-sm bg-blue-600 text-white py-4 px-8 rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg shadow-lg">
-                Book an Appointment
-              </button>
-            </Link>
-            
-            <p className="mt-4 text-gray-600 font-medium">
-              Order a mobile mechanic
+            {isMobile && (
+              <div className="flex items-center justify-center">
+                <div className="h-px w-full bg-gray-300 relative">
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-4 py-2 rounded-full border border-gray-300">
+                    <span className="text-gray-500 font-medium text-sm">OR</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Right/Bottom Section - Get Started */}
+            <Card className="flex-1 p-8 hover:shadow-lg transition-shadow">
+              <div className="text-center">
+                {/* Icon */}
+                <div className="mb-6">
+                  <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-3xl">🚗</span>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  Track Your Car Health
+                </h2>
+                
+                <p className="text-gray-600 mb-6">
+                  Optimize your vehicle with Axle AI
+                </p>
+                
+                <Link href="/signup">
+                  <Button 
+                    size="lg" 
+                    className="w-full bg-[#294a46] hover:bg-[#1a2f2c] text-white font-semibold"
+                  >
+                    Get Started with Axle AI
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          </div>
+
+          {/* Sign In Link */}
+          <div className="text-center mt-12">
+            <p className="text-gray-600">
+              Already have an account?{' '}
+              <Link 
+                href="/login" 
+                className="text-[#294a46] font-medium hover:text-[#1a2f2c] transition-colors"
+              >
+                Sign in
+              </Link>
             </p>
           </div>
         </div>
-
-        {/* Divider */}
-        {!isMobile && (
-          <div className="w-px bg-gray-300 relative">
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-100 px-4 py-2 rounded-full">
-              <span className="text-gray-500 font-medium">OR</span>
-            </div>
-          </div>
-        )}
-        
-        {isMobile && (
-          <div className="h-px bg-gray-300 relative my-8">
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-100 px-4 py-2 rounded-full">
-              <span className="text-gray-500 font-medium">OR</span>
-            </div>
-          </div>
-        )}
-
-        {/* Right/Bottom Section - Get Started */}
-        <div className="flex-1 flex items-center justify-center p-8 relative bg-gradient-to-br from-green-50 to-blue-50">
-          <div className="max-w-md w-full text-center">
-            {/* Icon */}
-            <div className="mb-8">
-              <div className="w-24 h-24 mx-auto bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Content */}
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Track Your Car Health
-            </h2>
-            
-            <Link href="/signup">
-              <button className="w-full max-w-sm bg-green-600 text-white py-4 px-8 rounded-lg hover:bg-green-700 transition-colors font-medium text-lg shadow-lg">
-                Get Started with Axle AI
-              </button>
-            </Link>
-            
-            <p className="mt-4 text-gray-600 font-medium">
-              Optimize your car health
-            </p>
-          </div>
-        </div>
       </div>
-
-      {/* Sign In Link - Bottom */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 text-center bg-white/80 backdrop-blur-sm">
-        <p className="text-gray-600">
-          Already have an account?{' '}
-          <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
-            Sign in
-          </Link>
-        </p>
-      </div>
+      
+      <Footer />
     </div>
   );
 }

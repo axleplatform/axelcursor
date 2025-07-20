@@ -696,30 +696,18 @@ const PlanReadyStep = ({ onNext }: StepProps) => {
 }
 
 const CreateAccountStep = ({ onNext, updateData, onboardingData }: StepProps) => {
-  const handleSuccess = (userId: string) => {
-    updateData({ userId });
-    onNext();
-  };
-
+  // Just render the CustomerSignupForm with the progress bar already at the top
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">🔐 Create Your Account</h2>
-      <p className="text-gray-600 mb-6">Log in to save your information and get started</p>
-      
-      <GoogleSignInButton userType="customer">
-        Continue with Google
-      </GoogleSignInButton>
-      
-      <div className="my-4 text-center text-gray-500">or</div>
-      
-      <CustomerSignupForm 
-        isOnboarding={true} 
-        onboardingData={onboardingData} 
-        onSuccess={handleSuccess} 
-      />
-    </div>
-  )
-}
+    <CustomerSignupForm 
+      isOnboarding={true}
+      onboardingData={onboardingData}
+      onSuccess={(userId: string) => {
+        updateData({ userId });
+        onNext();
+      }}
+    />
+  );
+};
 
 
 
