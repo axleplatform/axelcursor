@@ -517,7 +517,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
         markerRef.current = null;
       }
       
-      if (mapInstanceRef.current) {
+      if (mapInstanceRef.current && typeof mapInstanceRef.current.setMap === 'function') {
         try {
           // Clear all listeners from the map
           if (window.google?.maps?.event) {
@@ -803,7 +803,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
     const result = `${year}-${month}-${day}`;
     console.log('🔍 [DATE DEBUG] formatLocalDateString result:', result);
     return result;
-  }, []);
+  }, []); // No dependencies - this function is stable
 
   // Format date as YYYY-MM-DDTHH:MM:SS with timezone for storage (explicit local timezone)
   const formatLocalDate = useCallback((date: Date): string => {
@@ -899,7 +899,15 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
           make: data.vehicles?.make || "",
           model: data.vehicles?.model || "",
           mileage: data.vehicles?.mileage?.toString() || "",
-          appointmentDate: formatLocalDateString(data.appointment_date),
+          appointmentDate: (() => {
+            if (!data.appointment_date) return '';
+            const d = new Date(data.appointment_date);
+            if (isNaN(d.getTime())) return '';
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          })(),
           appointmentTime: data.appointment_date ? (() => {
             // Parse the UTC datetime and convert to local time for time extraction
             const utcDate = new Date(data.appointment_date);
@@ -968,7 +976,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
         setIsLoadingExistingData(false)
       }
     }
-  }, [appointmentId, formatLocalDateString])
+  }, [appointmentId]) // Remove formatLocalDateString dependency to prevent recreation
 
   // Load existing data on mount if appointment ID is present
   const loadDataFromStorage = useCallback(() => {
@@ -982,7 +990,15 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
         setFormData(prev => ({
           ...prev,
           ...parsedData,
-          appointmentDate: formatLocalDateString(parsedData.appointmentDate),
+          appointmentDate: (() => {
+            if (!parsedData.appointmentDate) return '';
+            const d = new Date(parsedData.appointmentDate);
+            if (isNaN(d.getTime())) return '';
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          })(),
         }))
         
         // Also restore selectedLocation if we have coordinates and address
@@ -1008,13 +1024,11 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
         console.error("Error parsing saved form data:", error)
       }
     }
-  }, [formatLocalDateString]);
+  }, []); // Remove formatLocalDateString dependency to prevent recreation
 
   // Consolidated data loading effect with proper cleanup
   useEffect(() => {
     console.log('🔍 [HOOK DEBUG] Data loading effect triggered, appointmentId:', appointmentId);
-    console.log('🔍 [HOOK DEBUG] loadExistingAppointment function changed:', !!loadExistingAppointment);
-    console.log('🔍 [HOOK DEBUG] loadDataFromStorage function changed:', !!loadDataFromStorage);
     
     // Set mounted flag
     isMountedRef.current = true;
@@ -1037,7 +1051,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
       console.log('🔍 [HOOK DEBUG] Data loading effect cleanup');
       isMountedRef.current = false;
     };
-  }, [appointmentId, loadExistingAppointment, loadDataFromStorage]) // Include dependencies to prevent stale closures
+  }, [appointmentId]) // Only depend on appointmentId to prevent infinite loops
 
   // Save form data to sessionStorage whenever it changes
   const saveFormDataToStorage = useCallback(() => {
