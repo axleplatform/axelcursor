@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { GoogleSignInButton } from '@/components/google-signin-button'
+import { CustomerSignupForm } from '@/components/customer-signup-form'
 
 // Type definitions
 type Vehicle = {
@@ -571,70 +572,16 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData }: StepProps) =>
       
       <div className="my-4 text-center text-gray-500">or</div>
       
-      <EmailSignUpForm onSubmit={async (email: string, password: string) => {
-        try {
-          const { data: authData, error } = await supabase.auth.signUp({
-            email,
-            password,
-          })
-
-          if (error) throw error
-          
-          // Create user in database with onboarding data
-          if (onboardingData) {
-            await createUserWithOnboardingData(authData.user.id, onboardingData)
-          } else {
-            console.error('No onboarding data available')
-            throw new Error('Onboarding data is required')
-          }
-          
-          handleSuccess(authData.user.id)
-        } catch (error) {
-          console.error('Sign up error:', error)
-        }
-      }} />
+      <CustomerSignupForm 
+        isOnboarding={true} 
+        onboardingData={onboardingData} 
+        onSuccess={handleSuccess} 
+      />
     </div>
   )
 }
 
-const EmailSignUpForm = ({ onSubmit }: { onSubmit: (email: string, password: string) => void }) => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit(email, password)
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <input 
-        type="email" 
-        placeholder="Email" 
-        value={email}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-        className="w-full px-4 py-2 border rounded-lg"
-        required
-      />
-      
-      <input 
-        type="password" 
-        placeholder="Password" 
-        value={password}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-        className="w-full px-4 py-2 border rounded-lg"
-        required
-      />
-      
-      <button 
-        type="submit"
-        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
-      >
-        Create Account
-      </button>
-    </form>
-  )
-}
 
 const PhoneNumberStep = ({ onNext, updateData }: StepProps) => {
   const [phoneNumber, setPhoneNumber] = useState('')
