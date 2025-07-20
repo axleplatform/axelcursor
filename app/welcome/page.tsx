@@ -29,19 +29,11 @@ export default function WelcomePage() {
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-6xl">
-          {/* Logo */}
-          <div className="flex justify-center mb-12">
-            <Image src="/images/axle-logo-green.png" alt="Axle" width={120} height={48} priority />
-          </div>
-
           {/* Welcome Title */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 mb-4">
-              Welcome to Axle
+            <h1 className="text-4xl font-bold tracking-tight text-[#294a46] mb-4">
+              Car Maintenance Made Easy
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Your car's health matters. Choose how you'd like to get started with Axle.
-            </p>
           </div>
 
           {/* Split Screen Container */}
@@ -63,7 +55,7 @@ export default function WelcomePage() {
                 </h2>
                 
                 <p className="text-gray-600 mb-6">
-                  Get immediate help from our mobile mechanics
+                  Get immediate help from mobile mechanics
                 </p>
                 
                 <Link href="/">
