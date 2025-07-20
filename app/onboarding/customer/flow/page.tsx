@@ -2,9 +2,13 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { ChevronLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { GoogleSignInButton } from '@/components/google-signin-button'
 import { CustomerSignupForm } from '@/components/customer-signup-form'
+import { SiteHeader } from '@/components/site-header'
+import Footer from '@/components/footer'
+import { Button } from '@/components/ui/button'
 
 // Type definitions
 type Vehicle = {
@@ -43,104 +47,90 @@ type StepProps = {
 
 // Step Components
 const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
-  const [vehicle, setVehicle] = useState<Vehicle>({
-    year: '',
-    make: '',
-    model: '',
-    vin: '',
-    mileage: '',
-    licensePlate: ''
+  const [vehicle, setVehicle] = useState<Vehicle>({ 
+    year: '', 
+    make: '', 
+    model: '', 
+    vin: '', 
+    mileage: '', 
+    licensePlate: '' 
   })
 
   return (
     <div>
-      {/* Header like book appointment */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Input Your Vehicle Information
-        </h2>
-        <p className="text-gray-600">
-          Tell us about your car so we can provide accurate service recommendations
-        </p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Input Your Vehicle Information</h2>
+        <p className="text-gray-600">Tell us about your car so we can provide accurate service recommendations</p>
       </div>
-
-      {/* Form fields with book appointment styling */}
+      
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Year
-          </label>
-          <input 
-            type="number" 
-            placeholder="2020"
-            value={vehicle.year}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, year: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+        {/* Row 1: Year, Make, Model */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+            <input 
+              type="number" 
+              placeholder="2020" 
+              value={vehicle.year} 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, year: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Make</label>
+            <input 
+              type="text" 
+              placeholder="Toyota" 
+              value={vehicle.make} 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, make: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
+            <input 
+              type="text" 
+              placeholder="Camry" 
+              value={vehicle.model} 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, model: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+            />
+          </div>
         </div>
-        
+
+        {/* Row 2: Mileage, License Plate */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Mileage</label>
+            <input 
+              type="number" 
+              placeholder="50,000" 
+              value={vehicle.mileage} 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, mileage: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">License Plate</label>
+            <input 
+              type="text" 
+              placeholder="ABC123" 
+              value={vehicle.licensePlate} 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, licensePlate: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        {/* Row 3: VIN */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Make
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">VIN (Optional)</label>
           <input 
             type="text" 
-            placeholder="Toyota"
-            value={vehicle.make}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, make: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Model
-          </label>
-          <input 
-            type="text" 
-            placeholder="Camry"
-            value={vehicle.model}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, model: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            VIN (Optional)
-          </label>
-          <input 
-            type="text" 
-            placeholder="1HGBH41JXMN109186"
-            value={vehicle.vin}
+            placeholder="1HGBH41JXMN109186" 
+            value={vehicle.vin} 
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, vin: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Mileage
-          </label>
-          <input 
-            type="number" 
-            placeholder="50000"
-            value={vehicle.mileage}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, mileage: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            License Plate (Optional)
-          </label>
-          <input 
-            type="text" 
-            placeholder="ABC123"
-            value={vehicle.licensePlate}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, licensePlate: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
           />
         </div>
       </div>
@@ -151,7 +141,7 @@ const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
           updateData({ vehicle })
           onNext()
         }}
-        className="mt-8 w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        className="mt-8 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Continue
       </button>
@@ -188,9 +178,9 @@ const ReferralSourceStep = ({ onNext, updateData }: StepProps) => {
               updateData({ referralSource: source })
               onNext()
             }}
-            className="p-6 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
+            className="p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
           >
-            <h3 className="font-medium text-gray-900 group-hover:text-blue-600">
+            <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
               {source}
             </h3>
           </button>
@@ -218,9 +208,9 @@ const PreviousAppsStep = ({ onNext, updateData }: StepProps) => {
             updateData({ usedOtherApps: true })
             onNext()
           }}
-          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
+          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
         >
-          <h3 className="font-medium text-gray-900 group-hover:text-blue-600">
+          <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
             Yes, I have
           </h3>
         </button>
@@ -230,9 +220,9 @@ const PreviousAppsStep = ({ onNext, updateData }: StepProps) => {
             updateData({ usedOtherApps: false })
             onNext()
           }}
-          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
+          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
         >
-          <h3 className="font-medium text-gray-900 group-hover:text-blue-600">
+          <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
             No, this is my first time
           </h3>
         </button>
@@ -271,15 +261,15 @@ const WhyAxleStep = ({ onNext }: StepProps) => {
       </div>
 
       {/* Info card */}
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
-        <p className="text-lg font-semibold text-blue-900">
+      <div className="bg-[#e6eeec] border-2 border-[#294a46] rounded-lg p-6 mb-8">
+        <p className="text-lg font-semibold text-[#294a46]">
           Over 87% of people save money when tracking car health
         </p>
       </div>
 
       <button 
         onClick={onNext}
-        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Continue
       </button>
@@ -315,7 +305,7 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
             type="date" 
             value={lastService.date}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, date: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
           />
         </div>
         
@@ -328,7 +318,7 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
             placeholder="e.g., Oil Change, Brake Service"
             value={lastService.type}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, type: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
           />
         </div>
         
@@ -341,7 +331,7 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
             placeholder="150"
             value={lastService.cost}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, cost: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
           />
         </div>
         
@@ -354,7 +344,7 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
             placeholder="45000"
             value={lastService.mileage}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, mileage: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
           />
         </div>
       </div>
@@ -364,7 +354,7 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
           updateData({ lastService })
           onNext()
         }}
-        className="mt-8 w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        className="mt-8 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Continue
       </button>
@@ -384,7 +374,7 @@ const ThankYouStep = ({ onNext }: StepProps) => {
       
       <button 
         onClick={onNext}
-        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Continue
       </button>
@@ -430,7 +420,7 @@ const BenefitsStep = ({ onNext }: StepProps) => {
 
       <button 
         onClick={onNext}
-        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Continue
       </button>
@@ -459,7 +449,7 @@ const LocationStep = ({ onNext, updateData }: StepProps) => {
           placeholder="Enter your city or zip code" 
           value={location}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-8"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent mb-8"
         />
       </div>
       
@@ -468,7 +458,7 @@ const LocationStep = ({ onNext, updateData }: StepProps) => {
           updateData({ location })
           onNext()
         }}
-        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Continue
       </button>
@@ -492,9 +482,9 @@ const NotificationsStep = ({ onNext, updateData }: StepProps) => {
             updateData({ notifications: true })
             onNext()
           }}
-          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
+          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
         >
-          <h3 className="font-medium text-gray-900 group-hover:text-blue-600">
+          <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
             Yes, keep me updated
           </h3>
         </button>
@@ -504,9 +494,9 @@ const NotificationsStep = ({ onNext, updateData }: StepProps) => {
             updateData({ notifications: false })
             onNext()
           }}
-          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
+          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
         >
-          <h3 className="font-medium text-gray-900 group-hover:text-blue-600">
+          <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
             Maybe later
           </h3>
         </button>
@@ -559,7 +549,7 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
             placeholder="2020"
             value={currentVehicle.year}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, year: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
           />
         </div>
         
@@ -572,7 +562,7 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
             placeholder="Toyota"
             value={currentVehicle.make}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, make: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
           />
         </div>
         
@@ -585,13 +575,13 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
             placeholder="Camry"
             value={currentVehicle.model}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, model: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
           />
         </div>
         
         <button 
           onClick={addVehicle}
-          className="w-full bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors font-medium"
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
         >
           Add Vehicle
         </button>
@@ -613,7 +603,7 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
           updateData({ additionalVehicles })
           onNext()
         }}
-        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Continue
       </button>
@@ -631,9 +621,9 @@ const MaintenanceStep = ({ onNext }: StepProps) => {
         </p>
       </div>
       
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
-        <h3 className="font-semibold text-blue-900 mb-4">Your personalized schedule will include:</h3>
-        <ul className="text-blue-800 space-y-2">
+      <div className="bg-[#e6eeec] border-2 border-[#294a46] rounded-lg p-6 mb-8">
+        <h3 className="font-semibold text-[#294a46] mb-4">Your personalized schedule will include:</h3>
+        <ul className="text-[#294a46] space-y-2">
           <li className="flex items-center">
             <span className="mr-2">•</span>
             Oil change reminders
@@ -655,7 +645,7 @@ const MaintenanceStep = ({ onNext }: StepProps) => {
 
       <button 
         onClick={onNext}
-        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Continue
       </button>
@@ -679,7 +669,7 @@ const SettingUpStep = ({ onNext }: StepProps) => {
 
       <button 
         onClick={onNext}
-        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Continue
       </button>
@@ -717,7 +707,7 @@ const PlanReadyStep = ({ onNext }: StepProps) => {
 
       <button 
         onClick={onNext}
-        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Continue
       </button>
@@ -774,7 +764,7 @@ const PhoneNumberStep = ({ onNext, updateData }: StepProps) => {
           placeholder="(555) 123-4567" 
           value={phoneNumber}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhoneNumber(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-8"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent mb-8"
         />
       </div>
       
@@ -783,7 +773,7 @@ const PhoneNumberStep = ({ onNext, updateData }: StepProps) => {
           updateData({ phoneNumber })
           onNext()
         }}
-        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Continue
       </button>
@@ -801,9 +791,9 @@ const FreeTrialStep = ({ onNext, updateData }: StepProps) => {
         </p>
       </div>
       
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
-        <h3 className="font-semibold text-blue-900 mb-4">Free Trial Includes:</h3>
-        <ul className="text-blue-800 space-y-2">
+      <div className="bg-[#e6eeec] border-2 border-[#294a46] rounded-lg p-6 mb-8">
+        <h3 className="font-semibold text-[#294a46] mb-4">Free Trial Includes:</h3>
+        <ul className="text-[#294a46] space-y-2">
           <li className="flex items-center">
             <span className="mr-2">✓</span>
             Unlimited maintenance tracking
@@ -828,7 +818,7 @@ const FreeTrialStep = ({ onNext, updateData }: StepProps) => {
           updateData({ freeTrial: true })
           onNext()
         }}
-        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Start Free Trial
       </button>
@@ -859,11 +849,11 @@ const ChoosePlanStep = ({ onNext, updateData }: StepProps) => {
               updateData({ plan: plan.id })
               onNext()
             }}
-            className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
+            className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
           >
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">{plan.name}</h3>
+                <h3 className="font-semibold text-gray-900 group-hover:text-[#294a46]">{plan.name}</h3>
                 <p className="text-gray-600">{plan.price}</p>
               </div>
               <div className="text-right">
@@ -895,7 +885,7 @@ const LimitedOfferStep = ({ onNext }: StepProps) => {
 
       <button 
         onClick={onNext}
-        className="w-full bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 transition-colors font-medium"
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Claim Offer
       </button>
@@ -919,7 +909,7 @@ const SuccessStep = ({ onNext }: StepProps) => {
 
       <button 
         onClick={onNext}
-        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
       >
         Go to Dashboard
       </button>
@@ -1126,7 +1116,22 @@ export default function CustomerOnboarding() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <SiteHeader />
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Back Button */}
+        {currentStep > 1 && (
+          <div className="mb-6">
+            <Button
+              onClick={() => setCurrentStep(currentStep - 1)}
+              variant="ghost"
+              className="flex items-center gap-2 text-[#294a46] hover:bg-gray-100"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back
+            </Button>
+          </div>
+        )}
+
         {/* Progress Bar - Style like book appointment */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -1139,7 +1144,7 @@ export default function CustomerOnboarding() {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+              className="bg-[#294a46] h-2 rounded-full transition-all duration-300" 
               style={{ width: `${(currentStep / 20) * 100}%` }}
             />
           </div>
@@ -1151,7 +1156,8 @@ export default function CustomerOnboarding() {
             {renderCurrentStep()}
           </div>
         </div>
-      </div>
+      </main>
+      <Footer />
     </div>
   )
 }
