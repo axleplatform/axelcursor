@@ -86,6 +86,12 @@ export async function GET(request: Request) {
             console.log('Customer user already exists')
           }
 
+          // Handle onboarding flow
+          if (from === 'onboarding') {
+            // Continue onboarding at step 15
+            return NextResponse.redirect(`${requestUrl.origin}/onboarding/customer/flow?step=15&userId=${user.id}`)
+          }
+
           // Handle post-appointment flow
           if (from === 'appointment') {
             const appointmentId = requestUrl.searchParams.get('appointment')

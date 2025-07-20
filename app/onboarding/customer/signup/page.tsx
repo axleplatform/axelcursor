@@ -259,6 +259,12 @@ export default function CustomerSignupPage() {
                   Sign in
                 </Link>
               </p>
+              <p className="text-gray-600 mt-2">
+                Or{" "}
+                <Link href="/onboarding/customer/flow" className="font-medium text-[#294a46] hover:text-[#1e3632]">
+                  start the guided onboarding
+                </Link>
+              </p>
             </div>
           </div>
 
