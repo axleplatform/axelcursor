@@ -60,7 +60,7 @@ const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
           type="number" 
           placeholder="Year" 
           value={vehicle.year}
-          onChange={(e) => setVehicle({...vehicle, year: e.target.value})}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, year: e.target.value})}
           className="w-full px-4 py-2 border rounded-lg"
         />
         
@@ -68,7 +68,7 @@ const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
           type="text" 
           placeholder="Make" 
           value={vehicle.make}
-          onChange={(e) => setVehicle({...vehicle, make: e.target.value})}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, make: e.target.value})}
           className="w-full px-4 py-2 border rounded-lg"
         />
         
@@ -76,7 +76,7 @@ const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
           type="text" 
           placeholder="Model" 
           value={vehicle.model}
-          onChange={(e) => setVehicle({...vehicle, model: e.target.value})}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, model: e.target.value})}
           className="w-full px-4 py-2 border rounded-lg"
         />
         
@@ -84,7 +84,7 @@ const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
           type="text" 
           placeholder="VIN" 
           value={vehicle.vin}
-          onChange={(e) => setVehicle({...vehicle, vin: e.target.value})}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, vin: e.target.value})}
           className="w-full px-4 py-2 border rounded-lg"
         />
         
@@ -92,7 +92,7 @@ const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
           type="number" 
           placeholder="Mileage" 
           value={vehicle.mileage}
-          onChange={(e) => setVehicle({...vehicle, mileage: e.target.value})}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, mileage: e.target.value})}
           className="w-full px-4 py-2 border rounded-lg"
         />
         
@@ -100,7 +100,7 @@ const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
           type="text" 
           placeholder="License Plate (Optional)" 
           value={vehicle.licensePlate}
-          onChange={(e) => setVehicle({...vehicle, licensePlate: e.target.value})}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, licensePlate: e.target.value})}
           className="w-full px-4 py-2 border rounded-lg"
         />
       </div>
@@ -240,7 +240,7 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
           type="date" 
           placeholder="Service Date" 
           value={lastService.date}
-          onChange={(e) => setLastService({...lastService, date: e.target.value})}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, date: e.target.value})}
           className="w-full px-4 py-2 border rounded-lg"
         />
         
@@ -248,7 +248,7 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
           type="text" 
           placeholder="Service Type (e.g., Oil Change, Brake Service)" 
           value={lastService.type}
-          onChange={(e) => setLastService({...lastService, type: e.target.value})}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, type: e.target.value})}
           className="w-full px-4 py-2 border rounded-lg"
         />
         
@@ -256,7 +256,7 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
           type="number" 
           placeholder="Cost ($)" 
           value={lastService.cost}
-          onChange={(e) => setLastService({...lastService, cost: e.target.value})}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, cost: e.target.value})}
           className="w-full px-4 py-2 border rounded-lg"
         />
         
@@ -264,7 +264,7 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
           type="number" 
           placeholder="Mileage at Service" 
           value={lastService.mileage}
-          onChange={(e) => setLastService({...lastService, mileage: e.target.value})}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, mileage: e.target.value})}
           className="w-full px-4 py-2 border rounded-lg"
         />
       </div>
@@ -350,7 +350,7 @@ const LocationStep = ({ onNext, updateData }: StepProps) => {
         type="text" 
         placeholder="Enter your city or zip code" 
         value={location}
-        onChange={(e) => setLocation(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)}
         className="w-full px-4 py-2 border rounded-lg mb-4"
       />
       
@@ -432,7 +432,7 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
           type="number" 
           placeholder="Year" 
           value={currentVehicle.year}
-          onChange={(e) => setCurrentVehicle({...currentVehicle, year: e.target.value})}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, year: e.target.value})}
           className="w-full px-4 py-2 border rounded-lg"
         />
         
@@ -440,7 +440,7 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
           type="text" 
           placeholder="Make" 
           value={currentVehicle.make}
-          onChange={(e) => setCurrentVehicle({...currentVehicle, make: e.target.value})}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, make: e.target.value})}
           className="w-full px-4 py-2 border rounded-lg"
         />
         
@@ -448,7 +448,7 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
           type="text" 
           placeholder="Model" 
           value={currentVehicle.model}
-          onChange={(e) => setCurrentVehicle({...currentVehicle, model: e.target.value})}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, model: e.target.value})}
           className="w-full px-4 py-2 border rounded-lg"
         />
         
@@ -574,7 +574,7 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData }: StepProps) =>
     }
   }
 
-  const handleEmailSignUp = async (email, password) => {
+  const handleEmailSignUp = async (email: string, password: string) => {
     try {
       const { data: authData, error } = await supabase.auth.signUp({
         email,
@@ -627,7 +627,7 @@ const EmailSignUpForm = ({ onSubmit }: { onSubmit: (email: string, password: str
         type="email" 
         placeholder="Email" 
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
         className="w-full px-4 py-2 border rounded-lg"
         required
       />
@@ -636,7 +636,7 @@ const EmailSignUpForm = ({ onSubmit }: { onSubmit: (email: string, password: str
         type="password" 
         placeholder="Password" 
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
         className="w-full px-4 py-2 border rounded-lg"
         required
       />
@@ -663,7 +663,7 @@ const PhoneNumberStep = ({ onNext, updateData }: StepProps) => {
         type="tel" 
         placeholder="(555) 123-4567" 
         value={phoneNumber}
-        onChange={(e) => setPhoneNumber(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhoneNumber(e.target.value)}
         className="w-full px-4 py-2 border rounded-lg mb-4"
       />
       
