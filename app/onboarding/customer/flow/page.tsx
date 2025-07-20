@@ -5,8 +5,41 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { GoogleSignInButton } from '@/components/google-signin-button'
 
+// Type definitions
+type OnboardingData = {
+  vehicle: {
+    year: string;
+    make: string;
+    model: string;
+    vin: string;
+    mileage: string;
+    licensePlate: string;
+  };
+  referralSource: string;
+  usedOtherApps: boolean | null;
+  lastService: {
+    date: string;
+    type: string;
+    cost: string;
+    mileage: string;
+  };
+  location: string | null;
+  notifications: boolean;
+  additionalVehicles: any[];
+  userId: string | null;
+  phoneNumber: string;
+  plan: string | null;
+  freeTrial: boolean;
+};
+
+type StepProps = {
+  onNext: () => void;
+  updateData: (data: Partial<OnboardingData>) => void;
+  onboardingData?: OnboardingData;
+};
+
 // Step Components
-const VehicleInfoStep = ({ onNext, updateData }) => {
+const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
   const [vehicle, setVehicle] = useState({
     year: '',
     make: '',
@@ -83,7 +116,7 @@ const VehicleInfoStep = ({ onNext, updateData }) => {
   )
 }
 
-const ReferralSourceStep = ({ onNext, updateData }) => {
+const ReferralSourceStep = ({ onNext, updateData }: StepProps) => {
   const sources = [
     'Google Search',
     'App Store',
@@ -115,7 +148,7 @@ const ReferralSourceStep = ({ onNext, updateData }) => {
   )
 }
 
-const PreviousAppsStep = ({ onNext, updateData }) => {
+const PreviousAppsStep = ({ onNext, updateData }: StepProps) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-bold mb-6">📱 Have you used other car service apps?</h2>
@@ -145,7 +178,7 @@ const PreviousAppsStep = ({ onNext, updateData }) => {
   )
 }
 
-const WhyAxleStep = ({ onNext }) => {
+const WhyAxleStep = ({ onNext }: StepProps) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-bold mb-6">💡 Why Axle AI is Better</h2>
@@ -188,7 +221,7 @@ const WhyAxleStep = ({ onNext }) => {
   )
 }
 
-const LastServiceStep = ({ onNext, updateData }) => {
+const LastServiceStep = ({ onNext, updateData }: StepProps) => {
   const [lastService, setLastService] = useState({
     date: '',
     type: '',
@@ -247,7 +280,7 @@ const LastServiceStep = ({ onNext, updateData }) => {
   )
 }
 
-const ThankYouStep = ({ onNext }) => {
+const ThankYouStep = ({ onNext }: StepProps) => {
   return (
     <div className="bg-white rounded-lg shadow p-6 text-center">
       <h2 className="text-2xl font-bold mb-6">🙏 Thank You!</h2>
@@ -263,7 +296,7 @@ const ThankYouStep = ({ onNext }) => {
   )
 }
 
-const BenefitsStep = ({ onNext }) => {
+const BenefitsStep = ({ onNext }: StepProps) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-bold mb-6">🤖 Axle AI Benefits</h2>
@@ -304,7 +337,7 @@ const BenefitsStep = ({ onNext }) => {
   )
 }
 
-const LocationStep = ({ onNext, updateData }) => {
+const LocationStep = ({ onNext, updateData }: StepProps) => {
   const [location, setLocation] = useState('')
 
   return (
@@ -332,7 +365,7 @@ const LocationStep = ({ onNext, updateData }) => {
   )
 }
 
-const NotificationsStep = ({ onNext, updateData }) => {
+const NotificationsStep = ({ onNext, updateData }: StepProps) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-bold mb-6">🔔 Stay Updated</h2>
@@ -363,7 +396,7 @@ const NotificationsStep = ({ onNext, updateData }) => {
   )
 }
 
-const AddVehicleStep = ({ onNext, updateData }) => {
+const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
   const [additionalVehicles, setAdditionalVehicles] = useState([])
   const [currentVehicle, setCurrentVehicle] = useState({
     year: '',
@@ -439,7 +472,7 @@ const AddVehicleStep = ({ onNext, updateData }) => {
   )
 }
 
-const MaintenanceStep = ({ onNext }) => {
+const MaintenanceStep = ({ onNext }: StepProps) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-bold mb-6">📅 Maintenance Schedule</h2>
@@ -465,7 +498,7 @@ const MaintenanceStep = ({ onNext }) => {
   )
 }
 
-const SettingUpStep = ({ onNext }) => {
+const SettingUpStep = ({ onNext }: StepProps) => {
   return (
     <div className="bg-white rounded-lg shadow p-6 text-center">
       <h2 className="text-2xl font-bold mb-6">⚙️ Setting Up Your Account</h2>
@@ -485,7 +518,7 @@ const SettingUpStep = ({ onNext }) => {
   )
 }
 
-const PlanReadyStep = ({ onNext }) => {
+const PlanReadyStep = ({ onNext }: StepProps) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-bold mb-6">✅ Your Plan is Ready!</h2>
@@ -509,7 +542,7 @@ const PlanReadyStep = ({ onNext }) => {
   )
 }
 
-const CreateAccountStep = ({ onNext, updateData, onboardingData }) => {
+const CreateAccountStep = ({ onNext, updateData, onboardingData }: StepProps) => {
   const handleGoogleSignIn = async () => {
     try {
       // Save current onboarding data to localStorage
@@ -567,11 +600,11 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData }) => {
   )
 }
 
-const EmailSignUpForm = ({ onSubmit }) => {
+const EmailSignUpForm = ({ onSubmit }: { onSubmit: (email: string, password: string) => void }) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit(email, password)
   }
@@ -606,7 +639,7 @@ const EmailSignUpForm = ({ onSubmit }) => {
   )
 }
 
-const PhoneNumberStep = ({ onNext, updateData }) => {
+const PhoneNumberStep = ({ onNext, updateData }: StepProps) => {
   const [phoneNumber, setPhoneNumber] = useState('')
 
   return (
@@ -635,7 +668,7 @@ const PhoneNumberStep = ({ onNext, updateData }) => {
   )
 }
 
-const FreeTrialStep = ({ onNext, updateData }) => {
+const FreeTrialStep = ({ onNext, updateData }: StepProps) => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-bold mb-6">🎁 Start Your Free Trial</h2>
@@ -664,7 +697,7 @@ const FreeTrialStep = ({ onNext, updateData }) => {
   )
 }
 
-const ChoosePlanStep = ({ onNext, updateData }) => {
+const ChoosePlanStep = ({ onNext, updateData }: StepProps) => {
   const plans = [
     { id: 'basic', name: 'Basic', price: 'Free', features: ['Basic tracking', 'Email reminders'] },
     { id: 'premium', name: 'Premium', price: '$9.99/month', features: ['Advanced AI', 'Priority support', 'Unlimited tracking'] }
@@ -702,7 +735,7 @@ const ChoosePlanStep = ({ onNext, updateData }) => {
   )
 }
 
-const LimitedOfferStep = ({ onNext }) => {
+const LimitedOfferStep = ({ onNext }: StepProps) => {
   return (
     <div className="bg-white rounded-lg shadow p-6 text-center">
       <h2 className="text-2xl font-bold mb-6">🔥 Limited Time Offer!</h2>
@@ -722,10 +755,10 @@ const LimitedOfferStep = ({ onNext }) => {
   )
 }
 
-const SuccessStep = ({ onNext }) => {
+const SuccessStep = ({ onNext }: StepProps) => {
   return (
     <div className="bg-white rounded-lg shadow p-6 text-center">
-      <h2 className="text-2xl font-bold mb-6">🎉 Welcome to Axle!</h2>
+      <h2 className="text-2xl font-bold mb-6">�� Welcome to Axle!</h2>
       <p className="text-gray-600 mb-6">Your account has been created successfully</p>
       
       <div className="bg-green-50 rounded-lg p-4 mb-6">
@@ -742,7 +775,7 @@ const SuccessStep = ({ onNext }) => {
   )
 }
 
-const DashboardRedirect = ({ onboardingData }) => {
+const DashboardRedirect = ({ onboardingData }: { onboardingData: OnboardingData }) => {
   const router = useRouter()
 
   useEffect(() => {
@@ -791,7 +824,7 @@ const DashboardRedirect = ({ onboardingData }) => {
 }
 
 // Helper function to create user with onboarding data
-const createUserWithOnboardingData = async (userId, onboardingData) => {
+const createUserWithOnboardingData = async (userId: string, onboardingData: OnboardingData) => {
   try {
     const { error } = await supabase.from('users').insert({
       id: userId,
@@ -887,7 +920,7 @@ export default function CustomerOnboarding() {
     }
   }, [])
 
-  const updateData = (newData) => {
+  const updateData = (newData: Partial<OnboardingData>) => {
     setOnboardingData(prev => ({ ...prev, ...newData }))
   }
 
