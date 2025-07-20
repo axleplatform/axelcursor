@@ -27,7 +27,6 @@ type OnboardingData = {
   lastService: {
     date: string;
     type: string;
-    cost: string;
     mileage: string;
   };
   location: string | null;
@@ -281,69 +280,50 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
   const [lastService, setLastService] = useState({
     date: '',
     type: '',
-    cost: '',
     mileage: ''
   })
 
   return (
     <div>
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Tell us about your last service
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Last Service Information</h2>
         <p className="text-gray-600">
           This helps us understand your car's maintenance history
         </p>
       </div>
       
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Service Date
-          </label>
-          <input 
-            type="date" 
-            value={lastService.date}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, date: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
-          />
+        {/* Row 1: Service Date and Mileage at Service */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Service Date</label>
+            <input 
+              type="date" 
+              value={lastService.date}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, date: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Mileage at Service</label>
+            <input 
+              type="number" 
+              placeholder="45,000"
+              value={lastService.mileage}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, mileage: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+            />
+          </div>
         </div>
         
+        {/* Row 2: Service Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Service Type
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
           <input 
             type="text" 
-            placeholder="e.g., Oil Change, Brake Service"
+            placeholder="e.g., Oil Change, Brake Service, Tire Rotation"
             value={lastService.type}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, type: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Cost ($)
-          </label>
-          <input 
-            type="number" 
-            placeholder="150"
-            value={lastService.cost}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, cost: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Mileage at Service
-          </label>
-          <input 
-            type="number" 
-            placeholder="45000"
-            value={lastService.mileage}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, mileage: e.target.value})}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
           />
         </div>
@@ -1045,7 +1025,6 @@ export default function CustomerOnboarding() {
     lastService: {
       date: '',
       type: '',
-      cost: '',
       mileage: ''
     },
     location: null,
