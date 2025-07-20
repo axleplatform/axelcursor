@@ -32,7 +32,7 @@ export default function WelcomePage() {
           {/* Welcome Title */}
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold tracking-tight text-[#294a46] mb-4">
-              Car Maintenance Made Easy
+              Car Maintenance<br />made easy
             </h1>
           </div>
 
