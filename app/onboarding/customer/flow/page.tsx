@@ -916,8 +916,12 @@ export default function CustomerOnboarding() {
     const stepParam = searchParams.get('step')
     const userIdParam = searchParams.get('userId')
     
-    if (stepParam) {
-      setCurrentStep(parseInt(stepParam))
+    // Only jump to a different step if explicitly set in URL and valid
+    if (stepParam && !isNaN(parseInt(stepParam))) {
+      const stepNumber = parseInt(stepParam)
+      if (stepNumber >= 1 && stepNumber <= 20) {
+        setCurrentStep(stepNumber)
+      }
     }
     
     if (userIdParam) {
