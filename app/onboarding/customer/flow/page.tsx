@@ -885,11 +885,23 @@ export default function CustomerOnboarding() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [currentStep, setCurrentStep] = useState(1)
-  const [onboardingData, setOnboardingData] = useState({
-    vehicle: {},
+  const [onboardingData, setOnboardingData] = useState<OnboardingData>({
+    vehicle: {
+      year: '',
+      make: '',
+      model: '',
+      vin: '',
+      mileage: '',
+      licensePlate: ''
+    },
     referralSource: '',
     usedOtherApps: null,
-    lastService: {},
+    lastService: {
+      date: '',
+      type: '',
+      cost: '',
+      mileage: ''
+    },
     location: null,
     notifications: false,
     additionalVehicles: [],
