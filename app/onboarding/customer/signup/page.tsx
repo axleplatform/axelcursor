@@ -280,4 +280,4 @@ export default function CustomerSignupPage() {
       <Footer />
     </div>
   )
-} 
+}

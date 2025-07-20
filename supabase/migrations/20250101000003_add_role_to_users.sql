@@ -40,4 +40,4 @@ CREATE POLICY "Users can update their own profile" ON users
 CREATE POLICY "Service role can manage users" ON users
     FOR ALL TO service_role
     USING (true)
-    WITH CHECK (true); 
+    WITH CHECK (true);

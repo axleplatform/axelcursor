@@ -79,4 +79,4 @@ export async function GET(request: Request) {
 
   // No code provided
   return NextResponse.redirect(`${requestUrl.origin}/login?error=no_code`)
-} 
+}
