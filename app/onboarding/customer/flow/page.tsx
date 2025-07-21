@@ -1360,7 +1360,7 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps
           onClick={handleSkip}
           className="text-gray-500 hover:text-gray-700 underline text-sm"
         >
-          Skip for now
+          Would like to sign in later? Skip
         </button>
       </div>
     </div>

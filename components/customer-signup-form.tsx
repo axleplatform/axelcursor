@@ -147,7 +147,7 @@ export function CustomerSignupForm({
               priority
             />
             <h2 className="mt-6 text-3xl font-bold tracking-tight text-gray-900">Create Your Account</h2>
-            <p className="mt-2 text-sm text-gray-600">Join thousands of car owners who trust Axle for their repairs</p>
+            <p className="mt-1 text-sm text-gray-600">Join thousands of car owners who trust Axle for their repairs</p>
           </div>
 
           <div className={`mt-0 md:mt-4 py-6 px-4 sm:px-10 ${!isOnboarding ? 'bg-white shadow sm:rounded-lg' : ''}`}>
@@ -244,45 +244,47 @@ export function CustomerSignupForm({
               </div>
             </form>
 
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="bg-white px-2 text-gray-500">Or continue with</span>
-                </div>
-              </div>
+            {!isOnboarding && (
+              <>
+                <div className="mt-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300" />
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="bg-white px-2 text-gray-500">Or continue with</span>
+                    </div>
+                  </div>
 
-              <div className="mt-6">
-                <GoogleSignInButton 
-                  userType="customer"
-                  disabled={isLoading || isRateLimited}
-                >
-                  Continue with Google
-                </GoogleSignInButton>
-              </div>
-            </div>
+                  <div className="mt-6">
+                    <GoogleSignInButton 
+                      userType="customer"
+                      disabled={isLoading || isRateLimited}
+                    >
+                      Continue with Google
+                    </GoogleSignInButton>
+                  </div>
+                </div>
 
-            <div className="mt-6 text-center text-sm">
-              <p className="text-gray-600">
-                Already have an account?{" "}
-                <Link href="/login" className="font-medium text-[#294a46] hover:text-[#1e3632]">
-                  Sign in
-                </Link>
-              </p>
-              {!isOnboarding && (
-                <p className="text-gray-600 mt-2">
-                  Or{" "}
-                  <Link href="/onboarding/customer/flow" className="font-medium text-[#294a46] hover:text-[#1e3632]">
-                    start the guided onboarding
-                  </Link>
-                </p>
-              )}
-            </div>
+                <div className="mt-6 text-center text-sm">
+                  <p className="text-gray-600">
+                    Already have an account?{" "}
+                    <Link href="/login" className="font-medium text-[#294a46] hover:text-[#1e3632]">
+                      Sign in
+                    </Link>
+                  </p>
+                  <p className="text-gray-600 mt-2">
+                    Or{" "}
+                    <Link href="/onboarding/customer/flow" className="font-medium text-[#294a46] hover:text-[#1e3632]">
+                      start the guided onboarding
+                    </Link>
+                  </p>
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="text-center text-sm text-gray-500">
+          <div className="text-center text-sm text-gray-500 mt-4">
             <p>
               By creating an account, you agree to our{" "}
               <Link href="/legal/terms" className="font-medium text-[#294a46] hover:text-[#1e3632]">
