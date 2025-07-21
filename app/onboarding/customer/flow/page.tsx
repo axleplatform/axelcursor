@@ -1206,6 +1206,11 @@ export default function CustomerOnboarding() {
     }
   }, [])
 
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [currentStep])
+
   // Confetti effect when reaching step 20
   useEffect(() => {
     if (currentStep === 20 && typeof window !== 'undefined') {
