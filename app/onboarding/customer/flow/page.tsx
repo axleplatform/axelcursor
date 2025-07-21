@@ -1014,13 +1014,17 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
               ⚠️ This step was skipped earlier. Please complete it to finish setting up your account.
             </p>
           </div>
-          <StepComponent 
-            onNext={handleSkippedStepComplete}
-            updateData={() => {}}
-            onboardingData={onboardingData}
-            setSkippedSteps={() => {}}
-            showButton={true}
-          />
+          {onboardingData ? (
+            <StepComponent 
+              onNext={handleSkippedStepComplete}
+              updateData={() => {}}
+              onboardingData={onboardingData}
+              setSkippedSteps={() => {}}
+              showButton={true}
+            />
+          ) : (
+            <div>Loading...</div>
+          )}
         </div>
       )
     }
