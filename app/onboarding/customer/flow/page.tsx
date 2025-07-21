@@ -734,20 +734,23 @@ const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true 
       {/* Current Vehicles List */}
       <div className="mb-6 space-y-3">
         {/* Primary Vehicle */}
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-gray-900">
-                {onboardingData?.vehicle?.year} {onboardingData?.vehicle?.make} {onboardingData?.vehicle?.model}
-              </p>
-            </div>
-            <div className="text-[#294a46]">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+        {!showAddForm && (
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm text-gray-500">Vehicle 1 (Primary)</span>
+                <p className="font-medium text-gray-900">
+                  {onboardingData?.vehicle?.year} {onboardingData?.vehicle?.make} {onboardingData?.vehicle?.model}
+                </p>
+              </div>
+              <div className="text-[#294a46]">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Additional Vehicles */}
         {onboardingData?.additionalVehicles?.map((vehicle, index) => (
