@@ -41,10 +41,10 @@ export async function middleware(request: NextRequest) {
       }
     )
 
-    // Handle root path - redirect ALL users to welcome page
+    // Handle root path - allow access to main landing page
     if (request.nextUrl.pathname === '/') {
-      console.log("🔄 Redirecting all users to welcome page")
-      return NextResponse.redirect(new URL('/welcome', request.url))
+      console.log("✅ Allowing access to main landing page")
+      return response
     }
 
     // Handle welcome page - allow ALL users to access
