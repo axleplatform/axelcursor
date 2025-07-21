@@ -775,7 +775,7 @@ const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true 
       {/* Add Vehicle Form (Hidden by default) */}
       {showAddForm && (
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
             Add Vehicle {totalVehicles + 1}
           </h3>
           
@@ -851,7 +851,7 @@ const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true 
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  License Plate (Optional)
+                  License Plate
                 </label>
                 <input 
                   type="text" 
