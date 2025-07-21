@@ -1408,4 +1408,3 @@ export default function CustomerOnboarding() {
     </div>
   )
 }
-
