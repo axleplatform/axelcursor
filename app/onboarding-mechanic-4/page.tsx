@@ -17,6 +17,7 @@ export default function MechanicOnboardingStep4Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
+  const [visibleItems, setVisibleItems] = useState(0)
   const { toast } = useToast()
 
   // Check if user is authenticated
@@ -47,6 +48,17 @@ export default function MechanicOnboardingStep4Page() {
 
     checkAuth()
   }, [router])
+
+  // Animation effect
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 5; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
 
   // Handle continue to next step
   const handleContinue = async () => {
@@ -129,28 +141,39 @@ export default function MechanicOnboardingStep4Page() {
             )}
 
             <div className="px-6 py-8">
-              <div className="text-center mb-8">
+              <div className={`text-center mb-8 transition-all duration-500 ${
+                visibleItems >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+              }`}>
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to Axle!</h2>
                 <p className="text-gray-600">Here's what you can expect as a mobile mechanic on our platform</p>
               </div>
 
               {/* Checkmarks Section */}
               <div className="space-y-6 mb-8">
-                <div className="flex items-center gap-3">
+                {/* First Checkmark */}
+                <div className={`flex items-center gap-3 transition-all duration-500 ${
+                  visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+                }`}>
                   <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
                     <Check className="h-5 w-5 text-[#294a46]" />
                   </div>
                   <span className="text-lg font-medium text-gray-800">Quicker Appointment Booking</span>
                 </div>
 
-                <div className="flex items-center gap-3">
+                {/* Second Checkmark */}
+                <div className={`flex items-center gap-3 transition-all duration-500 delay-100 ${
+                  visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+                }`}>
                   <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
                     <Check className="h-5 w-5 text-[#294a46]" />
                   </div>
                   <span className="text-lg font-medium text-gray-800">Visualize various live quotes</span>
                 </div>
 
-                <div className="flex items-center gap-3">
+                {/* Third Checkmark */}
+                <div className={`flex items-center gap-3 transition-all duration-500 delay-200 ${
+                  visibleItems >= 4 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+                }`}>
                   <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
                     <Check className="h-5 w-5 text-[#294a46]" />
                   </div>
@@ -159,12 +182,16 @@ export default function MechanicOnboardingStep4Page() {
               </div>
 
               {/* User Satisfaction Message */}
-              <div className="text-center py-4 border-t border-gray-100">
+              <div className={`text-center py-4 border-t border-gray-100 transition-all duration-500 ${
+                visibleItems >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+              }`}>
                 <p className="text-sm text-gray-500">Over 80% of our users have avoided major issues</p>
               </div>
 
               {/* Continue Button */}
-              <div className="mt-8">
+              <div className={`mt-8 transition-all duration-500 ${
+                visibleItems >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+              }`}>
                 <button
                   onClick={handleContinue}
                   disabled={isSaving}
