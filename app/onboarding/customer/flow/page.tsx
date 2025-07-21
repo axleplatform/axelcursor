@@ -635,16 +635,13 @@ const NotificationsStep = ({ onNext, updateData, onboardingData }: StepProps) =>
       </div>
 
         {/* Title - Apple style */}
-  <div className="flex items-center justify-center gap-2 mb-2">
-    <img src="/images/axle-logo-green.png" alt="Axle" className="w-8 h-8" />
-    <h2 className="text-2xl font-semibold text-gray-900 text-center">
-      Would Like to Send You Notifications
-    </h2>
-  </div>
+  <h2 className="text-2xl font-semibold text-gray-900 mb-2 text-center">
+    We Like to Send You Notifications
+  </h2>
       
         {/* Description */}
   <p className="text-base text-gray-600 text-center mb-8 max-w-sm">
-    Notifications may include predictive maintenance services, order receipts, mechanics quotes and eta, and other when a service is ordered.
+    Notifications may include predictive maintenance services, order receipts, mechanics quotes and eta, and more!
   </p>
 
         {/* Buttons - Apple style */}
@@ -740,7 +737,6 @@ const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true 
         <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-sm text-gray-500">Vehicle 1 (Primary)</span>
               <p className="font-medium text-gray-900">
                 {onboardingData?.vehicle?.year} {onboardingData?.vehicle?.make} {onboardingData?.vehicle?.model}
               </p>
@@ -775,7 +771,7 @@ const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true 
 
       {/* Add Vehicle Form (Hidden by default) */}
       {showAddForm && (
-        <div className="mb-6 border-2 border-[#294a46] rounded-lg p-6 bg-[#e6eeec]">
+        <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Add Vehicle {totalVehicles + 1}
           </h3>
@@ -872,7 +868,7 @@ const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true 
               disabled={!newVehicle.year || !newVehicle.make || !newVehicle.model}
               className="flex-1 bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:bg-gray-300"
             >
-              Save Vehicle
+              Save Car
             </button>
             <button
               onClick={() => {
