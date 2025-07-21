@@ -1388,12 +1388,18 @@ export default function CustomerOnboarding() {
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">
+            <button
+              onClick={handleBack}
+              disabled={currentStep === 1}
+              className={`flex items-center gap-2 ${
+                currentStep === 1 
+                  ? 'text-gray-400 cursor-not-allowed' 
+                  : 'text-[#294a46] hover:bg-gray-100'
+              }`}
+            >
+              <ChevronLeft className="h-4 w-4" />
               Back
-            </span>
-            <span className="text-sm font-medium text-gray-700">
-              {Math.round((currentStep / 20) * 100)}% Complete
-            </span>
+            </button>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 relative">
             <div 
@@ -1402,10 +1408,10 @@ export default function CustomerOnboarding() {
             />
             {/* Race car emoji that moves with progress */}
             <div 
-              className="absolute top-1/2 transform -translate-y-1/2 transition-all duration-300"
-              style={{ left: `calc(${(currentStep / 20) * 100}% - 12px)` }}
+              className="absolute top-0 transform -translate-y-1/2 transition-all duration-300"
+              style={{ left: `calc(${(currentStep / 20) * 100}% - 16px)` }}
             >
-              <span className="text-lg">🏎️</span>
+              <span className="text-2xl">🏎️</span>
             </div>
             {/* Finish flag at the end */}
             <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2">
