@@ -1387,16 +1387,15 @@ export default function CustomerOnboarding() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <SiteHeader />
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-4 max-w-4xl">
         {/* Progress Bar */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-[#294a46] hover:bg-gray-100"
+              className="flex items-center px-3 py-2 rounded-lg transition-colors text-[#294a46] hover:bg-gray-100"
             >
               <ChevronLeft className="h-4 w-4" />
-              Back
             </button>
             <div className="flex-1 bg-gray-200 rounded-full h-2 relative">
               <div 
