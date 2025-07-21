@@ -46,7 +46,7 @@ type StepProps = {
 };
 
 // Step Components
-const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
+const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   const [vehicle, setVehicle] = useState<Vehicle>({ 
     year: '', 
     make: '', 
@@ -60,7 +60,7 @@ const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
     <div>
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Input Your Vehicle Information</h2>
-        <p className="text-gray-600">Tell us about your car so we can provide accurate service recommendations</p>
+        <p className="text-sm text-gray-600 leading-tight">Tell us about your car so we can provide accurate service recommendations</p>
       </div>
       
       <div className="space-y-4">
@@ -135,21 +135,23 @@ const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
         </div>
       </div>
 
-      {/* Button matching book appointment */}
-      <button 
-        onClick={() => {
-          updateData({ vehicle })
-          onNext()
-        }}
-        className="mt-8 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Continue
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={() => {
+            updateData({ vehicle })
+            onNext()
+          }}
+          className="mt-8 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
     </div>
   )
 }
 
-const ReferralSourceStep = ({ onNext, updateData }: StepProps) => {
+const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   const [selectedSources, setSelectedSources] = useState<string[]>([])
   
   const sources = [
@@ -215,19 +217,21 @@ const ReferralSourceStep = ({ onNext, updateData }: StepProps) => {
         ))}
       </div>
 
-      {/* Continue Button */}
-      <button 
-        onClick={handleContinue}
-        disabled={selectedSources.length === 0}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Continue
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={handleContinue}
+          disabled={selectedSources.length === 0}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Continue
+        </button>
+      )}
     </div>
   )
 }
 
-const PreviousAppsStep = ({ onNext, updateData }: StepProps) => {
+const PreviousAppsStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
       <div className="mb-8">
@@ -274,7 +278,7 @@ const PreviousAppsStep = ({ onNext, updateData }: StepProps) => {
   )
 }
 
-const WhyAxleStep = ({ onNext }: StepProps) => {
+const WhyAxleStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
       <div className="mb-8">
@@ -310,17 +314,20 @@ const WhyAxleStep = ({ onNext }: StepProps) => {
         </p>
       </div>
 
-      <button 
-        onClick={onNext}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Continue
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
     </div>
   )
 }
 
-const LastServiceStep = ({ onNext, updateData }: StepProps) => {
+const LastServiceStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   const [lastService, setLastService] = useState({
     date: '',
     type: '',
@@ -373,20 +380,23 @@ const LastServiceStep = ({ onNext, updateData }: StepProps) => {
         </div>
       </div>
 
-      <button 
-        onClick={() => {
-          updateData({ lastService })
-          onNext()
-        }}
-        className="mt-8 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Continue
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={() => {
+            updateData({ lastService })
+            onNext()
+          }}
+          className="mt-8 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
     </div>
   )
 }
 
-const ThankYouStep = ({ onNext }: StepProps) => {
+const ThankYouStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div className="text-center">
       <div className="mb-8">
@@ -396,17 +406,20 @@ const ThankYouStep = ({ onNext }: StepProps) => {
         </p>
       </div>
       
-      <button 
-        onClick={onNext}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Continue
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
     </div>
   )
 }
 
-const BenefitsStep = ({ onNext }: StepProps) => {
+const BenefitsStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
       <div className="mb-8">
@@ -442,17 +455,20 @@ const BenefitsStep = ({ onNext }: StepProps) => {
         </div>
       </div>
 
-      <button 
-        onClick={onNext}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Continue
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
     </div>
   )
 }
 
-const LocationStep = ({ onNext, updateData }: StepProps) => {
+const LocationStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   const [location, setLocation] = useState('')
 
   return (
@@ -477,20 +493,23 @@ const LocationStep = ({ onNext, updateData }: StepProps) => {
         />
       </div>
       
-      <button 
-        onClick={() => {
-          updateData({ location })
-          onNext()
-        }}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Continue
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={() => {
+            updateData({ location })
+            onNext()
+          }}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
     </div>
   )
 }
 
-const NotificationsStep = ({ onNext, updateData }: StepProps) => {
+const NotificationsStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
       <div className="mb-8">
@@ -529,7 +548,7 @@ const NotificationsStep = ({ onNext, updateData }: StepProps) => {
   )
 }
 
-const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
+const AddVehicleStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   const [additionalVehicles, setAdditionalVehicles] = useState<Vehicle[]>([])
   const [currentVehicle, setCurrentVehicle] = useState<Vehicle>({
     year: '',
@@ -622,20 +641,23 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
         </div>
       )}
 
-      <button 
-        onClick={() => {
-          updateData({ additionalVehicles })
-          onNext()
-        }}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Continue
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={() => {
+            updateData({ additionalVehicles })
+            onNext()
+          }}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
     </div>
   )
 }
 
-const MaintenanceStep = ({ onNext }: StepProps) => {
+const MaintenanceStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
       <div className="mb-8">
@@ -667,17 +689,20 @@ const MaintenanceStep = ({ onNext }: StepProps) => {
         </ul>
       </div>
 
-      <button 
-        onClick={onNext}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Continue
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
     </div>
   )
 }
 
-const SettingUpStep = ({ onNext }: StepProps) => {
+const SettingUpStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div className="text-center">
       <div className="mb-8">
@@ -691,17 +716,20 @@ const SettingUpStep = ({ onNext }: StepProps) => {
         <div className="w-16 h-16 bg-blue-200 rounded-full mx-auto mb-4"></div>
       </div>
 
-      <button 
-        onClick={onNext}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Continue
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
     </div>
   )
 }
 
-const PlanReadyStep = ({ onNext }: StepProps) => {
+const PlanReadyStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
       <div className="mb-8">
@@ -729,17 +757,20 @@ const PlanReadyStep = ({ onNext }: StepProps) => {
         </ul>
       </div>
 
-      <button 
-        onClick={onNext}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Continue
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
     </div>
   )
 }
 
-const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps }: StepProps) => {
+const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps, showButton = true }: StepProps & { showButton?: boolean }) => {
   const handleSkip = () => {
     if (setSkippedSteps) {
       setSkippedSteps((prev: number[]) => [...prev, 14])
@@ -770,9 +801,7 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps
   );
 };
 
-
-
-const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps }: StepProps) => {
+const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = true }: StepProps & { showButton?: boolean }) => {
   const [phoneNumber, setPhoneNumber] = useState('')
 
   const handleSkip = () => {
@@ -804,15 +833,18 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps }: StepProps) => 
         />
       </div>
       
-      <button 
-        onClick={() => {
-          updateData({ phoneNumber })
-          onNext()
-        }}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Continue
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={() => {
+            updateData({ phoneNumber })
+            onNext()
+          }}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
 
       {/* Skip button */}
       <div className="mt-4 text-center">
@@ -827,7 +859,7 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps }: StepProps) => 
   )
 }
 
-const FreeTrialStep = ({ onNext, updateData }: StepProps) => {
+const FreeTrialStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
       <div className="mb-8">
@@ -859,20 +891,23 @@ const FreeTrialStep = ({ onNext, updateData }: StepProps) => {
         </ul>
       </div>
 
-      <button 
-        onClick={() => {
-          updateData({ freeTrial: true })
-          onNext()
-        }}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Start Free Trial
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={() => {
+            updateData({ freeTrial: true })
+            onNext()
+          }}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Start Free Trial
+        </button>
+      )}
     </div>
   )
 }
 
-const ChoosePlanStep = ({ onNext, updateData }: StepProps) => {
+const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   const plans = [
     { id: 'basic', name: 'Basic', price: 'Free', features: ['Basic tracking', 'Email reminders'] },
     { id: 'premium', name: 'Premium', price: '$9.99/month', features: ['Advanced AI', 'Priority support', 'Unlimited tracking'] }
@@ -915,7 +950,7 @@ const ChoosePlanStep = ({ onNext, updateData }: StepProps) => {
   )
 }
 
-const LimitedOfferStep = ({ onNext }: StepProps) => {
+const LimitedOfferStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div className="text-center">
       <div className="mb-8">
@@ -929,17 +964,20 @@ const LimitedOfferStep = ({ onNext }: StepProps) => {
         <p className="text-red-900 font-semibold">Offer expires in 24 hours</p>
       </div>
 
-      <button 
-        onClick={onNext}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Claim Offer
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Claim Offer
+        </button>
+      )}
     </div>
   )
 }
 
-const SuccessStep = ({ onNext }: StepProps) => {
+const SuccessStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div className="text-center">
       <div className="mb-8">
@@ -953,12 +991,15 @@ const SuccessStep = ({ onNext }: StepProps) => {
         <p className="text-green-900">You're all set to start tracking your vehicle maintenance!</p>
       </div>
 
-      <button 
-        onClick={onNext}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Go to Dashboard
-      </button>
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Go to Dashboard
+        </button>
+      )}
     </div>
   )
 }
@@ -1179,11 +1220,91 @@ export default function CustomerOnboarding() {
     }
   }
 
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
   const nextStep = () => {
     handleNext()
   }
 
-  const renderCurrentStep = () => {
+  const renderContinueButton = () => {
+    const currentStepData = ONBOARDING_STEPS[currentStep - 1];
+    
+    // Different buttons for different steps
+    switch(currentStep) {
+      case 14: // Create Account Step
+        return (
+          <>
+            <div className="text-center mb-2">
+              <button
+                onClick={() => {
+                  if (setSkippedSteps) {
+                    setSkippedSteps((prev: number[]) => [...prev, 14])
+                  }
+                  nextStep()
+                }}
+                className="text-gray-500 hover:text-gray-700 underline text-sm"
+              >
+                Skip for now
+              </button>
+            </div>
+          </>
+        );
+      case 15: // Phone Number Step
+        return (
+          <>
+            <button
+              onClick={() => {
+                // Get phone number from form state or handle appropriately
+                nextStep()
+              }}
+              className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+            >
+              Continue
+            </button>
+            <div className="text-center mt-2">
+              <button
+                onClick={() => {
+                  if (setSkippedSteps) {
+                    setSkippedSteps((prev: number[]) => [...prev, 15])
+                  }
+                  nextStep()
+                }}
+                className="text-gray-500 hover:text-gray-700 underline text-sm"
+              >
+                Skip for now
+              </button>
+            </div>
+          </>
+        );
+      case 20: // Final step
+        return (
+          <button
+            onClick={() => {
+              // Handle completion
+              nextStep()
+            }}
+            className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-medium"
+          >
+            Complete Setup
+          </button>
+        );
+      default:
+        return (
+          <button
+            onClick={nextStep}
+            className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+          >
+            Continue
+          </button>
+        );
+    }
+  };
+
+  const renderCurrentStep = ({ showButton = true }: { showButton?: boolean } = {}) => {
     const step = ONBOARDING_STEPS.find(s => s.id === currentStep)
     if (!step) return null
 
@@ -1204,6 +1325,7 @@ export default function CustomerOnboarding() {
           updateData={updateData}
           onboardingData={onboardingData}
           setSkippedSteps={setSkippedSteps}
+          showButton={showButton}
         />
       </div>
     )
@@ -1212,47 +1334,78 @@ export default function CustomerOnboarding() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <SiteHeader />
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Back Button */}
-        {currentStep > 1 && (
-          <div className="mb-6">
-            <Button
-              onClick={() => setCurrentStep(currentStep - 1)}
-              variant="ghost"
-              className="flex items-center gap-2 text-[#294a46] hover:bg-gray-100"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Back
-            </Button>
-          </div>
-        )}
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Racing Progress Bar */}
+        <div className="bg-white shadow-sm sticky top-0 z-50">
+          <div className="max-w-4xl mx-auto px-4 py-4 md:py-6">
+            {/* Mobile: Simplified header with back button only */}
+            <div className="flex items-center justify-between mb-3 md:hidden">
+              {/* Back Button */}
+              <button
+                onClick={handleBack}
+                disabled={currentStep === 1}
+                className={`flex items-center gap-1 ${
+                  currentStep === 1 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : 'text-gray-700 active:text-blue-600'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              {/* Empty div for spacing balance */}
+              <div className="w-5"></div>
+            </div>
 
-        {/* Progress Bar - Style like book appointment */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">
-              Step {currentStep} of 20
-            </span>
-            <span className="text-sm font-medium text-gray-700">
-              {Math.round((currentStep / 20) * 100)}% Complete
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-[#294a46] h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${(currentStep / 20) * 100}%` }}
-            />
+            {/* Desktop: Keep original with full text */}
+            <div className="hidden md:flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-gray-700">Step {currentStep} of 20</span>
+              <span className="text-sm font-medium text-gray-700">{Math.round((currentStep / 20) * 100)}% Complete</span>
+            </div>
+
+            {/* Racing Track Progress Bar */}
+            <div className="relative">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-[#294a46] h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${(currentStep / 20) * 100}%` }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Step Content in Card */}
-        <div className="bg-white rounded-lg shadow-xl border-0">
-          <div className="p-8">
-            {renderCurrentStep()}
+        {/* Main Card with padding bottom on mobile */}
+        <div className="bg-white rounded-lg shadow-xl border-0 mb-20 md:mb-0">
+          <div className="p-8 pb-24 md:pb-8">
+            {/* Step content without buttons */}
+            <div id="step-content" className="step-content-mobile">
+              {renderCurrentStep({ showButton: false })}
+            </div>
           </div>
         </div>
-      </main>
+
+        {/* Fixed Continue Button Container - Mobile Only */}
+        <div 
+          className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg md:hidden fixed-bottom-button"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 1rem)' }}
+        >
+          {renderContinueButton()}
+        </div>
+
+        {/* Desktop Continue Button - Inside Card */}
+        <div className="hidden md:block">
+          <div className="bg-white rounded-lg shadow-xl border-0 mt-4">
+            <div className="p-8">
+              {renderContinueButton()}
+            </div>
+          </div>
+        </div>
+      </div>
       <Footer />
     </div>
   )
 }
+

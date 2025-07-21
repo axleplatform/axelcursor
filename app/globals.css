@@ -103,6 +103,27 @@ input[type="number"]::-webkit-inner-spin-button {
   margin: 0;
 }
 
+/* Mobile onboarding fixed button styles */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari */
+  .fixed-bottom-button:focus-within {
+    position: absolute;
+  }
+}
+
+/* Ensure content doesn't get hidden behind fixed button */
+.step-content-mobile { 
+  padding-bottom: 5rem; /* Space for fixed button */
+}
+
+/* When keyboard is open on mobile, adjust fixed button position */
+@media screen and (max-height: 600px) {
+  .fixed-bottom-button {
+    position: absolute;
+    bottom: 0;
+  }
+}
+
 input[type="number"] {
   -moz-appearance: textfield; /* Firefox */
 }
