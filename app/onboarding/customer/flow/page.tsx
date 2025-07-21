@@ -185,7 +185,7 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
             {showYearDropdown && (
               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                 {filteredYears.length > 0 ? (
-                  filteredYears.slice(0, 10).map(year => (
+                  filteredYears.map(year => (
                     <button
                       key={year}
                       onMouseDown={(e) => e.preventDefault()}
@@ -450,7 +450,7 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
     <div className="flex flex-col h-full">
       {/* Fixed Header */}
       <div className="mb-4">
-        <h2 className="text-2xl font-bold text-gray-900 mb-1">Where'd you hear from us?</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-1">Where'd you hear us?</h2>
         <p className="text-sm text-gray-600">Select all that apply</p>
       </div>
 
@@ -1011,30 +1011,30 @@ const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true 
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
                 />
                 
-                {/* Year Dropdown */}
-                {showYearDropdown && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {filteredYears.length > 0 ? (
-                      filteredYears.slice(0, 10).map(year => (
-                        <button
-                          key={year}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            setNewVehicle({...newVehicle, year})
-                            setShowYearDropdown(false)
-                          }}
-                          className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
-                        >
-                          {year}
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-4 py-2 text-gray-500">
-                        Custom year: {newVehicle.year}
-                      </div>
-                    )}
+                            {/* Year Dropdown */}
+            {showYearDropdown && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                {filteredYears.length > 0 ? (
+                  filteredYears.map(year => (
+                    <button
+                      key={year}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setNewVehicle({...newVehicle, year})
+                        setShowYearDropdown(false)
+                      }}
+                      className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                    >
+                      {year}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-2 text-gray-500">
+                    Custom year: {newVehicle.year}
                   </div>
                 )}
+              </div>
+            )}
               </div>
               
               {/* MAKE - Combo Input */}

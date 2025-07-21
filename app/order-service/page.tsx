@@ -104,6 +104,11 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
     appointmentTime: "",
   })
 
+  // State for combo inputs
+  const [showYearDropdown, setShowYearDropdown] = useState(false)
+  const [showMakeDropdown, setShowMakeDropdown] = useState(false)
+  const [showModelDropdown, setShowModelDropdown] = useState(false)
+
   // State for highlighting missing fields when Continue button is disabled
   const [showMissingFields, setShowMissingFields] = useState<boolean>(false)
 
@@ -1109,41 +1114,79 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
     )
   }, [])
 
-  // Common car makes for the dropdown
-  const makes = [
-    "Acura",
-    "Audi",
-    "BMW",
-    "Buick",
-    "Cadillac",
-    "Chevrolet",
-    "Chrysler",
-    "Dodge",
-    "Ford",
-    "GMC",
-    "Honda",
-    "Hyundai",
-    "Infiniti",
-    "Jaguar",
-    "Jeep",
-    "Kia",
-    "Land Rover",
-    "Lexus",
-    "Lincoln",
-    "Mazda",
-    "Mercedes",
-    "Mercury",
-    "Mitsubishi",
-    "Nissan",
-    "Pontiac",
-    "Porsche",
-    "Ram",
-    "Subaru",
-    "Tesla",
-    "Toyota",
-    "Volkswagen",
-    "Volvo",
+  // Comprehensive car makes and models data
+  const CAR_MAKES = [
+    "Acura", "Alfa Romeo", "Alpine", "Aston Martin", "Audi", "Bentley", "BMW", "Bugatti", "Buick", "Cadillac", 
+    "Chevrolet", "Chrysler", "Dodge", "Ferrari", "Fiat", "Fisker", "Ford", "Genesis", "GMC", "Honda", "Hummer", 
+    "Hyundai", "Infiniti", "Jaguar", "Jeep", "Kia", "Koenigsegg", "Lamborghini", "Land Rover", "Lexus", "Lincoln", 
+    "Lotus", "Lucid", "Maserati", "Mazda", "McLaren", "Mercedes-Benz", "Mercury", "Mini", "Mitsubishi", "Nissan", 
+    "Oldsmobile", "Pagani", "Plymouth", "Polestar", "Pontiac", "Porsche", "Ram", "Rivian", "Rolls-Royce", "Saturn", 
+    "Scion", "Smart", "Subaru", "Tesla", "Toyota", "Volkswagen", "Volvo"
   ]
+
+  const CAR_MODELS: Record<string, string[]> = {
+    // Main brands with full model lists
+    Toyota: ["Camry", "Corolla", "RAV4", "Highlander", "4Runner", "Tacoma", "Tundra", "Prius", "Sienna", "Avalon"],
+    Honda: ["Civic", "Accord", "CR-V", "Pilot", "Odyssey", "HR-V", "Ridgeline", "Fit", "Passport", "Insight"],
+    Ford: ["F-150", "Mustang", "Explorer", "Escape", "Edge", "Ranger", "Expedition", "Bronco", "Fusion", "Focus"],
+    Chevrolet: ["Silverado", "Equinox", "Tahoe", "Traverse", "Malibu", "Camaro", "Suburban", "Colorado", "Blazer", "Trax"],
+    BMW: ["3 Series", "5 Series", "X3", "X5", "7 Series", "X1", "X7", "4 Series", "2 Series", "i4"],
+    "Mercedes-Benz": ["C-Class", "E-Class", "GLC", "GLE", "S-Class", "A-Class", "GLA", "GLB", "CLA", "G-Class"],
+    Audi: ["A4", "Q5", "A6", "Q7", "A3", "Q3", "A5", "Q8", "e-tron", "A7"],
+    Nissan: ["Altima", "Rogue", "Sentra", "Pathfinder", "Murano", "Frontier", "Kicks", "Armada", "Maxima", "Titan"],
+    Hyundai: ["Elantra", "Tucson", "Santa Fe", "Sonata", "Kona", "Palisade", "Venue", "Accent", "Ioniq", "Veloster"],
+    Kia: ["Forte", "Sportage", "Sorento", "Soul", "Telluride", "Seltos", "Rio", "Niro", "Carnival", "K5"],
+    Subaru: ["Outback", "Forester", "Crosstrek", "Impreza", "Ascent", "Legacy", "WRX", "BRZ", "Solterra"],
+    Volkswagen: ["Jetta", "Tiguan", "Atlas", "Passat", "Golf", "Taos", "ID.4", "Arteon", "Atlas Cross Sport"],
+    Jeep: ["Grand Cherokee", "Wrangler", "Cherokee", "Compass", "Renegade", "Gladiator", "Wagoneer", "Grand Wagoneer"],
+    Lexus: ["RX", "NX", "ES", "GX", "IS", "UX", "LX", "LS", "RC", "LC"],
+    Mazda: ["CX-5", "Mazda3", "CX-9", "CX-30", "Mazda6", "MX-5 Miata", "CX-50"],
+    Tesla: ["Model 3", "Model Y", "Model S", "Model X", "Cybertruck"],
+    Acura: ["MDX", "RDX", "TLX", "ILX", "NSX", "Integra"],
+    Buick: ["Encore", "Enclave", "Envision", "Encore GX"],
+    Cadillac: ["XT5", "Escalade", "XT4", "CT5", "XT6", "CT4"],
+    Chrysler: ["Pacifica", "300"],
+    Dodge: ["Charger", "Challenger", "Durango", "Hornet"],
+    GMC: ["Sierra", "Terrain", "Acadia", "Yukon", "Canyon", "Hummer EV"],
+    Infiniti: ["QX60", "QX50", "QX80", "Q50", "QX55"],
+    Lincoln: ["Corsair", "Nautilus", "Aviator", "Navigator"],
+    Mitsubishi: ["Outlander", "Eclipse Cross", "Outlander Sport", "Mirage"],
+    Porsche: ["911", "Cayenne", "Macan", "Panamera", "Taycan", "718 Cayman", "718 Boxster"],
+    Ram: ["1500", "2500", "3500", "ProMaster"],
+    Volvo: ["XC90", "XC60", "XC40", "S60", "S90", "V60", "V90"],
+    
+    // Additional makes with popular models
+    Genesis: ["G70", "G80", "G90", "GV70", "GV80", "GV60"],
+    Polestar: ["Polestar 1", "Polestar 2", "Polestar 3", "Polestar 4"],
+    Rivian: ["R1T", "R1S", "R2", "R3"],
+    Lucid: ["Air", "Gravity", "Sapphire"],
+    Fisker: ["Ocean", "Pear", "Rönde", "Alaska"],
+    Pagani: ["Huayra", "Zonda", "Utopia"],
+    Bugatti: ["Chiron", "Veyron", "Divo", "Mistral"],
+    Koenigsegg: ["Jesko", "Gemera", "Regera", "Agera"],
+    Alpine: ["A110", "A310", "GTA"],
+    Lotus: ["Emira", "Evija", "Eletre", "Elise", "Exige"],
+    Smart: ["Fortwo", "Forfour", "EQ Fortwo"],
+    Scion: ["tC", "xB", "xD", "iQ", "FR-S"],
+    Saturn: ["Ion", "Vue", "Aura", "Outlook", "Sky"],
+    Pontiac: ["G6", "G8", "Solstice", "Vibe", "Torrent"],
+    Hummer: ["H1", "H2", "H3", "H3T"],
+    Oldsmobile: ["Alero", "Aurora", "Bravada", "Cutlass", "Intrigue"],
+    Mercury: ["Milan", "Mariner", "Mountaineer", "Sable", "Grand Marquis"],
+    Plymouth: ["Prowler", "Neon", "Breeze", "Voyager"],
+    "Alfa Romeo": ["Giulia", "Stelvio", "Tonale", "Giulietta", "4C"],
+    "Aston Martin": ["DB11", "Vantage", "DBS", "DBX", "Valkyrie"],
+    Bentley: ["Continental", "Flying Spur", "Bentayga", "Mulliner"],
+    Ferrari: ["F8", "SF90", "296", "Roma", "Portofino", "812"],
+    Fiat: ["500", "500X", "124 Spider", "Panda", "Tipo"],
+    "Land Rover": ["Range Rover", "Range Rover Sport", "Range Rover Velar", "Range Rover Evoque", "Discovery", "Defender"],
+    Maserati: ["Ghibli", "Quattroporte", "Levante", "Grecale", "MC20"],
+    McLaren: ["720S", "765LT", "Artura", "GT", "Senna"],
+    Mini: ["Cooper", "Countryman", "Clubman", "Convertible", "Electric"],
+    "Rolls-Royce": ["Phantom", "Ghost", "Wraith", "Dawn", "Cullinan"]
+  }
+
+  const GENERIC_MODELS = ["Sedan", "SUV", "Coupe", "Truck", "Hatchback", "Convertible", "Wagon", "Van", "Crossover"]
 
   // Handle form input changes
   const handleChange = React.useCallback((e: ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
@@ -2140,7 +2183,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
                       const maxYear = currentMonth >= 8 ? currentYear + 2 : currentYear + 1 // Add extra year if September or later
                       const years = []
                       
-                      for (let year = maxYear; year >= currentYear - 29; year--) {
+                      for (let year = maxYear; year >= currentYear - 80; year--) {
                         years.push(year)
                       }
                       
@@ -2166,60 +2209,118 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
                 </div>
 
                 <div className="relative w-[20%]">
-
-                  <select
+                  <input
+                    type="text"
                     name="make"
                     value={formData.make}
-                    onChange={handleChange}
-                    onFocus={() => scrollToFormSection('make')}
-                    className={`w-full h-[46px] px-2 pr-6 text-sm border rounded-md bg-gray-50 appearance-none transition-all duration-300 ${
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const value = e.target.value
+                      setFormData({...formData, make: value, model: ''}) // Reset model
+                    }}
+                    onFocus={() => {
+                      setShowMakeDropdown(true)
+                      scrollToFormSection('make')
+                    }}
+                    onBlur={() => setTimeout(() => setShowMakeDropdown(false), 200)}
+                    placeholder="Make"
+                    className={`w-full h-[46px] px-2 text-sm border rounded-md bg-gray-50 transition-all duration-300 ${
                       errors.make 
                         ? "border-red-500" 
                         : "border-gray-200"
                     }`}
-                  >
-                    <option value="">Make</option>
-                    {makes.map((make) => (
-                      <option key={make} value={make}>
-                        {make}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 h-3 w-3 pointer-events-none text-gray-500">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-3 w-3"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
+                  />
+                  
+                  {/* Make Dropdown */}
+                  {showMakeDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {(() => {
+                        const filteredMakes = CAR_MAKES.filter(make => 
+                          make.toLowerCase().includes(formData.make.toLowerCase())
+                        )
+                        
+                        return filteredMakes.length > 0 ? (
+                          filteredMakes.map(make => (
+                            <button
+                              key={make}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                setFormData({...formData, make, model: ''})
+                                setShowMakeDropdown(false)
+                              }}
+                              className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                            >
+                              {make}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-gray-500">
+                            Custom make: {formData.make}
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  )}
+                  
                   {errors.make && <p className="text-red-500 text-xs absolute -bottom-5">{errors.make}</p>}
                 </div>
 
                 <div className="relative w-[20%]">
-
                   <input
                     ref={modelRef}
                     type="text"
                     name="model"
                     value={formData.model}
-                    onChange={handleChange}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const value = e.target.value
+                      setFormData({...formData, model: value})
+                    }}
                     onKeyDown={handleKeyDown}
+                    onFocus={() => {
+                      setShowModelDropdown(true)
+                      scrollToFormSection('model')
+                    }}
+                    onBlur={() => setTimeout(() => setShowModelDropdown(false), 200)}
                     placeholder="Model"
+                    disabled={!formData.make}
                     className={`w-full h-[46px] px-2 text-sm border rounded-md bg-gray-50 transition-all duration-300 relative z-50 ${
                       errors.model 
                         ? "border-red-500" 
                         : "border-gray-200"
-                    }`}
-                    onClick={() => console.log('🚗 Desktop Model input clicked')}
-                    onFocus={() => {
-                      console.log('🚗 Desktop Model input focused');
-                      scrollToFormSection('model');
-                    }}
+                    } disabled:bg-gray-100`}
                   />
+                  
+                  {/* Model Dropdown */}
+                  {showModelDropdown && formData.make && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {(() => {
+                        const availableModels = formData.make ? (CAR_MODELS[formData.make] || GENERIC_MODELS) : []
+                        const filteredModels = availableModels.filter(model => 
+                          model.toLowerCase().includes(formData.model.toLowerCase())
+                        )
+                        
+                        return filteredModels.length > 0 ? (
+                          filteredModels.map(model => (
+                            <button
+                              key={model}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                setFormData({...formData, model})
+                                setShowModelDropdown(false)
+                              }}
+                              className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                            >
+                              {model}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-gray-500">
+                            Custom model: {formData.model}
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  )}
+                  
                   {errors.model && <p className="text-red-500 text-xs absolute -bottom-5">{errors.model}</p>}
                 </div>
 
@@ -2275,7 +2376,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
                         const maxYear = currentMonth >= 8 ? currentYear + 2 : currentYear + 1 // Add extra year if September or later
                         const years = []
                         
-                        for (let year = maxYear; year >= currentYear - 29; year--) {
+                        for (let year = maxYear; year >= currentYear - 80; year--) {
                           years.push(year)
                         }
                         
@@ -2301,35 +2402,58 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
                   </div>
 
                   <div className="relative flex-1">
-                    <select
+                    <input
+                      type="text"
                       name="make"
                       value={formData.make}
-                      onChange={handleChange}
-                      onFocus={() => scrollToFormSection('make')}
-                      className={`w-full h-[46px] px-2 pr-6 text-sm border rounded-md bg-gray-50 appearance-none transition-all duration-300 ${
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const value = e.target.value
+                        setFormData({...formData, make: value, model: ''}) // Reset model
+                      }}
+                      onFocus={() => {
+                        setShowMakeDropdown(true)
+                        scrollToFormSection('make')
+                      }}
+                      onBlur={() => setTimeout(() => setShowMakeDropdown(false), 200)}
+                      placeholder="Make"
+                      className={`w-full h-[46px] px-2 text-sm border rounded-md bg-gray-50 transition-all duration-300 ${
                         errors.make 
                           ? "border-red-500" 
                           : "border-gray-200"
                       }`}
-                    >
-                      <option value="">Make</option>
-                      {makes.map((make) => (
-                        <option key={make} value={make}>
-                          {make}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 h-3 w-3 pointer-events-none text-gray-500">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-3 w-3"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
+                    />
+                    
+                    {/* Make Dropdown */}
+                    {showMakeDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {(() => {
+                          const filteredMakes = CAR_MAKES.filter(make => 
+                            make.toLowerCase().includes(formData.make.toLowerCase())
+                          )
+                          
+                          return filteredMakes.length > 0 ? (
+                            filteredMakes.map(make => (
+                              <button
+                                key={make}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                  setFormData({...formData, make, model: ''})
+                                  setShowMakeDropdown(false)
+                                }}
+                                className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                              >
+                                {make}
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-2 text-gray-500">
+                              Custom make: {formData.make}
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
+                    
                     {errors.make && <p className="text-red-500 text-xs absolute -bottom-5">{errors.make}</p>}
                   </div>
 
@@ -2339,20 +2463,57 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
                       type="text"
                       name="model"
                       value={formData.model}
-                      onChange={handleChange}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const value = e.target.value
+                        setFormData({...formData, model: value})
+                      }}
                       onKeyDown={handleKeyDown}
+                      onFocus={() => {
+                        setShowModelDropdown(true)
+                        scrollToFormSection('model')
+                      }}
+                      onBlur={() => setTimeout(() => setShowModelDropdown(false), 200)}
                       placeholder="Model"
+                      disabled={!formData.make}
                       className={`w-full h-[46px] px-2 text-sm border rounded-md bg-gray-50 transition-all duration-300 relative z-50 ${
                         errors.model 
                           ? "border-red-500" 
                           : "border-gray-200"
-                      }`}
-                      onClick={() => console.log('🚗 Mobile Model input clicked')}
-                      onFocus={() => {
-                        console.log('🚗 Mobile Model input focused');
-                        scrollToFormSection('model');
-                      }}
+                      } disabled:bg-gray-100`}
                     />
+                    
+                    {/* Model Dropdown */}
+                    {showModelDropdown && formData.make && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {(() => {
+                          const availableModels = formData.make ? (CAR_MODELS[formData.make] || GENERIC_MODELS) : []
+                          const filteredModels = availableModels.filter(model => 
+                            model.toLowerCase().includes(formData.model.toLowerCase())
+                          )
+                          
+                          return filteredModels.length > 0 ? (
+                            filteredModels.map(model => (
+                              <button
+                                key={model}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                  setFormData({...formData, model})
+                                  setShowModelDropdown(false)
+                                }}
+                                className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                              >
+                                {model}
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-2 text-gray-500">
+                              Custom model: {formData.model}
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
+                    
                     {errors.model && <p className="text-red-500 text-xs absolute -bottom-5">{errors.model}</p>}
                   </div>
                 </div>
