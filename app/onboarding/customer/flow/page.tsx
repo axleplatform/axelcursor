@@ -42,7 +42,7 @@ type StepProps = {
   onNext: () => void;
   updateData: (data: Partial<OnboardingData>) => void;
   onboardingData?: OnboardingData;
-  setSkippedSteps?: (steps: number[]) => void;
+  setSkippedSteps?: React.Dispatch<React.SetStateAction<number[]>>;
 };
 
 // Step Components
