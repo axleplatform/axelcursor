@@ -1256,7 +1256,10 @@ export default function CustomerOnboarding() {
   }
 
   const handleBack = () => {
-    if (currentStep > 1) {
+    if (currentStep === 1) {
+      // Navigate to welcome page on step 1
+      router.push('/welcome')
+    } else if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
   };
@@ -1387,35 +1390,30 @@ export default function CustomerOnboarding() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Progress Bar */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
-              disabled={currentStep === 1}
-              className={`flex items-center gap-2 ${
-                currentStep === 1 
-                  ? 'text-gray-400 cursor-not-allowed' 
-                  : 'text-[#294a46] hover:bg-gray-100'
-              }`}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-[#294a46] hover:bg-gray-100"
             >
               <ChevronLeft className="h-4 w-4" />
               Back
             </button>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2 relative">
-            <div 
-              className="bg-[#294a46] h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${(currentStep / 20) * 100}%` }}
-            />
-            {/* Race car emoji that moves with progress */}
-            <div 
-              className="absolute top-0 transform -translate-y-1/2 transition-all duration-300"
-              style={{ left: `calc(${(currentStep / 20) * 100}% - 16px)` }}
-            >
-              <span className="text-2xl">🏎️</span>
-            </div>
-            {/* Finish flag at the end */}
-            <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2">
-              <span className="text-lg">🏁</span>
+            <div className="flex-1 bg-gray-200 rounded-full h-2 relative">
+              <div 
+                className="bg-[#294a46] h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${(currentStep / 20) * 100}%` }}
+              />
+              {/* Race car emoji that moves with progress */}
+              <div 
+                className="absolute top-0 transform -translate-y-1/2 transition-all duration-300"
+                style={{ left: `calc(${(currentStep / 20) * 100}% - 16px)` }}
+              >
+                <span className="text-2xl">🏎️</span>
+              </div>
+              {/* Finish flag at the end */}
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2">
+                <span className="text-lg">🏁</span>
+              </div>
             </div>
           </div>
         </div>
