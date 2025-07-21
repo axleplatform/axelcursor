@@ -4,12 +4,103 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Loader2, Check } from "lucide-react"
+import { ChevronLeft, Loader2 } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import OnboardingHeader from "@/components/onboarding-header"
+import CarMakeModelSelector from "@/components/car-make-model-selector"
+import PreferenceTagInput from "@/components/preference-tag-input"
+import SearchableMultiSelect from "@/components/searchable-multi-select"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
+
+// List of car brands/makes
+const CAR_BRANDS = [
+  "Acura",
+  "Alfa Romeo",
+  "Aston Martin",
+  "Audi",
+  "Bentley",
+  "BMW",
+  "Buick",
+  "Cadillac",
+  "Chevrolet",
+  "Chrysler",
+  "Dodge",
+  "Ferrari",
+  "Fiat",
+  "Ford",
+  "Genesis",
+  "GMC",
+  "Honda",
+  "Hyundai",
+  "Infiniti",
+  "Jaguar",
+  "Jeep",
+  "Kia",
+  "Lamborghini",
+  "Land Rover",
+  "Lexus",
+  "Lincoln",
+  "Maserati",
+  "Mazda",
+  "McLaren",
+  "Mercedes-Benz",
+  "Mini",
+  "Mitsubishi",
+  "Nissan",
+  "Porsche",
+  "Ram",
+  "Rolls-Royce",
+  "Subaru",
+  "Tesla",
+  "Toyota",
+  "Volkswagen",
+  "Volvo",
+]
+
+// List of common automotive services
+const AUTOMOTIVE_SERVICES = [
+  "Oil Change",
+  "Brake Repair",
+  "Transmission Repair",
+  "Engine Repair",
+  "Suspension Work",
+  "Electrical System Repair",
+  "Air Conditioning Service",
+  "Exhaust System Repair",
+  "Wheel Alignment",
+  "Tire Rotation/Replacement",
+  "Battery Replacement",
+  "Cooling System Service",
+  "Fuel System Repair",
+  "Ignition System Repair",
+  "Steering Repair",
+  "Clutch Replacement",
+  "Timing Belt Replacement",
+  "Radiator Repair",
+  "Alternator Replacement",
+  "Starter Replacement",
+  "Transmission Flush",
+  "Engine Tune-up",
+  "Catalytic Converter Replacement",
+  "Muffler Replacement",
+  "Shock/Strut Replacement",
+  "CV Joint Replacement",
+  "Axle Repair",
+  "Differential Repair",
+  "Power Window Repair",
+  "Power Lock Repair",
+  "Windshield Replacement",
+  "Engine Swap",
+  "Turbocharger/Supercharger Installation",
+  "Performance Upgrades",
+  "Diesel Engine Repair",
+  "Hybrid/Electric Vehicle Service",
+  "Body Work",
+  "Paint Jobs",
+  "Collision Repair",
+]
 
 export default function MechanicOnboardingStep4Page() {
   const router = useRouter()
@@ -17,8 +108,13 @@ export default function MechanicOnboardingStep4Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
-  const [visibleItems, setVisibleItems] = useState(0)
   const { toast } = useToast()
+
+  // Form state
+  const [specializedCars, setSpecializedCars] = useState<Array<{ make: string; model: string }>>([])
+  const [leastFavoriteBrands, setLeastFavoriteBrands] = useState<string[]>([])
+  const [unwantedCars, setUnwantedCars] = useState<string[]>([])
+  const [unwantedServices, setUnwantedServices] = useState<string[]>([])
 
   // Check if user is authenticated
   useEffect(() => {
@@ -38,6 +134,26 @@ export default function MechanicOnboardingStep4Page() {
         }
 
         setUser(user)
+
+        // Check if user already has a mechanic profile
+        const { data: profile, error: profileError } = await supabase
+          .from("mechanic_profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single()
+
+        if (profileError && profileError.code !== "PGRST116") {
+          // PGRST116 is "no rows returned" which is expected for new users
+          throw profileError
+        }
+
+        // If profile exists, pre-fill form data
+        if (profile) {
+          setSpecializedCars(profile.specialized_cars || [])
+          setLeastFavoriteBrands(profile.least_favorite_brands || [])
+          setUnwantedCars(profile.unwanted_cars || [])
+          setUnwantedServices(profile.unwanted_services || [])
+        }
       } catch (error: any) {
         console.error("Auth check error:", error)
         setError("Authentication error. Please try logging in again.")
@@ -49,19 +165,31 @@ export default function MechanicOnboardingStep4Page() {
     checkAuth()
   }, [router])
 
-  // Animation effect
-  useEffect(() => {
-    const showItems = async () => {
-      for (let i = 1; i <= 5; i++) {
-        await new Promise(resolve => setTimeout(resolve, 300))
-        setVisibleItems(i)
-      }
-    }
-    showItems()
-  }, [])
+  // Handle adding a specialized car
+  const handleAddSpecializedCar = (make: string, model: string) => {
+    setSpecializedCars([...specializedCars, { make, model }])
+  }
 
-  // Handle continue to next step
-  const handleContinue = async () => {
+  // Handle removing a specialized car
+  const handleRemoveSpecializedCar = (index: number) => {
+    setSpecializedCars(specializedCars.filter((_, i) => i !== index))
+  }
+
+  // Handle adding an unwanted car
+  const handleAddUnwantedCar = (car: string) => {
+    setUnwantedCars([...unwantedCars, car])
+  }
+
+  // Handle removing an unwanted car
+  const handleRemoveUnwantedCar = (index: number) => {
+    setUnwantedCars(unwantedCars.filter((_, i) => i !== index))
+  }
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
     if (!user) {
       setError("You must be logged in to continue")
       router.push("/onboarding/mechanic/signup")
@@ -71,27 +199,77 @@ export default function MechanicOnboardingStep4Page() {
     setIsSaving(true)
 
     try {
-      // Update user metadata to mark this step as complete
+      // Get the profile ID first to ensure we have it
+      const { data: profile, error: profileError } = await supabase
+        .from("mechanic_profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .single()
+
+      if (profileError) {
+        throw new Error("Could not find your profile. Please complete the previous steps first.")
+      }
+
+      // Update mechanic profile
+      const { data: updatedProfile, error: updateError } = await supabase
+        .from("mechanic_profiles")
+        .update({
+          specialized_cars: specializedCars,
+          least_favorite_brands: leastFavoriteBrands,
+          unwanted_cars: unwantedCars,
+          unwanted_services: unwantedServices,
+          onboarding_step: "profile_completion", // Mark next step
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", profile.id)
+        .select()
+
+      if (updateError) throw updateError
+
+      if (!updatedProfile || updatedProfile.length === 0) {
+        throw new Error("Failed to update profile")
+      }
+
+      // Verify data was saved by fetching it back
+      const { data: verifyProfile, error: verifyError } = await supabase
+        .from("mechanic_profiles")
+        .select("specialized_cars, least_favorite_brands, unwanted_cars, unwanted_services")
+        .eq("id", profile.id)
+        .single()
+
+      if (verifyError) throw verifyError
+
+      // Verify key fields were saved correctly
+      if (
+        JSON.stringify(verifyProfile.specialized_cars) !== JSON.stringify(specializedCars) ||
+        JSON.stringify(verifyProfile.least_favorite_brands) !== JSON.stringify(leastFavoriteBrands) ||
+        JSON.stringify(verifyProfile.unwanted_cars) !== JSON.stringify(unwantedCars) ||
+        JSON.stringify(verifyProfile.unwanted_services) !== JSON.stringify(unwantedServices)
+      ) {
+        throw new Error("Data verification failed. Some information was not saved correctly.")
+      }
+
+      // Update user metadata
       await supabase.auth.updateUser({
         data: {
-          onboarding_step: "step_4_complete",
+          onboarding_step: "profile_completion",
         },
       })
 
       toast({
-        title: "Step completed",
-        description: "Moving to the next step of your onboarding.",
+        title: "Information saved",
+        description: "Your preferences have been saved successfully.",
       })
 
-      // Redirect to next step
+      // Redirect to next step - profile completion
       router.push("/onboarding-mechanic-5")
     } catch (error: any) {
-      console.error("Error updating step:", error)
-      setError("Failed to update your progress. Please try again.")
+      console.error("Error saving data:", error)
+      setError("Failed to save your information. Please try again. " + (error.message || ""))
 
       toast({
         title: "Error",
-        description: "There was a problem updating your progress.",
+        description: "There was a problem saving your preferences.",
         variant: "destructive",
       })
     } finally {
@@ -131,7 +309,7 @@ export default function MechanicOnboardingStep4Page() {
           </div>
 
           {/* Onboarding Header with Progress Tracker */}
-          <OnboardingHeader currentStep={4} subtitle="What you'll get with Axle" />
+          <OnboardingHeader currentStep={4} subtitle="Tell us about your preferences" />
 
           <div className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-100">
             {error && (
@@ -140,74 +318,87 @@ export default function MechanicOnboardingStep4Page() {
               </div>
             )}
 
-            <div className="px-6 py-8">
-              <div className={`text-center mb-8 transition-all duration-500 ${
-                visibleItems >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to Axle!</h2>
-                <p className="text-gray-600">Here's what you can expect as a mobile mechanic on our platform</p>
+            <form onSubmit={handleSubmit} className="divide-y divide-gray-100">
+              {/* Specialized Cars Section */}
+              <div className="px-6 py-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Specialized cars to work on</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Select the car makes and models you specialize in or prefer to work on.
+                </p>
+
+                <CarMakeModelSelector
+                  selectedCars={specializedCars}
+                  onAddCar={handleAddSpecializedCar}
+                  onRemoveCar={handleRemoveSpecializedCar}
+                />
               </div>
 
-              {/* Checkmarks Section */}
-              <div className="space-y-6 mb-8">
-                {/* First Checkmark */}
-                <div className={`flex items-center gap-3 transition-all duration-500 ${
-                  visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-                }`}>
-                  <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
-                    <Check className="h-5 w-5 text-[#294a46]" />
-                  </div>
-                  <span className="text-lg font-medium text-gray-800">Quicker Appointment Booking</span>
-                </div>
+              {/* Least Favorite Brands Section - UPDATED */}
+              <div className="px-6 py-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Least favorite brands to work on</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Select car brands that you prefer not to work on but will accept if necessary.
+                </p>
 
-                {/* Second Checkmark */}
-                <div className={`flex items-center gap-3 transition-all duration-500 delay-100 ${
-                  visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-                }`}>
-                  <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
-                    <Check className="h-5 w-5 text-[#294a46]" />
-                  </div>
-                  <span className="text-lg font-medium text-gray-800">Visualize various live quotes</span>
-                </div>
-
-                {/* Third Checkmark */}
-                <div className={`flex items-center gap-3 transition-all duration-500 delay-200 ${
-                  visibleItems >= 4 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-                }`}>
-                  <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
-                    <Check className="h-5 w-5 text-[#294a46]" />
-                  </div>
-                  <span className="text-lg font-medium text-gray-800">Multiple Mechanic Options</span>
-                </div>
+                <SearchableMultiSelect
+                  options={CAR_BRANDS}
+                  selectedValues={leastFavoriteBrands}
+                  onValueChange={setLeastFavoriteBrands}
+                  placeholder="Select car brands..."
+                  searchPlaceholder="Search car brands..."
+                  addCustomLabel="Add custom brand"
+                  tagColor="green"
+                />
               </div>
 
-              {/* User Satisfaction Message */}
-              <div className={`text-center py-4 border-t border-gray-100 transition-all duration-500 ${
-                visibleItems >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}>
-                <p className="text-sm text-gray-500">Over 80% of our users have avoided major issues</p>
+              {/* Unwanted Cars Section */}
+              <div className="px-6 py-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Cars that you do not wish to work on</h3>
+                <p className="text-sm text-gray-500 mb-4">Add types of cars that you do not want to work on at all.</p>
+
+                <PreferenceTagInput
+                  tags={unwantedCars}
+                  onAddTag={handleAddUnwantedCar}
+                  onRemoveTag={handleRemoveUnwantedCar}
+                  placeholder="E.g., Exotic cars, Electric vehicles"
+                  tagColor="red"
+                />
               </div>
 
-              {/* Continue Button */}
-              <div className={`mt-8 transition-all duration-500 ${
-                visibleItems >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}>
+              {/* Unwanted Services Section - UPDATED */}
+              <div className="px-6 py-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Services that you do not wish to work on</h3>
+                <p className="text-sm text-gray-500 mb-4">Select services that you do not want to provide.</p>
+
+                <SearchableMultiSelect
+                  options={AUTOMOTIVE_SERVICES}
+                  selectedValues={unwantedServices}
+                  onValueChange={setUnwantedServices}
+                  placeholder="Select services..."
+                  searchPlaceholder="Search services..."
+                  addCustomLabel="Add custom service"
+                  tagColor="green"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <div className="px-6 py-4 bg-gray-50">
                 <button
-                  onClick={handleContinue}
+                  type="submit"
                   disabled={isSaving}
                   className="w-full flex justify-center items-center py-2.5 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-[#294a46] hover:bg-[#1e3632] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#294a46] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isSaving ? (
                     <>
                       <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                      Loading...
+                      Saving...
                     </>
                   ) : (
-                    "Continue"
+                    "Complete Onboarding"
                   )}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       </main>
