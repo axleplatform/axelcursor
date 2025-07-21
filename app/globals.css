@@ -124,6 +124,44 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 }
 
+/* Racing Progress Bar Animations */
+@keyframes car-jump {
+  0%, 100% { 
+    transform: translateY(-50%) rotate(0deg) scale(1); 
+  }
+  25% { 
+    transform: translateY(-70%) rotate(-5deg) scale(1.1); 
+  }
+  50% { 
+    transform: translateY(-80%) rotate(0deg) scale(1.15); 
+  }
+  75% { 
+    transform: translateY(-70%) rotate(5deg) scale(1.1); 
+  }
+}
+
+@keyframes wave { 
+  0%, 100% { transform: rotate(-2deg); } 
+  50% { transform: rotate(2deg); } 
+}
+
+.animate-car-jump { 
+  animation: car-jump 0.6s ease-out; 
+}
+
+.animate-wave { 
+  animation: wave 2s ease-in-out infinite; 
+}
+
+/* Speed line animations */
+.delay-75 { 
+  animation-delay: 75ms; 
+}
+
+.delay-150 { 
+  animation-delay: 150ms; 
+}
+
 input[type="number"] {
   -moz-appearance: textfield; /* Firefox */
 }

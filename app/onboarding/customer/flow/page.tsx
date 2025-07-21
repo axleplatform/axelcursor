@@ -1147,6 +1147,7 @@ export default function CustomerOnboarding() {
   const searchParams = useSearchParams()
   const [currentStep, setCurrentStep] = useState(1)
   const [skippedSteps, setSkippedSteps] = useState<number[]>([])
+  const [carAnimating, setCarAnimating] = useState(false)
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     vehicle: {
       year: '',
@@ -1205,6 +1206,40 @@ export default function CustomerOnboarding() {
     }
   }, [])
 
+  // Confetti effect when reaching step 20
+  useEffect(() => {
+    if (currentStep === 20 && typeof window !== 'undefined') {
+      // Simple confetti effect
+      const colors = ['#60a5fa', '#34d399', '#fbbf24', '#f87171'];
+      const confettiCount = 50;
+      
+      for (let i = 0; i < confettiCount; i++) {
+        const confetti = document.createElement('div');
+        confetti.style.position = 'fixed';
+        confetti.style.width = '10px';
+        confetti.style.height = '10px';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.top = '-10px';
+        confetti.style.opacity = '1';
+        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        confetti.style.transition = 'all 3s ease-out';
+        
+        document.body.appendChild(confetti);
+        
+        setTimeout(() => {
+          confetti.style.top = '100vh';
+          confetti.style.opacity = '0';
+          confetti.style.transform = `rotate(${Math.random() * 720}deg)`;
+        }, 10);
+        
+        setTimeout(() => {
+          document.body.removeChild(confetti);
+        }, 3000);
+      }
+    }
+  }, [currentStep]);
+
   const updateData = (newData: Partial<OnboardingData>) => {
     setOnboardingData(prev => ({ ...prev, ...newData }))
   }
@@ -1224,6 +1259,21 @@ export default function CustomerOnboarding() {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
+  };
+
+  const handleCarClick = () => {
+    // Trigger animation
+    setCarAnimating(true);
+    
+    // Play sound effect (optional)
+    const audio = new Audio('/sounds/car-honk.mp3');
+    audio.volume = 0.3;
+    audio.play().catch(() => {});
+    
+    // Reset animation after duration
+    setTimeout(() => {
+      setCarAnimating(false);
+    }, 600);
   };
 
   const nextStep = () => {
@@ -1338,28 +1388,22 @@ export default function CustomerOnboarding() {
         {/* Racing Progress Bar */}
         <div className="bg-white shadow-sm sticky top-0 z-50">
           <div className="max-w-4xl mx-auto px-4 py-4 md:py-6">
-            {/* Mobile: Simplified header with back button only */}
+            {/* Mobile Header */}
             <div className="flex items-center justify-between mb-3 md:hidden">
-              {/* Back Button */}
               <button
                 onClick={handleBack}
                 disabled={currentStep === 1}
-                className={`flex items-center gap-1 ${
-                  currentStep === 1 
-                    ? 'text-gray-400 cursor-not-allowed' 
-                    : 'text-gray-700 active:text-blue-600'
-                }`}
+                className={`p-2 ${currentStep === 1 ? 'text-gray-300' : 'text-gray-700'}`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              
-              {/* Empty div for spacing balance */}
+              <span className="text-lg font-semibold text-gray-900">{currentStep} / 20</span>
               <div className="w-5"></div>
             </div>
 
-            {/* Desktop: Keep original with full text */}
+            {/* Desktop Header */}
             <div className="hidden md:flex items-center justify-between mb-3">
               <span className="text-sm font-medium text-gray-700">Step {currentStep} of 20</span>
               <span className="text-sm font-medium text-gray-700">{Math.round((currentStep / 20) * 100)}% Complete</span>
@@ -1367,13 +1411,120 @@ export default function CustomerOnboarding() {
 
             {/* Racing Track Progress Bar */}
             <div className="relative">
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              {/* Track Background */}
+              <div className="w-full bg-gray-200 rounded-full h-12 relative overflow-hidden">
+                {/* Checkered Pattern */}
+                <div className="absolute inset-0 opacity-10">
+                  <div className="h-full w-full" style={{
+                    backgroundImage: `repeating-linear-gradient(45deg, #000 0, #000 5px, transparent 5px, transparent 10px)`,
+                    backgroundSize: '14px 14px'
+                  }}></div>
+                </div>
+                
+                {/* Progress Fill */}
                 <div 
-                  className="bg-[#294a46] h-2 rounded-full transition-all duration-300" 
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-500 ease-out relative"
                   style={{ width: `${(currentStep / 20) * 100}%` }}
-                />
+                >
+                  {/* Road Lines */}
+                  <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+                    <div className="w-full h-1 bg-white opacity-30"></div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Car Icon (moves with progress) */}
+              <div 
+                className={`absolute top-1/2 transform -translate-y-1/2 transition-all duration-500 ease-out cursor-pointer ${
+                  carAnimating ? 'animate-car-jump' : ''
+                }`}
+                style={{ 
+                  left: `calc(${(currentStep / 20) * 100}% - 20px)`,
+                }}
+                onClick={handleCarClick}
+              >
+                <div className="bg-white rounded-full p-2 shadow-lg border-2 border-blue-600 hover:scale-110 transition-transform">
+                  {/* Car SVG */}
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-blue-600">
+                    <path d="M5 11L7 7L16 7L18 11M18 11L19.5 11C20.3284 11 21 11.6716 21 12.5V15.5C21 16.3284 20.3284 17 19.5 17H19M18 11L18 17M5 11L3.5 11C2.67157 11 2 11.6716 2 12.5V15.5C2 16.3284 2.67157 17 3.5 17H4M5 11L5 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="7.5" cy="17.5" r="1.5" fill="currentColor"/>
+                    <circle cx="16.5" cy="17.5" r="1.5" fill="currentColor"/>
+                    <rect x="8" y="9" width="3" height="2" fill="currentColor" opacity="0.3"/>
+                    <rect x="13" y="9" width="3" height="2" fill="currentColor" opacity="0.3"/>
+                  </svg>
+                </div>
+                
+                {/* Speed lines when moving */}
+                {currentStep > 1 && currentStep < 20 && (
+                  <div className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2">
+                    <div className="flex gap-1">
+                      <div className="w-8 h-0.5 bg-blue-400 opacity-30 animate-pulse"></div>
+                      <div className="w-6 h-0.5 bg-blue-400 opacity-20 animate-pulse delay-75"></div>
+                      <div className="w-4 h-0.5 bg-blue-400 opacity-10 animate-pulse delay-150"></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Start Flag */}
+              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-8">
+                <div className="relative">
+                  <div className="w-1 h-12 bg-gray-800"></div>
+                  <div className="absolute -top-1 left-1">
+                    <svg width="20" height="16" viewBox="0 0 20 16" fill="none">
+                      <path d="M0 0h20v16L10 13 0 16V0z" fill="#4ade80"/>
+                      <text x="10" y="10" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">GO</text>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Finish Flag */}
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-8">
+                <div className="relative">
+                  <div className="w-1 h-16 bg-gray-800 absolute left-0 -top-8"></div>
+                  <div className="w-12 h-10 absolute left-1 -top-8 animate-wave">
+                    <svg viewBox="0 0 48 40" fill="none">
+                      <path d="M0 0h48v40L36 35 24 40 12 35 0 40V0z" fill="#000"/>
+                      <g fill="#fff">
+                        <rect x="0" y="0" width="12" height="10"/>
+                        <rect x="24" y="0" width="12" height="10"/>
+                        <rect x="12" y="10" width="12" height="10"/>
+                        <rect x="36" y="10" width="12" height="10"/>
+                        <rect x="0" y="20" width="12" height="10"/>
+                        <rect x="24" y="20" width="12" height="10"/>
+                        <rect x="12" y="30" width="12" height="10"/>
+                        <rect x="36" y="30" width="12" height="10"/>
+                      </g>
+                    </svg>
+                  </div>
+                  <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                    <span className="text-xs font-bold text-gray-700">FINISH</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Milestone Markers */}
+              <div className="flex justify-between mt-4 px-12">
+                {[5, 10, 15, 20].map((milestone) => (
+                  <div key={milestone} className="relative">
+                    <div className={`w-2 h-2 rounded-full transition-colors ${
+                      currentStep >= milestone ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}></div>
+                    <span className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">
+                      {milestone}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
+
+            {/* Celebration when reaching finish */}
+            {currentStep === 20 && (
+              <div className="mt-4 text-center">
+                <span className="text-green-600 font-bold animate-pulse">🎉 You've reached the finish line! 🎉</span>
+              </div>
+            )}
           </div>
         </div>
 
