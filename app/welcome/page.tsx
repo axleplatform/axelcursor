@@ -58,14 +58,13 @@ export default function WelcomePage() {
                   Get immediate help from mobile mechanics
                 </p>
                 
-                <Link href="/">
-                  <Button 
-                    size="lg" 
-                    className="w-full bg-[#294a46] hover:bg-[#1a2f2c] text-white font-semibold"
-                  >
-                    Book an Appointment
-                  </Button>
-                </Link>
+                <Button 
+                  size="lg" 
+                  className="w-full bg-[#294a46] hover:bg-[#1a2f2c] text-white font-semibold"
+                  onClick={() => router.push('/')}
+                >
+                  Book an Appointment
+                </Button>
               </div>
             </Card>
 

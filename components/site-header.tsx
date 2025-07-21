@@ -273,7 +273,10 @@ export function SiteHeader() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between md:relative">
         {/* Logo */}
         <div className="flex items-center">
-          <Link href="/" className="flex items-center">
+          <button 
+            onClick={() => router.push('/')} 
+            className="flex items-center hover:opacity-80 transition-opacity"
+          >
             <Image
               src="/images/axle-logo-green.png"
               alt="Axle - Mobile Mechanic Service"
@@ -282,7 +285,7 @@ export function SiteHeader() {
               priority
               className="h-auto"
             />
-          </Link>
+          </button>
         </div>
 
         {/* Desktop Auth Buttons - Absolutely Centered */}
