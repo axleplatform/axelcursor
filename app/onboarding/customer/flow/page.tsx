@@ -617,114 +617,234 @@ const NotificationsStep = ({ onNext, updateData, showButton = true }: StepProps 
   )
 }
 
-const AddVehicleStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
-  const [additionalVehicles, setAdditionalVehicles] = useState<Vehicle[]>([])
-  const [currentVehicle, setCurrentVehicle] = useState<Vehicle>({
+const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newVehicle, setNewVehicle] = useState<Vehicle>({
     year: '',
     make: '',
     model: '',
     vin: '',
     mileage: '',
     licensePlate: ''
-  })
+  });
 
-  const addVehicle = () => {
-    if (currentVehicle.year && currentVehicle.make && currentVehicle.model) {
-      setAdditionalVehicles([...additionalVehicles, currentVehicle])
-      setCurrentVehicle({ 
-        year: '', 
-        make: '', 
-        model: '', 
-        vin: '', 
-        mileage: '', 
-        licensePlate: '' 
-      })
+  const handleAddVehicle = () => {
+    if (newVehicle.year && newVehicle.make && newVehicle.model) {
+      // Add the new vehicle to the additionalVehicles array
+      const updatedVehicles = [...(onboardingData?.additionalVehicles || []), newVehicle];
+      updateData({ additionalVehicles: updatedVehicles });
+      
+      // Reset form
+      setNewVehicle({
+        year: '',
+        make: '',
+        model: '',
+        vin: '',
+        mileage: '',
+        licensePlate: ''
+      });
+      setShowAddForm(false);
+      
+      // Show success message
+      alert(`Vehicle ${updatedVehicles.length + 1} added successfully!`);
     }
-  }
+  };
+
+  const totalVehicles = 1 + (onboardingData?.additionalVehicles?.length || 0);
 
   return (
     <div>
+      {/* Header */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Add Another Vehicle?</h2>
         <p className="text-gray-600">
-          Do you have additional vehicles you'd like to track?
+          You have {totalVehicles} vehicle{totalVehicles > 1 ? 's' : ''} in your garage
         </p>
       </div>
-      
-      <div className="space-y-4 mb-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Year
-          </label>
-          <input 
-            type="number" 
-            placeholder="2020"
-            value={currentVehicle.year}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, year: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
-          />
+
+      {/* Current Vehicles List */}
+      <div className="mb-6 space-y-3">
+        {/* Primary Vehicle */}
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm text-gray-500">Vehicle 1 (Primary)</span>
+              <p className="font-medium text-gray-900">
+                {onboardingData?.vehicle?.year} {onboardingData?.vehicle?.make} {onboardingData?.vehicle?.model}
+              </p>
+            </div>
+            <div className="text-[#294a46]">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          </div>
         </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Make
-          </label>
-          <input 
-            type="text" 
-            placeholder="Toyota"
-            value={currentVehicle.make}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, make: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Model
-          </label>
-          <input 
-            type="text" 
-            placeholder="Camry"
-            value={currentVehicle.model}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentVehicle({...currentVehicle, model: e.target.value})}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
-          />
-        </div>
-        
-        <button 
-          onClick={addVehicle}
-          className="w-full bg-gray-100 text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors font-medium py-3 px-6"
-        >
-          Add Vehicle
-        </button>
+
+        {/* Additional Vehicles */}
+        {onboardingData?.additionalVehicles?.map((vehicle, index) => (
+          <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm text-gray-500">Vehicle {index + 2}</span>
+                <p className="font-medium text-gray-900">
+                  {vehicle.year} {vehicle.make} {vehicle.model}
+                </p>
+              </div>
+              <div className="text-[#294a46]">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {additionalVehicles.length > 0 && (
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2 text-gray-900">Added Vehicles:</h3>
-          {additionalVehicles.map((vehicle, index) => (
-            <div key={index} className="p-4 bg-gray-100 rounded-lg mb-2">
-              {vehicle.year} {vehicle.make} {vehicle.model}
+      {/* Add Vehicle Form (Hidden by default) */}
+      {showAddForm && (
+        <div className="mb-6 border-2 border-[#294a46] rounded-lg p-6 bg-[#e6eeec]">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Add Vehicle {totalVehicles + 1}
+          </h3>
+          
+          {/* Same form fields as Step 1 */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Year
+                </label>
+                <input 
+                  type="number" 
+                  placeholder="2020"
+                  value={newVehicle.year}
+                  onChange={(e) => setNewVehicle({...newVehicle, year: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Make
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="Toyota"
+                  value={newVehicle.make}
+                  onChange={(e) => setNewVehicle({...newVehicle, make: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Model
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="Camry"
+                  value={newVehicle.model}
+                  onChange={(e) => setNewVehicle({...newVehicle, model: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
+              </div>
             </div>
-          ))}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                VIN (Optional)
+              </label>
+              <input 
+                type="text" 
+                placeholder="1HGBH41JXMN109186"
+                value={newVehicle.vin}
+                onChange={(e) => setNewVehicle({...newVehicle, vin: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Current Mileage
+                </label>
+                <input 
+                  type="number" 
+                  placeholder="45000"
+                  value={newVehicle.mileage}
+                  onChange={(e) => setNewVehicle({...newVehicle, mileage: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  License Plate (Optional)
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="ABC 1234"
+                  value={newVehicle.licensePlate}
+                  onChange={(e) => setNewVehicle({...newVehicle, licensePlate: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={handleAddVehicle}
+              disabled={!newVehicle.year || !newVehicle.make || !newVehicle.model}
+              className="flex-1 bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:bg-gray-300"
+            >
+              Save Vehicle
+            </button>
+            <button
+              onClick={() => {
+                setShowAddForm(false);
+                setNewVehicle({
+                  year: '',
+                  make: '',
+                  model: '',
+                  vin: '',
+                  mileage: '',
+                  licensePlate: ''
+                });
+              }}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Only show button if showButton is true (desktop) */}
-      {showButton && (
-        <button 
-          onClick={() => {
-            updateData({ additionalVehicles })
-            onNext()
-          }}
-          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-        >
-          Continue
-        </button>
+      {/* Main Actions (Only show on desktop or when showButton is true) */}
+      {showButton && !showAddForm && (
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="flex-1 border-2 border-[#294a46] text-[#294a46] py-3 px-6 rounded-lg hover:bg-[#e6eeec] transition-colors font-medium flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Another Vehicle
+          </button>
+          <button
+            onClick={onNext}
+            className="flex-1 bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+          >
+            Continue
+          </button>
+        </div>
       )}
     </div>
-  )
-}
+  );
+};
 
 const MaintenanceStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
