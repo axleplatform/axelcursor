@@ -59,7 +59,7 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
   return (
     <div>
       <div className="mb-4">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Input Your Car Information</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Input Car Information</h2>
         <p className="text-gray-600 text-sm">
           Tell us about your car so we can provide accurate service recommendations
         </p>
@@ -593,18 +593,17 @@ const LocationStep = ({ onNext, updateData, showButton = true }: StepProps & { s
 const NotificationsStep = ({ onNext, updateData, onboardingData }: StepProps) => {
   const [requesting, setRequesting] = useState(false);
 
-  const handleEnableNotifications = async () => {
+  const handleAllow = async () => {
     setRequesting(true);
     
-    // Set notifications enabled in onboarding data
+    // Set notifications enabled
     updateData({ notifications: true });
 
-    // Request browser notification permission (if in browser)
+    // Request browser notification permission
     if (typeof window !== 'undefined' && 'Notification' in window) {
       try {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
-          // Show success notification
           new Notification('Axle Notifications Enabled! 🎉', {
             body: 'You\'ll receive updates about your vehicle maintenance.',
             icon: '/images/axle-logo-green.png'
@@ -619,103 +618,69 @@ const NotificationsStep = ({ onNext, updateData, onboardingData }: StepProps) =>
     onNext();
   };
 
-  const handleMaybeLater = () => {
-    // Set notifications disabled
+  const handleDontAllow = () => {
     updateData({ notifications: false });
     onNext();
   };
 
   return (
-    <div>
-      <div className="mb-4">
-        <h2 className="text-2xl font-bold text-gray-900 mb-1">Stay Updated on Your Car's Health</h2>
-        <p className="text-sm text-gray-600">Get timely reminders for maintenance and exclusive offers</p>
+    <div className="flex flex-col items-center justify-center min-h-[400px]">
+      {/* Icon */}
+      <div className="mb-6">
+        <div className="w-20 h-20 bg-red-500 rounded-2xl flex items-center justify-center">
+          <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+        </div>
       </div>
 
-      {/* Visual Benefits */}
-      <div className="bg-blue-50 rounded-lg p-6 mb-6">
-        <div className="space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="text-green-500 mt-1">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p className="font-medium text-gray-900">Service Reminders</p>
-              <p className="text-sm text-gray-600">Never miss an oil change or inspection</p>
-            </div>
-          </div>
+      {/* Title - Apple style */}
+      <h2 className="text-2xl font-semibold text-gray-900 mb-2 text-center">
+        "Axle" Would Like to Send You Notifications
+      </h2>
+      
+      {/* Description */}
+      <p className="text-base text-gray-600 text-center mb-8 max-w-sm">
+        Notifications may include alerts, sounds, and icon badges. These can be configured in Settings.
+      </p>
+
+      {/* Buttons - Apple style */}
+      <div className="w-full max-w-xs space-y-3">
+        {/* Don't Allow Button */}
+        <button
+          onClick={handleDontAllow}
+          className="w-full py-3 px-6 bg-gray-100 text-blue-600 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+        >
+          Don't Allow
+        </button>
+        
+        {/* Allow Button - Dark/Prominent */}
+        <div className="relative">
+          <button
+            onClick={handleAllow}
+            disabled={requesting}
+            className="w-full py-3 px-6 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
+          >
+            {requesting ? (
+              <span className="flex items-center justify-center">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Allowing...
+              </span>
+            ) : (
+              'Allow'
+            )}
+          </button>
           
-          <div className="flex items-start gap-3">
-            <div className="text-green-500 mt-1">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p className="font-medium text-gray-900">Exclusive Deals</p>
-              <p className="text-sm text-gray-600">Save money with member-only discounts</p>
-            </div>
-          </div>
-          
-          <div className="flex items-start gap-3">
-            <div className="text-green-500 mt-1">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p className="font-medium text-gray-900">Real-time Updates</p>
-              <p className="text-sm text-gray-600">Know when your mechanic is on the way</p>
-            </div>
+          {/* Pointing Finger Emoji */}
+          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <span className="text-2xl">👆</span>
           </div>
         </div>
       </div>
 
-      {/* Current Status */}
-      <div className="text-center mb-6">
-        <p className="text-sm text-gray-500">
-          Current setting: 
-          <span className="font-medium ml-1">
-            {onboardingData?.notifications ? 'Enabled ✅' : 'Disabled'}
-          </span>
-        </p>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <button
-          onClick={handleEnableNotifications}
-          disabled={requesting}
-          className="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-        >
-          {requesting ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Enabling...
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              Yes, Notify Me
-            </>
-          )}
-        </button>
-        
-        <button
-          onClick={handleMaybeLater}
-          className="border-2 border-gray-300 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-        >
-          Maybe Later
-        </button>
-      </div>
-
-      {/* Privacy Note */}
-      <p className="text-xs text-gray-500 text-center mt-6">
-        You can change this anytime in settings. We'll never spam you.
+      {/* Small print - optional */}
+      <p className="text-xs text-gray-500 text-center mt-12 max-w-xs">
+        You can change this anytime in your device settings
       </p>
     </div>
   );

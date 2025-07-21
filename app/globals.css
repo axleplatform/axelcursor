@@ -145,6 +145,15 @@ input[type="number"]::-webkit-inner-spin-button {
   50% { transform: rotate(2deg); } 
 }
 
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0) translateX(-50%);
+  }
+  50% {
+    transform: translateY(-10px) translateX(-50%);
+  }
+}
+
 .animate-car-jump { 
   animation: car-jump 0.6s ease-out; 
 }
