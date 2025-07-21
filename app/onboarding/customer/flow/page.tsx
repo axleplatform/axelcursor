@@ -1418,15 +1418,24 @@ export default function CustomerOnboarding() {
           </div>
         </div>
 
-        {/* Main Card */}
-        <div className="bg-white rounded-lg shadow-xl border-0">
-          <div className="p-8">
-            {/* Step content with buttons */}
+        {/* Main Card - No white background for step 14 */}
+        {currentStep === 14 ? (
+          <div>
+            {/* Step content with buttons - no white background */}
             <div id="step-content">
               {renderCurrentStep({ showButton: true })}
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-xl border-0">
+            <div className="p-8">
+              {/* Step content with buttons */}
+              <div id="step-content">
+                {renderCurrentStep({ showButton: true })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <Footer />
     </div>
