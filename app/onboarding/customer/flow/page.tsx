@@ -1295,7 +1295,7 @@ const MaintenanceStep = ({ onNext, showButton = true }: StepProps & { showButton
         </p>
       </div>
       
-      <div className="bg-[#e6eeec] border-2 border-[#294a46] rounded-lg p-6 mb-8">
+      <div className="bg-[#e6eeec] border-2 border-[#294a46] rounded-lg p-6 mb-4">
         <h3 className="font-semibold text-[#294a46] mb-4">Your personalized schedule will include:</h3>
         <ul className="text-[#294a46] space-y-2">
           <li className="flex items-center">
@@ -1308,14 +1308,12 @@ const MaintenanceStep = ({ onNext, showButton = true }: StepProps & { showButton
           </li>
           <li className="flex items-center">
             <span className="mr-2">•</span>
-            Brake inspection dates
-          </li>
-          <li className="flex items-center">
-            <span className="mr-2">•</span>
             Fluid level checks
           </li>
         </ul>
       </div>
+
+      <p className="text-center text-gray-600 mb-8">Have axle ai automate your reliability</p>
 
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
@@ -2075,7 +2073,7 @@ export default function CustomerOnboarding() {
                 className="absolute top-0 transform -translate-y-1/2 transition-all duration-300"
                 style={{ left: `calc(${(currentStep / 20) * 100}% - 16px)` }}
               >
-                <span className="text-2xl">🏎️</span>
+                <span className="text-2xl" style={{ transform: 'scaleX(-1)' }}>🏎️</span>
               </div>
               {/* Finish flag at the end */}
               <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2">
