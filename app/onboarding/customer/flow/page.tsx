@@ -42,6 +42,7 @@ type StepProps = {
   onNext: () => void;
   updateData: (data: Partial<OnboardingData>) => void;
   onboardingData?: OnboardingData;
+  setSkippedSteps?: (steps: number[]) => void;
 };
 
 // Step Components
@@ -738,24 +739,48 @@ const PlanReadyStep = ({ onNext }: StepProps) => {
   )
 }
 
-const CreateAccountStep = ({ onNext, updateData, onboardingData }: StepProps) => {
-  // Just render the CustomerSignupForm with the progress bar already at the top
+const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps }: StepProps) => {
+  const handleSkip = () => {
+    if (setSkippedSteps) {
+      setSkippedSteps(prev => [...prev, 14])
+    }
+    onNext()
+  }
+
   return (
-    <CustomerSignupForm 
-      isOnboarding={true}
-      onboardingData={onboardingData}
-      onSuccess={(userId: string) => {
-        updateData({ userId });
-        onNext();
-      }}
-    />
+    <div>
+      <CustomerSignupForm 
+        isOnboarding={true}
+        onboardingData={onboardingData}
+        onSuccess={(userId: string) => {
+          updateData({ userId });
+          onNext();
+        }}
+      />
+      {/* Skip button */}
+      <div className="mt-4 text-center">
+        <button
+          onClick={handleSkip}
+          className="text-gray-500 hover:text-gray-700 underline text-sm"
+        >
+          Skip for now
+        </button>
+      </div>
+    </div>
   );
 };
 
 
 
-const PhoneNumberStep = ({ onNext, updateData }: StepProps) => {
+const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps }: StepProps) => {
   const [phoneNumber, setPhoneNumber] = useState('')
+
+  const handleSkip = () => {
+    if (setSkippedSteps) {
+      setSkippedSteps(prev => [...prev, 15])
+    }
+    onNext()
+  }
 
   return (
     <div>
@@ -788,6 +813,16 @@ const PhoneNumberStep = ({ onNext, updateData }: StepProps) => {
       >
         Continue
       </button>
+
+      {/* Skip button */}
+      <div className="mt-4 text-center">
+        <button
+          onClick={handleSkip}
+          className="text-gray-500 hover:text-gray-700 underline text-sm"
+        >
+          Skip for now
+        </button>
+      </div>
     </div>
   )
 }
@@ -928,12 +963,22 @@ const SuccessStep = ({ onNext }: StepProps) => {
   )
 }
 
-const DashboardRedirect = ({ onboardingData }: { onboardingData: OnboardingData }) => {
+const DashboardRedirect = ({ onboardingData, setCurrentStep }: { onboardingData: OnboardingData; setCurrentStep?: (step: number) => void }) => {
   const router = useRouter()
 
   useEffect(() => {
     const completeOnboarding = async () => {
       try {
+        // Check if required steps were completed
+        if (!onboardingData.userId) {
+          // User skipped account creation
+          alert('Please create an account to save your information')
+          if (setCurrentStep) {
+            setCurrentStep(14) // Go back to account creation
+          }
+          return
+        }
+
         // Get pending onboarding data from localStorage
         const pendingData = localStorage.getItem('pendingOnboarding')
         if (pendingData) {
@@ -966,13 +1011,31 @@ const DashboardRedirect = ({ onboardingData }: { onboardingData: OnboardingData 
     }
 
     completeOnboarding()
-  }, [router])
+  }, [router, onboardingData.userId, setCurrentStep])
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 text-center">
-      <h2 className="text-2xl font-bold mb-6">Redirecting...</h2>
-      <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
+    <div className="text-center">
+      <div className="mb-8">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Setting up your account...</h2>
+      </div>
     </div>
+  )
+}
+
+// Wrapper component for DashboardRedirect
+const DashboardRedirectWrapper = ({ onboardingData }: { onboardingData: OnboardingData }) => {
+  const [currentStepState, setCurrentStepState] = useState(1)
+  
+  return (
+    <DashboardRedirect 
+      onboardingData={onboardingData} 
+      setCurrentStep={setCurrentStepState} 
+    />
   )
 }
 
@@ -1035,13 +1098,14 @@ const ONBOARDING_STEPS = [
   { id: 17, title: "Choose Plan", component: ChoosePlanStep },
   { id: 18, title: "Limited Offer", component: LimitedOfferStep },
   { id: 19, title: "Success", component: SuccessStep },
-  { id: 20, title: "Dashboard", component: DashboardRedirect }
+  { id: 20, title: "Dashboard", component: DashboardRedirectWrapper }
 ]
 
 export default function CustomerOnboarding() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [currentStep, setCurrentStep] = useState(1)
+  const [skippedSteps, setSkippedSteps] = useState<number[]>([])
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     vehicle: {
       year: '',
@@ -1104,10 +1168,19 @@ export default function CustomerOnboarding() {
     setOnboardingData(prev => ({ ...prev, ...newData }))
   }
 
-  const nextStep = () => {
-    if (currentStep < 20) {
+  const handleNext = () => {
+    if (currentStep === 19 && skippedSteps.length > 0) {
+      // Before going to step 20, show the first skipped step
+      const nextSkippedStep = skippedSteps[0]
+      setCurrentStep(nextSkippedStep)
+      setSkippedSteps(prev => prev.filter(step => step !== nextSkippedStep))
+    } else if (currentStep < 20) {
       setCurrentStep(currentStep + 1)
     }
+  }
+
+  const nextStep = () => {
+    handleNext()
   }
 
   const renderCurrentStep = () => {
@@ -1116,11 +1189,23 @@ export default function CustomerOnboarding() {
 
     const StepComponent = step.component
     return (
-      <StepComponent 
-        onNext={nextStep}
-        updateData={updateData}
-        onboardingData={onboardingData}
-      />
+      <div>
+        {/* Visual indicator for re-inserted steps */}
+        {skippedSteps.includes(currentStep) && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <p className="text-yellow-800 text-sm">
+              ⚠️ This step was skipped earlier. Please complete it to finish setting up your account.
+            </p>
+          </div>
+        )}
+        
+        <StepComponent 
+          onNext={nextStep}
+          updateData={updateData}
+          onboardingData={onboardingData}
+          setSkippedSteps={setSkippedSteps}
+        />
+      </div>
     )
   }
 
