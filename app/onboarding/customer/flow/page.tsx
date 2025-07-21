@@ -587,7 +587,7 @@ const WhyAxleStep = ({ onNext, showButton = true }: StepProps & { showButton?: b
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <span className="text-lg font-medium text-gray-800">Quicker Appointment Booking</span>
+          <span className="text-lg font-medium text-gray-800">Quicker appointment booking</span>
         </div>
 
         {/* Second Checkmark */}

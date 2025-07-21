@@ -150,7 +150,7 @@ export function CustomerSignupForm({
             <p className="mt-0 text-sm text-gray-600">Join thousands of car owners who trust Axle for their repairs</p>
           </div>
 
-          <div className={`mt-0 md:mt-4 py-4 px-4 sm:px-10 ${!isOnboarding ? 'bg-white shadow sm:rounded-lg' : ''}`}>
+          <div className={`mt-0 py-4 px-4 sm:px-10 ${!isOnboarding ? 'bg-white shadow sm:rounded-lg' : ''}`}>
             {isRateLimited && (
               <div
                 className="mb-6 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-md"
