@@ -155,15 +155,15 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
   const [selectedSources, setSelectedSources] = useState<string[]>([])
   
   const sources = [
-    'Google Search',
-    'App Store',
-    'Friend/Family',
-    'Instagram',
-    'TikTok',
-    'YouTube',
-    'TV',
-    'Facebook',
-    'Other'
+    { name: 'Google Search', logo: '🔍' },
+    { name: 'App Store', logo: '📱' },
+    { name: 'Friend/Family', logo: '👥' },
+    { name: 'Instagram', logo: '📷' },
+    { name: 'TikTok', logo: '🎵' },
+    { name: 'YouTube', logo: '📺' },
+    { name: 'TV', logo: '📺' },
+    { name: 'Facebook', logo: '📘' },
+    { name: 'Other', logo: '❓' }
   ]
 
   const toggleSource = (source: string) => {
@@ -183,36 +183,37 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
     <div>
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Where did you hear from us?
+          Where did you see us?
         </h2>
         <p className="text-gray-600">
           Help us understand how you found Axle (select all that apply)
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      <div className="space-y-4 mb-8">
         {sources.map(source => (
           <button
-            key={source}
-            onClick={() => toggleSource(source)}
-            className={`p-6 text-left border-2 rounded-lg transition-all group ${
-              selectedSources.includes(source)
+            key={source.name}
+            onClick={() => toggleSource(source.name)}
+            className={`w-full p-4 text-left border-2 rounded-lg transition-all group flex items-center justify-between ${
+              selectedSources.includes(source.name)
                 ? 'border-[#294a46] bg-[#e6eeec]'
                 : 'border-gray-200 hover:border-[#294a46] hover:bg-[#e6eeec]'
             }`}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="text-2xl">{source.logo}</span>
               <h3 className={`font-medium group-hover:text-[#294a46] ${
-                selectedSources.includes(source) ? 'text-[#294a46]' : 'text-gray-900'
+                selectedSources.includes(source.name) ? 'text-[#294a46]' : 'text-gray-900'
               }`}>
-                {source}
+                {source.name}
               </h3>
-              {selectedSources.includes(source) && (
-                <div className="w-5 h-5 bg-[#294a46] rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs">✓</span>
-                </div>
-              )}
             </div>
+            {selectedSources.includes(source.name) && (
+              <div className="w-5 h-5 bg-[#294a46] rounded-full flex items-center justify-center">
+                <span className="text-white text-xs">✓</span>
+              </div>
+            )}
           </button>
         ))}
       </div>
