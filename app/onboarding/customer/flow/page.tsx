@@ -64,7 +64,7 @@ const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
       
       <div className="space-y-4">
         {/* Row 1: Year, Make, Model */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
             <input 
@@ -98,7 +98,7 @@ const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
         </div>
 
         {/* Row 2: Mileage, License Plate */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Mileage</label>
             <input 
@@ -149,14 +149,32 @@ const VehicleInfoStep = ({ onNext, updateData }: StepProps) => {
 }
 
 const ReferralSourceStep = ({ onNext, updateData }: StepProps) => {
+  const [selectedSources, setSelectedSources] = useState<string[]>([])
+  
   const sources = [
     'Google Search',
     'App Store',
     'Friend/Family',
-    'Social Media',
-    'Advertisement',
+    'Instagram',
+    'TikTok',
+    'YouTube',
+    'TV',
+    'Facebook',
     'Other'
   ]
+
+  const toggleSource = (source: string) => {
+    setSelectedSources(prev => 
+      prev.includes(source) 
+        ? prev.filter(s => s !== source)
+        : [...prev, source]
+    )
+  }
+
+  const handleContinue = () => {
+    updateData({ referralSource: selectedSources.join(', ') })
+    onNext()
+  }
 
   return (
     <div>
@@ -165,26 +183,45 @@ const ReferralSourceStep = ({ onNext, updateData }: StepProps) => {
           Where did you hear from us?
         </h2>
         <p className="text-gray-600">
-          Help us understand how you found Axle
+          Help us understand how you found Axle (select all that apply)
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         {sources.map(source => (
           <button
             key={source}
-            onClick={() => {
-              updateData({ referralSource: source })
-              onNext()
-            }}
-            className="p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
+            onClick={() => toggleSource(source)}
+            className={`p-6 text-left border-2 rounded-lg transition-all group ${
+              selectedSources.includes(source)
+                ? 'border-[#294a46] bg-[#e6eeec]'
+                : 'border-gray-200 hover:border-[#294a46] hover:bg-[#e6eeec]'
+            }`}
           >
-            <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
-              {source}
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className={`font-medium group-hover:text-[#294a46] ${
+                selectedSources.includes(source) ? 'text-[#294a46]' : 'text-gray-900'
+              }`}>
+                {source}
+              </h3>
+              {selectedSources.includes(source) && (
+                <div className="w-5 h-5 bg-[#294a46] rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">✓</span>
+                </div>
+              )}
+            </div>
           </button>
         ))}
       </div>
+
+      {/* Continue Button */}
+      <button 
+        onClick={handleContinue}
+        disabled={selectedSources.length === 0}
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Continue
+      </button>
     </div>
   )
 }
@@ -209,9 +246,12 @@ const PreviousAppsStep = ({ onNext, updateData }: StepProps) => {
           }}
           className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
         >
-          <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
-            Yes, I have
-          </h3>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">👍</span>
+            <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
+              Yes, I have
+            </h3>
+          </div>
         </button>
         
         <button
@@ -221,9 +261,12 @@ const PreviousAppsStep = ({ onNext, updateData }: StepProps) => {
           }}
           className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
         >
-          <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
-            No, this is my first time
-          </h3>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">👎</span>
+            <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
+              No, this is my first time
+            </h3>
+          </div>
         </button>
       </div>
     </div>
@@ -513,7 +556,7 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
   return (
     <div>
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Add Another Vehicle</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Add Another Vehicle?</h2>
         <p className="text-gray-600">
           Do you have additional vehicles you'd like to track?
         </p>
@@ -561,7 +604,7 @@ const AddVehicleStep = ({ onNext, updateData }: StepProps) => {
         
         <button 
           onClick={addVehicle}
-          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+          className="w-full bg-gray-100 text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors font-medium py-3 px-6"
         >
           Add Vehicle
         </button>
