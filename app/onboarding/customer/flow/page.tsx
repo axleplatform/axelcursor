@@ -45,6 +45,80 @@ type StepProps = {
   setSkippedSteps?: React.Dispatch<React.SetStateAction<number[]>>;
 };
 
+// Car makes and models data
+const CAR_MAKES = [
+  "Acura", "Alfa Romeo", "Alpine", "Aston Martin", "Audi", "Bentley", "BMW", "Bugatti", "Buick", "Cadillac", 
+  "Chevrolet", "Chrysler", "Dodge", "Ferrari", "Fiat", "Fisker", "Ford", "Genesis", "GMC", "Honda", "Hummer", 
+  "Hyundai", "Infiniti", "Jaguar", "Jeep", "Kia", "Koenigsegg", "Lamborghini", "Land Rover", "Lexus", "Lincoln", 
+  "Lotus", "Lucid", "Maserati", "Mazda", "McLaren", "Mercedes-Benz", "Mercury", "Mini", "Mitsubishi", "Nissan", 
+  "Oldsmobile", "Pagani", "Plymouth", "Polestar", "Pontiac", "Porsche", "Ram", "Rivian", "Rolls-Royce", "Saturn", 
+  "Scion", "Smart", "Subaru", "Tesla", "Toyota", "Volkswagen", "Volvo"
+]
+
+const CAR_MODELS: Record<string, string[]> = {
+  // Main brands with full model lists
+  Toyota: ["Camry", "Corolla", "RAV4", "Highlander", "4Runner", "Tacoma", "Tundra", "Prius", "Sienna", "Avalon"],
+  Honda: ["Civic", "Accord", "CR-V", "Pilot", "Odyssey", "HR-V", "Ridgeline", "Fit", "Passport", "Insight"],
+  Ford: ["F-150", "Mustang", "Explorer", "Escape", "Edge", "Ranger", "Expedition", "Bronco", "Fusion", "Focus"],
+  Chevrolet: ["Silverado", "Equinox", "Tahoe", "Traverse", "Malibu", "Camaro", "Suburban", "Colorado", "Blazer", "Trax"],
+  BMW: ["3 Series", "5 Series", "X3", "X5", "7 Series", "X1", "X7", "4 Series", "2 Series", "i4"],
+  "Mercedes-Benz": ["C-Class", "E-Class", "GLC", "GLE", "S-Class", "A-Class", "GLA", "GLB", "CLA", "G-Class"],
+  Audi: ["A4", "Q5", "A6", "Q7", "A3", "Q3", "A5", "Q8", "e-tron", "A7"],
+  Nissan: ["Altima", "Rogue", "Sentra", "Pathfinder", "Murano", "Frontier", "Kicks", "Armada", "Maxima", "Titan"],
+  Hyundai: ["Elantra", "Tucson", "Santa Fe", "Sonata", "Kona", "Palisade", "Venue", "Accent", "Ioniq", "Veloster"],
+  Kia: ["Forte", "Sportage", "Sorento", "Soul", "Telluride", "Seltos", "Rio", "Niro", "Carnival", "K5"],
+  Subaru: ["Outback", "Forester", "Crosstrek", "Impreza", "Ascent", "Legacy", "WRX", "BRZ", "Solterra"],
+  Volkswagen: ["Jetta", "Tiguan", "Atlas", "Passat", "Golf", "Taos", "ID.4", "Arteon", "Atlas Cross Sport"],
+  Jeep: ["Grand Cherokee", "Wrangler", "Cherokee", "Compass", "Renegade", "Gladiator", "Wagoneer", "Grand Wagoneer"],
+  Lexus: ["RX", "NX", "ES", "GX", "IS", "UX", "LX", "LS", "RC", "LC"],
+  Mazda: ["CX-5", "Mazda3", "CX-9", "CX-30", "Mazda6", "MX-5 Miata", "CX-50"],
+  Tesla: ["Model 3", "Model Y", "Model S", "Model X", "Cybertruck"],
+  Acura: ["MDX", "RDX", "TLX", "ILX", "NSX", "Integra"],
+  Buick: ["Encore", "Enclave", "Envision", "Encore GX"],
+  Cadillac: ["XT5", "Escalade", "XT4", "CT5", "XT6", "CT4"],
+  Chrysler: ["Pacifica", "300"],
+  Dodge: ["Charger", "Challenger", "Durango", "Hornet"],
+  GMC: ["Sierra", "Terrain", "Acadia", "Yukon", "Canyon", "Hummer EV"],
+  Infiniti: ["QX60", "QX50", "QX80", "Q50", "QX55"],
+  Lincoln: ["Corsair", "Nautilus", "Aviator", "Navigator"],
+  Mitsubishi: ["Outlander", "Eclipse Cross", "Outlander Sport", "Mirage"],
+  Porsche: ["911", "Cayenne", "Macan", "Panamera", "Taycan", "718 Cayman", "718 Boxster"],
+  Ram: ["1500", "2500", "3500", "ProMaster"],
+  Volvo: ["XC90", "XC60", "XC40", "S60", "S90", "V60", "V90"],
+  
+  // Additional makes with popular models
+  Genesis: ["G70", "G80", "G90", "GV70", "GV80", "GV60"],
+  Polestar: ["Polestar 1", "Polestar 2", "Polestar 3", "Polestar 4"],
+  Rivian: ["R1T", "R1S", "R2", "R3"],
+  Lucid: ["Air", "Gravity", "Sapphire"],
+  Fisker: ["Ocean", "Pear", "Rönde", "Alaska"],
+  Pagani: ["Huayra", "Zonda", "Utopia"],
+  Bugatti: ["Chiron", "Veyron", "Divo", "Mistral"],
+  Koenigsegg: ["Jesko", "Gemera", "Regera", "Agera"],
+  Alpine: ["A110", "A310", "GTA"],
+  Lotus: ["Emira", "Evija", "Eletre", "Elise", "Exige"],
+  Smart: ["Fortwo", "Forfour", "EQ Fortwo"],
+  Scion: ["tC", "xB", "xD", "iQ", "FR-S"],
+  Saturn: ["Ion", "Vue", "Aura", "Outlook", "Sky"],
+  Pontiac: ["G6", "G8", "Solstice", "Vibe", "Torrent"],
+  Hummer: ["H1", "H2", "H3", "H3T"],
+  Oldsmobile: ["Alero", "Aurora", "Bravada", "Cutlass", "Intrigue"],
+  Mercury: ["Milan", "Mariner", "Mountaineer", "Sable", "Grand Marquis"],
+  Plymouth: ["Prowler", "Neon", "Breeze", "Voyager"],
+  "Alfa Romeo": ["Giulia", "Stelvio", "Tonale", "Giulietta", "4C"],
+  "Aston Martin": ["DB11", "Vantage", "DBS", "DBX", "Valkyrie"],
+  Bentley: ["Continental", "Flying Spur", "Bentayga", "Mulliner"],
+  Ferrari: ["F8", "SF90", "296", "Roma", "Portofino", "812"],
+  Fiat: ["500", "500X", "124 Spider", "Panda", "Tipo"],
+  "Land Rover": ["Range Rover", "Range Rover Sport", "Range Rover Velar", "Range Rover Evoque", "Discovery", "Defender"],
+  Maserati: ["Ghibli", "Quattroporte", "Levante", "Grecale", "MC20"],
+  McLaren: ["720S", "765LT", "Artura", "GT", "Senna"],
+  Mini: ["Cooper", "Countryman", "Clubman", "Convertible", "Electric"],
+  "Rolls-Royce": ["Phantom", "Ghost", "Wraith", "Dawn", "Cullinan"]
+}
+
+const GENERIC_MODELS = ["Sedan", "SUV", "Coupe", "Truck", "Hatchback", "Convertible", "Wagon", "Van", "Crossover"]
+
 // Step Components
 const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   const [vehicle, setVehicle] = useState<Vehicle>({ 
@@ -56,47 +130,170 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
     licensePlate: '' 
   })
 
+  const [showYearDropdown, setShowYearDropdown] = useState(false)
+  const [showMakeDropdown, setShowMakeDropdown] = useState(false)
+  const [showModelDropdown, setShowModelDropdown] = useState(false)
+
+  // Generate years (80 years back)
+  const currentYear = new Date().getFullYear()
+  const allYears = Array.from({length: 80}, (_, i) => (currentYear - i).toString())
+  
+  // Filter years based on input
+  const filteredYears = allYears.filter(year => year.includes(vehicle.year))
+  
+  // Filter makes based on input
+  const filteredMakes = CAR_MAKES.filter(make => 
+    make.toLowerCase().includes(vehicle.make.toLowerCase())
+  )
+  
+  // Get models for selected make
+  const availableModels = vehicle.make ? (CAR_MODELS[vehicle.make] || GENERIC_MODELS) : []
+  const filteredModels = availableModels.filter(model => 
+    model.toLowerCase().includes(vehicle.model.toLowerCase())
+  )
+
   return (
     <div>
       <div className="mb-4">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Input Car Information</h2>
-        <p className="text-gray-600 text-sm">
+        <h2 className="text-2xl font-bold text-gray-900 mb-1">Input Your Vehicle Information</h2>
+        <p className="text-sm text-gray-600">
           Tell us about your car so we can provide accurate service recommendations
         </p>
       </div>
       
       <div className="space-y-4">
-        {/* Row 1: Year, Make, Model */}
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* YEAR - Combo Input */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Year
+            </label>
             <input 
-              type="number" 
-              placeholder="2020" 
-              value={vehicle.year} 
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, year: e.target.value})}
+              type="text"
+              placeholder="2020"
+              value={vehicle.year}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                const value = e.target.value
+                setVehicle({...vehicle, year: value})
+              }}
+              onFocus={() => setShowYearDropdown(true)}
+              onBlur={() => setTimeout(() => setShowYearDropdown(false), 200)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
             />
+            
+            {/* Year Dropdown */}
+            {showYearDropdown && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                {filteredYears.length > 0 ? (
+                  filteredYears.slice(0, 10).map(year => (
+                    <button
+                      key={year}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setVehicle({...vehicle, year})
+                        setShowYearDropdown(false)
+                      }}
+                      className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                    >
+                      {year}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-2 text-gray-500">
+                    Custom year: {vehicle.year}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Make</label>
+          
+          {/* MAKE - Combo Input */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Make
+            </label>
             <input 
-              type="text" 
-              placeholder="Toyota" 
-              value={vehicle.make} 
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, make: e.target.value})}
+              type="text"
+              placeholder="Toyota"
+              value={vehicle.make}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                const value = e.target.value
+                setVehicle({...vehicle, make: value, model: ''}) // Reset model
+              }}
+              onFocus={() => setShowMakeDropdown(true)}
+              onBlur={() => setTimeout(() => setShowMakeDropdown(false), 200)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
             />
+            
+            {/* Make Dropdown */}
+            {showMakeDropdown && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                {filteredMakes.length > 0 ? (
+                  filteredMakes.map(make => (
+                    <button
+                      key={make}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setVehicle({...vehicle, make, model: ''})
+                        setShowMakeDropdown(false)
+                      }}
+                      className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                    >
+                      {make}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-2 text-gray-500">
+                    Custom make: {vehicle.make}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
+          
+          {/* MODEL - Combo Input */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Model
+            </label>
             <input 
-              type="text" 
-              placeholder="Camry" 
-              value={vehicle.model} 
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVehicle({...vehicle, model: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+              type="text"
+              placeholder="Camry"
+              value={vehicle.model}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                const value = e.target.value
+                setVehicle({...vehicle, model: value})
+              }}
+              onFocus={() => setShowModelDropdown(true)}
+              onBlur={() => setTimeout(() => setShowModelDropdown(false), 200)}
+              disabled={!vehicle.make}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent disabled:bg-gray-100"
             />
+            
+            {/* Model Dropdown */}
+            {showModelDropdown && vehicle.make && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                {filteredModels.length > 0 ? (
+                  filteredModels.map(model => (
+                    <button
+                      key={model}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setVehicle({...vehicle, model})
+                        setShowModelDropdown(false)
+                      }}
+                      className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                    >
+                      {model}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-2 text-gray-500">
+                    Custom model: {vehicle.model}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
