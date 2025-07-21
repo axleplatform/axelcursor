@@ -712,11 +712,11 @@ const ThankYouStep = ({ onNext, showButton = true }: StepProps & { showButton?: 
   return (
     <div className="text-center">
       <div className="mb-8">
-        <div className="text-4xl mb-4">🤝</div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h2>
-        <p className="text-gray-600">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Thank you for trusting us!</h2>
+        <p className="text-gray-600 mb-4">
           We're excited to help you take better care of your vehicle.
         </p>
+        <div className="text-4xl">🤝</div>
       </div>
       
       {/* Only show button if showButton is true (desktop) */}
