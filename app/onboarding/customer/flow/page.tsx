@@ -59,7 +59,7 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
   return (
     <div>
       <div className="mb-4">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Input Your Vehicle Information</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Input Your Car Information</h2>
         <p className="text-gray-600 text-sm">
           Tell us about your car so we can provide accurate service recommendations
         </p>
@@ -67,7 +67,7 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
       
       <div className="space-y-4">
         {/* Row 1: Year, Make, Model */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
             <input 
@@ -101,7 +101,7 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
         </div>
 
         {/* Row 2: Mileage, License Plate */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Mileage</label>
             <input 
@@ -740,9 +740,9 @@ const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true 
     <div>
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Add Another Vehicle</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Add Another Car</h2>
         <p className="text-gray-600 text-sm">
-          Do you have additional vehicles you'd like to track?
+          Do you have additional cars you'd like to track?
         </p>
       </div>
 
@@ -916,7 +916,7 @@ const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true 
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Add Another Vehicle
+            Car
           </button>
           <button
             onClick={onNext}
@@ -1451,7 +1451,7 @@ const ONBOARDING_STEPS = [
   { id: 7, title: "Axle AI Benefits", component: BenefitsStep },
   { id: 8, title: "Location", component: LocationStep },
   { id: 9, title: "Notifications", component: NotificationsStep },
-  { id: 10, title: "Add Another Vehicle", component: AddVehicleStep },
+  { id: 10, title: "Add Another Car", component: AddVehicleStep },
   { id: 11, title: "Maintenance Schedule", component: MaintenanceStep },
   { id: 12, title: "Setting Up", component: SettingUpStep },
   { id: 13, title: "Plan Ready", component: PlanReadyStep },
