@@ -147,10 +147,10 @@ export function CustomerSignupForm({
               priority
             />
             <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">Create Your Account</h2>
-            <p className="mt-0 text-sm text-gray-600">Join thousands of car owners who trust Axle for their repairs</p>
+            <p className="mt-0 text-sm text-gray-600">Save your progress</p>
           </div>
 
-          <div className={`mt-0 py-2 px-4 sm:px-10 ${!isOnboarding ? 'bg-white shadow sm:rounded-lg' : ''}`}>
+          <div className={`mt-0 py-0 px-4 sm:px-10 ${!isOnboarding ? 'bg-white shadow sm:rounded-lg' : ''}`}>
             {isRateLimited && (
               <div
                 className="mb-6 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-md"
@@ -164,7 +164,7 @@ export function CustomerSignupForm({
               </div>
             )}
 
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-4" onSubmit={handleSubmit}>
               {error && !isRateLimited && (
                 <div
                   className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-start"
