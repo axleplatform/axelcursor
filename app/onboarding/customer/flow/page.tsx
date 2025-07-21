@@ -627,49 +627,52 @@ const NotificationsStep = ({ onNext, updateData, onboardingData }: StepProps) =>
     <div className="flex flex-col items-center justify-center min-h-[400px]">
       {/* Icon */}
       <div className="mb-6">
-        <div className="w-20 h-20 bg-red-500 rounded-2xl flex items-center justify-center">
+        <div className="w-20 h-20 bg-[#294a46] rounded-2xl flex items-center justify-center">
           <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
         </div>
       </div>
 
-      {/* Title - Apple style */}
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2 text-center">
-        "Axle" Would Like to Send You Notifications
-      </h2>
+        {/* Title - Apple style */}
+  <div className="flex items-center justify-center gap-2 mb-2">
+    <img src="/images/axle-logo-green.png" alt="Axle" className="w-8 h-8" />
+    <h2 className="text-2xl font-semibold text-gray-900 text-center">
+      Would Like to Send You Notifications
+    </h2>
+  </div>
       
-      {/* Description */}
-      <p className="text-base text-gray-600 text-center mb-8 max-w-sm">
-        Notifications may include alerts, sounds, and icon badges. These can be configured in Settings.
-      </p>
+        {/* Description */}
+  <p className="text-base text-gray-600 text-center mb-8 max-w-sm">
+    Notifications may include predictive maintenance services, order receipts, mechanics quotes and eta, and other when a service is ordered.
+  </p>
 
-      {/* Buttons - Apple style */}
-      <div className="w-full max-w-xs space-y-3">
-        {/* Don't Allow Button */}
-        <button
-          onClick={handleDontAllow}
-          className="w-full py-3 px-6 bg-gray-100 text-blue-600 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-        >
-          Don't Allow
-        </button>
-        
-        {/* Allow Button - Dark/Prominent */}
-        <div className="relative">
-          <button
-            onClick={handleAllow}
-            disabled={requesting}
-            className="w-full py-3 px-6 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
-          >
-            {requesting ? (
-              <span className="flex items-center justify-center">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Allowing...
-              </span>
-            ) : (
-              'Allow'
-            )}
-          </button>
+        {/* Buttons - Apple style */}
+  <div className="w-full max-w-xs grid grid-cols-2 gap-3">
+    {/* Don't Allow Button */}
+    <button
+      onClick={handleDontAllow}
+      className="py-3 px-6 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+    >
+      Don't Allow
+    </button>
+    
+    {/* Allow Button - Our brand color */}
+    <div className="relative">
+      <button
+        onClick={handleAllow}
+        disabled={requesting}
+        className="w-full py-3 px-6 bg-[#294a46] text-white rounded-xl font-medium hover:bg-[#1e3632] transition-colors disabled:opacity-50"
+      >
+        {requesting ? (
+          <span className="flex items-center justify-center">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+            Allowing...
+          </span>
+        ) : (
+          'Allow'
+        )}
+      </button>
           
           {/* Pointing Finger Emoji */}
           <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
