@@ -977,7 +977,52 @@ const LimitedOfferStep = ({ onNext, showButton = true }: StepProps & { showButto
   )
 }
 
-const SuccessStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
+const SuccessStep = ({ onNext, showButton = true, skippedSteps = [] }: StepProps & { showButton?: boolean; skippedSteps?: number[] }) => {
+  const [showSkippedSteps, setShowSkippedSteps] = useState(false)
+  const [currentSkippedStep, setCurrentSkippedStep] = useState<number | null>(null)
+
+  const handleGoToDashboard = () => {
+    if (skippedSteps.length > 0) {
+      setShowSkippedSteps(true)
+      setCurrentSkippedStep(skippedSteps[0])
+    } else {
+      onNext()
+    }
+  }
+
+  const handleSkippedStepComplete = () => {
+    const remainingSteps = skippedSteps.filter(step => step !== currentSkippedStep)
+    if (remainingSteps.length > 0) {
+      setCurrentSkippedStep(remainingSteps[0])
+    } else {
+      onNext() // Go to dashboard
+    }
+  }
+
+  // If showing skipped steps, render the skipped step
+  if (showSkippedSteps && currentSkippedStep) {
+    const step = ONBOARDING_STEPS.find(s => s.id === currentSkippedStep)
+    if (step) {
+      const StepComponent = step.component
+      return (
+        <div>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <p className="text-yellow-800 text-sm">
+              ⚠️ This step was skipped earlier. Please complete it to finish setting up your account.
+            </p>
+          </div>
+          <StepComponent 
+            onNext={handleSkippedStepComplete}
+            updateData={() => {}}
+            onboardingData={{}}
+            setSkippedSteps={() => {}}
+            showButton={true}
+          />
+        </div>
+      )
+    }
+  }
+
   return (
     <div className="text-center">
       <div className="mb-8">
@@ -994,7 +1039,7 @@ const SuccessStep = ({ onNext, showButton = true }: StepProps & { showButton?: b
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
         <button 
-          onClick={onNext}
+          onClick={handleGoToDashboard}
           className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
         >
           Go to Dashboard
@@ -1250,12 +1295,7 @@ export default function CustomerOnboarding() {
   }
 
   const handleNext = () => {
-    if (currentStep === 19 && skippedSteps.length > 0) {
-      // Before going to step 20, show the first skipped step
-      const nextSkippedStep = skippedSteps[0]
-      setCurrentStep(nextSkippedStep)
-      setSkippedSteps(prev => prev.filter(step => step !== nextSkippedStep))
-    } else if (currentStep < 20) {
+    if (currentStep < 20) {
       setCurrentStep(currentStep + 1)
     }
   }
@@ -1372,21 +1412,13 @@ export default function CustomerOnboarding() {
     const StepComponent = step.component
     return (
       <div>
-        {/* Visual indicator for re-inserted steps */}
-        {skippedSteps.includes(currentStep) && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <p className="text-yellow-800 text-sm">
-              ⚠️ This step was skipped earlier. Please complete it to finish setting up your account.
-            </p>
-          </div>
-        )}
-        
         <StepComponent 
           onNext={nextStep}
           updateData={updateData}
           onboardingData={onboardingData}
           setSkippedSteps={setSkippedSteps}
           showButton={showButton}
+          skippedSteps={currentStep === 20 ? skippedSteps : undefined}
         />
       </div>
     )
