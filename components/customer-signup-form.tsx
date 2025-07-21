@@ -293,36 +293,38 @@ export function CustomerSignupForm({
               )}
             </div>
 
-            <div className="mt-6 text-center text-sm">
-              <p className="text-gray-600">
-                Already have an account?{" "}
-                <Link href="/login" className="font-medium text-[#294a46] hover:text-[#1e3632]">
-                  Sign in
-                </Link>
-              </p>
-              {!isOnboarding && (
+            {!isOnboarding && (
+              <div className="mt-6 text-center text-sm">
+                <p className="text-gray-600">
+                  Already have an account?{" "}
+                  <Link href="/login" className="font-medium text-[#294a46] hover:text-[#1e3632]">
+                    Sign in
+                  </Link>
+                </p>
                 <p className="text-gray-600 mt-2">
                   Or{" "}
                   <Link href="/onboarding/customer/flow" className="font-medium text-[#294a46] hover:text-[#1e3632]">
                     start the guided onboarding
                   </Link>
                 </p>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
-          <div className="text-center text-sm text-gray-500 mt-4">
-            <p>
-              By creating an account, you agree to our{" "}
-              <Link href="/legal/terms" className="font-medium text-[#294a46] hover:text-[#1e3632]">
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link href="/legal/privacy" className="font-medium text-[#294a46] hover:text-[#1e3632]">
-                Privacy Policy
-              </Link>
-            </p>
-          </div>
+          {!isOnboarding && (
+            <div className="text-center text-sm text-gray-500 mt-4">
+              <p>
+                By creating an account, you agree to our{" "}
+                <Link href="/legal/terms" className="font-medium text-[#294a46] hover:text-[#1e3632]">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href="/legal/privacy" className="font-medium text-[#294a46] hover:text-[#1e3632]">
+                  Privacy Policy
+                </Link>
+              </p>
+            </div>
+          )}
         </div>
       </main>
     </div>
