@@ -450,7 +450,7 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
     <div className="flex flex-col h-full">
       {/* Fixed Header */}
       <div className="mb-4">
-        <h2 className="text-2xl font-bold text-gray-900 mb-1">Where did you hear from us?</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-1">Where'd you hear from us?</h2>
         <p className="text-sm text-gray-600">Select all that apply</p>
       </div>
 
@@ -886,6 +886,28 @@ const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true 
     licensePlate: ''
   });
 
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
+  const [showMakeDropdown, setShowMakeDropdown] = useState(false);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
+
+  // Generate years (80 years back)
+  const currentYear = new Date().getFullYear();
+  const allYears = Array.from({length: 80}, (_, i) => (currentYear - i).toString());
+  
+  // Filter years based on input
+  const filteredYears = allYears.filter(year => year.includes(newVehicle.year));
+  
+  // Filter makes based on input
+  const filteredMakes = CAR_MAKES.filter(make => 
+    make.toLowerCase().includes(newVehicle.make.toLowerCase())
+  );
+  
+  // Get models for selected make
+  const availableModels = newVehicle.make ? (CAR_MODELS[newVehicle.make] || GENERIC_MODELS) : [];
+  const filteredModels = availableModels.filter(model => 
+    model.toLowerCase().includes(newVehicle.model.toLowerCase())
+  );
+
   const handleAddVehicle = () => {
     if (newVehicle.year && newVehicle.make && newVehicle.model) {
       // Add the new vehicle to the additionalVehicles array
@@ -968,46 +990,140 @@ const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true 
             Add Vehicle {totalVehicles + 1}
           </h3>
           
-          {/* Same form fields as Step 1 */}
+          {/* Same form fields as Step 1 with combo inputs */}
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
-              <div>
+              {/* YEAR - Combo Input */}
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Year
                 </label>
                 <input 
-                  type="number" 
+                  type="text"
                   placeholder="2020"
                   value={newVehicle.year}
-                  onChange={(e) => setNewVehicle({...newVehicle, year: e.target.value})}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const value = e.target.value
+                    setNewVehicle({...newVehicle, year: value})
+                  }}
+                  onFocus={() => setShowYearDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowYearDropdown(false), 200)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
                 />
+                
+                {/* Year Dropdown */}
+                {showYearDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {filteredYears.length > 0 ? (
+                      filteredYears.slice(0, 10).map(year => (
+                        <button
+                          key={year}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setNewVehicle({...newVehicle, year})
+                            setShowYearDropdown(false)
+                          }}
+                          className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                        >
+                          {year}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-gray-500">
+                        Custom year: {newVehicle.year}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               
-              <div>
+              {/* MAKE - Combo Input */}
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Make
                 </label>
                 <input 
-                  type="text" 
+                  type="text"
                   placeholder="Toyota"
                   value={newVehicle.make}
-                  onChange={(e) => setNewVehicle({...newVehicle, make: e.target.value})}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const value = e.target.value
+                    setNewVehicle({...newVehicle, make: value, model: ''}) // Reset model
+                  }}
+                  onFocus={() => setShowMakeDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowMakeDropdown(false), 200)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
                 />
+                
+                {/* Make Dropdown */}
+                {showMakeDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {filteredMakes.length > 0 ? (
+                      filteredMakes.map(make => (
+                        <button
+                          key={make}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setNewVehicle({...newVehicle, make, model: ''})
+                            setShowMakeDropdown(false)
+                          }}
+                          className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                        >
+                          {make}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-gray-500">
+                        Custom make: {newVehicle.make}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               
-              <div>
+              {/* MODEL - Combo Input */}
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Model
                 </label>
                 <input 
-                  type="text" 
+                  type="text"
                   placeholder="Camry"
                   value={newVehicle.model}
-                  onChange={(e) => setNewVehicle({...newVehicle, model: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const value = e.target.value
+                    setNewVehicle({...newVehicle, model: value})
+                  }}
+                  onFocus={() => setShowModelDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowModelDropdown(false), 200)}
+                  disabled={!newVehicle.make}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent disabled:bg-gray-100"
                 />
+                
+                {/* Model Dropdown */}
+                {showModelDropdown && newVehicle.make && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {filteredModels.length > 0 ? (
+                      filteredModels.map(model => (
+                        <button
+                          key={model}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setNewVehicle({...newVehicle, model})
+                            setShowModelDropdown(false)
+                          }}
+                          className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                        >
+                          {model}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-gray-500">
+                        Custom model: {newVehicle.model}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
