@@ -58,9 +58,9 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Input Your Vehicle Information</h2>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-sm">
           Tell us about your car so we can provide accurate service recommendations
         </p>
       </div>
@@ -249,15 +249,13 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
 
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Where did you see us?
-        </h2>
-        <p className="text-gray-600">
-          Help us understand how you found Axle (select all that apply)
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Where did you hear from us?</h2>
+        <p className="text-gray-600 text-sm">
+          Help us understand how you found Axle
         </p>
       </div>
-
+      
       <div className="space-y-4 mb-8">
         {sources.map(source => (
           <button
@@ -303,11 +301,9 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
 const PreviousAppsStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Have you used other car service apps?
-        </h2>
-        <p className="text-gray-600">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Have you used other car service apps?</h2>
+        <p className="text-gray-600 text-sm">
           We'd like to understand your experience with similar services
         </p>
       </div>
@@ -350,11 +346,9 @@ const PreviousAppsStep = ({ onNext, updateData, showButton = true }: StepProps &
 const WhyAxleStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Why Axle AI is Better
-        </h2>
-        <p className="text-gray-600">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Why Axle AI is Better</h2>
+        <p className="text-gray-600 text-sm">
           See how Axle AI creates long-term results for car owners
         </p>
       </div>
@@ -405,9 +399,9 @@ const LastServiceStep = ({ onNext, updateData, showButton = true }: StepProps & 
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Last Service Information</h2>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-sm">
           This helps us understand your car's maintenance history
         </p>
       </div>
@@ -491,19 +485,19 @@ const ThankYouStep = ({ onNext, showButton = true }: StepProps & { showButton?: 
 const BenefitsStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Axle AI Benefits</h2>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-sm">
           Discover what makes Axle AI the smart choice for car maintenance
         </p>
       </div>
       
-      <div className="space-y-4 mb-8">
+      <div className="space-y-4 mb-6">
         <div className="flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg">
           <div className="text-2xl">🎯</div>
           <div>
             <h3 className="font-semibold text-gray-900">Predictive Maintenance</h3>
-            <p className="text-gray-600 text-sm md:text-base">AI predict your next service</p>
+            <p className="text-gray-600 text-sm">AI predict your next service</p>
           </div>
         </div>
         
@@ -511,7 +505,7 @@ const BenefitsStep = ({ onNext, showButton = true }: StepProps & { showButton?: 
           <div className="text-2xl">💰</div>
           <div>
             <h3 className="font-semibold text-gray-900">Cost Savings</h3>
-            <p className="text-gray-600">Helps reduce chance of hefty repairs</p>
+            <p className="text-gray-600 text-sm">Reduce chance of hefty repairs</p>
           </div>
         </div>
         
@@ -519,7 +513,7 @@ const BenefitsStep = ({ onNext, showButton = true }: StepProps & { showButton?: 
           <div className="text-2xl">🔧</div>
           <div>
             <h3 className="font-semibold text-gray-900">Established Research</h3>
-            <p className="text-gray-600">AI has your answers right away</p>
+            <p className="text-gray-600 text-sm">AI has your answers right away</p>
           </div>
         </div>
       </div>
@@ -542,9 +536,9 @@ const LocationStep = ({ onNext, updateData, showButton = true }: StepProps & { s
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Where are you located?</h2>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-sm">
           Help us find mechanics and services near you
         </p>
       </div>
@@ -581,9 +575,9 @@ const LocationStep = ({ onNext, updateData, showButton = true }: StepProps & { s
 const NotificationsStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Stay Updated</h2>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-sm">
           Get notified about maintenance reminders and service updates
         </p>
       </div>
@@ -655,10 +649,10 @@ const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true 
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Add Another Vehicle?</h2>
-        <p className="text-gray-600">
-          You have {totalVehicles} vehicle{totalVehicles > 1 ? 's' : ''} in your garage
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Add Another Vehicle</h2>
+        <p className="text-gray-600 text-sm">
+          Do you have additional vehicles you'd like to track?
         </p>
       </div>
 
@@ -849,10 +843,10 @@ const AddVehicleStep = ({ onNext, updateData, onboardingData, showButton = true 
 const MaintenanceStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Maintenance Schedule</h2>
-        <p className="text-gray-600">
-          We'll create a personalized maintenance schedule for your vehicle
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Maintenance Schedule</h2>
+        <p className="text-gray-600 text-sm">
+          We'll create a personalized maintenance plan for your vehicle
         </p>
       </div>
       
@@ -894,10 +888,10 @@ const MaintenanceStep = ({ onNext, showButton = true }: StepProps & { showButton
 const SettingUpStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div className="text-center">
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Setting Up Your Account</h2>
-        <p className="text-gray-600">
-          We're configuring your personalized experience...
+        <p className="text-gray-600 text-sm">
+          We're configuring your personalized experience
         </p>
       </div>
       
@@ -921,10 +915,10 @@ const SettingUpStep = ({ onNext, showButton = true }: StepProps & { showButton?:
 const PlanReadyStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Plan is Ready!</h2>
-        <p className="text-gray-600">
-          Based on your vehicle information, here's your personalized maintenance plan
+        <p className="text-gray-600 text-sm">
+          We've created a personalized maintenance plan for your vehicle
         </p>
       </div>
       
@@ -1002,9 +996,9 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Phone Number</h2>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-sm">
           Add your phone number for appointment notifications
         </p>
       </div>
@@ -1051,9 +1045,9 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
 const FreeTrialStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Start Your Free Trial</h2>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-sm">
           Try Axle Premium free for 30 days
         </p>
       </div>
@@ -1104,9 +1098,9 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Plan</h2>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-sm">
           Select the plan that best fits your needs
         </p>
       </div>
@@ -1142,10 +1136,10 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
 const LimitedOfferStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
     <div className="text-center">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Limited Time Offer!</h2>
-        <p className="text-gray-600">
-          Get 50% off your first 3 months of Premium
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Limited Time Offer</h2>
+        <p className="text-gray-600 text-sm">
+          Don't miss out on this exclusive deal
         </p>
       </div>
       
