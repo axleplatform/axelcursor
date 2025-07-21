@@ -712,6 +712,7 @@ const ThankYouStep = ({ onNext, showButton = true }: StepProps & { showButton?: 
   return (
     <div className="text-center">
       <div className="mb-8">
+        <div className="text-4xl mb-4">🤝</div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h2>
         <p className="text-gray-600">
           We're excited to help you take better care of your vehicle.
@@ -1776,7 +1777,7 @@ const ONBOARDING_STEPS = [
   { id: 3, title: "Previous Apps", component: PreviousAppsStep },
   { id: 4, title: "Why Axle is Better", component: WhyAxleStep },
   { id: 5, title: "Last Service", component: LastServiceStep },
-  { id: 6, title: "Thank You", component: ThankYouStep },
+  { id: 6, title: "Thank you for trusting us", component: ThankYouStep },
   { id: 7, title: "Axle AI Benefits", component: BenefitsStep },
   { id: 8, title: "Location", component: LocationStep },
   { id: 9, title: "Notifications", component: NotificationsStep },
