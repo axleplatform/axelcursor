@@ -980,7 +980,7 @@ const LimitedOfferStep = ({ onNext, showButton = true }: StepProps & { showButto
   )
 }
 
-const SuccessStep = ({ onNext, showButton = true, skippedSteps = [] }: StepProps & { showButton?: boolean; skippedSteps?: number[] }) => {
+const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingData }: StepProps & { showButton?: boolean; skippedSteps?: number[] }) => {
   const [showSkippedSteps, setShowSkippedSteps] = useState(false)
   const [currentSkippedStep, setCurrentSkippedStep] = useState<number | null>(null)
 
@@ -1017,7 +1017,7 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [] }: StepProps
           <StepComponent 
             onNext={handleSkippedStepComplete}
             updateData={() => {}}
-            onboardingData={{}}
+            onboardingData={onboardingData}
             setSkippedSteps={() => {}}
             showButton={true}
           />
