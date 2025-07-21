@@ -162,7 +162,7 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
       </div>
       
       <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {/* YEAR - Combo Input */}
           <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-2">
