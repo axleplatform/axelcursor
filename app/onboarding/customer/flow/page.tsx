@@ -1350,19 +1350,14 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps
         isOnboarding={true}
         onboardingData={onboardingData}
         onSuccess={(userId: string) => {
-          updateData({ userId });
-          onNext();
+          if (userId === 'skipped') {
+            handleSkip();
+          } else {
+            updateData({ userId });
+            onNext();
+          }
         }}
       />
-      {/* Skip button */}
-      <div className="mt-4 text-center">
-        <button
-          onClick={handleSkip}
-          className="text-gray-500 hover:text-gray-700 underline text-sm"
-        >
-          Would like to sign in later? Skip
-        </button>
-      </div>
     </div>
   );
 };
