@@ -742,7 +742,7 @@ const PlanReadyStep = ({ onNext }: StepProps) => {
 const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps }: StepProps) => {
   const handleSkip = () => {
     if (setSkippedSteps) {
-      setSkippedSteps(prev => [...prev, 14])
+      setSkippedSteps((prev: number[]) => [...prev, 14])
     }
     onNext()
   }
@@ -777,7 +777,7 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps }: StepProps) => 
 
   const handleSkip = () => {
     if (setSkippedSteps) {
-      setSkippedSteps(prev => [...prev, 15])
+      setSkippedSteps((prev: number[]) => [...prev, 15])
     }
     onNext()
   }
