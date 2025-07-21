@@ -152,12 +152,12 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
 }
 
 const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
-  const [selectedSources, setSelectedSources] = useState<string[]>([])
-  
+  const [selected, setSelected] = useState<string[]>([])
+
   const sources = [
     { 
       name: 'Google Search', 
-      logo: (
+      icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -168,22 +168,17 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
     },
     { 
       name: 'App Store', 
-      logo: (
-        <svg className="w-6 h-6" viewBox="0 0 256 256">
-          <defs>
-            <linearGradient id="appStoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#00C6FF"/>
-              <stop offset="100%" stopColor="#0072FF"/>
-            </linearGradient>
-          </defs>
-          <rect width="256" height="256" rx="60" fill="url(#appStoreGradient)"/>
-          <path fill="white" d="M130.7 166.5l20.8-36c1.5-2.6 4.8-3.5 7.4-2s3.5 4.8 2 7.4c-.1.2-.2.3-.3.5l-16.3 28.2h44.5c3 0 5.4 2.4 5.4 5.4s-2.4 5.4-5.4 5.4h-57c-.5 0-1-.1-1.5-.2-.2 0-.3-.1-.5-.1-2.4-.8-3.8-3.2-3.5-5.7.1-1.1.5-2.1 1.2-2.9h.2zm-35.6-57.7c.4 0 .9.1 1.3.2 2.7.8 4.3 3.6 3.5 6.3-.2.6-.5 1.2-.9 1.7L53.8 195h26.6l11.3-19.5c1.5-2.6 4.8-3.5 7.4-2s3.5 4.8 2 7.4l-.3.5-6.8 11.7c-.5.8-.7 1.8-.7 2.7 0 3 2.4 5.4 5.4 5.4s5.4-2.4 5.4-5.4v-.2l49.7-86c1.5-2.6 4.8-3.5 7.4-2s3.5 4.8 2 7.4l-.3.5-29 50.2c-.8 1.3-.8 2.9-.2 4.3h14l26.2-45.4c1.5-2.6 4.8-3.5 7.4-2 2.6 1.5 3.5 4.8 2 7.4-.1.2-.2.3-.3.5l-30.6 53c-.8 1.4-2.3 2.3-3.9 2.3H41.8c-3.8 0-6.5-3.8-5.2-7.4l50.6-87.5c.8-1.4 2.3-2.2 3.9-2.2zm42.8-32.4c2.6-1.5 5.9-.6 7.4 2s.6 5.9-2 7.4l-.5.3-18 10.4c-2.6 1.5-5.9.6-7.4-2s-.6-5.9 2-7.4c.1-.1.3-.2.4-.3l18.1-10.4z"/>
-        </svg>
+      icon: (
+        <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center">
+          <svg className="w-4 h-4" viewBox="0 0 14 17" fill="white">
+            <path d="M11.73 8.05c-.01-1.84 1.5-2.73 1.57-2.77-.86-1.25-2.19-1.42-2.66-1.44-1.13-.12-2.21.67-2.78.67-.58 0-1.47-.65-2.41-.64-1.24.02-2.39.73-3.03 1.85-1.29 2.24-.33 5.56.93 7.38.62.89 1.35 1.89 2.32 1.85.93-.04 1.28-.6 2.41-.6s1.44.6 2.42.58c1-.02 1.64-.91 2.25-1.8.71-1.04 1-2.04 1.01-2.09-.02-.01-1.94-.75-1.96-2.96l-.07-.13zm-1.84-5.45c.51-.62.86-1.48.76-2.34-.74.03-1.63.49-2.16 1.11-.47.55-.89 1.43-.78 2.27.82.07 1.66-.42 2.18-1.04z"/>
+          </svg>
+        </div>
       )
     },
     { 
       name: 'Friend/Family', 
-      logo: (
+      icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="#6B7280">
           <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
         </svg>
@@ -191,36 +186,38 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
     },
     { 
       name: 'Instagram', 
-      logo: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24">
-          <defs>
-            <radialGradient id="igGradient" cx="30%" cy="107%">
-              <stop offset="0%" stopColor="#FED576"/>
-              <stop offset="26%" stopColor="#F47133"/>
-              <stop offset="61%" stopColor="#BC3081"/>
-              <stop offset="100%" stopColor="#4C63D2"/>
-            </radialGradient>
-          </defs>
-          <rect width="24" height="24" rx="6" fill="url(#igGradient)"/>
-          <path fill="white" d="M12 7.8c1.4 0 1.6 0 2.1.1.5 0 .8.1 1 .2.2.1.4.2.6.4.2.2.3.4.4.6.1.2.2.5.2 1 0 .5.1.7.1 2.1s0 1.6-.1 2.1c0 .5-.1.8-.2 1-.1.2-.2.4-.4.6-.2.2-.4.3-.6.4-.2.1-.5.2-1 .2-.5 0-.7.1-2.1.1s-1.6 0-2.1-.1c-.5 0-.8-.1-1-.2-.2-.1-.4-.2-.6-.4-.2-.2-.3-.4-.4-.6-.1-.2-.2-.5-.2-1 0-.5-.1-.7-.1-2.1s0-1.6.1-2.1c0-.5.1-.8.2-1 .1-.2.2-.4.4-.6.2-.2.4-.3.6-.4.2-.1.5-.2 1-.2.5 0 .7-.1 2.1-.1zm0-1c-1.4 0-1.6 0-2.2.1-.6 0-1 .1-1.4.3-.4.1-.7.3-1 .6-.3.3-.5.6-.6 1-.1.4-.2.8-.3 1.4 0 .6-.1.8-.1 2.2s0 1.6.1 2.2c0 .6.1 1 .3 1.4.1.4.3.7.6 1 .3.3.6.5 1 .6.4.1.8.2 1.4.3.6 0 .8.1 2.2.1s1.6 0 2.2-.1c.6 0 1-.1 1.4-.3.4-.1.7-.3 1-.6.3-.3.5-.6.6-1 .1-.4.2-.8.3-1.4 0-.6.1-.8.1-2.2s0-1.6-.1-2.2c0-.6-.1-1-.3-1.4-.1-.4-.3-.7-.6-1-.3-.3-.6-.5-1-.6-.4-.1-.8-.2-1.4-.3-.6 0-.8-.1-2.2-.1z"/>
-          <path fill="white" d="M12 9.2c-1.6 0-2.8 1.3-2.8 2.8s1.3 2.8 2.8 2.8 2.8-1.3 2.8-2.8-1.2-2.8-2.8-2.8zm0 4.6c-1 0-1.8-.8-1.8-1.8s.8-1.8 1.8-1.8 1.8.8 1.8 1.8-.8 1.8-1.8 1.8z"/>
-          <circle fill="white" cx="15" cy="9" r="0.6"/>
-        </svg>
+      icon: (
+        <div className="w-6 h-6">
+          <svg viewBox="0 0 24 24">
+            <defs>
+              <linearGradient id="igGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#FED576"/>
+                <stop offset="25%" stopColor="#F47133"/>
+                <stop offset="50%" stopColor="#BC3081"/>
+                <stop offset="100%" stopColor="#4C63D2"/>
+              </linearGradient>
+            </defs>
+            <rect width="24" height="24" rx="6" fill="url(#igGradient)"/>
+            <rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="white" strokeWidth="1.5"/>
+            <circle cx="12" cy="12" r="4.5" fill="none" stroke="white" strokeWidth="1.5"/>
+            <circle cx="18" cy="6" r="1.5" fill="white"/>
+          </svg>
+        </div>
       )
     },
     { 
       name: 'TikTok', 
-      logo: (
-        <svg className="w-6 h-6" viewBox="0 0 24 24">
-          <rect width="24" height="24" rx="6" fill="#000000"/>
-          <path fill="#FF004F" d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
-          <path fill="white" d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" opacity="0"/>
-        </svg>
+      icon: (
+        <div className="w-6 h-6 bg-black rounded-md flex items-center justify-center">
+          <svg className="w-4 h-4" viewBox="0 0 20 24" fill="white">
+            <path d="M17.24 0H13.03v16.28c0 1.94-1.57 3.52-3.5 3.52-1.93 0-3.5-1.58-3.5-3.52 0-1.89 1.49-3.43 3.35-3.51V8.52C5.38 8.6 2 11.72 2 15.76c0 4.1 3.49 7.43 7.78 7.43s7.78-3.33 7.78-7.43V7.93c1.57 1.12 3.47 1.78 5.54 1.83V5.51c-3.42-.13-5.86-2.85-5.86-5.51z"/>
+          </svg>
+        </div>
       )
     },
     { 
       name: 'YouTube', 
-      logo: (
+      icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24">
           <path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
         </svg>
@@ -228,7 +225,7 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
     },
     { 
       name: 'TV', 
-      logo: (
+      icon: (
         <svg className="w-6 h-6" fill="#4B5563" viewBox="0 0 24 24">
           <path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/>
         </svg>
@@ -236,7 +233,7 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
     },
     { 
       name: 'Facebook', 
-      logo: (
+      icon: (
         <svg className="w-6 h-6" viewBox="0 0 24 24">
           <path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
         </svg>
@@ -244,77 +241,72 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
     },
     { 
       name: 'Other', 
-      logo: (
+      icon: (
         <svg className="w-6 h-6" fill="#9CA3AF" viewBox="0 0 24 24">
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
         </svg>
       )
     }
-  ]
-
-  const toggleSource = (source: string) => {
-    setSelectedSources(prev => 
-      prev.includes(source) 
-        ? prev.filter(s => s !== source)
-        : [...prev, source]
-    )
-  }
-
-  const handleContinue = () => {
-    updateData({ referralSource: selectedSources.join(', ') })
-    onNext()
-  }
+  ];
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Where'd you find us?</h2>
-        <p className="text-gray-600 text-sm">
-          Help us understand how you found Axle
-        </p>
-      </div>
-      
-      <div className="space-y-4 mb-8">
-        {sources.map(source => (
-          <button
-            key={source.name}
-            onClick={() => toggleSource(source.name)}
-            className={`w-full p-4 text-left border-2 rounded-lg transition-all group flex items-center justify-between ${
-              selectedSources.includes(source.name)
-                ? 'border-[#294a46] bg-[#e6eeec]'
-                : 'border-gray-200 hover:border-[#294a46] hover:bg-[#e6eeec]'
-            }`}
-          >
-            <div className="flex items-center gap-4">
-              <span className="text-2xl">{source.logo}</span>
-              <h3 className={`font-medium group-hover:text-[#294a46] ${
-                selectedSources.includes(source.name) ? 'text-[#294a46]' : 'text-gray-900'
-              }`}>
-                {source.name}
-              </h3>
-            </div>
-            {selectedSources.includes(source.name) && (
-              <div className="w-5 h-5 bg-[#294a46] rounded-full flex items-center justify-center">
-                <span className="text-white text-xs">✓</span>
-              </div>
-            )}
-          </button>
-        ))}
+    <div className="flex flex-col h-full">
+      {/* Fixed Header */}
+      <div className="mb-4">
+        <h2 className="text-2xl font-bold text-gray-900 mb-1">Where did you hear from us?</h2>
+        <p className="text-sm text-gray-600">Select all that apply</p>
       </div>
 
-      {/* Only show button if showButton is true (desktop) */}
-      {showButton && (
-        <button 
-          onClick={handleContinue}
-          disabled={selectedSources.length === 0}
-          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Continue
-        </button>
-      )}
+      {/* Scrollable Options Container */}
+      <div className="flex-1 overflow-y-auto -mx-4 px-4 mb-6" style={{ maxHeight: '400px' }}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {sources.map((source) => (
+            <button
+              key={source.name}
+              onClick={() => {
+                setSelected(prev => 
+                  prev.includes(source.name) 
+                    ? prev.filter(s => s !== source.name)
+                    : [...prev, source.name]
+                );
+              }}
+              className={`relative p-4 rounded-lg border-2 transition-all ${
+                selected.includes(source.name)
+                  ? 'border-[#294a46] bg-[#e6eeec]'
+                  : 'border-gray-200 hover:border-gray-300 bg-white'
+              }`}
+            >
+              {selected.includes(source.name) && (
+                <div className="absolute top-2 right-2">
+                  <svg className="w-5 h-5 text-[#294a46]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              )}
+              
+              <div className="flex flex-col items-center gap-2">
+                {source.icon}
+                <span className="text-xs font-medium text-gray-700">{source.name}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Fixed Continue Button */}
+      <button
+        onClick={() => {
+          updateData({ referralSource: selected.join(', ') });
+          onNext();
+        }}
+        disabled={selected.length === 0}
+        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:bg-gray-300"
+      >
+        Continue
+      </button>
     </div>
-  )
-}
+  );
+};
 
 const PreviousAppsStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
