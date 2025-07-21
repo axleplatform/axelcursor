@@ -487,20 +487,27 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
               </div>
             </button>
           ))}
+          
+          {/* Continue Button - Inline with other options */}
+          <button
+            onClick={() => {
+              updateData({ referralSource: selected.join(', ') });
+              onNext();
+            }}
+            disabled={selected.length === 0}
+            className={`relative p-4 rounded-lg border-2 transition-all ${
+              selected.length > 0
+                ? 'border-[#294a46] bg-[#294a46] text-white hover:bg-[#1e3632]'
+                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-2xl">➡️</span>
+              <span className="text-xs font-medium">Continue</span>
+            </div>
+          </button>
         </div>
       </div>
-
-      {/* Fixed Continue Button */}
-      <button
-        onClick={() => {
-          updateData({ referralSource: selected.join(', ') });
-          onNext();
-        }}
-        disabled={selected.length === 0}
-        className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:bg-gray-300"
-      >
-        Continue
-      </button>
     </div>
   );
 };
