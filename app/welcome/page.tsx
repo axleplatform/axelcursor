@@ -109,7 +109,7 @@ export default function WelcomePage() {
                   Optimize your vehicle with Axle AI
                 </p>
                 
-                <Link href="/signup">
+                <Link href="/onboarding/customer/flow">
                   <Button 
                     size="lg" 
                     className="w-full bg-[#294a46] hover:bg-[#1a2f2c] text-white font-semibold"
