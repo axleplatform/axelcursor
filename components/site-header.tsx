@@ -274,7 +274,7 @@ export function SiteHeader() {
         {/* Logo */}
         <div className="flex items-center">
           <button 
-            onClick={() => router.push('/')} 
+            onClick={() => router.push('/order-service')} 
             className="flex items-center hover:opacity-80 transition-opacity"
           >
             <Image

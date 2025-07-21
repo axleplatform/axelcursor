@@ -61,7 +61,7 @@ export default function WelcomePage() {
                 <Button 
                   size="lg" 
                   className="w-full bg-[#294a46] hover:bg-[#1a2f2c] text-white font-semibold"
-                  onClick={() => router.push('/')}
+                  onClick={() => router.push('/order-service')}
                 >
                   Book an Appointment
                 </Button>

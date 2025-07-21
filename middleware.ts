@@ -41,10 +41,10 @@ export async function middleware(request: NextRequest) {
       }
     )
 
-    // Handle root path - allow access to main landing page
+    // Handle root path - redirect to welcome page
     if (request.nextUrl.pathname === '/') {
-      console.log("✅ Allowing access to main landing page")
-      return response
+      console.log("🔄 Redirecting root to welcome page")
+      return NextResponse.redirect(new URL('/welcome', request.url))
     }
 
     // Handle welcome page - allow ALL users to access
@@ -126,6 +126,7 @@ export const config = {
   matcher: [
     "/",
     "/welcome",
+    "/order-service",
     "/mechanic/:path*",
     "/onboarding-mechanic-:path*"
   ]
