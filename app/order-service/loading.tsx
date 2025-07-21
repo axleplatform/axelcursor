@@ -7,4 +7,4 @@ export default function OrderServiceLoading() {
       </div>
     </div>
   );
-} 
+}
