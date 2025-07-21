@@ -1389,7 +1389,7 @@ export default function CustomerOnboarding() {
       <SiteHeader />
       <div className="container mx-auto px-4 py-4 max-w-4xl">
         {/* Progress Bar */}
-        <div className="mb-4">
+        <div className={currentStep === 14 ? "mb-2" : "mb-4"}>
           <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
