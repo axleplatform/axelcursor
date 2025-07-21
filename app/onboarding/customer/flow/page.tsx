@@ -494,16 +494,10 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
               updateData({ referralSource: selected.join(', ') });
               onNext();
             }}
-            disabled={selected.length === 0}
-            className={`relative p-4 rounded-lg border-2 transition-all ${
-              selected.length > 0
-                ? 'border-[#294a46] bg-[#294a46] text-white hover:bg-[#1e3632]'
-                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
+            className="relative p-4 rounded-lg border-2 border-[#294a46] bg-[#294a46] text-white hover:bg-[#1e3632] transition-all"
           >
             <div className="flex flex-col items-center gap-2">
-              <span className="text-2xl">➡️</span>
-              <span className="text-xs font-medium">Continue</span>
+              <span className="font-medium">Continue</span>
             </div>
           </button>
         </div>
