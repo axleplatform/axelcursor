@@ -60,12 +60,14 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
     <div>
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Input Your Vehicle Information</h2>
-        <p className="text-sm text-gray-600 leading-tight">Tell us about your car so we can provide accurate service recommendations</p>
+        <p className="text-gray-600">
+          Tell us about your car so we can provide accurate service recommendations
+        </p>
       </div>
       
       <div className="space-y-4">
         {/* Row 1: Year, Make, Model */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
             <input 
@@ -99,7 +101,7 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
         </div>
 
         {/* Row 2: Mileage, License Plate */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Mileage</label>
             <input 
