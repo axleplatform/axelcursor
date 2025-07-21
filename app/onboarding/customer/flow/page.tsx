@@ -58,7 +58,7 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-4">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Input Your Vehicle Information</h2>
         <p className="text-gray-600 text-sm">
           Tell us about your car so we can provide accurate service recommendations
@@ -67,7 +67,7 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
       
       <div className="space-y-4">
         {/* Row 1: Year, Make, Model */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
             <input 
@@ -101,7 +101,7 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
         </div>
 
         {/* Row 2: Mileage, License Plate */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Mileage</label>
             <input 
@@ -137,18 +137,16 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
         </div>
       </div>
 
-      {/* Only show button if showButton is true (desktop) */}
-      {showButton && (
-        <button 
-          onClick={() => {
-            updateData({ vehicle })
-            onNext()
-          }}
-          className="mt-8 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-        >
-          Continue
-        </button>
-      )}
+      {/* Button matching book appointment */}
+      <button 
+        onClick={() => {
+          updateData({ vehicle })
+          onNext()
+        }}
+        className="mt-6 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+      >
+        Continue
+      </button>
     </div>
   )
 }
@@ -250,7 +248,7 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Where did you hear from us?</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Where'd you find us?</h2>
         <p className="text-gray-600 text-sm">
           Help us understand how you found Axle
         </p>
