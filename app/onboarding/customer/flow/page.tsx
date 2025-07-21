@@ -552,47 +552,88 @@ const PreviousAppsStep = ({ onNext, updateData, showButton = true }: StepProps &
 }
 
 const WhyAxleStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  // Animation effect
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 5; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
+
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Why Axle AI is Better</h2>
+      <div className={`mb-6 transition-all duration-500 ${
+        visibleItems >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      }`}>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">What you'll get with Axle</h2>
         <p className="text-gray-600 text-sm">
-          See how Axle AI creates long-term results for car owners
+          Here's what you can expect as a car owner on our platform
         </p>
       </div>
       
-      {/* Visual comparison cards like book appointment */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-red-50 border-2 border-red-200 rounded-lg p-6">
-          <div className="text-red-600 text-3xl mb-3">📉</div>
-          <h3 className="font-semibold text-red-900 mb-2">Without Axle</h3>
-          <p className="text-red-700">Higher maintenance costs</p>
-          <div className="text-2xl font-bold text-red-600 mt-4">$$$</div>
+      {/* Checkmarks Section */}
+      <div className="space-y-6 mb-8">
+        {/* First Checkmark */}
+        <div className={`flex items-center gap-3 transition-all duration-500 ${
+          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
+            <svg className="w-5 h-5 text-[#294a46]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <span className="text-lg font-medium text-gray-800">Quicker Appointment Booking</span>
         </div>
-        
-        <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
-          <div className="text-green-600 text-3xl mb-3">📈</div>
-          <h3 className="font-semibold text-green-900 mb-2">With Axle</h3>
-          <p className="text-green-700">Lower maintenance costs</p>
-          <div className="text-2xl font-bold text-green-600 mt-4">$</div>
+
+        {/* Second Checkmark */}
+        <div className={`flex items-center gap-3 transition-all duration-500 delay-100 ${
+          visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
+            <svg className="w-5 h-5 text-[#294a46]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <span className="text-lg font-medium text-gray-800">Visualize various live quotes</span>
+        </div>
+
+        {/* Third Checkmark */}
+        <div className={`flex items-center gap-3 transition-all duration-500 delay-200 ${
+          visibleItems >= 4 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
+            <svg className="w-5 h-5 text-[#294a46]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <span className="text-lg font-medium text-gray-800">Multiple Mechanic Options</span>
         </div>
       </div>
 
-      {/* Info card */}
-      <div className="bg-[#e6eeec] border-2 border-[#294a46] rounded-lg p-6 mb-8">
-        <p className="text-lg font-semibold text-[#294a46]">
-          Over 87% of people save money when tracking car health
-        </p>
+      {/* User Satisfaction Message */}
+      <div className={`text-center py-4 border-t border-gray-100 transition-all duration-500 ${
+        visibleItems >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      }`}>
+        <p className="text-sm text-gray-500">Over 80% of our users have avoided major issues</p>
       </div>
 
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
-        <button 
-          onClick={onNext}
-          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-        >
-          Continue
-        </button>
+        <div className={`transition-all duration-500 ${
+          visibleItems >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}>
+          <button 
+            onClick={onNext}
+            className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+          >
+            Continue
+          </button>
+        </div>
       )}
     </div>
   )
