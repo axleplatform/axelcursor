@@ -1297,17 +1297,20 @@ export default function CustomerOnboarding() {
         return (
           <>
             <div className="text-center mb-2">
-              <button
-                onClick={() => {
-                  if (setSkippedSteps) {
-                    setSkippedSteps((prev: number[]) => [...prev, 14])
-                  }
-                  nextStep()
-                }}
-                className="text-gray-500 hover:text-gray-700 underline text-sm"
-              >
-                Skip for now
-              </button>
+              <span className="text-gray-500 text-sm">
+                Would like to sign in later?{' '}
+                <button
+                  onClick={() => {
+                    if (setSkippedSteps) {
+                      setSkippedSteps((prev: number[]) => [...prev, 14])
+                    }
+                    nextStep()
+                  }}
+                  className="italic underline hover:text-gray-700"
+                >
+                  Skip
+                </button>
+              </span>
             </div>
           </>
         );
