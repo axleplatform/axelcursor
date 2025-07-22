@@ -1576,11 +1576,22 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                     <div className="space-y-3">
                       {plan.features.map((feature, index) => (
                         <div key={index} className="flex items-start space-x-3">
-                          <div className="text-lg">{feature.icon}</div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900 text-xs">{feature.title}</h4>
-                            <p className="text-gray-600 text-xs">{feature.description}</p>
-                          </div>
+                          {typeof feature === 'string' ? (
+                            // If feature is a string, show it as simple text
+                            <div className="flex items-center space-x-2">
+                              <span className="text-green-500">✓</span>
+                              <span className="text-gray-700 text-sm">{feature}</span>
+                            </div>
+                          ) : (
+                            // If feature is an object, show with icon
+                            <>
+                              <div className="text-lg">{feature.icon}</div>
+                              <div>
+                                <h4 className="font-semibold text-gray-900 text-xs">{feature.title}</h4>
+                                <p className="text-gray-600 text-xs">{feature.description}</p>
+                              </div>
+                            </>
+                          )}
                         </div>
                       ))}
                     </div>
