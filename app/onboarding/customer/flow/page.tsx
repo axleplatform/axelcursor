@@ -1502,7 +1502,7 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps
   }
 
   return (
-    <div className="-mt-24">
+    <div className="-mt-8 md:-mt-32">
       <CustomerSignupForm 
         isOnboarding={true}
         onboardingData={onboardingData}
@@ -1714,7 +1714,7 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                           // Render object features with icon, title
                           return (
                             <div key={index} className="flex items-center">
-                              <div className="text-lg mr-3">{feature.icon}</div>
+                              <div className="text-lg mr-2">{feature.icon}</div>
                               <span className="text-sm font-medium text-gray-900">{feature.title}</span>
                             </div>
                           );
