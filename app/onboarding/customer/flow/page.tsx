@@ -1523,7 +1523,11 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
       id: 'monthly', 
       name: 'Monthly', 
       price: '$8 /mo',
-      features: ['Advanced AI', 'Priority support', 'Unlimited tracking']
+      features: [
+        { icon: '🎯', title: 'Predictive Maintenance', description: 'AI predicts your next service' },
+        { icon: '💰', title: 'Cost Savings', description: 'Reduce chance of hefty repairs' },
+        { icon: '🔧', title: 'Established Research', description: 'AI has your answers right away' }
+      ]
     },
     { 
       id: 'yearly', 
@@ -1544,38 +1548,84 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
       
       <div className="grid grid-cols-2 gap-4 mb-8">
         {plans.map(plan => (
-          <button
-            key={plan.id}
-            onClick={() => setSelectedPlan(plan.id)}
-            className={`w-full p-6 text-left border-2 rounded-lg transition-all group ${
-              selectedPlan === plan.id 
-                ? 'border-[#294a46] bg-[#e6eeec]' 
-                : 'border-gray-200 hover:border-[#294a46] hover:bg-[#e6eeec]'
-            }`}
-          >
-            <div className="flex flex-col h-full">
-              <div className="mb-4">
-                <h3 className={`font-semibold text-lg ${
-                  selectedPlan === plan.id ? 'text-[#294a46]' : 'text-gray-900 group-hover:text-[#294a46]'
-                }`}>{plan.name}</h3>
-                <p className="text-gray-600 text-xl font-medium">{plan.price}</p>
+          <div key={plan.id} className="relative">
+            {plan.id === 'yearly' && selectedPlan === 'yearly' && (
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                <div className="bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md">
+                  3 days FREE
+                </div>
               </div>
-              <div className="flex-1">
-                {plan.features.map(feature => (
-                  <div key={feature} className="text-sm text-gray-600 mb-1">• {feature}</div>
-                ))}
+            )}
+            <button
+              onClick={() => setSelectedPlan(plan.id)}
+              className={`w-full p-6 text-left border-2 rounded-lg transition-all group ${
+                selectedPlan === plan.id 
+                  ? 'border-[#294a46] bg-[#e6eeec]' 
+                  : 'border-gray-200 hover:border-[#294a46] hover:bg-[#e6eeec]'
+              }`}
+            >
+              <div className="flex flex-col h-full">
+                <div className="mb-4">
+                  <h3 className={`font-semibold text-lg ${
+                    selectedPlan === plan.id ? 'text-[#294a46]' : 'text-gray-900 group-hover:text-[#294a46]'
+                  }`}>{plan.name}</h3>
+                  <p className="text-gray-600 text-xl font-medium">{plan.price}</p>
+                </div>
+                <div className="flex-1">
+                  {plan.id === 'monthly' ? (
+                    <div className="space-y-3">
+                      {plan.features.map((feature, index) => (
+                        <div key={index} className="flex items-start space-x-3">
+                          <div className="text-lg">{feature.icon}</div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900 text-xs">{feature.title}</h4>
+                            <p className="text-gray-600 text-xs">{feature.description}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    plan.features.map(feature => (
+                      <div key={feature} className="text-sm text-gray-600 mb-1">• {feature}</div>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          </button>
+            </button>
+          </div>
         ))}
       </div>
+
+      {/* Yearly plan timeline */}
+      {selectedPlan === 'yearly' && (
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="space-y-3">
+            <div className="flex items-center">
+              <span className="mr-3 text-green-500 text-xl">✓</span>
+              <span className="text-sm font-medium text-gray-900">Today: Unlock AI Features. Save 48%</span>
+            </div>
+            <div className="flex items-center">
+              <span className="mr-3 text-green-500 text-xl">✓</span>
+              <span className="text-sm text-gray-600">In 2 Days - End of Trial Reminder</span>
+            </div>
+            <div className="flex items-center">
+              <span className="mr-3 text-green-500 text-xl">✓</span>
+              <span className="text-sm text-gray-600">3rd Day: Billing Starts. Ends Next Year!</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
         <div>
-          <div className="flex items-center mb-4">
-            <span className="mr-2 text-green-600 text-xl">✓</span>
-            <span className="text-gray-700">No payment due now</span>
+          <div className="text-center mb-4">
+            <div className="flex items-center justify-center">
+              <span className="mr-2 text-green-600 text-xl">✓</span>
+              <span className="text-gray-700 text-sm">
+                {selectedPlan === 'monthly' ? 'No Commitment - Cancel Anytime' : 'No payment due now'}
+              </span>
+            </div>
           </div>
           
           <button 
@@ -1585,10 +1635,10 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
             }}
             className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium mb-2"
           >
-            Start my 3 day free trial
+            {selectedPlan === 'monthly' ? 'Start Car Health' : 'Start my 3 day free trial'}
           </button>
           <p className="text-center text-gray-500 text-sm">
-            3 days free, then $49.94 per year (~$4.16/mo)
+            {selectedPlan === 'monthly' ? '$8 per month' : '3 days free, then $49.94 per year (~$4.16/mo)'}
           </p>
         </div>
       )}
