@@ -1520,9 +1520,9 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
       name: 'Monthly', 
       price: '$8 /mo',
       features: [
-        { icon: '🎯', title: 'Predictive Maintenance', description: 'AI predicts your next service' },
-        { icon: '💰', title: 'Cost Savings', description: 'Reduce chance of hefty repairs' },
-        { icon: '🔧', title: 'Established Research', description: 'AI has your answers right away' }
+        { icon: '🎯', title: 'Predictive Maintenance' },
+        { icon: '💰', title: 'Cost Savings' },
+        { icon: '🔧', title: 'Established Research' }
       ]
     },
     { 
@@ -2154,7 +2154,7 @@ export default function CustomerOnboarding() {
       <SiteHeader />
       <div className="container mx-auto px-4 py-4 max-w-4xl">
         {/* Progress Bar */}
-        <div className={currentStep === 14 ? "-mb-6" : "mb-4"}>
+        <div className={currentStep === 14 ? "-mb-10" : "mb-4"}>
           <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
