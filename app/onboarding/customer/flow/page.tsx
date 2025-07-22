@@ -1557,7 +1557,7 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
               className={`w-full p-4 text-left border-2 rounded-lg transition-all group ${
                 selectedPlan === plan.id 
                   ? 'border-[#294a46] bg-[#e6eeec]' 
-                  : 'border-gray-200 hover:border-[#294a46] hover:bg-[#e6eeec]'
+                  : 'border-gray-200 md:hover:border-[#294a46] md:hover:bg-[#e6eeec]'
               }`}
             >
                           <div className="flex flex-col h-full">
@@ -1568,24 +1568,15 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
               </div>
               <div className="flex-1 mb-4">
                   {plan.id === 'monthly' ? (
-                    <div className="space-y-3 pl-2">
+                    <div className="space-y-3">
                       {plan.features.map((feature, index) => (
-                        <div key={index} className="flex items-start space-x-3">
-                          {typeof feature === 'string' ? (
-                            // If feature is a string, show it as simple text
-                            <div className="flex items-center space-x-2">
-                              <span className="text-green-500">✓</span>
-                              <span className="text-gray-700 text-sm">{feature}</span>
-                            </div>
-                          ) : (
-                            // If feature is an object, show with icon
-                            <>
-                              <div className="text-lg">{feature.icon}</div>
-                              <div>
-                                <h4 className="font-semibold text-gray-900 text-xs">{feature.title}</h4>
-                              </div>
-                            </>
-                          )}
+                        <div key={index} className="flex items-center">
+                          <div className="text-lg mr-3">
+                            {feature.icon}
+                          </div>
+                          <span className="text-sm font-medium text-gray-900">
+                            {feature.title}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -1606,7 +1597,7 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                         </div>
                         <span className="text-sm text-gray-600">
                           <span className="hidden md:inline">In 2 Days - End of Trial Reminder</span>
-                          <span className="md:hidden">In 2 days reminder</span>
+                          <span className="md:hidden">In 2 days Reminder</span>
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -2148,7 +2139,7 @@ export default function CustomerOnboarding() {
       <SiteHeader />
       <div className="container mx-auto px-4 py-4 max-w-4xl">
         {/* Progress Bar */}
-        <div className={currentStep === 14 ? "-mb-2" : "mb-4"}>
+        <div className={currentStep === 14 ? "-mb-6" : "mb-4"}>
           <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
