@@ -1542,7 +1542,7 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
         </p>
       </div>
       
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-2 gap-4 mb-4">
         {plans.map(plan => (
           <div key={plan.id} className="relative">
             {plan.id === 'yearly' && (
@@ -2150,9 +2150,9 @@ export default function CustomerOnboarding() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <SiteHeader />
-      <div className={`container mx-auto px-4 max-w-3xl ${currentStep === 14 ? 'py-2' : 'py-4'}`}>
+      <div className={`container mx-auto px-4 max-w-md ${currentStep === 14 ? 'py-2' : 'py-4'}`}>
         {/* Progress Bar */}
-        <div className={currentStep === 14 ? "-mb-10" : "mb-4"}>
+        <div className={`${currentStep === 14 ? "-mb-10" : "mb-4"} relative z-40`}>
           <div className="flex items-center gap-4">
             <button
               onClick={(e) => {
@@ -2160,7 +2160,7 @@ export default function CustomerOnboarding() {
                 e.preventDefault();
                 handleBack();
               }}
-              className="flex items-center px-3 py-2 rounded-lg transition-colors text-[#294a46] hover:bg-gray-100"
+              className="flex items-center px-3 py-2 rounded-lg transition-colors text-[#294a46] hover:bg-gray-100 relative z-50"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
