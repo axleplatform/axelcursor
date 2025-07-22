@@ -2038,7 +2038,10 @@ const ONBOARDING_STEPS = [
 export default function CustomerOnboarding() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [currentStep, setCurrentStep] = useState(1)
+  
+  // Get step from URL or default to 1
+  const urlStep = searchParams.get('step')
+  const [currentStep, setCurrentStep] = useState(urlStep ? parseInt(urlStep) : 1)
   const [skippedSteps, setSkippedSteps] = useState<number[]>([])
   const [carAnimating, setCarAnimating] = useState(false)
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
@@ -2065,6 +2068,25 @@ export default function CustomerOnboarding() {
     plan: null,
     freeTrial: false
   })
+
+  // Update URL when step changes
+  useEffect(() => {
+    const newUrl = `/onboarding/customer/flow?step=${currentStep}`
+    window.history.pushState({}, '', newUrl)
+  }, [currentStep])
+
+  // Handle browser back button
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlStep = new URLSearchParams(window.location.search).get('step')
+      if (urlStep) {
+        setCurrentStep(parseInt(urlStep))
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   // Load step from URL params (for auth callback)
   useEffect(() => {
@@ -2094,6 +2116,14 @@ export default function CustomerOnboarding() {
   // Load from localStorage on mount
   useEffect(() => {
     const savedData = localStorage.getItem('onboardingData')
+    if (savedData) {
+      setOnboardingData(JSON.parse(savedData))
+    }
+  }, [])
+
+  // Load saved data from session storage on mount
+  useEffect(() => {
+    const savedData = sessionStorage.getItem('onboardingData')
     if (savedData) {
       setOnboardingData(JSON.parse(savedData))
     }
@@ -2140,24 +2170,32 @@ export default function CustomerOnboarding() {
 
   const updateData = (newData: Partial<OnboardingData>) => {
     console.log('Updating onboarding data:', newData);
-    setOnboardingData(prev => ({ ...prev, ...newData }))
+    const newDataComplete = { ...onboardingData, ...newData }
+    setOnboardingData(newDataComplete)
+    
+    // Save to session storage
+    sessionStorage.setItem('onboardingData', JSON.stringify(newDataComplete))
   }
 
   const handleNext = () => {
-    if (currentStep < 20) {
-      setCurrentStep(currentStep + 1)
+    const nextStep = currentStep + 1
+    if (nextStep <= 20) {
+      setCurrentStep(nextStep)
+      router.push(`/onboarding/customer/flow?step=${nextStep}`)
     }
   }
 
   const handleBack = () => {
     console.log('Back button clicked, current step:', currentStep);
+    const prevStep = currentStep - 1;
     if (currentStep === 1) {
       // Navigate to welcome page on step 1
       console.log('Navigating to welcome page');
       router.push('/welcome')
-    } else if (currentStep > 1) {
-      console.log('Going back to step:', currentStep - 1);
-      setCurrentStep(currentStep - 1);
+    } else if (prevStep >= 1) {
+      console.log('Going back to step:', prevStep);
+      setCurrentStep(prevStep);
+      router.push(`/onboarding/customer/flow?step=${prevStep}`);
     }
   };
 
