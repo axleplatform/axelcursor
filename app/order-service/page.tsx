@@ -1701,7 +1701,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
           // Clear sessionStorage since we're moving to the next step
           sessionStorage.removeItem('axle-landing-form-data')
           
-          safeNavigate(`/pick-mechanic?id=${finalAppointmentId}`)
+          safeNavigate(`/book-appointment?id=${finalAppointmentId}`)
           return;
         } else {
           // CREATE MODE - Create new appointment
@@ -1744,14 +1744,14 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
             throw vehicleError
           }
 
-          // Success - redirect to pick mechanic page for new appointments
+          // Success - redirect to book appointment page for new appointments
           console.log('🚀 Navigation starting - appointmentId:', finalAppointmentId)
-          console.log('🚀 Navigating to:', `/pick-mechanic?id=${finalAppointmentId}`)
+          console.log('🚀 Navigating to:', `/book-appointment?id=${finalAppointmentId}`)
           
           // Clear sessionStorage since we're moving to the next step
           sessionStorage.removeItem('axle-landing-form-data')
           
-          safeNavigate(`/pick-mechanic?id=${finalAppointmentId}`)
+          safeNavigate(`/book-appointment?id=${finalAppointmentId}`)
         }
         
       } catch (error: unknown) {
