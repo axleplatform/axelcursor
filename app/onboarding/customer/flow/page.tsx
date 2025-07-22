@@ -2281,7 +2281,8 @@ export default function CustomerOnboarding() {
       
       <div className={`container mx-auto px-4 ${currentStep === 14 ? 'py-0 max-w-lg' : 'py-4 max-w-md'}`}>
         {/* Progress Bar */}
-        <div className={`${currentStep === 14 ? "-mb-16 md:-mb-56" : "mb-4"} relative z-40`}>
+        <div className={`${currentStep === 14 ? "-mb-16 md:-mb-20" : "mb-4"} relative z-40`}>
+          <div className={`${currentStep === 14 ? 'max-w-lg md:max-w-none' : 'max-w-md'} mx-auto`}>
           <div className="flex items-center gap-4">
             <button
               onClick={(e) => {
@@ -2310,6 +2311,7 @@ export default function CustomerOnboarding() {
                 <span className="text-lg">🏁</span>
               </div>
             </div>
+          </div>
           </div>
         </div>
 
