@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isResendingEmail, setIsResendingEmail] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleLogin = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
@@ -28,6 +29,8 @@ export default function LoginPage() {
 
     try {
       console.log("🔑 Starting login process...")
+      console.log("📧 Email:", email)
+      console.log("🔐 Password length:", password.length)
       
       if (!email || !password) {
         throw new Error("Please enter both email and password")
@@ -40,7 +43,18 @@ export default function LoginPage() {
 
       if (signInError) {
         console.error("❌ Auth error:", signInError)
-        throw signInError
+        console.error("❌ Error code:", signInError.code)
+        console.error("❌ Error status:", signInError.status)
+        
+        // Provide more helpful error messages
+        if (signInError.message === 'Invalid login credentials') {
+          setError('Invalid email or password. Please check your credentials.')
+        } else if (signInError.message.includes('Email not confirmed')) {
+          setError('Please check your email to confirm your account.')
+        } else {
+          setError(signInError.message)
+        }
+        return
       }
 
       if (!data.user) {
@@ -48,6 +62,7 @@ export default function LoginPage() {
       }
 
       console.log("✅ Login successful, user:", data.user.id)
+      console.log("📧 User email:", data.user.email)
       
       // Add a small delay to ensure session is established
       await new Promise(resolve => setTimeout(resolve, 100))
@@ -63,7 +78,7 @@ export default function LoginPage() {
         setError("Login successful but session not established. Please try again.")
       }
     } catch (error: unknown) {
-      console.error("❌ Error:", error)
+      console.error("❌ Unexpected error:", error)
       const errorMessage = error instanceof Error ? error.message : 'Login failed'
       setError(errorMessage)
     } finally {
@@ -162,17 +177,26 @@ export default function LoginPage() {
               <label htmlFor="password" className="block text-lg font-medium text-gray-900 mb-1 tracking-tight">
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="block w-full rounded-md border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#294a46] sm:text-sm sm:leading-6"
-                placeholder="Enter your password"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full rounded-md border-0 py-3 px-4 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#294a46] sm:text-sm sm:leading-6"
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center justify-between">
