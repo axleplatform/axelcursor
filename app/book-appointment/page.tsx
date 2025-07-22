@@ -730,9 +730,8 @@ function BookAppointmentContent() {
   const searchParams = useSearchParams()
   const pathname = usePathname()
   
-  // Fix the appointment ID extraction - check for both parameter names
-  // but don't fall back to pathname for route-based IDs
-  const appointmentId = searchParams.get("appointment_id") || searchParams.get("appointmentId") || null
+  // Fix the appointment ID extraction - check for 'id' parameter from order-service page
+  const appointmentId = searchParams.get("id") || searchParams.get("appointment_id") || searchParams.get("appointmentId") || null
   
   const [formData, setFormData] = useState<BookingFormData>({
     issueDescription: "",
@@ -786,6 +785,9 @@ function BookAppointmentContent() {
   // Fetch existing appointment and vehicle data ONLY if we have a valid appointment ID
   useEffect(() => {
     const fetchAppointmentData = async () => {
+      console.log("🔍 [DEBUG] BookAppointment - appointmentId from URL:", appointmentId)
+      console.log("🔍 [DEBUG] BookAppointment - searchParams:", Object.fromEntries(searchParams.entries()))
+      
       // Only fetch if we have a valid UUID-format appointment ID
       if (!appointmentId) {
         console.log("No appointment ID provided - this is a new appointment creation")
