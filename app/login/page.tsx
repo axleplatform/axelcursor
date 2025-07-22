@@ -49,15 +49,19 @@ export default function LoginPage() {
 
       console.log("✅ Login successful, user:", data.user.id)
       
-      // Check if this is a mechanic
-      const { data: profile } = await supabase
-        .from('mechanic_profiles')
-        .select('id')
-        .eq('user_id', data.user.id)
-        .single()
-
-      // Redirect based on user role
-      await redirectToCorrectDashboard(router)
+      // Add a small delay to ensure session is established
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Force refresh the session
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session) {
+        // Use the redirectToCorrectDashboard function
+        await redirectToCorrectDashboard(router)
+      } else {
+        console.error("❌ No session after login")
+        setError("Login successful but session not established. Please try again.")
+      }
     } catch (error: unknown) {
       console.error("❌ Error:", error)
       const errorMessage = error instanceof Error ? error.message : 'Login failed'

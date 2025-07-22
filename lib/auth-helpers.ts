@@ -1,7 +1,6 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { supabase } from './supabase';
 
 export async function getUserRoleAndRedirect(router: any) {
-  const supabase = createClientComponentClient();
   
   try {
     // Get current user
