@@ -1484,45 +1484,32 @@ const FreeTrialStep = ({ onNext, updateData, showButton = true }: StepProps & { 
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Start Your Free Trial</h2>
-        <p className="text-gray-600 text-sm">
-          Try Axle Premium free for 30 days
-        </p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">We want you to try AxleAI for free.</h2>
       </div>
       
-      <div className="bg-[#e6eeec] border-2 border-[#294a46] rounded-lg p-6 mb-8">
-        <h3 className="font-semibold text-[#294a46] mb-4">Free Trial Includes:</h3>
-        <ul className="text-[#294a46] space-y-2">
-          <li className="flex items-center">
-            <span className="mr-2">✓</span>
-            Unlimited maintenance tracking
-          </li>
-          <li className="flex items-center">
-            <span className="mr-2">✓</span>
-            Priority customer support
-          </li>
-          <li className="flex items-center">
-            <span className="mr-2">✓</span>
-            Advanced AI insights
-          </li>
-          <li className="flex items-center">
-            <span className="mr-2">✓</span>
-            No credit card required
-          </li>
-        </ul>
+      <div className="mb-8">
+        <div className="flex items-center mb-4">
+          <span className="mr-2 text-green-600 text-xl">✓</span>
+          <span className="text-gray-700">No payment due now</span>
+        </div>
       </div>
 
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
-        <button 
-          onClick={() => {
-            updateData({ freeTrial: true })
-            onNext()
-          }}
-          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-        >
-          Start Free Trial
-        </button>
+        <div>
+          <button 
+            onClick={() => {
+              updateData({ freeTrial: true })
+              onNext()
+            }}
+            className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium mb-2"
+          >
+            Try for free
+          </button>
+          <p className="text-center text-gray-500 text-sm">
+            Just $49.96 per year ($4.16/mo)
+          </p>
+        </div>
       )}
     </div>
   )
@@ -1530,8 +1517,18 @@ const FreeTrialStep = ({ onNext, updateData, showButton = true }: StepProps & { 
 
 const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   const plans = [
-    { id: 'basic', name: 'Basic', price: 'Free', features: ['Basic tracking', 'Email reminders'] },
-    { id: 'premium', name: 'Premium', price: '$9.99/month', features: ['Advanced AI', 'Priority support', 'Unlimited tracking'] }
+    { 
+      id: 'monthly', 
+      name: 'Monthly', 
+      price: '$8 /mo',
+      features: ['Advanced AI', 'Priority support', 'Unlimited tracking']
+    },
+    { 
+      id: 'yearly', 
+      name: 'Yearly', 
+      price: '$4.16/mo',
+      features: ['Advanced AI', 'Priority support', 'Unlimited tracking', 'Save 48%']
+    }
   ]
 
   return (
@@ -1543,7 +1540,7 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
         </p>
       </div>
       
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {plans.map(plan => (
           <button
             key={plan.id}
@@ -1553,14 +1550,14 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
             }}
             className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
           >
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-semibold text-gray-900 group-hover:text-[#294a46]">{plan.name}</h3>
-                <p className="text-gray-600">{plan.price}</p>
+            <div className="flex flex-col h-full">
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-900 group-hover:text-[#294a46] text-lg">{plan.name}</h3>
+                <p className="text-gray-600 text-xl font-medium">{plan.price}</p>
               </div>
-              <div className="text-right">
+              <div className="flex-1">
                 {plan.features.map(feature => (
-                  <div key={feature} className="text-sm text-gray-600">• {feature}</div>
+                  <div key={feature} className="text-sm text-gray-600 mb-1">• {feature}</div>
                 ))}
               </div>
             </div>
