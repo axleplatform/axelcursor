@@ -554,10 +554,10 @@ const PreviousAppsStep = ({ onNext, updateData, showButton = true }: StepProps &
 const WhyAxleStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
   const [visibleItems, setVisibleItems] = useState(0)
 
-  // Animation effect
+  // Animation effect for checkmarks only
   useEffect(() => {
     const showItems = async () => {
-      for (let i = 1; i <= 5; i++) {
+      for (let i = 1; i <= 3; i++) {
         await new Promise(resolve => setTimeout(resolve, 300))
         setVisibleItems(i)
       }
@@ -567,9 +567,7 @@ const WhyAxleStep = ({ onNext, showButton = true }: StepProps & { showButton?: b
 
   return (
     <div>
-      <div className={`mb-6 transition-all duration-500 ${
-        visibleItems >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      }`}>
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">What you'll get with Axle</h2>
         <p className="text-gray-600 text-sm">
           Here's what you can expect as a car owner on our platform
@@ -580,7 +578,7 @@ const WhyAxleStep = ({ onNext, showButton = true }: StepProps & { showButton?: b
       <div className="space-y-6 mb-8">
         {/* First Checkmark */}
         <div className={`flex items-center gap-3 transition-all duration-500 ${
-          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+          visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
         }`}>
           <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
             <svg className="w-5 h-5 text-[#294a46]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -592,7 +590,7 @@ const WhyAxleStep = ({ onNext, showButton = true }: StepProps & { showButton?: b
 
         {/* Second Checkmark */}
         <div className={`flex items-center gap-3 transition-all duration-500 delay-100 ${
-          visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
         }`}>
           <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
             <svg className="w-5 h-5 text-[#294a46]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -604,7 +602,7 @@ const WhyAxleStep = ({ onNext, showButton = true }: StepProps & { showButton?: b
 
         {/* Third Checkmark */}
         <div className={`flex items-center gap-3 transition-all duration-500 delay-200 ${
-          visibleItems >= 4 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+          visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
         }`}>
           <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
             <svg className="w-5 h-5 text-[#294a46]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -616,17 +614,13 @@ const WhyAxleStep = ({ onNext, showButton = true }: StepProps & { showButton?: b
       </div>
 
       {/* User Satisfaction Message */}
-      <div className={`text-center py-4 border-t border-gray-100 transition-all duration-500 ${
-        visibleItems >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      }`}>
+      <div className="text-center py-4 border-t border-gray-100">
         <p className="text-sm text-gray-500">Over 80% of our users have avoided major issues</p>
       </div>
 
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
-        <div className={`transition-all duration-500 ${
-          visibleItems >= 5 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}>
+        <div>
           <button 
             onClick={onNext}
             className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
@@ -1484,7 +1478,7 @@ const FreeTrialStep = ({ onNext, updateData, showButton = true }: StepProps & { 
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">We want you to try AxleAI for free.</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">We want you to try Axle AI for free.</h2>
       </div>
       
       <div className="mb-8">
@@ -1551,7 +1545,7 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
       <div className="grid grid-cols-2 gap-4 mb-8">
         {plans.map(plan => (
           <div key={plan.id} className="relative">
-            {plan.id === 'yearly' && selectedPlan === 'yearly' && (
+            {plan.id === 'yearly' && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                 <div className="bg-[#294a46] text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md whitespace-nowrap">
                   3 days FREE
@@ -1560,7 +1554,7 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
             )}
             <button
               onClick={() => setSelectedPlan(plan.id)}
-              className={`w-full p-6 text-left border-2 rounded-lg transition-all group ${
+              className={`w-full p-4 text-left border-2 rounded-lg transition-all group ${
                 selectedPlan === plan.id 
                   ? 'border-[#294a46] bg-[#e6eeec]' 
                   : 'border-gray-200 hover:border-[#294a46] hover:bg-[#e6eeec]'
@@ -1574,7 +1568,7 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
               </div>
               <div className="flex-1 mb-4">
                   {plan.id === 'monthly' ? (
-                    <div className="space-y-3">
+                    <div className="space-y-3 pl-2">
                       {plan.features.map((feature, index) => (
                         <div key={index} className="flex items-start space-x-3">
                           {typeof feature === 'string' ? (
@@ -1586,8 +1580,8 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                           ) : (
                             // If feature is an object, show with icon
                             <>
-                              <div className="text-lg -ml-1">{feature.icon}</div>
-                              <div className="-ml-1">
+                              <div className="text-lg">{feature.icon}</div>
+                              <div>
                                 <h4 className="font-semibold text-gray-900 text-xs">{feature.title}</h4>
                               </div>
                             </>
@@ -2154,7 +2148,7 @@ export default function CustomerOnboarding() {
       <SiteHeader />
       <div className="container mx-auto px-4 py-4 max-w-4xl">
         {/* Progress Bar */}
-        <div className={currentStep === 14 ? "mb-0" : "mb-4"}>
+        <div className={currentStep === 14 ? "-mb-2" : "mb-4"}>
           <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
