@@ -1,5 +1,5 @@
--- Create mechanics table if it doesn't exist
-CREATE TABLE IF NOT EXISTS mechanics (
+-- Create mechanic-profile table if it doesn't exist
+CREATE TABLE IF NOT EXISTS mechanic-profile (
   id UUID PRIMARY KEY,
   user_id UUID NOT NULL,
   name TEXT NOT NULL,
@@ -16,4 +16,4 @@ CREATE TABLE IF NOT EXISTS mechanics (
 );
 
 -- Add indexes for performance
-CREATE INDEX IF NOT EXISTS idx_mechanics_user_id ON mechanics(user_id);
+CREATE INDEX IF NOT EXISTS idx_mechanic_profile_user_id ON mechanic-profile(user_id);

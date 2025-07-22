@@ -68,7 +68,7 @@ export default function CustomerDashboard() {
       const [profileRes, vehiclesRes, appointmentsRes, addressesRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('vehicles').select('*').eq('user_id', user.id),
-        supabase.from('appointments').select('*, mechanics(business_name)').eq('customer_id', user.id).eq('status', 'scheduled'),
+        supabase.from('appointments').select('*, mechanic-profile(business_name)').eq('customer_id', user.id).eq('status', 'scheduled'),
         supabase.from('addresses').select('*').eq('user_id', user.id)
       ]);
 

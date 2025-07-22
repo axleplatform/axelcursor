@@ -65,11 +65,11 @@ export default function MechanicOnboardingStep5Page() {
 
         setUser(user)
 
-        // Ensure the mechanics table exists
+        // Ensure the mechanic-profile table exists
         try {
           await supabase.rpc("run_sql", {
             sql: `
-              CREATE TABLE IF NOT EXISTS mechanics (
+              CREATE TABLE IF NOT EXISTS mechanic-profile (
                 id UUID PRIMARY KEY,
                 user_id UUID NOT NULL,
                 name VARCHAR(255),
@@ -86,11 +86,11 @@ export default function MechanicOnboardingStep5Page() {
               );
               
               -- Add indexes for performance
-              CREATE INDEX IF NOT EXISTS idx_mechanics_user_id ON mechanics(user_id);
+              CREATE INDEX IF NOT EXISTS idx_mechanic_profile_user_id ON mechanic-profile(user_id);
             `,
           })
         } catch (err) {
-          console.warn("Could not ensure mechanics table exists:", err)
+          console.warn("Could not ensure mechanic-profile table exists:", err)
           // Continue anyway, we'll handle this later
         }
 

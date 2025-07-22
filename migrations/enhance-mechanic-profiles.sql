@@ -34,20 +34,20 @@ ALTER TABLE mechanic_profiles ADD COLUMN IF NOT EXISTS profile_image_url TEXT;
 ALTER TABLE mechanic_profiles ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 ALTER TABLE mechanic_profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
--- Ensure mechanics table has all necessary fields
-ALTER TABLE mechanics ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
-ALTER TABLE mechanics ADD COLUMN IF NOT EXISTS name TEXT;
-ALTER TABLE mechanics ADD COLUMN IF NOT EXISTS email TEXT;
-ALTER TABLE mechanics ADD COLUMN IF NOT EXISTS phone TEXT;
-ALTER TABLE mechanics ADD COLUMN IF NOT EXISTS avatar_url TEXT;
-ALTER TABLE mechanics ADD COLUMN IF NOT EXISTS bio TEXT;
-ALTER TABLE mechanics ADD COLUMN IF NOT EXISTS specialties TEXT[] DEFAULT '{}';
-ALTER TABLE mechanics ADD COLUMN IF NOT EXISTS experience TEXT;
-ALTER TABLE mechanics ADD COLUMN IF NOT EXISTS rating DECIMAL;
-ALTER TABLE mechanics ADD COLUMN IF NOT EXISTS review_count INTEGER DEFAULT 0;
-ALTER TABLE mechanics ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
-ALTER TABLE mechanics ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+-- Ensure mechanic-profile table has all necessary fields
+ALTER TABLE mechanic-profile ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
+ALTER TABLE mechanic-profile ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE mechanic-profile ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE mechanic-profile ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE mechanic-profile ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE mechanic-profile ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE mechanic-profile ADD COLUMN IF NOT EXISTS specialties TEXT[] DEFAULT '{}';
+ALTER TABLE mechanic-profile ADD COLUMN IF NOT EXISTS experience TEXT;
+ALTER TABLE mechanic-profile ADD COLUMN IF NOT EXISTS rating DECIMAL;
+ALTER TABLE mechanic-profile ADD COLUMN IF NOT EXISTS review_count INTEGER DEFAULT 0;
+ALTER TABLE mechanic-profile ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE mechanic-profile ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_mechanic_profiles_user_id ON mechanic_profiles(user_id);
-CREATE INDEX IF NOT EXISTS idx_mechanics_user_id ON mechanics(user_id);
+CREATE INDEX IF NOT EXISTS idx_mechanic_profile_user_id ON mechanic-profile(user_id);
