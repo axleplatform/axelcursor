@@ -1596,8 +1596,10 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                       ))}
                     </div>
                   ) : (
-                    plan.features.map(feature => (
-                      <div key={feature} className="text-sm text-gray-600 mb-1">• {feature}</div>
+                    plan.features.map((feature, index) => (
+                      <div key={index} className="text-sm text-gray-600 mb-1">
+                        • {typeof feature === 'string' ? feature : feature.title}
+                      </div>
                     ))
                   )}
                 </div>
