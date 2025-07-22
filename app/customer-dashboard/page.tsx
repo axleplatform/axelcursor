@@ -1,0 +1,484 @@
+'use client';
+import { useState, useEffect } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useRouter } from 'next/navigation';
+import { SiteHeader } from '@/components/site-header';
+
+export default function CustomerDashboard() {
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Book appointment states
+  const [selectedVehicle, setSelectedVehicle] = useState('');
+  const [appointmentData, setAppointmentData] = useState({
+    description: '',
+    date: '',
+    time: '',
+    carRuns: true,
+    selectedIssues: [] as string[],
+    recommendedServices: [] as any[]
+  });
+
+  const supabase = createClientComponentClient();
+  const router = useRouter();
+
+  useEffect(() => {
+    checkAccess();
+  }, []);
+
+  const checkAccess = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    // Check if user is a mechanic trying to access customer dashboard
+    const { data: mechanic } = await supabase
+      .from('mechanics')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (mechanic) {
+      // Redirect mechanics to their dashboard
+      router.push('/mechanic/dashboard');
+      return;
+    }
+    
+    // Load customer data
+    loadDashboardData();
+  };
+
+  const loadDashboardData = async () => {
+    try {
+      // Check authentication
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        router.push('/login');
+        return;
+      }
+      setUser(user);
+
+      // Load all customer data in parallel
+      const [profileRes, vehiclesRes, appointmentsRes, addressesRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', user.id).single(),
+        supabase.from('vehicles').select('*').eq('user_id', user.id),
+        supabase.from('appointments').select('*, mechanics(business_name)').eq('customer_id', user.id).eq('status', 'scheduled'),
+        supabase.from('addresses').select('*').eq('user_id', user.id)
+      ]);
+
+      setProfile(profileRes.data);
+      setVehicles(vehiclesRes.data || []);
+      setAppointments(appointmentsRes.data || []);
+      setAddresses(addressesRes.data || []);
+      
+      // Set default vehicle if available
+      if (vehiclesRes.data && vehiclesRes.data.length > 0) {
+        setSelectedVehicle(vehiclesRes.data[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelAppointment = async (appointmentId: string) => {
+    if (!confirm('Are you sure you want to cancel this appointment?')) return;
+
+    try {
+      await supabase
+        .from('appointments')
+        .update({ status: 'cancelled' })
+        .eq('id', appointmentId);
+      
+      // Reload appointments
+      loadDashboardData();
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      alert('Failed to cancel appointment');
+    }
+  };
+
+  const handleBookAppointment = async () => {
+    // Implementation for booking appointment
+    // This would call your existing booking API
+    router.push('/order-service');
+  };
+
+  if (loading) {
+    return (
+      <>
+        <SiteHeader />
+        <div className="min-h-screen bg-gray-50 animate-pulse">
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+            <div className="space-y-6">
+              <div className="h-48 bg-white rounded-lg shadow"></div>
+              <div className="h-64 bg-white rounded-lg shadow"></div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <SiteHeader />
+      
+      <div className="min-h-screen bg-gray-50">
+        {/* Page Header - Similar to Mechanic Dashboard */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="py-6">
+              <h1 className="text-3xl font-bold text-gray-900">
+                Welcome back, {profile?.full_name || user?.email?.split('@')[0]}!
+              </h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Manage your vehicles and appointments all in one place
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="space-y-8">
+            {/* Section 1: Your Vehicles */}
+            <section className="bg-white rounded-lg shadow p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Your Vehicles</h2>
+                <button
+                  onClick={() => router.push('/customer-dashboard/add-vehicle')}
+                  className="text-sm text-[#294a46] hover:text-[#1e3632] font-medium"
+                >
+                  + Add Vehicle
+                </button>
+              </div>
+              
+              {vehicles.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {vehicles.map((vehicle) => (
+                    <div
+                      key={vehicle.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:border-[#294a46] transition-colors"
+                    >
+                      <h3 className="font-semibold text-gray-900">
+                        {vehicle.year} {vehicle.make} {vehicle.model}
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        VIN: {vehicle.vin || 'Not provided'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {vehicle.mileage?.toLocaleString()} miles
+                      </p>
+                      <div className="mt-3 flex space-x-2">
+                        <button className="text-xs text-[#294a46] hover:text-[#1e3632]">
+                          Edit
+                        </button>
+                        <span className="text-gray-300">|</span>
+                        <button className="text-xs text-red-600 hover:text-red-700">
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No vehicles added yet</p>
+                  <button
+                    onClick={() => router.push('/customer-dashboard/add-vehicle')}
+                    className="mt-2 text-[#294a46] hover:text-[#1e3632] font-medium"
+                  >
+                    Add your first vehicle
+                  </button>
+                </div>
+              )}
+            </section>
+
+            {/* Section 2: Upcoming Appointments */}
+            <section className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                Upcoming Appointments
+              </h2>
+              
+              {appointments.length > 0 ? (
+                <div className="space-y-4">
+                  {appointments.map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="border border-gray-200 rounded-lg p-4"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900">
+                            {appointment.service_type}
+                          </h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {new Date(appointment.date).toLocaleDateString('en-US', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })} at {appointment.time}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {appointment.mechanics?.business_name}
+                          </p>
+                          <p className="text-sm text-gray-500 mt-2">
+                            {appointment.description}
+                          </p>
+                        </div>
+                        <div className="flex space-x-2 ml-4">
+                          <button
+                            onClick={() => router.push(`/reschedule/${appointment.id}`)}
+                            className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                          >
+                            Reschedule
+                          </button>
+                          <button
+                            onClick={() => handleCancelAppointment(appointment.id)}
+                            className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No upcoming appointments</p>
+                </div>
+              )}
+            </section>
+
+            {/* Section 3: Book Appointment */}
+            <section className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                Book New Appointment
+              </h2>
+              
+              <div className="space-y-4">
+                {/* Vehicle Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Vehicle
+                  </label>
+                  <select
+                    value={selectedVehicle}
+                    onChange={(e) => setSelectedVehicle(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                    disabled={vehicles.length === 0}
+                  >
+                    {vehicles.length === 0 ? (
+                      <option>No vehicles available</option>
+                    ) : (
+                      vehicles.map((vehicle) => (
+                        <option key={vehicle.id} value={vehicle.id}>
+                          {vehicle.year} {vehicle.make} {vehicle.model}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Describe the issue
+                  </label>
+                  <textarea
+                    value={appointmentData.description}
+                    onChange={(e) => setAppointmentData({...appointmentData, description: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                    rows={3}
+                    placeholder="Tell us what's wrong with your vehicle..."
+                  />
+                </div>
+
+                {/* Date and Time */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Preferred Date
+                    </label>
+                    <input
+                      type="date"
+                      value={appointmentData.date}
+                      onChange={(e) => setAppointmentData({...appointmentData, date: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Preferred Time
+                    </label>
+                    <select
+                      value={appointmentData.time}
+                      onChange={(e) => setAppointmentData({...appointmentData, time: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                    >
+                      <option value="">Select time</option>
+                      <option value="8:00 AM">8:00 AM</option>
+                      <option value="9:00 AM">9:00 AM</option>
+                      <option value="10:00 AM">10:00 AM</option>
+                      <option value="11:00 AM">11:00 AM</option>
+                      <option value="12:00 PM">12:00 PM</option>
+                      <option value="1:00 PM">1:00 PM</option>
+                      <option value="2:00 PM">2:00 PM</option>
+                      <option value="3:00 PM">3:00 PM</option>
+                      <option value="4:00 PM">4:00 PM</option>
+                      <option value="5:00 PM">5:00 PM</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Car Running Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Does your car currently run and drive?
+                  </label>
+                  <div className="flex space-x-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="carRuns"
+                        checked={appointmentData.carRuns === true}
+                        onChange={() => setAppointmentData({...appointmentData, carRuns: true})}
+                        className="mr-2"
+                      />
+                      <span>Yes</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="carRuns"
+                        checked={appointmentData.carRuns === false}
+                        onChange={() => setAppointmentData({...appointmentData, carRuns: false})}
+                        className="mr-2"
+                      />
+                      <span>No</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Common Issues */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select any issues you're experiencing
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {['Oil Change', 'Brake Issues', 'Engine Light', 'Tire Problems', 'Battery Issues', 'AC/Heating'].map((issue) => (
+                      <label key={issue} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={appointmentData.selectedIssues.includes(issue)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setAppointmentData({
+                                ...appointmentData,
+                                selectedIssues: [...appointmentData.selectedIssues, issue]
+                              });
+                            } else {
+                              setAppointmentData({
+                                ...appointmentData,
+                                selectedIssues: appointmentData.selectedIssues.filter(i => i !== issue)
+                              });
+                            }
+                          }}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">{issue}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recommended Services */}
+                {appointmentData.selectedIssues.length > 0 && (
+                  <div className="bg-[#e6eeec] rounded-lg p-4">
+                    <h3 className="font-medium text-gray-900 mb-2">
+                      Recommended Services Based on Your Selection:
+                    </h3>
+                    <ul className="space-y-1 text-sm text-gray-700">
+                      {appointmentData.selectedIssues.map((issue) => (
+                        <li key={issue}>• {issue} Service - Estimated $XX-$XXX</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Book Button */}
+                <button
+                  onClick={handleBookAppointment}
+                  disabled={!selectedVehicle || vehicles.length === 0}
+                  className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:bg-gray-300"
+                >
+                  {vehicles.length === 0 ? 'Add a Vehicle First' : 'Continue to Book Appointment'}
+                </button>
+              </div>
+            </section>
+
+            {/* Section 4: Saved Addresses */}
+            <section className="bg-white rounded-lg shadow p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Saved Addresses</h2>
+                <button
+                  onClick={() => router.push('/customer-dashboard/add-address')}
+                  className="text-sm text-[#294a46] hover:text-[#1e3632] font-medium"
+                >
+                  + Add Address
+                </button>
+              </div>
+              
+              {addresses.length > 0 ? (
+                <div className="space-y-3">
+                  {addresses.map((address) => (
+                    <div
+                      key={address.id}
+                      className="flex justify-between items-center p-4 border border-gray-200 rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {address.label || 'Home'}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {address.street_address}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {address.city}, {address.state} {address.zip_code}
+                        </p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button className="text-sm text-[#294a46] hover:text-[#1e3632]">
+                          Edit
+                        </button>
+                        <span className="text-gray-300">|</span>
+                        <button className="text-sm text-red-600 hover:text-red-700">
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No saved addresses yet</p>
+                </div>
+              )}
+            </section>
+          </div>
+        </main>
+      </div>
+    </>
+  );
+} 

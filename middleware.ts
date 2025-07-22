@@ -54,7 +54,8 @@ export async function middleware(request: NextRequest) {
     }
 
     const isProtectedRoute = request.nextUrl.pathname.startsWith("/mechanic/") ||
-      request.nextUrl.pathname.startsWith("/onboarding-mechanic-")
+      request.nextUrl.pathname.startsWith("/onboarding-mechanic-") ||
+      request.nextUrl.pathname.startsWith("/customer-dashboard")
 
     if (!isProtectedRoute) {
       return response
@@ -75,6 +76,12 @@ export async function middleware(request: NextRequest) {
       const redirectUrl = new URL("/login", request.url)
       redirectUrl.searchParams.set("error", "Session expired")
       return NextResponse.redirect(redirectUrl)
+    }
+
+    // Handle customer dashboard access
+    if (request.nextUrl.pathname.startsWith("/customer-dashboard")) {
+      console.log("✅ Allowing access to customer dashboard for authenticated user:", session.user.id)
+      return response
     }
 
     // TEMPORARY FIX: Allow access to mechanic dashboard for all authenticated users
@@ -128,6 +135,7 @@ export const config = {
     "/welcome",
     "/order-service",
     "/mechanic/:path*",
-    "/onboarding-mechanic-:path*"
+    "/onboarding-mechanic-:path*",
+    "/customer-dashboard/:path*"
   ]
 }

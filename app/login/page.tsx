@@ -9,6 +9,7 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { GoogleSignInButton } from "@/components/google-signin-button"
+import { redirectToCorrectDashboard } from "@/lib/auth-helpers"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -55,11 +56,8 @@ export default function LoginPage() {
         .eq('user_id', data.user.id)
         .single()
 
-      if (profile) {
-        router.push('/mechanic/dashboard')
-      } else {
-        router.push('/')
-      }
+      // Redirect based on user role
+      await redirectToCorrectDashboard(router)
     } catch (error: unknown) {
       console.error("❌ Error:", error)
       const errorMessage = error instanceof Error ? error.message : 'Login failed'

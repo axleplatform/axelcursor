@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { formatDate } from "@/lib/utils"
 import { GoogleMapsLink } from "@/components/google-maps-link"
 import { GoogleSignInButton } from "@/components/google-signin-button"
+import { getUserRoleAndRedirect } from "@/lib/auth-helpers"
 
 interface AppointmentData {
   id: string
@@ -82,6 +83,18 @@ export default function AppointmentConfirmationPage() {
   const [isCreatingAccount, setIsCreatingAccount] = React.useState(false)
   const [accountCreated, setAccountCreated] = React.useState(false)
   const [formErrors, setFormErrors] = React.useState<Record<string, string>>({})
+  const [dashboardLink, setDashboardLink] = React.useState('/customer-dashboard')
+
+  React.useEffect(() => {
+    checkUserRole();
+  }, []);
+
+  const checkUserRole = async () => {
+    const route = await getUserRoleAndRedirect(router);
+    if (route) {
+      setDashboardLink(route);
+    }
+  };
 
   React.useEffect(() => {
     const fetchAppointmentData = async () => {
@@ -314,11 +327,11 @@ export default function AppointmentConfirmationPage() {
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-800 mb-4">Appointment Not Found</h1>
             <p className="text-gray-600 mb-4">The appointment you're looking for doesn't exist or has been removed.</p>
-            <button
-              type="button"
-              onClick={() => router.push("/")}
-              className="bg-[#294a46] text-white px-6 py-2 rounded-full hover:bg-[#1e3632] transition-colors"
-            >
+                          <button
+                type="button"
+                onClick={() => router.push(dashboardLink)}
+                className="bg-[#294a46] text-white px-6 py-2 rounded-full hover:bg-[#1e3632] transition-colors"
+              >
               Return Home
             </button>
           </div>
@@ -557,10 +570,10 @@ export default function AppointmentConfirmationPage() {
                   </div>
                   <h2 className="text-2xl font-bold text-gray-800 mb-2">Account Created!</h2>
                   <p className="text-gray-600 mb-6">You can now track all your services and get maintenance reminders.</p>
-                  <button
-                    onClick={() => router.push("/")}
-                    className="bg-[#294a46] text-white px-6 py-2 rounded-full hover:bg-[#1e3632] transition-colors"
-                  >
+                                      <button
+                      onClick={() => router.push(dashboardLink)}
+                      className="bg-[#294a46] text-white px-6 py-2 rounded-full hover:bg-[#1e3632] transition-colors"
+                    >
                     Return Home
                   </button>
                 </div>

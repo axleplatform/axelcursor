@@ -1937,11 +1937,11 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep }: { onboardingData:
         localStorage.removeItem('onboardingData')
         localStorage.removeItem('pendingOnboarding')
         
-        // Redirect to dashboard
-        router.push('/')
+        // Redirect to customer dashboard
+        router.push('/customer-dashboard')
       } catch (error) {
         console.error('Error completing onboarding:', error)
-        router.push('/')
+        router.push('/customer-dashboard')
       }
     }
 

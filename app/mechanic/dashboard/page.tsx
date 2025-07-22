@@ -1058,6 +1058,19 @@ export default function MechanicDashboard() {
 
         setUserId(session.user.id)
         setIsLoggedIn(true)
+
+        // Check if user is a mechanic
+        const { data: mechanic } = await supabase
+          .from('mechanics')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (!mechanic) {
+          // Not a mechanic, redirect to customer dashboard
+          router.push('/customer-dashboard');
+          return;
+        }
         
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'

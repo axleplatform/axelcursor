@@ -1,0 +1,38 @@
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+
+export async function getUserRoleAndRedirect(router: any) {
+  const supabase = createClientComponentClient();
+  
+  try {
+    // Get current user
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
+      router.push('/login');
+      return null;
+    }
+
+    // Check if user is a mechanic
+    const { data: mechanic } = await supabase
+      .from('mechanics')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    // Return appropriate dashboard route
+    if (mechanic) {
+      return '/mechanic/dashboard';
+    } else {
+      return '/customer-dashboard';
+    }
+  } catch (error) {
+    console.error('Error checking user role:', error);
+    return '/customer-dashboard'; // Default to customer
+  }
+}
+
+export async function redirectToCorrectDashboard(router: any) {
+  const dashboardRoute = await getUserRoleAndRedirect(router);
+  if (dashboardRoute) {
+    router.push(dashboardRoute);
+  }
+} 
