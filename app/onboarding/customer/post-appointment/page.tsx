@@ -1271,4 +1271,4 @@ export default function PostAppointmentOnboarding() {
       <Footer />
     </div>
   );
-} 
+}
