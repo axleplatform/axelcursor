@@ -1502,7 +1502,7 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps
   }
 
   return (
-    <div>
+    <div className="-mt-8">
       <CustomerSignupForm 
         isOnboarding={true}
         onboardingData={onboardingData}
@@ -1728,7 +1728,8 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                           <Check className="h-4 w-4 text-[#294a46]" />
                         </div>
                         <span className="text-sm font-medium text-gray-900">
-                          Today: Save 48%
+                          <span className="hidden md:inline">Today: Save 48%</span>
+                          <span className="md:hidden">Today: Save 48%</span>
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -1736,7 +1737,8 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                           <Check className="h-4 w-4 text-[#294a46]" />
                         </div>
                         <span className="text-sm text-gray-600">
-                          In 2 days Reminder
+                          <span className="hidden md:inline">In 2 Days - End of Trial Reminder</span>
+                          <span className="md:hidden">In 2 days Reminder</span>
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -1744,7 +1746,8 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                           <Check className="h-4 w-4 text-[#294a46]" />
                         </div>
                         <span className="text-sm text-gray-600">
-                          3rd day Billed.
+                          <span className="hidden md:inline">3rd Day: Billing Starts. Ends Next Year!</span>
+                          <span className="md:hidden">3rd day Billed.</span>
                         </span>
                       </div>
                     </div>
@@ -2279,9 +2282,9 @@ export default function CustomerOnboarding() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <SiteHeader />
       
-      <div className={`container mx-auto px-4 ${currentStep === 14 ? 'py-0 max-w-lg' : 'py-4 max-w-md'}`}>
+      <div className={`container mx-auto px-4 ${currentStep === 14 ? 'py-4 max-w-lg' : 'py-4 max-w-md'}`}>
         {/* Progress Bar */}
-        <div className={`${currentStep === 14 ? "-mb-16 md:-mb-20" : "mb-4"} relative z-40`}>
+        <div className={`${currentStep === 14 ? "mb-4" : "mb-4"} relative z-40`}>
           <div className={`${currentStep === 14 ? 'max-w-lg md:max-w-none' : 'max-w-md'} mx-auto`}>
           <div className="flex items-center gap-4">
             <button
