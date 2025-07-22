@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { GoogleSignInButton } from '@/components/google-signin-button'
 import { CustomerSignupForm } from '@/components/customer-signup-form'
@@ -1489,7 +1489,9 @@ const FreeTrialStep = ({ onNext, updateData, showButton = true }: StepProps & { 
       
       <div className="mb-8">
         <div className="flex items-center mb-4">
-          <span className="mr-2 text-green-600 text-xl">✓</span>
+          <div className="p-1 rounded-full mr-3" style={{ backgroundColor: "#F9F9F9" }}>
+            <Check className="h-4 w-4 text-[#294a46]" />
+          </div>
           <span className="text-gray-700">No payment due now</span>
         </div>
       </div>
@@ -1551,7 +1553,7 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
           <div key={plan.id} className="relative">
             {plan.id === 'yearly' && selectedPlan === 'yearly' && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-                <div className="bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md">
+                <div className="bg-[#294a46] text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md">
                   3 days FREE
                 </div>
               </div>
@@ -1564,14 +1566,13 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                   : 'border-gray-200 hover:border-[#294a46] hover:bg-[#e6eeec]'
               }`}
             >
-              <div className="flex flex-col h-full">
-                <div className="mb-4">
-                  <h3 className={`font-semibold text-lg ${
-                    selectedPlan === plan.id ? 'text-[#294a46]' : 'text-gray-900 group-hover:text-[#294a46]'
-                  }`}>{plan.name}</h3>
-                  <p className="text-gray-600 text-xl font-medium">{plan.price}</p>
-                </div>
-                <div className="flex-1">
+                          <div className="flex flex-col h-full">
+              <div className="mb-4">
+                <h3 className={`font-semibold text-lg ${
+                  selectedPlan === plan.id ? 'text-[#294a46]' : 'text-gray-900 group-hover:text-[#294a46]'
+                }`}>{plan.name}</h3>
+              </div>
+              <div className="flex-1 mb-4">
                   {plan.id === 'monthly' ? (
                     <div className="space-y-3">
                       {plan.features.map((feature, index) => (
@@ -1588,7 +1589,6 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                               <div className="text-lg">{feature.icon}</div>
                               <div>
                                 <h4 className="font-semibold text-gray-900 text-xs">{feature.title}</h4>
-                                <p className="text-gray-600 text-xs">{feature.description}</p>
                               </div>
                             </>
                           )}
@@ -1596,12 +1596,30 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                       ))}
                     </div>
                   ) : (
-                    plan.features.map((feature, index) => (
-                      <div key={index} className="text-sm text-gray-600 mb-1">
-                        • {typeof feature === 'string' ? feature : feature.title}
+                    <div className="space-y-3">
+                      <div className="flex items-center">
+                        <div className="p-1 rounded-full mr-3" style={{ backgroundColor: "#F9F9F9" }}>
+                          <Check className="h-4 w-4 text-[#294a46]" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">Today: Unlock AI Features. Save 48%</span>
                       </div>
-                    ))
+                      <div className="flex items-center">
+                        <div className="p-1 rounded-full mr-3" style={{ backgroundColor: "#F9F9F9" }}>
+                          <Check className="h-4 w-4 text-[#294a46]" />
+                        </div>
+                        <span className="text-sm text-gray-600">In 2 Days - End of Trial Reminder</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="p-1 rounded-full mr-3" style={{ backgroundColor: "#F9F9F9" }}>
+                          <Check className="h-4 w-4 text-[#294a46]" />
+                        </div>
+                        <span className="text-sm text-gray-600">3rd Day: Billing Starts. Ends Next Year!</span>
+                      </div>
+                    </div>
                   )}
+                </div>
+                <div className="text-center">
+                  <p className="text-gray-600 text-xl font-medium">{plan.price}</p>
                 </div>
               </div>
             </button>
@@ -1609,32 +1627,16 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
         ))}
       </div>
 
-      {/* Yearly plan timeline */}
-      {selectedPlan === 'yearly' && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <div className="space-y-3">
-            <div className="flex items-center">
-              <span className="mr-3 text-green-500 text-xl">✓</span>
-              <span className="text-sm font-medium text-gray-900">Today: Unlock AI Features. Save 48%</span>
-            </div>
-            <div className="flex items-center">
-              <span className="mr-3 text-green-500 text-xl">✓</span>
-              <span className="text-sm text-gray-600">In 2 Days - End of Trial Reminder</span>
-            </div>
-            <div className="flex items-center">
-              <span className="mr-3 text-green-500 text-xl">✓</span>
-              <span className="text-sm text-gray-600">3rd Day: Billing Starts. Ends Next Year!</span>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
         <div>
           <div className="text-center mb-4">
             <div className="flex items-center justify-center">
-              <span className="mr-2 text-green-600 text-xl">✓</span>
+              <div className="p-1 rounded-full mr-3" style={{ backgroundColor: "#F9F9F9" }}>
+                <Check className="h-4 w-4 text-[#294a46]" />
+              </div>
               <span className="text-gray-700 text-sm">
                 {selectedPlan === 'monthly' ? 'No Commitment - Cancel Anytime' : 'No payment due now'}
               </span>
@@ -2143,7 +2145,7 @@ export default function CustomerOnboarding() {
       <SiteHeader />
       <div className="container mx-auto px-4 py-4 max-w-4xl">
         {/* Progress Bar */}
-        <div className={currentStep === 14 ? "mb-2" : "mb-4"}>
+        <div className={currentStep === 14 ? "mb-1" : "mb-4"}>
           <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
@@ -2161,7 +2163,7 @@ export default function CustomerOnboarding() {
                 className="absolute top-0 transform -translate-y-1/2 transition-all duration-300"
                 style={{ left: `calc(${(currentStep / 20) * 100}% - 16px)` }}
               >
-                <span className="text-2xl" style={{ transform: 'scaleX(-1)' }}>🏎️</span>
+                <span className="text-2xl" style={{ transform: 'scaleX(-1) rotateY(180deg)' }}>🏎️</span>
               </div>
               {/* Finish flag at the end */}
               <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2">
