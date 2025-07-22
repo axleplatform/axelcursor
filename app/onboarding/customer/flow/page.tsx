@@ -1799,7 +1799,7 @@ const LimitedOfferStep = ({ onNext, showButton = true }: StepProps & { showButto
   return (
     <div className="text-center">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Limited Time Offer</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Limited One Time Offer</h2>
         <p className="text-gray-600 text-sm">
           Don't miss out on this exclusive deal
         </p>
@@ -1875,9 +1875,9 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
   return (
     <div className="text-center">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Axle!</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Congratulations!</h2>
         <p className="text-gray-600">
-          Your account has been created successfully
+          Welcome to Axle
         </p>
       </div>
       
