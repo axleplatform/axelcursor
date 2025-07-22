@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS mechanic_quotes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   appointment_id UUID NOT NULL REFERENCES appointments(id),
-  mechanic_id UUID NOT NULL REFERENCES mechanic-profile(id),
+  mechanic_id UUID NOT NULL REFERENCES mechanic_profiles(id),
   price DECIMAL(10, 2) NOT NULL,
   eta VARCHAR(255),
   notes TEXT,

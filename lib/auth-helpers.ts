@@ -12,7 +12,7 @@ export async function getUserRoleAndRedirect(router: any) {
 
     // Check if user is a mechanic
     const { data: mechanic } = await supabase
-      .from('mechanic-profile')
+      .from('mechanic_profiles')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle();

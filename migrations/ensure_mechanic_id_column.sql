@@ -1,12 +1,12 @@
--- First ensure the mechanic-profile table exists
+-- First ensure the mechanic_profiles table exists
 DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM information_schema.tables
-        WHERE table_name = 'mechanic-profile'
+        WHERE table_name = 'mechanic_profiles'
     ) THEN
-        CREATE TABLE mechanic-profile (
+        CREATE TABLE mechanic_profiles (
             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
             user_id UUID NOT NULL,
             name VARCHAR(255),
@@ -23,7 +23,7 @@ BEGIN
         );
         
         -- Add indexes for performance
-        CREATE INDEX IF NOT EXISTS idx_mechanic_profile_user_id ON mechanic-profile(user_id);
+        CREATE INDEX IF NOT EXISTS idx_mechanic_profiles_user_id ON mechanic_profiles(user_id);
     END IF;
 END $$;
 

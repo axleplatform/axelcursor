@@ -22,7 +22,7 @@ BEGIN
         -- Add the foreign key constraint if it doesn't exist
         ALTER TABLE mechanic_quotes 
         ADD CONSTRAINT mechanic_quotes_mechanic_id_fkey 
-        FOREIGN KEY (mechanic_id) REFERENCES mechanic-profile(id);
+        FOREIGN KEY (mechanic_id) REFERENCES mechanic_profiles(id);
     END IF;
 END $$;
 
@@ -53,4 +53,4 @@ FROM (
         ON ccu.constraint_name = tc.constraint_name
     WHERE tc.constraint_type = 'FOREIGN KEY'
 ) AS fk_info
-WHERE table_name = 'mechanic_quotes' AND foreign_table_name = 'mechanic-profile';
+WHERE table_name = 'mechanic_quotes' AND foreign_table_name = 'mechanic_profiles';
