@@ -1061,7 +1061,7 @@ export default function MechanicDashboard() {
 
         // Check if user is a mechanic
         const { data: mechanic } = await supabase
-          .from('mechanics')
+          .from('mechanic-profile')
           .select('*')
           .eq('user_id', session.user.id)
           .single();

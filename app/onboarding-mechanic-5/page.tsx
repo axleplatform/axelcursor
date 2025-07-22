@@ -249,7 +249,7 @@ export default function MechanicOnboardingStep5Page() {
 
       // Create or update the mechanic record
       const { error: mechanicError } = await supabase
-        .from("mechanics")
+        .from("mechanic-profile")
         .upsert({
           user_id: user.id,
           profile_id: profileId,

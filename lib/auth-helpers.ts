@@ -12,10 +12,10 @@ export async function getUserRoleAndRedirect(router: any) {
 
     // Check if user is a mechanic
     const { data: mechanic } = await supabase
-      .from('mechanics')
+      .from('mechanic-profile')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     // Return appropriate dashboard route
     if (mechanic) {

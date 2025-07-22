@@ -39,10 +39,10 @@ export default function CustomerDashboard() {
 
     // Check if user is a mechanic trying to access customer dashboard
     const { data: mechanic } = await supabase
-      .from('mechanics')
+      .from('mechanic-profile')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (mechanic) {
       // Redirect mechanics to their dashboard
