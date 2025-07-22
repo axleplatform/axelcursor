@@ -139,7 +139,16 @@ export async function POST(request) {
 
 async function generateServiceRecommendations(vehicleData, textDescription, mediaFiles, isCarRunning) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash-lite",
+      generationConfig: {
+        temperature: 0.1,
+        topP: 0.8,
+        topK: 40,
+        maxOutputTokens: 1024,
+        candidateCount: 1
+      }
+    });
     
     // Build content parts array
     const contentParts = [];

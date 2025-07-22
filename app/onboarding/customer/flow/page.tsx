@@ -1502,7 +1502,7 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps
   }
 
   return (
-    <div className="-mt-16">
+    <div className="-mt-24">
       <CustomerSignupForm 
         isOnboarding={true}
         onboardingData={onboardingData}
@@ -1745,7 +1745,8 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                           <Check className="h-4 w-4 text-[#294a46]" />
                         </div>
                         <span className="text-sm text-gray-600">
-                          3rd day Billed.
+                          <span className="hidden md:inline">3rd day<br />Billed.</span>
+                          <span className="md:hidden">3rd day Billed.</span>
                         </span>
                       </div>
                     </div>
