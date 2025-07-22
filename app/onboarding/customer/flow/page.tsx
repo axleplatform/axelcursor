@@ -1553,7 +1553,7 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
           <div key={plan.id} className="relative">
             {plan.id === 'yearly' && selectedPlan === 'yearly' && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-                <div className="bg-[#294a46] text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md">
+                <div className="bg-[#294a46] text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md whitespace-nowrap">
                   3 days FREE
                 </div>
               </div>
@@ -1567,7 +1567,7 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
               }`}
             >
                           <div className="flex flex-col h-full">
-              <div className="mb-4">
+              <div className="mb-4 text-center">
                 <h3 className={`font-semibold text-lg ${
                   selectedPlan === plan.id ? 'text-[#294a46]' : 'text-gray-900 group-hover:text-[#294a46]'
                 }`}>{plan.name}</h3>
@@ -1586,8 +1586,8 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                           ) : (
                             // If feature is an object, show with icon
                             <>
-                              <div className="text-lg">{feature.icon}</div>
-                              <div>
+                              <div className="text-lg -ml-1">{feature.icon}</div>
+                              <div className="-ml-1">
                                 <h4 className="font-semibold text-gray-900 text-xs">{feature.title}</h4>
                               </div>
                             </>
@@ -1601,19 +1601,28 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                         <div className="p-1 rounded-full mr-3" style={{ backgroundColor: "#F9F9F9" }}>
                           <Check className="h-4 w-4 text-[#294a46]" />
                         </div>
-                        <span className="text-sm font-medium text-gray-900">Today: Unlock AI Features. Save 48%</span>
+                        <span className="text-sm font-medium text-gray-900">
+                          <span className="hidden md:inline">Today: Unlock AI Features. Save 48%</span>
+                          <span className="md:hidden">Today: Save 48%</span>
+                        </span>
                       </div>
                       <div className="flex items-center">
                         <div className="p-1 rounded-full mr-3" style={{ backgroundColor: "#F9F9F9" }}>
                           <Check className="h-4 w-4 text-[#294a46]" />
                         </div>
-                        <span className="text-sm text-gray-600">In 2 Days - End of Trial Reminder</span>
+                        <span className="text-sm text-gray-600">
+                          <span className="hidden md:inline">In 2 Days - End of Trial Reminder</span>
+                          <span className="md:hidden">In 2 days reminder</span>
+                        </span>
                       </div>
                       <div className="flex items-center">
                         <div className="p-1 rounded-full mr-3" style={{ backgroundColor: "#F9F9F9" }}>
                           <Check className="h-4 w-4 text-[#294a46]" />
                         </div>
-                        <span className="text-sm text-gray-600">3rd Day: Billing Starts. Ends Next Year!</span>
+                        <span className="text-sm text-gray-600">
+                          <span className="hidden md:inline">3rd Day: Billing Starts. Ends Next Year!</span>
+                          <span className="md:hidden">3rd day Billed.</span>
+                        </span>
                       </div>
                     </div>
                   )}
@@ -2145,7 +2154,7 @@ export default function CustomerOnboarding() {
       <SiteHeader />
       <div className="container mx-auto px-4 py-4 max-w-4xl">
         {/* Progress Bar */}
-        <div className={currentStep === 14 ? "mb-1" : "mb-4"}>
+        <div className={currentStep === 14 ? "mb-0" : "mb-4"}>
           <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
@@ -2163,7 +2172,7 @@ export default function CustomerOnboarding() {
                 className="absolute top-0 transform -translate-y-1/2 transition-all duration-300"
                 style={{ left: `calc(${(currentStep / 20) * 100}% - 16px)` }}
               >
-                <span className="text-2xl" style={{ transform: 'scaleX(-1) rotateY(180deg)' }}>🏎️</span>
+                <span className="text-2xl" style={{ transform: 'rotateY(180deg)' }}>🏎️</span>
               </div>
               {/* Finish flag at the end */}
               <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2">
