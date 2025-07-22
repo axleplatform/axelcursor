@@ -509,6 +509,7 @@ export default function MechanicDashboard() {
   const [startingAppointment, setStartingAppointment] = useState<AppointmentWithRelations | null>(null);
   const [etaMinutes, setEtaMinutes] = useState('30');
   const [isStarting, setIsStarting] = useState(false);
+  const [skipConfirmation, setSkipConfirmation] = useState<string | null>(null);
 
   // Add new state variables after the existing ones
   const [showEditModal, setShowEditModal] = useState(false);
@@ -1596,8 +1597,19 @@ export default function MechanicDashboard() {
     }
   };
 
-  // Handle skipping an appointment
+  // Handle skipping an appointment with double-click confirmation
   const handleSkipAppointment = async (appointmentId: string) => {
+    // If this is the first click, show confirmation message
+    if (skipConfirmation !== appointmentId) {
+      setSkipConfirmation(appointmentId);
+      // Clear confirmation after 3 seconds
+      setTimeout(() => setSkipConfirmation(null), 3000);
+      return;
+    }
+
+    // This is the second click, proceed with skipping
+    setSkipConfirmation(null);
+    
     try {
       // Check if already skipped
       const { data: existingSkip } = await supabase
@@ -1625,12 +1637,12 @@ export default function MechanicDashboard() {
           skipped_at: new Date().toISOString()
         });
 
-          if (skipError) throw skipError;
+      if (skipError) throw skipError;
 
-    toast({
-      title: "Success",
-      description: "Appointment skipped"
-    });
+      toast({
+        title: "Success",
+        description: "Appointment skipped"
+      });
       
       // IMPORTANT: Remove from local state immediately for instant feedback
       setAvailableAppointments((prev: AppointmentWithRelations[]) => 
@@ -1640,14 +1652,14 @@ export default function MechanicDashboard() {
       // Then fetch fresh data
       await fetchInitialAppointments();
       
-      } catch (error) {
-    console.error('Error skipping appointment:', error);
-    toast({
-      title: "Error",
-      description: "Failed to skip appointment",
-      variant: "destructive"
-    });
-  }
+    } catch (error) {
+      console.error('Error skipping appointment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to skip appointment",
+        variant: "destructive"
+      });
+    }
   };
 
   // Navigate through available appointments
@@ -3043,7 +3055,7 @@ export default function MechanicDashboard() {
 
 
                     {/* Action Buttons */}
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 relative">
                       {/* Check if customer has completed booking (has phone number) */}
                       {(() => {
                         const currentAppointment = availableAppointments[currentAvailableIndex];
@@ -3102,10 +3114,16 @@ export default function MechanicDashboard() {
                           </button>
                         );
                       })()}
+                      {/* Skip confirmation message */}
+                      {skipConfirmation === availableAppointments[currentAvailableIndex].id && (
+                        <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-1 rounded-md text-sm whitespace-nowrap z-10">
+                          Click again to confirm
+                        </div>
+                      )}
                       <button
                         onClick={() => handleSkipAppointment(availableAppointments[currentAvailableIndex].id)}
                         disabled={isProcessing}
-                        className="border border-white text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99] flex-1 disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="border border-white text-white font-medium text-lg py-2 px-4 rounded-full transform transition-all duration-200 hover:scale-[1.01] hover:bg-[#1e3632] hover:shadow-md active:scale-[0.99] flex-1 disabled:opacity-70 disabled:cursor-not-allowed relative"
                       >
                         Skip
                       </button>
