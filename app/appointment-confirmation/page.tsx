@@ -86,7 +86,15 @@ export default function AppointmentConfirmationPage() {
   const [dashboardLink, setDashboardLink] = React.useState('/customer-dashboard')
 
   React.useEffect(() => {
-    checkUserRole();
+    // Only check user role if user is authenticated
+    // Guest users should be able to access appointment confirmation
+    const checkAuthAndRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        checkUserRole();
+      }
+    };
+    checkAuthAndRole();
   }, []);
 
   const checkUserRole = async () => {
