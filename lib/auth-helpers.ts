@@ -35,4 +35,4 @@ export async function redirectToCorrectDashboard(router: any) {
   if (dashboardRoute) {
     router.push(dashboardRoute);
   }
-} 
+}
