@@ -28,10 +28,6 @@ export default function LoginPage() {
     setError("")
 
     try {
-      console.log("🔑 Starting login process...")
-      console.log("📧 Email:", email)
-      console.log("🔐 Password length:", password.length)
-      
       if (!email || !password) {
         throw new Error("Please enter both email and password")
       }
@@ -42,10 +38,6 @@ export default function LoginPage() {
       })
 
       if (signInError) {
-        console.error("❌ Auth error:", signInError)
-        console.error("❌ Error code:", signInError.code)
-        console.error("❌ Error status:", signInError.status)
-        
         // Provide more helpful error messages
         if (signInError.message === 'Invalid login credentials') {
           setError('Invalid email or password. Please check your credentials.')
@@ -60,9 +52,6 @@ export default function LoginPage() {
       if (!data.user) {
         throw new Error("Login failed - no user data received")
       }
-
-      console.log("✅ Login successful, user:", data.user.id)
-      console.log("📧 User email:", data.user.email)
       
       // Add a small delay to ensure session is established
       await new Promise(resolve => setTimeout(resolve, 100))
@@ -74,11 +63,9 @@ export default function LoginPage() {
         // Use the redirectToCorrectDashboard function
         await redirectToCorrectDashboard(router)
       } else {
-        console.error("❌ No session after login")
         setError("Login successful but session not established. Please try again.")
       }
     } catch (error: unknown) {
-      console.error("❌ Unexpected error:", error)
       const errorMessage = error instanceof Error ? error.message : 'Login failed'
       setError(errorMessage)
     } finally {

@@ -24,7 +24,6 @@ export async function getUserRoleAndRedirect(router: any) {
       return '/customer-dashboard';
     }
   } catch (error) {
-    console.error('Error checking user role:', error);
     return '/customer-dashboard'; // Default to customer
   }
 }

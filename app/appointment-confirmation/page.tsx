@@ -99,14 +99,11 @@ export default function AppointmentConfirmationPage() {
   React.useEffect(() => {
     const fetchAppointmentData = async () => {
       if (!appointmentId) {
-        console.error("No appointment ID provided")
         setIsLoading(false)
         return
       }
 
       try {
-        console.log("Fetching appointment data for ID:", appointmentId)
-
         // Fetch appointment with selected quote and mechanic details
         const { data, error } = await supabase
           .from("appointments")
@@ -139,9 +136,7 @@ export default function AppointmentConfirmationPage() {
         if (data.status === 'cancelled') {
           setIsCancelled(true)
         }
-        console.log("Fetched appointment data:", data)
       } catch (error) {
-        console.error("Error fetching appointment data:", error)
         toast({
           title: "Error",
           description: "Failed to load appointment details. Please try again.",
@@ -166,7 +161,6 @@ export default function AppointmentConfirmationPage() {
           filter: `id=eq.${appointmentId}`,
         },
         (payload: RealtimePayload) => {
-          console.log("Real-time update received:", payload)
           if (payload.eventType === "UPDATE") {
             setAppointmentData(payload.new)
             // Check if appointment was cancelled
@@ -242,7 +236,6 @@ export default function AppointmentConfirmationPage() {
         })
       }
     } catch (error: any) {
-      console.error("Error creating account:", error)
       toast({
         title: "Error",
         description: error.message || "Failed to create account. Please try again.",
@@ -277,7 +270,6 @@ export default function AppointmentConfirmationPage() {
           .eq('id', appointmentId)
           
         if (error) {
-          console.error('Error cancelling appointment:', error)
           toast({
             title: "Error",
             description: "Failed to cancel appointment. Please try again.",
@@ -297,7 +289,6 @@ export default function AppointmentConfirmationPage() {
           description: "Your appointment has been cancelled and refund processed.",
         })
       } catch (error) {
-        console.error('Error cancelling appointment:', error)
         toast({
           title: "Error",
           description: "Failed to cancel appointment. Please try again.",
