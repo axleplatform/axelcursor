@@ -86,6 +86,8 @@ export default function AppointmentConfirmationPage() {
   const [dashboardLink, setDashboardLink] = React.useState('/customer-dashboard')
   const [otpSending, setOtpSending] = React.useState(false)
   const [lastOtpSent, setLastOtpSent] = React.useState<Date | null>(null)
+  const [cooldownSeconds, setCooldownSeconds] = React.useState(0)
+  const [useEmail, setUseEmail] = React.useState(false)
 
   React.useEffect(() => {
     // Only check user role if user is authenticated
@@ -98,6 +100,33 @@ export default function AppointmentConfirmationPage() {
     };
     checkAuthAndRole();
   }, []);
+
+  // Cooldown timer effect
+  React.useEffect(() => {
+    if (cooldownSeconds > 0) {
+      const timer = setTimeout(() => setCooldownSeconds(cooldownSeconds - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldownSeconds]);
+
+  // Check if user is rate limited
+  const checkRateLimit = () => {
+    const rateLimitTime = localStorage.getItem('otpRateLimitTime');
+    if (rateLimitTime) {
+      const timePassed = Date.now() - parseInt(rateLimitTime);
+      const oneHour = 60 * 60 * 1000; // 60 minutes in milliseconds
+      
+      if (timePassed < oneHour) {
+        const minutesLeft = Math.ceil((oneHour - timePassed) / 60000);
+        setFormErrors({ email: `Please wait ${minutesLeft} minutes before requesting another code.` });
+        return false;
+      } else {
+        // Clear expired rate limit
+        localStorage.removeItem('otpRateLimitTime');
+      }
+    }
+    return true;
+  };
 
   const checkUserRole = async () => {
     const route = await getUserRoleAndRedirect(router);
@@ -211,6 +240,11 @@ export default function AppointmentConfirmationPage() {
       return
     }
 
+    // Check rate limit first
+    if (!checkRateLimit()) {
+      return
+    }
+
     // Check if we sent OTP recently (within 60 seconds)
     if (lastOtpSent && Date.now() - lastOtpSent.getTime() < 60000) {
       setFormErrors({ email: "Please wait 60 seconds before requesting another code" })
@@ -237,8 +271,12 @@ export default function AppointmentConfirmationPage() {
       })
 
       if (authError) {
-        if (authError.message.includes("429")) {
-          setFormErrors({ email: "Too many attempts. Please wait a few minutes and try again." })
+        // Handle rate limit error specifically
+        if (authError.status === 429 || authError.message.includes('rate limit') || authError.message.includes('429')) {
+          setFormErrors({ email: "Too many attempts. Please wait 60 minutes before trying again." })
+          // Store the rate limit timestamp
+          localStorage.setItem('otpRateLimitTime', Date.now().toString())
+          setCooldownSeconds(3600) // 60 minutes
         } else if (authError.message.includes("already registered")) {
           setFormErrors({ email: "Looks like you already have an account. Please sign in instead." })
         } else {
@@ -619,16 +657,30 @@ export default function AppointmentConfirmationPage() {
                       <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
                     )}
                     
+                    {/* Cooldown timer display */}
+                    {cooldownSeconds > 0 && (
+                      <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-700 font-medium">
+                          Rate limit active
+                        </p>
+                        <p className="text-xs text-red-600">
+                          Please wait {Math.floor(cooldownSeconds / 60)}:{(cooldownSeconds % 60).toString().padStart(2, '0')} before trying again
+                        </p>
+                      </div>
+                    )}
+                    
                     <Button 
                       className="w-full bg-[#294a46] hover:bg-[#1e3632] text-white"
                       onClick={handleEmailSignup}
-                      disabled={isCreatingAccount}
+                      disabled={isCreatingAccount || cooldownSeconds > 0}
                     >
                       {isCreatingAccount ? (
                         <>
                           <Loader2 className="animate-spin h-4 w-4 mr-2" />
                           Creating Account...
                         </>
+                      ) : cooldownSeconds > 0 ? (
+                        `Wait ${Math.floor(cooldownSeconds / 60)}:${(cooldownSeconds % 60).toString().padStart(2, '0')}`
                       ) : (
                         "Create Account"
                       )}
