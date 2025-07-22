@@ -434,9 +434,9 @@ const CommunicationPreferencesStep = ({ onNext, onBack, updateData, onboardingDa
   ];
 
   const toggleOption = (key: string) => {
-    setCommunication(prev => ({
+    setCommunication((prev: any) => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: !prev[key as keyof typeof prev]
     }));
   };
 
@@ -504,9 +504,9 @@ const NotificationSettingsStep = ({ onNext, onBack, updateData, onboardingData }
   ];
 
   const toggleNotification = (type: string) => {
-    setNotifications(prev => ({
+    setNotifications((prev: any) => ({
       ...prev,
-      [type]: !prev[type]
+      [type]: !prev[type as keyof typeof prev]
     }));
   };
 
