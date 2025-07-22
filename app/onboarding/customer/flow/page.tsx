@@ -1582,11 +1582,9 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                         } else {
                           // Render object features with icon, title
                           return (
-                            <div key={index} className="flex items-start">
+                            <div key={index} className="flex items-center">
                               <div className="text-lg mr-3">{feature.icon}</div>
-                              <div>
-                                <span className="text-sm font-medium text-gray-900">{feature.title}</span>
-                              </div>
+                              <span className="text-sm font-medium text-gray-900">{feature.title}</span>
                             </div>
                           );
                         }
@@ -2023,10 +2021,13 @@ export default function CustomerOnboarding() {
   }
 
   const handleBack = () => {
+    console.log('Back button clicked, current step:', currentStep);
     if (currentStep === 1) {
       // Navigate to welcome page on step 1
+      console.log('Navigating to welcome page');
       router.push('/welcome')
     } else if (currentStep > 1) {
+      console.log('Going back to step:', currentStep - 1);
       setCurrentStep(currentStep - 1);
     }
   };
@@ -2149,12 +2150,16 @@ export default function CustomerOnboarding() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <SiteHeader />
-      <div className="container mx-auto px-4 py-4 max-w-4xl">
+      <div className={`container mx-auto px-4 max-w-3xl ${currentStep === 14 ? 'py-2' : 'py-4'}`}>
         {/* Progress Bar */}
         <div className={currentStep === 14 ? "-mb-10" : "mb-4"}>
           <div className="flex items-center gap-4">
             <button
-              onClick={handleBack}
+              onClick={(e) => {
+                console.log('Button clicked!');
+                e.preventDefault();
+                handleBack();
+              }}
               className="flex items-center px-3 py-2 rounded-lg transition-colors text-[#294a46] hover:bg-gray-100"
             >
               <ChevronLeft className="h-4 w-4" />
