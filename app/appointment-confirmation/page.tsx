@@ -84,6 +84,8 @@ export default function AppointmentConfirmationPage() {
   const [accountCreated, setAccountCreated] = React.useState(false)
   const [formErrors, setFormErrors] = React.useState<Record<string, string>>({})
   const [dashboardLink, setDashboardLink] = React.useState('/customer-dashboard')
+  const [otpSending, setOtpSending] = React.useState(false)
+  const [lastOtpSent, setLastOtpSent] = React.useState<Date | null>(null)
 
   React.useEffect(() => {
     // Only check user role if user is authenticated
@@ -209,8 +211,17 @@ export default function AppointmentConfirmationPage() {
       return
     }
 
+    // Check if we sent OTP recently (within 60 seconds)
+    if (lastOtpSent && Date.now() - lastOtpSent.getTime() < 60000) {
+      setFormErrors({ email: "Please wait 60 seconds before requesting another code" })
+      return
+    }
+
+    if (otpSending) return // Prevent double-clicks
+
     setIsCreatingAccount(true)
     setFormErrors({})
+    setOtpSending(true)
 
     try {
       // Create user profile with just email and name
@@ -226,7 +237,9 @@ export default function AppointmentConfirmationPage() {
       })
 
       if (authError) {
-        if (authError.message.includes("already registered")) {
+        if (authError.message.includes("429")) {
+          setFormErrors({ email: "Too many attempts. Please wait a few minutes and try again." })
+        } else if (authError.message.includes("already registered")) {
           setFormErrors({ email: "Looks like you already have an account. Please sign in instead." })
         } else {
           throw authError
@@ -237,6 +250,7 @@ export default function AppointmentConfirmationPage() {
       if (authData && appointmentData) {
         // Update the appointment with the new user_id if available
         // Note: For OTP signup, we might need to handle this differently
+        setLastOtpSent(new Date())
         setAccountCreated(true)
         toast({
           title: "Check your email!",
@@ -251,6 +265,7 @@ export default function AppointmentConfirmationPage() {
       })
     } finally {
       setIsCreatingAccount(false)
+      setOtpSending(false)
     }
   }
 

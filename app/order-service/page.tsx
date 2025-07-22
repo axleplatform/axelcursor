@@ -88,7 +88,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
   const renderCount = useRef(0);
   renderCount.current += 1;
   
-  console.log('🔍 [LIFECYCLE] HomePageContent rendering #', renderCount.current, 'appointmentId:', searchParams?.get("appointment_id"));
+
   const pathname = usePathname()
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [isLoadingExistingData, setIsLoadingExistingData] = useState<boolean>(false)
@@ -486,9 +486,9 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
 
   // Cleanup effect for component unmount
   useEffect(() => {
-    console.log('🔍 [LIFECYCLE] HomePageContent mounted');
+  
     return () => {
-      console.log('🔍 [LIFECYCLE] HomePageContent unmounting');
+      // Component cleanup
       console.log('🗺️ Landing page unmounting - cleaning up map');
       
       // Set mounted flag to false to prevent state updates
@@ -790,31 +790,22 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
 
   // Helper to format a date string as YYYY-MM-DD in local time
   const formatLocalDateString = useCallback((dateString: string): string => {
-    console.log('🔍 [DATE DEBUG] formatLocalDateString called with:', dateString);
     if (!dateString) {
-      console.log('🔍 [DATE DEBUG] Empty dateString, returning empty string');
       return '';
     }
     const d = new Date(dateString);
-    console.log('🔍 [DATE DEBUG] Parsed date object:', d);
-    console.log('🔍 [DATE DEBUG] Date is valid:', !isNaN(d.getTime()));
     if (isNaN(d.getTime())) {
-      console.log('🔍 [DATE DEBUG] Invalid date, returning empty string');
       return '';
     }
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     const result = `${year}-${month}-${day}`;
-    console.log('🔍 [DATE DEBUG] formatLocalDateString result:', result);
     return result;
   }, []); // No dependencies - this function is stable
 
   // Format date as YYYY-MM-DDTHH:MM:SS with timezone for storage (explicit local timezone)
   const formatLocalDate = useCallback((date: Date): string => {
-    console.log('🔍 [DATE DEBUG] formatLocalDate called with date:', date);
-    console.log('🔍 [DATE DEBUG] Date is valid:', !isNaN(date.getTime()));
-    
     // Get timezone offset in minutes and convert to hours
     const timezoneOffset = date.getTimezoneOffset();
     const offsetHours = Math.abs(Math.floor(timezoneOffset / 60));
@@ -830,18 +821,13 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
     const seconds = String(date.getSeconds()).padStart(2, '0');
     
     const result = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${timezoneString}`;
-    console.log('🔍 [DATE DEBUG] formatLocalDate result with timezone:', result);
-    console.log('🔍 [DATE DEBUG] Timezone offset:', timezoneOffset, 'minutes =', timezoneString);
     return result;
   }, []);
 
   // Parse YYYY-MM-DD as local date (no timezone conversion)
   const parseLocalDate = useCallback((dateString: string): Date => {
-    console.log('🔍 [DATE DEBUG] parseLocalDate called with:', dateString);
     const [year, month, day] = dateString.split('-').map(Number);
-    console.log('🔍 [DATE DEBUG] Parsed components:', { year, month, day });
     const result = new Date(year, month - 1, day);
-    console.log('🔍 [DATE DEBUG] parseLocalDate result:', result);
     return result;
   }, []);
 

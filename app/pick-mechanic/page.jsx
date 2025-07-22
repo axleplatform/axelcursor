@@ -15,7 +15,7 @@ import { getQuotesForAppointment } from "@/lib/mechanic-quotes"
 import { formatCarIssue } from "@/lib/utils"
 import { GoogleMapsLink } from "@/components/google-maps-link"
 
-function PickMechanicContent() {
+const PickMechanicContent = React.memo(function PickMechanicContent() {
  const router = useRouter()
  const searchParams = useSearchParams()
  
@@ -28,11 +28,7 @@ function PickMechanicContent() {
   }
  }, [])
  
- console.log("🔍 PickMechanicPage component mounting...", {
-  timestamp: new Date().toISOString(),
-  isStrictMode,
-  appointmentId: searchParams?.get("appointmentId")
- })
+
  const { toast } = useToast()
 
  const [appointment, setAppointment] = useState(null)
@@ -61,7 +57,7 @@ function PickMechanicContent() {
  // Get appointmentId from searchParams (check both parameter names for consistency)
  const appointmentId = searchParams?.get("appointmentId") || searchParams?.get("appointment_id")
  
- console.log("🔍 AppointmentId from searchParams:", appointmentId)
+
 
    // Early return if no appointment ID
   if (!appointmentId) {
@@ -113,12 +109,7 @@ function PickMechanicContent() {
  // Move fetchAppointmentData OUTSIDE of useCallback to fix dependency issues
  const fetchAppointmentData = async () => {
   try {
-   console.log('=== FETCH DEBUG ===')
-   console.log('Appointment ID:', appointmentId)
-   console.log('Appointment ID type:', typeof appointmentId)
-   
    if (!appointmentId) {
-    console.log('No appointment ID provided')
     setError('No appointment ID provided')
     setIsLoading(false)
     return
@@ -130,7 +121,7 @@ function PickMechanicContent() {
     .select('*, vehicles!fk_appointment_id(*)')
     .eq('id', appointmentId)
    
-   console.log('Appointment query:', { data: appointments, error: aptError })
+
    
    if (aptError) {
     console.error('Query error:', aptError)
@@ -155,7 +146,7 @@ function PickMechanicContent() {
    // 3. For temporary users (created for guest bookings), allow access via URL
    
    const { data: { user } } = await supabase.auth.getUser()
-   console.log('Current user:', user?.id, 'Appointment user:', appointment.user_id)
+
    
    // Check if this is a temporary user (guest booking)
    // Temporary users have account_type = 'temporary' in the users table
@@ -169,20 +160,11 @@ function PickMechanicContent() {
    const isTemporaryUser = userData?.account_type === 'temporary'
    
    if (userError) {
-    console.log('⚠️ Could not determine user type (proceeding with guest access):', userError)
+ 
     // If we can't determine user type, allow access (fail open for guest flow)
    }
    
-   console.log('🔍 Access Control Check:', {
-    appointmentUserId: appointment.user_id,
-    currentUserId: user?.id,
-    hasCurrentUser: !!user,
-    isGuestFlow: !user,
-    isTemporaryUser: isTemporaryUser,
-    userAccountType: userData?.account_type,
-    userError: !!userError,
-    accessGranted: !user || user?.id === appointment.user_id || isTemporaryUser || userError
-   })
+
    
    // Allow access if:
    // 1. No authenticated user (guest flow)
@@ -198,33 +180,13 @@ function PickMechanicContent() {
     return
    }
    
-   if (!user) {
-    console.log('✅ Guest flow access granted (no authentication required)')
-   } else if (isTemporaryUser) {
-    console.log('✅ Temporary user access granted (guest booking via URL)')
-   } else {
-    console.log('✅ Authenticated user appointment access granted')
-   }
+
    
    // Use standardized function to fetch quotes (RLS-compatible)
-   console.log('🔍 Fetching quotes using standardized function for appointment:', appointmentId)
-   console.log('🔍 CUSTOMER VIEW - Appointment ID details:', {
-     appointmentId,
-     type: typeof appointmentId,
-     length: appointmentId?.length,
-     trimmed: appointmentId?.trim(),
-     hasSpaces: appointmentId?.includes(' '),
-     hasNewlines: appointmentId?.includes('\n'),
-     hasTabs: appointmentId?.includes('\t')
-   })
    
    const quotes = await getQuotesForAppointment(appointmentId)
    
-   console.log('🔍 Quotes retrieved successfully:', {
-    appointmentId: appointmentId,
-    quotesCount: quotes?.length || 0,
-    quotes: quotes
-   })
+
    
    setAppointment(appointment)
    setMechanicQuotes(quotes || [])
@@ -245,11 +207,9 @@ function PickMechanicContent() {
 
  // Initial fetch
  useEffect(() => {
-  console.log("🔍 useEffect triggered with appointmentId:", appointmentId)
   if (appointmentId) {
    fetchAppointmentData()
   } else {
-   console.log("🔍 No appointmentId, setting loading to false")
    setIsLoading(false)
   }
  }, [appointmentId]) // Removed fetchAppointmentData dependency
@@ -258,14 +218,11 @@ function PickMechanicContent() {
  useEffect(() => {
   if (!appointmentId) return
   
-  console.log('🔄 Setting up auto-refresh interval for appointmentId:', appointmentId)
   const interval = setInterval(() => {
-   console.log('Auto-refreshing quotes...')
    fetchAppointmentData()
   }, 8000) // 8 seconds
 
   return () => {
-   console.log('🔄 Clearing auto-refresh interval')
    clearInterval(interval)
   }
  }, [appointmentId]) // Removed fetchAppointmentData dependency
@@ -417,15 +374,12 @@ function PickMechanicContent() {
  }
 
  const formatDate = (dateString) => {
- console.log('🕒 [TIMEZONE DEBUG] pick-mechanic formatDate called with:', dateString);
- 
  // Parse as local time to avoid timezone conversion
  let date;
  if (dateString.includes('T')) {
    // Handle timezone-aware datetime strings (e.g., "2025-07-17T15:46:24-07:00")
    if (dateString.includes('+') || dateString.includes('-') && dateString.lastIndexOf('-') > 10) {
      // Has timezone info, use regular Date constructor which will handle it correctly
-     console.log('🕒 [TIMEZONE DEBUG] Timezone-aware datetime, using Date constructor');
      date = new Date(dateString);
    } else {
      // No timezone info, parse manually as local time
@@ -435,18 +389,13 @@ function PickMechanicContent() {
      const [hours, minutes] = timeParts.map(Number);
      const seconds = timeParts[2] ? Number(timeParts[2]) : 0;
      
-     console.log('🕒 [TIMEZONE DEBUG] Parsed components:', { year, month, day, hours, minutes, seconds });
      date = new Date(year, month - 1, day, hours, minutes, seconds);
    }
  } else {
    date = new Date(dateString);
  }
  
- console.log('🕒 [TIMEZONE DEBUG] Created local date:', date.toLocaleString());
- console.log('🕒 [TIMEZONE DEBUG] Date is valid:', !isNaN(date.getTime()));
- 
  if (isNaN(date.getTime())) {
-   console.error('🕒 [TIMEZONE DEBUG] Invalid date created from:', dateString);
    return 'Invalid date';
  }
  
@@ -994,7 +943,7 @@ function PickMechanicContent() {
    `}</style>
   </div>
  )
-}
+})
 
 // Loading component for Suspense fallback
 function PickMechanicLoading() {
