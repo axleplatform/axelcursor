@@ -133,6 +133,18 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
   const [showYearDropdown, setShowYearDropdown] = useState(false)
   const [showMakeDropdown, setShowMakeDropdown] = useState(false)
   const [showModelDropdown, setShowModelDropdown] = useState(false)
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  // Animation effect for form fields
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 6; i++) {
+        await new Promise(resolve => setTimeout(resolve, 200))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
 
   // Generate years (80 years back)
   const currentYear = new Date().getFullYear()
@@ -162,7 +174,9 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
       </div>
       
       <div className="space-y-4">
-        <div className="grid grid-cols-3 gap-4">
+        <div className={`grid grid-cols-3 gap-4 transition-all duration-500 ${
+          visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
           {/* YEAR - Combo Input */}
           <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -298,7 +312,9 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
         </div>
 
         {/* Row 2: Mileage, License Plate */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className={`grid grid-cols-2 gap-4 transition-all duration-500 delay-200 ${
+          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Mileage</label>
             <input 
@@ -322,7 +338,9 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
         </div>
 
         {/* Row 3: VIN */}
-        <div>
+        <div className={`transition-all duration-500 delay-400 ${
+          visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
           <label className="block text-sm font-medium text-gray-700 mb-2">VIN (Optional)</label>
           <input 
             type="text" 
@@ -335,15 +353,19 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
       </div>
 
       {/* Button matching book appointment */}
-      <button 
-        onClick={() => {
-          updateData({ vehicle })
-          onNext()
-        }}
-        className="mt-6 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-      >
-        Continue
-      </button>
+      <div className={`transition-all duration-500 delay-600 ${
+        visibleItems >= 4 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+      }`}>
+        <button 
+          onClick={() => {
+            updateData({ vehicle })
+            onNext()
+          }}
+          className="mt-6 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      </div>
     </div>
   )
 }
@@ -507,6 +529,19 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
 };
 
 const PreviousAppsStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  // Animation effect for options
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 2; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
+
   return (
     <div>
       <div className="mb-6">
@@ -517,35 +552,43 @@ const PreviousAppsStep = ({ onNext, updateData, showButton = true }: StepProps &
       </div>
       
       <div className="space-y-4">
-        <button
-          onClick={() => {
-            updateData({ usedOtherApps: true })
-            onNext()
-          }}
-          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">👍</span>
-            <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
-              Yes, I have
-            </h3>
-          </div>
-        </button>
+        <div className={`transition-all duration-500 ${
+          visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <button
+            onClick={() => {
+              updateData({ usedOtherApps: true })
+              onNext()
+            }}
+            className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">👍</span>
+              <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
+                Yes, I have
+              </h3>
+            </div>
+          </button>
+        </div>
         
-        <button
-          onClick={() => {
-            updateData({ usedOtherApps: false })
-            onNext()
-          }}
-          className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">👎</span>
-            <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
-              No, this is my first time
-            </h3>
-          </div>
-        </button>
+        <div className={`transition-all duration-500 delay-100 ${
+          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <button
+            onClick={() => {
+              updateData({ usedOtherApps: false })
+              onNext()
+            }}
+            className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">👎</span>
+              <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
+                No, this is my first time
+              </h3>
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -639,6 +682,18 @@ const LastServiceStep = ({ onNext, updateData, showButton = true }: StepProps & 
     type: '',
     mileage: ''
   })
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  // Animation effect for form fields
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 3; i++) {
+        await new Promise(resolve => setTimeout(resolve, 200))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
 
   return (
     <div>
@@ -651,7 +706,9 @@ const LastServiceStep = ({ onNext, updateData, showButton = true }: StepProps & 
       
       <div className="space-y-4">
         {/* Row 1: Service Date and Mileage at Service */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-all duration-500 ${
+          visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Service Date</label>
             
@@ -694,7 +751,9 @@ const LastServiceStep = ({ onNext, updateData, showButton = true }: StepProps & 
         </div>
         
         {/* Row 2: Service Type */}
-        <div>
+        <div className={`transition-all duration-500 delay-200 ${
+          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
           <label className="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
           <input 
             type="text" 
@@ -708,29 +767,52 @@ const LastServiceStep = ({ onNext, updateData, showButton = true }: StepProps & 
 
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
-        <button 
-          onClick={() => {
-            updateData({ lastService })
-            onNext()
-          }}
-          className="mt-8 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-        >
-          Continue
-        </button>
+        <div className={`transition-all duration-500 delay-400 ${
+          visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <button 
+            onClick={() => {
+              updateData({ lastService })
+              onNext()
+            }}
+            className="mt-8 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+          >
+            Continue
+          </button>
+        </div>
       )}
     </div>
   )
 }
 
 const ThankYouStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  // Animation effect for content
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 3; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
+
   return (
     <div className="text-center">
-      <div className="mb-8">
+      <div className={`mb-8 transition-all duration-500 ${
+        visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+      }`}>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Thank you for trusting us!</h2>
-        <p className="text-gray-600 mb-4">
+        <p className={`text-gray-600 mb-4 transition-all duration-500 delay-100 ${
+          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
           We're excited to help you take better care of your vehicle.
         </p>
-        <div className="text-4xl">🤝</div>
+        <div className={`text-4xl transition-all duration-500 delay-200 ${
+          visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>🤝</div>
       </div>
       
       {/* Only show button if showButton is true (desktop) */}
@@ -747,6 +829,19 @@ const ThankYouStep = ({ onNext, showButton = true }: StepProps & { showButton?: 
 }
 
 const BenefitsStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  // Animation effect for benefits
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 3; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
+
   return (
     <div>
       <div className="mb-6">
@@ -757,7 +852,9 @@ const BenefitsStep = ({ onNext, showButton = true }: StepProps & { showButton?: 
       </div>
       
       <div className="space-y-4 mb-6">
-        <div className="flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg">
+        <div className={`flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg transition-all duration-500 ${
+          visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
           <div className="text-2xl">🎯</div>
           <div>
             <h3 className="font-semibold text-gray-900">Predictive Maintenance</h3>
@@ -765,7 +862,9 @@ const BenefitsStep = ({ onNext, showButton = true }: StepProps & { showButton?: 
           </div>
         </div>
         
-        <div className="flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg">
+        <div className={`flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg transition-all duration-500 delay-100 ${
+          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
           <div className="text-2xl">💰</div>
           <div>
             <h3 className="font-semibold text-gray-900">Cost Savings</h3>
@@ -773,7 +872,9 @@ const BenefitsStep = ({ onNext, showButton = true }: StepProps & { showButton?: 
           </div>
         </div>
         
-        <div className="flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg">
+        <div className={`flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg transition-all duration-500 delay-200 ${
+          visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
           <div className="text-2xl">🔧</div>
           <div>
             <h3 className="font-semibold text-gray-900">Established Research</h3>
@@ -797,17 +898,33 @@ const BenefitsStep = ({ onNext, showButton = true }: StepProps & { showButton?: 
 
 const LocationStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   const [location, setLocation] = useState('')
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  // Animation effect for input
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 2; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
 
   return (
     <div>
-      <div className="mb-6">
+      <div className={`mb-6 transition-all duration-500 ${
+        visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+      }`}>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Where are you located?</h2>
         <p className="text-gray-600 text-sm">
           Help us find mechanics and services near you
         </p>
       </div>
       
-      <div>
+      <div className={`transition-all duration-500 delay-200 ${
+        visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+      }`}>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           City or Zip Code
         </label>
@@ -1418,6 +1535,18 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps
 
 const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = true }: StepProps & { showButton?: boolean }) => {
   const [phoneNumber, setPhoneNumber] = useState('')
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  // Animation effect for input
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 2; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
 
   const handleSkip = () => {
     if (setSkippedSteps) {
@@ -1428,14 +1557,18 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
 
   return (
     <div>
-      <div className="mb-6">
+      <div className={`mb-6 transition-all duration-500 ${
+        visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+      }`}>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Phone Number</h2>
         <p className="text-gray-600 text-sm">
           Add your phone number for appointment notifications
         </p>
       </div>
       
-      <div>
+      <div className={`transition-all duration-500 delay-200 ${
+        visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+      }`}>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Phone Number
         </label>
@@ -1513,6 +1646,18 @@ const FreeTrialStep = ({ onNext, updateData, showButton = true }: StepProps & { 
 
 const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   const [selectedPlan, setSelectedPlan] = useState('yearly')
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  // Animation effect for plan options
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 2; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
 
   const plans = [
     { 
@@ -1542,9 +1687,11 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
         </p>
       </div>
       
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        {plans.map(plan => (
-          <div key={plan.id} className="relative">
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 transition-all duration-500 ${
+        visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+      }`}>
+        {plans.map((plan, index) => (
+          <div key={plan.id} className={`relative transition-all duration-500 ${index === 0 ? '' : 'delay-100'}`}>
             {plan.id === 'yearly' && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                 <div className="bg-[#294a46] text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md whitespace-nowrap">
@@ -2150,9 +2297,10 @@ export default function CustomerOnboarding() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <SiteHeader />
-      <div className={`container mx-auto px-4 max-w-md ${currentStep === 14 ? 'py-2' : 'py-4'}`}>
-        {/* Progress Bar */}
-        <div className={`${currentStep === 14 ? "-mb-10" : "mb-4"} relative z-40`}>
+      
+      {/* Progress Bar - Full width on desktop */}
+      <div className={`${currentStep === 14 ? "-mb-16 md:-mb-20" : "mb-4"} relative z-40 px-4 md:px-0`}>
+        <div className="container mx-auto md:max-w-none">
           <div className="flex items-center gap-4">
             <button
               onClick={(e) => {
@@ -2183,6 +2331,9 @@ export default function CustomerOnboarding() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className={`container mx-auto px-4 ${currentStep === 14 ? 'py-0 max-w-lg' : 'py-4 max-w-md'}`}>
 
         {/* Main Card - No white background for step 14 */}
         {currentStep === 14 ? (
