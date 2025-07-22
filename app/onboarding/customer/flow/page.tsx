@@ -1580,15 +1580,12 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                             </div>
                           );
                         } else {
-                          // Render object features with icon, title, description
+                          // Render object features with icon, title
                           return (
                             <div key={index} className="flex items-start">
                               <div className="text-lg mr-3">{feature.icon}</div>
                               <div>
                                 <span className="text-sm font-medium text-gray-900">{feature.title}</span>
-                                {feature.description && (
-                                  <p className="text-xs text-gray-600">{feature.description}</p>
-                                )}
                               </div>
                             </div>
                           );
