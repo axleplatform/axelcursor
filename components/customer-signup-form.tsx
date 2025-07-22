@@ -218,7 +218,7 @@ export function CustomerSignupForm({
                     onClick={() => setShowPassword(!showPassword)}
                     disabled={isLoading || isRateLimited}
                   >
-                    {showPassword ? <div className="h-4 w-4">🙈</div> : <div className="h-4 w-4">👁️</div>}
+                    {showPassword ? <div className="h-4 w-4">🙈</div> : <div className="h-4 w-4">👀</div>}
                   </button>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">Password must be at least 8 characters long</p>
