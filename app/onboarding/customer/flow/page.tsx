@@ -353,19 +353,15 @@ const VehicleInfoStep = ({ onNext, updateData, showButton = true }: StepProps & 
       </div>
 
       {/* Button matching book appointment */}
-      <div className={`transition-all duration-500 delay-600 ${
-        visibleItems >= 4 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-      }`}>
-        <button 
-          onClick={() => {
-            updateData({ vehicle })
-            onNext()
-          }}
-          className="mt-6 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-        >
-          Continue
-        </button>
-      </div>
+      <button 
+        onClick={() => {
+          updateData({ vehicle })
+          onNext()
+        }}
+        className="mt-6 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+      >
+        Continue
+      </button>
     </div>
   )
 }
@@ -767,19 +763,15 @@ const LastServiceStep = ({ onNext, updateData, showButton = true }: StepProps & 
 
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
-        <div className={`transition-all duration-500 delay-400 ${
-          visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-        }`}>
-          <button 
-            onClick={() => {
-              updateData({ lastService })
-              onNext()
-            }}
-            className="mt-8 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-          >
-            Continue
-          </button>
-        </div>
+        <button 
+          onClick={() => {
+            updateData({ lastService })
+            onNext()
+          }}
+          className="mt-8 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
       )}
     </div>
   )
@@ -801,17 +793,13 @@ const ThankYouStep = ({ onNext, showButton = true }: StepProps & { showButton?: 
 
   return (
     <div className="text-center">
-      <div className={`mb-8 transition-all duration-500 ${
-        visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-      }`}>
+      <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Thank you for trusting us!</h2>
-        <p className={`text-gray-600 mb-4 transition-all duration-500 delay-100 ${
-          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-        }`}>
+        <p className="text-gray-600 mb-4">
           We're excited to help you take better care of your vehicle.
         </p>
-        <div className={`text-4xl transition-all duration-500 delay-200 ${
-          visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        <div className={`text-4xl transition-all duration-500 ${
+          visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
         }`}>🤝</div>
       </div>
       
@@ -913,17 +901,15 @@ const LocationStep = ({ onNext, updateData, showButton = true }: StepProps & { s
 
   return (
     <div>
-      <div className={`mb-6 transition-all duration-500 ${
-        visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-      }`}>
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Where are you located?</h2>
         <p className="text-gray-600 text-sm">
           Help us find mechanics and services near you
         </p>
       </div>
       
-      <div className={`transition-all duration-500 delay-200 ${
-        visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+      <div className={`transition-all duration-500 ${
+        visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
       }`}>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           City or Zip Code
@@ -1557,17 +1543,15 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
 
   return (
     <div>
-      <div className={`mb-6 transition-all duration-500 ${
-        visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-      }`}>
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Phone Number</h2>
         <p className="text-gray-600 text-sm">
           Add your phone number for appointment notifications
         </p>
       </div>
       
-      <div className={`transition-all duration-500 delay-200 ${
-        visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+      <div className={`transition-all duration-500 ${
+        visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
       }`}>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Phone Number
@@ -1687,11 +1671,11 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
         </p>
       </div>
       
-            <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 transition-all duration-500 ${
-        visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-      }`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {plans.map((plan, index) => (
-          <div key={plan.id} className={`relative transition-all duration-500 ${index === 0 ? '' : 'delay-100'}`}>
+          <div key={plan.id} className={`relative transition-all duration-500 ${index === 0 ? '' : 'delay-100'} ${
+            visibleItems >= (index + 1) ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+          }`}>
             {plan.id === 'yearly' && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                 <div className="bg-[#294a46] text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md whitespace-nowrap">
@@ -2298,9 +2282,9 @@ export default function CustomerOnboarding() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <SiteHeader />
       
-      {/* Progress Bar - Full width on desktop */}
-      <div className={`${currentStep === 14 ? "-mb-16 md:-mb-20" : "mb-4"} relative z-40 px-4 md:px-0`}>
-        <div className="container mx-auto md:max-w-none">
+      <div className={`container mx-auto px-4 ${currentStep === 14 ? 'py-0 max-w-lg' : 'py-4 max-w-md'}`}>
+        {/* Progress Bar */}
+        <div className={`${currentStep === 14 ? "-mb-16 md:-mb-32" : "mb-4"} relative z-40`}>
           <div className="flex items-center gap-4">
             <button
               onClick={(e) => {
@@ -2331,9 +2315,6 @@ export default function CustomerOnboarding() {
             </div>
           </div>
         </div>
-      </div>
-
-      <div className={`container mx-auto px-4 ${currentStep === 14 ? 'py-0 max-w-lg' : 'py-4 max-w-md'}`}>
 
         {/* Main Card - No white background for step 14 */}
         {currentStep === 14 ? (
