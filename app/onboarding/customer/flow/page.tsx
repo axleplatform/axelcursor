@@ -1569,16 +1569,31 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
               <div className="flex-1 mb-4">
                   {plan.id === 'monthly' ? (
                     <div className="space-y-3">
-                      {plan.features.map((feature, index) => (
-                        <div key={index} className="flex items-center">
-                          <div className="text-lg mr-3">
-                            {feature.icon}
-                          </div>
-                          <span className="text-sm font-medium text-gray-900">
-                            {feature.title}
-                          </span>
-                        </div>
-                      ))}
+                      {plan.features.map((feature, index) => {
+                        // Check if feature is a string or object
+                        if (typeof feature === 'string') {
+                          // Render string features simply
+                          return (
+                            <div key={index} className="flex items-center">
+                              <span className="text-green-500 mr-2">✓</span>
+                              <span className="text-sm text-gray-700">{feature}</span>
+                            </div>
+                          );
+                        } else {
+                          // Render object features with icon, title, description
+                          return (
+                            <div key={index} className="flex items-start">
+                              <div className="text-lg mr-3">{feature.icon}</div>
+                              <div>
+                                <span className="text-sm font-medium text-gray-900">{feature.title}</span>
+                                {feature.description && (
+                                  <p className="text-xs text-gray-600">{feature.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                      })}
                     </div>
                   ) : (
                     <div className="space-y-3">
