@@ -38,29 +38,6 @@ type OnboardingData = {
   freeTrial: boolean;
 };
 
-interface OnboardingFormData {
-  appointmentId: string | null;
-  phone: string | null;
-  vehicles: Vehicle[];
-  selectedVehicleIndex: number;
-  location: string;
-  latitude?: number;
-  longitude?: number;
-  address?: string;
-  referralSource?: string;
-  usedOtherApps?: boolean | null;
-  lastService?: {
-    date: string;
-    type: string;
-    mileage: string;
-  };
-  notifications?: boolean;
-  additionalVehicles?: Vehicle[];
-  userId?: string | null;
-  plan?: string | null;
-  freeTrial?: boolean;
-}
-
 type StepProps = {
   onNext: () => void;
   updateData: (data: Partial<OnboardingData>) => void;
@@ -1235,14 +1212,30 @@ export default function PostAppointmentOnboarding() {
   
   const [currentStep, setCurrentStep] = useState(2); // Start at step 2 (Referral Source)
   const [user, setUser] = useState<any>(null);
-  const [formData, setFormData] = useState<OnboardingFormData>({
+  const [formData, setFormData] = useState<OnboardingData>({
     // Pre-fill from appointment
-    appointmentId: searchParams.get('appointmentId'),
-    phone: searchParams.get('phone'),
-    vehicles: [],
-    selectedVehicleIndex: 0,
-    location: '',
-    // Vehicle data will be loaded from appointment
+    vehicle: {
+      year: '',
+      make: '',
+      model: '',
+      vin: '',
+      mileage: '',
+      licensePlate: ''
+    },
+    referralSource: '',
+    usedOtherApps: null,
+    lastService: {
+      date: '',
+      type: '',
+      mileage: ''
+    },
+    location: null,
+    notifications: false,
+    additionalVehicles: [],
+    userId: null,
+    phoneNumber: searchParams.get('phone') || '',
+    plan: null,
+    freeTrial: false
   });
 
   // Load appointment data and pre-fill vehicle info
@@ -1260,24 +1253,20 @@ export default function PostAppointmentOnboarding() {
           
         if (appointment) {
           // Pre-fill data we already have
-          setFormData((prev: OnboardingFormData) => ({
+          setFormData((prev: OnboardingData) => ({
             ...prev,
             // Vehicle info from appointment (for Add Another Car step)
-            vehicles: [{
+            vehicle: {
               year: appointment.vehicle_year,
               make: appointment.vehicle_make,
               model: appointment.vehicle_model,
               vin: appointment.vehicle_vin || '',
               mileage: appointment.vehicle_mileage || '',
               licensePlate: '',
-            }],
-            selectedVehicleIndex: 0,
-            phone: phone || appointment.phone,
-            address: appointment.address,
+            },
+            phoneNumber: phone || appointment.phone,
             // Location data if available
-            location: appointment.address || '',
-            latitude: appointment.latitude,
-            longitude: appointment.longitude,
+            location: appointment.address || null,
           }));
         }
       }
@@ -1331,7 +1320,7 @@ export default function PostAppointmentOnboarding() {
   const totalSteps = POST_APPOINTMENT_STEPS.length;
 
   // Add updateData function (copied from original onboarding)
-  const updateData = (newData: Partial<OnboardingFormData>) => {
+  const updateData = (newData: Partial<OnboardingData>) => {
     setFormData(prev => ({ ...prev, ...newData }));
   };
 
