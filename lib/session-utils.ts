@@ -311,4 +311,4 @@ export function getSessionErrorMessage(errorCode: string): string {
     default:
       return 'Authentication error. Please try again'
   }
-} 
+}
