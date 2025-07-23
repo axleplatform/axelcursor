@@ -78,16 +78,12 @@ export default function AppointmentConfirmationPage() {
   const [isCancelled, setIsCancelled] = React.useState(false)
   
   // Simplified account creation form state
-  const [fullName, setFullName] = React.useState("")
   const [email, setEmail] = React.useState("")
-  const [isCreatingAccount, setIsCreatingAccount] = React.useState(false)
-  const [accountCreated, setAccountCreated] = React.useState(false)
-  const [formErrors, setFormErrors] = React.useState<Record<string, string>>({})
+  const [password, setPassword] = React.useState("")
+  const [loading, setLoading] = React.useState(false)
+  const [formErrors, setFormErrors] = React.useState<{ email?: string }>({})
+  const [showAccountCreation, setShowAccountCreation] = React.useState(false)
   const [dashboardLink, setDashboardLink] = React.useState('/customer-dashboard')
-  const [otpSending, setOtpSending] = React.useState(false)
-  const [lastOtpSent, setLastOtpSent] = React.useState<Date | null>(null)
-  const [cooldownSeconds, setCooldownSeconds] = React.useState(0)
-  const [useEmail, setUseEmail] = React.useState(false)
 
   React.useEffect(() => {
     // Only check user role if user is authenticated
@@ -101,32 +97,7 @@ export default function AppointmentConfirmationPage() {
     checkAuthAndRole();
   }, []);
 
-  // Cooldown timer effect
-  React.useEffect(() => {
-    if (cooldownSeconds <= 0) return;
-    
-    const timer = setTimeout(() => setCooldownSeconds(cooldownSeconds - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [cooldownSeconds]);
 
-  // Check if user is rate limited
-  const checkRateLimit = () => {
-    const rateLimitTime = localStorage.getItem('otpRateLimitTime');
-    if (rateLimitTime) {
-      const timePassed = Date.now() - parseInt(rateLimitTime);
-      const oneHour = 60 * 60 * 1000; // 60 minutes in milliseconds
-      
-      if (timePassed < oneHour) {
-        const minutesLeft = Math.ceil((oneHour - timePassed) / 60000);
-        setFormErrors({ email: `Please wait ${minutesLeft} minutes before requesting another code.` });
-        return false;
-      } else {
-        // Clear expired rate limit
-        localStorage.removeItem('otpRateLimitTime');
-      }
-    }
-    return true;
-  };
 
   const checkUserRole = async () => {
     const route = await getUserRoleAndRedirect(router);
@@ -218,11 +189,7 @@ export default function AppointmentConfirmationPage() {
 
   // Validate form fields
   const validateForm = () => {
-    const errors: Record<string, string> = {}
-
-    if (!fullName.trim()) {
-      errors.fullName = "Full name is required"
-    }
+    const errors: { email?: string } = {}
 
     if (!email.trim()) {
       errors.email = "Email is required"
@@ -230,82 +197,98 @@ export default function AppointmentConfirmationPage() {
       errors.email = "Please enter a valid email address"
     }
 
+    if (!password || password.length < 6) {
+      errors.email = "Password must be at least 6 characters"
+    }
+
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
 
-  // Handle email signup (no password required)
-  const handleEmailSignup = async () => {
-    if (!validateForm()) {
-      return
-    }
-
-    // Check rate limit first
-    if (!checkRateLimit()) {
-      return
-    }
-
-    // Check if we sent OTP recently (within 60 seconds)
-    if (lastOtpSent && Date.now() - lastOtpSent.getTime() < 60000) {
-      setFormErrors({ email: "Please wait 60 seconds before requesting another code" })
-      return
-    }
-
-    if (otpSending) return // Prevent double-clicks
-
-    setIsCreatingAccount(true)
-    setFormErrors({})
-    setOtpSending(true)
+  // Handle account creation with email and password
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormErrors({});
+    setLoading(true);
 
     try {
-      // Create user profile with just email and name
-      // Send them a magic link or create account without password
-      const { data: authData, error: authError } = await supabase.auth.signInWithOtp({
-        email: email,
+      // Create auth account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
         options: {
           data: {
-            full_name: fullName,
-            user_type: "customer"
+            phone: appointmentData?.phone_number,
+            appointment_id: appointmentData?.id,
+            full_name: appointmentData?.vehicles?.make || '',
+            created_from: 'appointment_confirmation'
           }
         }
-      })
+      });
 
-      if (authError) {
-        // Handle rate limit error specifically
-        if (authError.status === 429 || authError.message.includes('rate limit') || authError.message.includes('429')) {
-          setFormErrors({ email: "Too many attempts. Please wait 60 minutes before trying again." })
-          // Store the rate limit timestamp
-          localStorage.setItem('otpRateLimitTime', Date.now().toString())
-          setCooldownSeconds(3600) // 60 minutes
-        } else if (authError.message.includes("already registered")) {
-          setFormErrors({ email: "Looks like you already have an account. Please sign in instead." })
-        } else {
-          throw authError
-        }
-        return
-      }
+      if (authError) throw authError;
 
-      if (authData && appointmentData) {
-        // Update the appointment with the new user_id if available
-        // Note: For OTP signup, we might need to handle this differently
-        setLastOtpSent(new Date())
-        setAccountCreated(true)
-        toast({
-          title: "Check your email!",
-          description: "We've sent you a magic link to complete your account setup.",
-        })
+      if (authData.user && appointmentData) {
+        // Create user record in users table
+        const { error: userError } = await supabase
+          .from('users')
+          .upsert({
+            id: authData.user.id,
+            email: email,
+            phone: appointmentData.phone_number,
+            created_at: new Date().toISOString(),
+            account_type: 'full',
+            temp_user_merged_from: appointmentData.user_id // Link to temp user
+          });
+
+        if (userError) console.error('User table error:', userError);
+
+        // Update appointment to link to new user
+        const { error: appointmentError } = await supabase
+          .from('appointments')
+          .update({ 
+            user_id: authData.user.id,
+            customer_id: authData.user.id 
+          })
+          .eq('id', appointmentData.id);
+
+        if (appointmentError) console.error('Appointment update error:', appointmentError);
+
+        // Redirect to post-appointment onboarding
+        router.push(`/onboarding/customer/post-appointment?appointmentId=${appointmentData.id}&phone=${appointmentData.phone_number}`);
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create account. Please try again.",
-        variant: "destructive",
-      })
+      console.error('Signup error:', error);
+      setFormErrors({ 
+        email: error.message || 'Failed to create account. Please try again.' 
+      });
     } finally {
-      setIsCreatingAccount(false)
-      setOtpSending(false)
+      setLoading(false);
     }
-  }
+  };
+
+  // Handle Google signup
+  const handleGoogleSignup = async () => {
+    if (!appointmentData) return;
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/onboarding/customer/post-appointment?appointmentId=${appointmentData.id}&phone=${appointmentData.phone_number}`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Google signup error:', error);
+      setFormErrors({ email: 'Failed to sign up with Google' });
+    }
+  };
 
 
 
@@ -615,77 +598,105 @@ export default function AppointmentConfirmationPage() {
 
             {/* Right Column - Account Creation */}
             <div className="bg-white rounded-lg shadow-md p-6 order-1 lg:order-2">
-              {accountCreated ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 rounded-full bg-[#e6eeec] flex items-center justify-center mx-auto mb-4">
-                    <Check className="h-8 w-8 text-[#294a46]" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-800 mb-2">Account Created!</h2>
-                  <p className="text-gray-600 mb-6">You can now track all your services and get maintenance reminders.</p>
-                                      <button
-                      onClick={() => router.push(dashboardLink)}
-                      className="bg-[#294a46] text-white px-6 py-2 rounded-full hover:bg-[#1e3632] transition-colors"
+              {showAccountCreation ? (
+                <div className="mt-8 p-6 bg-blue-50 rounded-lg">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    Create an Account
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Save your appointment details and track all your vehicle services in one place.
+                  </p>
+
+                  <form onSubmit={handleCreateAccount} className="space-y-4">
+                    {/* Email Field */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="your@email.com"
+                        required
+                      />
+                      {formErrors.email && (
+                        <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
+                      )}
+                    </div>
+
+                    {/* Password Field */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Create Password
+                      </label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Minimum 6 characters"
+                        minLength={6}
+                        required
+                      />
+                    </div>
+
+                    {/* Phone Number Display (read-only) */}
+                    {appointmentData?.phone_number && (
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-sm text-gray-600">
+                          Phone number from your appointment:
+                        </p>
+                        <p className="font-medium text-gray-900">{appointmentData.phone_number}</p>
+                      </div>
+                    )}
+
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300"
                     >
-                    Return Home
-                  </button>
+                      {loading ? 'Creating Account...' : 'Create Account & Continue'}
+                    </button>
+                  </form>
+
+                  {/* Google Auth Option */}
+                  <div className="mt-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-200"></div>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-blue-50 text-gray-500">Or</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleGoogleSignup}
+                      className="mt-4 w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50"
+                    >
+                      <img src="/google-icon.svg" alt="Google" className="w-5 h-5 mr-2" />
+                      Continue with Google
+                    </button>
+                  </div>
+
+                  <p className="mt-4 text-xs text-gray-500 text-center">
+                    By creating an account, you agree to our Terms of Service and Privacy Policy
+                  </p>
                 </div>
               ) : (
                 <>
                   <h2 className="text-xl font-semibold text-gray-800 mb-2">Save your service history</h2>
                   <p className="text-gray-600 mb-6">Create an account to track all your services and get maintenance reminders</p>
                   
-                  <div className="space-y-4">
-                    <Input
-                      type="text"
-                      placeholder="Full Name"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className={formErrors.fullName ? "border-red-300 focus:border-red-500 focus:ring-red-500" : ""}
-                    />
-                    {formErrors.fullName && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.fullName}</p>
-                    )}
-                    
-                    <Input
-                      type="email"
-                      placeholder="Email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className={formErrors.email ? "border-red-300 focus:border-red-500 focus:ring-red-500" : ""}
-                    />
-                    {formErrors.email && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
-                    )}
-                    
-                    {/* Cooldown timer display */}
-                    {cooldownSeconds > 0 && (
-                      <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-700 font-medium">
-                          Rate limit active
-                        </p>
-                        <p className="text-xs text-red-600">
-                          Please wait {Math.floor(cooldownSeconds / 60)}:{(cooldownSeconds % 60).toString().padStart(2, '0')} before trying again
-                        </p>
-                      </div>
-                    )}
-                    
-                    <Button 
-                      className="w-full bg-[#294a46] hover:bg-[#1e3632] text-white"
-                      onClick={handleEmailSignup}
-                      disabled={isCreatingAccount || cooldownSeconds > 0}
-                    >
-                      {isCreatingAccount ? (
-                        <>
-                          <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                          Creating Account...
-                        </>
-                      ) : cooldownSeconds > 0 ? (
-                        `Wait ${Math.floor(cooldownSeconds / 60)}:${(cooldownSeconds % 60).toString().padStart(2, '0')}`
-                      ) : (
-                        "Create Account"
-                      )}
-                    </Button>
-                  </div>
+                  <Button 
+                    className="w-full bg-[#294a46] hover:bg-[#1e3632] text-white"
+                    onClick={() => setShowAccountCreation(true)}
+                  >
+                    Create Account
+                  </Button>
 
                   <div className="mt-4">
                     <div className="relative">
