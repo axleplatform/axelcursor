@@ -38,6 +38,29 @@ type OnboardingData = {
   freeTrial: boolean;
 };
 
+interface OnboardingFormData {
+  appointmentId: string | null;
+  phone: string | null;
+  vehicles: Vehicle[];
+  selectedVehicleIndex: number;
+  location: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  referralSource?: string;
+  usedOtherApps?: boolean | null;
+  lastService?: {
+    date: string;
+    type: string;
+    mileage: string;
+  };
+  notifications?: boolean;
+  additionalVehicles?: Vehicle[];
+  userId?: string | null;
+  plan?: string | null;
+  freeTrial?: boolean;
+}
+
 type StepProps = {
   onNext: () => void;
   updateData: (data: Partial<OnboardingData>) => void;
@@ -1212,10 +1235,13 @@ export default function PostAppointmentOnboarding() {
   
   const [currentStep, setCurrentStep] = useState(2); // Start at step 2 (Referral Source)
   const [user, setUser] = useState<any>(null);
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<OnboardingFormData>({
     // Pre-fill from appointment
     appointmentId: searchParams.get('appointmentId'),
     phone: searchParams.get('phone'),
+    vehicles: [],
+    selectedVehicleIndex: 0,
+    location: '',
     // Vehicle data will be loaded from appointment
   });
 
@@ -1234,7 +1260,7 @@ export default function PostAppointmentOnboarding() {
           
         if (appointment) {
           // Pre-fill data we already have
-          setFormData(prev => ({
+          setFormData((prev: OnboardingFormData) => ({
             ...prev,
             // Vehicle info from appointment (for Add Another Car step)
             vehicles: [{
