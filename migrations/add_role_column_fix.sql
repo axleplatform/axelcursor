@@ -88,4 +88,4 @@ BEGIN
         SELECT string_agg(role || ': ' || count, ', ') 
         FROM (SELECT role, COUNT(*) as count FROM users GROUP BY role) t
     );
-END $$; 
+END $$;
