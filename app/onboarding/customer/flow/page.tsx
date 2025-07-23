@@ -2011,8 +2011,6 @@ const createUserWithOnboardingData = async (userId: string, onboardingData: Onbo
       subscription_status: onboardingData.freeTrial ? 'trial' : 'inactive',
       free_trial_ends_at: onboardingData.freeTrial ? 
         new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
-      onboarding_completed: true,
-      onboarding_data: onboardingData,
       created_at: new Date().toISOString()
     })
 
