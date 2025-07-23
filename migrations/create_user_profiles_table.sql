@@ -67,4 +67,4 @@ COMMENT ON TABLE user_profiles IS 'Customer profile information - separate from 
 COMMENT ON COLUMN user_profiles.onboarding_type IS 'Type of onboarding completed: post_appointment, full, etc.';
 COMMENT ON COLUMN user_profiles.vehicles IS 'Array of vehicle objects with year, make, model, VIN, mileage, license plate';
 COMMENT ON COLUMN user_profiles.communication_preferences IS 'JSON object with communication preferences';
-COMMENT ON COLUMN user_profiles.notification_settings IS 'JSON object with notification settings'; 
+COMMENT ON COLUMN user_profiles.notification_settings IS 'JSON object with notification settings';

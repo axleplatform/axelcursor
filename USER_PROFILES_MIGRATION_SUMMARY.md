@@ -49,7 +49,7 @@ Successfully updated the codebase to use `user_profiles` table for customer acco
 ## 🗃️ **Database Schema**
 
 ### **user_profiles Table Structure**
-```sql
+\`\`\`sql
 CREATE TABLE user_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -76,7 +76,7 @@ CREATE TABLE user_profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-```
+\`\`\`
 
 ## 🔄 **User Flow Changes**
 
@@ -94,25 +94,25 @@ CREATE TABLE user_profiles (
 ## 🚀 **Deployment Instructions**
 
 ### **1. Run Database Migration**
-```bash
+\`\`\`bash
 # Option 1: Use the migration script
 ./scripts/migrate-user-profiles.sh
 
 # Option 2: Manual execution
 psql "$DATABASE_URL" -f migrations/create_user_profiles_table.sql
-```
+\`\`\`
 
 ### **2. Deploy Code Changes**
 All code changes have been made and are ready for deployment.
 
 ### **3. Verify Migration**
-```sql
+\`\`\`sql
 -- Check table creation
 SELECT * FROM user_profiles LIMIT 1;
 
 -- Check RLS policies
 SELECT * FROM pg_policies WHERE tablename = 'user_profiles';
-```
+\`\`\`
 
 ## ✅ **Benefits Achieved**
 
@@ -157,4 +157,4 @@ SELECT * FROM pg_policies WHERE tablename = 'user_profiles';
 
 ## 🎉 **Migration Complete**
 
-The codebase has been successfully updated to use `user_profiles` table for customer accounts while maintaining full backward compatibility and improving data organization. 
+The codebase has been successfully updated to use `user_profiles` table for customer accounts while maintaining full backward compatibility and improving data organization.
