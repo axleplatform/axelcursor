@@ -1,12 +1,14 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
-import { CustomerSignupForm } from '@/components/customer-signup-form';
-import { SiteHeader } from '@/components/site-header';
-import Footer from '@/components/footer';
+import React, { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { ChevronLeft, Check } from 'lucide-react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { GoogleSignInButton } from '@/components/google-signin-button'
+import { CustomerSignupForm } from '@/components/customer-signup-form'
+import { SiteHeader } from '@/components/site-header'
+import Footer from '@/components/footer'
+import { Button } from '@/components/ui/button'
 
 // Type definitions
 type Vehicle = {
@@ -18,26 +20,1170 @@ type Vehicle = {
   licensePlate?: string;
 };
 
-type PostAppointmentData = {
-  // Pre-filled from appointment
-  phone?: string;
-  address?: string;
-  vehicle?: Vehicle;
-  appointmentId?: string;
-  
-  // To be collected
-  email: string;
-  password: string;
-  fullName: string;
-  preferences: any;
-  notifications: any;
-  serviceHistory: any;
-  insurance: any;
-  emergencyContact: any;
+type OnboardingData = {
+  vehicle: Vehicle;
+  referralSource: string;
+  usedOtherApps: boolean | null;
+  lastService: {
+    date: string;
+    type: string;
+    mileage: string;
+  };
+  location: string | null;
+  notifications: boolean;
+  additionalVehicles: Vehicle[];
+  userId: string | null;
+  phoneNumber: string;
+  plan: string | null;
+  freeTrial: boolean;
 };
 
-// Step Components
-const CreateAccountStep = ({ onNext, updateData, onboardingData }: any) => {
+type StepProps = {
+  onNext: () => void;
+  updateData: (data: Partial<OnboardingData>) => void;
+  onboardingData?: OnboardingData;
+  setSkippedSteps?: React.Dispatch<React.SetStateAction<number[]>>;
+};
+
+// Car makes and models data (copied from original)
+const CAR_MAKES = [
+  "Acura", "Alfa Romeo", "Alpine", "Aston Martin", "Audi", "Bentley", "BMW", "Bugatti", "Buick", "Cadillac", 
+  "Chevrolet", "Chrysler", "Dodge", "Ferrari", "Fiat", "Fisker", "Ford", "Genesis", "GMC", "Honda", "Hummer", 
+  "Hyundai", "Infiniti", "Jaguar", "Jeep", "Kia", "Koenigsegg", "Lamborghini", "Land Rover", "Lexus", "Lincoln", 
+  "Lotus", "Lucid", "Maserati", "Mazda", "McLaren", "Mercedes-Benz", "Mercury", "Mini", "Mitsubishi", "Nissan", 
+  "Oldsmobile", "Pagani", "Plymouth", "Polestar", "Pontiac", "Porsche", "Ram", "Rivian", "Rolls-Royce", "Saturn", 
+  "Scion", "Smart", "Subaru", "Tesla", "Toyota", "Volkswagen", "Volvo"
+]
+
+const CAR_MODELS: Record<string, string[]> = {
+  Toyota: ["Camry", "Corolla", "RAV4", "Highlander", "4Runner", "Tacoma", "Tundra", "Prius", "Sienna", "Avalon"],
+  Honda: ["Civic", "Accord", "CR-V", "Pilot", "Odyssey", "HR-V", "Ridgeline", "Fit", "Passport", "Insight"],
+  Ford: ["F-150", "Mustang", "Explorer", "Escape", "Edge", "Ranger", "Expedition", "Bronco", "Fusion", "Focus"],
+  Chevrolet: ["Silverado", "Equinox", "Tahoe", "Traverse", "Malibu", "Camaro", "Suburban", "Colorado", "Blazer", "Trax"],
+  BMW: ["3 Series", "5 Series", "X3", "X5", "7 Series", "X1", "X7", "4 Series", "2 Series", "i4"],
+  "Mercedes-Benz": ["C-Class", "E-Class", "GLC", "GLE", "S-Class", "A-Class", "GLA", "GLB", "CLA", "G-Class"],
+  Audi: ["A4", "Q5", "A6", "Q7", "A3", "Q3", "A5", "Q8", "e-tron", "A7"],
+  Nissan: ["Altima", "Rogue", "Sentra", "Pathfinder", "Murano", "Frontier", "Kicks", "Armada", "Maxima", "Titan"],
+  Hyundai: ["Elantra", "Tucson", "Santa Fe", "Sonata", "Kona", "Palisade", "Venue", "Accent", "Ioniq", "Veloster"],
+  Kia: ["Forte", "Sportage", "Sorento", "Soul", "Telluride", "Seltos", "Rio", "Niro", "Carnival", "K5"],
+  Subaru: ["Outback", "Forester", "Crosstrek", "Impreza", "Ascent", "Legacy", "WRX", "BRZ", "Solterra"],
+  Volkswagen: ["Jetta", "Tiguan", "Atlas", "Passat", "Golf", "Taos", "ID.4", "Arteon", "Atlas Cross Sport"],
+  Jeep: ["Grand Cherokee", "Wrangler", "Cherokee", "Compass", "Renegade", "Gladiator", "Wagoneer", "Grand Wagoneer"],
+  Lexus: ["RX", "NX", "ES", "GX", "IS", "UX", "LX", "LS", "RC", "LC"],
+  Mazda: ["CX-5", "Mazda3", "CX-9", "CX-30", "Mazda6", "MX-5 Miata", "CX-50"],
+  Tesla: ["Model 3", "Model Y", "Model S", "Model X", "Cybertruck"],
+  Acura: ["MDX", "RDX", "TLX", "ILX", "NSX", "Integra"],
+  Buick: ["Encore", "Enclave", "Envision", "Encore GX"],
+  Cadillac: ["XT5", "Escalade", "XT4", "CT5", "XT6", "CT4"],
+  Chrysler: ["Pacifica", "300"],
+  Dodge: ["Charger", "Challenger", "Durango", "Hornet"],
+  GMC: ["Sierra", "Terrain", "Acadia", "Yukon", "Canyon", "Hummer EV"],
+  Infiniti: ["QX60", "QX50", "QX80", "Q50", "QX55"],
+  Lincoln: ["Corsair", "Nautilus", "Aviator", "Navigator"],
+  Mitsubishi: ["Outlander", "Eclipse Cross", "Outlander Sport", "Mirage"],
+  Porsche: ["911", "Cayenne", "Macan", "Panamera", "Taycan", "718 Cayman", "718 Boxster"],
+  Ram: ["1500", "2500", "3500", "ProMaster"],
+  Volvo: ["XC90", "XC60", "XC40", "S60", "S90", "V60", "V90"],
+  Genesis: ["G70", "G80", "G90", "GV70", "GV80", "GV60"],
+  Polestar: ["Polestar 1", "Polestar 2", "Polestar 3", "Polestar 4"],
+  Rivian: ["R1T", "R1S", "R2", "R3"],
+  Lucid: ["Air", "Gravity", "Sapphire"],
+  Fisker: ["Ocean", "Pear", "Rönde", "Alaska"],
+  Pagani: ["Huayra", "Zonda", "Utopia"],
+  Bugatti: ["Chiron", "Veyron", "Divo", "Mistral"],
+  Koenigsegg: ["Jesko", "Gemera", "Regera", "Agera"],
+  Alpine: ["A110", "A310", "GTA"],
+  Lotus: ["Emira", "Evija", "Eletre", "Elise", "Exige"],
+  Smart: ["Fortwo", "Forfour", "EQ Fortwo"],
+  Scion: ["tC", "xB", "xD", "iQ", "FR-S"],
+  Saturn: ["Ion", "Vue", "Aura", "Outlook", "Sky"],
+  Pontiac: ["G6", "G8", "Solstice", "Vibe", "Torrent"],
+  Hummer: ["H1", "H2", "H3", "H3T"],
+  Oldsmobile: ["Alero", "Aurora", "Bravada", "Cutlass", "Intrigue"],
+  Mercury: ["Milan", "Mariner", "Mountaineer", "Sable", "Grand Marquis"],
+  Plymouth: ["Prowler", "Neon", "Breeze", "Voyager"],
+  "Alfa Romeo": ["Giulia", "Stelvio", "Tonale", "Giulietta", "4C"],
+  "Aston Martin": ["DB11", "Vantage", "DBS", "DBX", "Valkyrie"],
+  Bentley: ["Continental", "Flying Spur", "Bentayga", "Mulliner"],
+  Ferrari: ["F8", "SF90", "296", "Roma", "Portofino", "812"],
+  Fiat: ["500", "500X", "124 Spider", "Panda", "Tipo"],
+  "Land Rover": ["Range Rover", "Range Rover Sport", "Range Rover Velar", "Range Rover Evoque", "Discovery", "Defender"],
+  Maserati: ["Ghibli", "Quattroporte", "Levante", "Grecale", "MC20"],
+  McLaren: ["720S", "765LT", "Artura", "GT", "Senna"],
+  Mini: ["Cooper", "Countryman", "Clubman", "Convertible", "Electric"],
+  "Rolls-Royce": ["Phantom", "Ghost", "Wraith", "Dawn", "Cullinan"]
+}
+
+const GENERIC_MODELS = ["Sedan", "SUV", "Coupe", "Truck", "Hatchback", "Convertible", "Wagon", "Van", "Crossover"]
+
+// Step Components - Copy from original onboarding
+const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [selected, setSelected] = useState<string[]>([])
+
+  const sources = [
+    { 
+      name: 'Google Search', 
+      icon: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+      )
+    },
+    { 
+      name: 'App Store', 
+      icon: (
+        <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center">
+          <svg className="w-4 h-4" viewBox="0 0 14 17" fill="white">
+            <path d="M11.73 8.05c-.01-1.84 1.5-2.73 1.57-2.77-.86-1.25-2.19-1.42-2.66-1.44-1.13-.12-2.21.67-2.78.67-.58 0-1.47-.65-2.41-.64-1.24.02-2.39.73-3.03 1.85-1.29 2.24-.33 5.56.93 7.38.62.89 1.35 1.89 2.32 1.85.93-.04 1.28-.6 2.41-.6s1.44.6 2.42.58c1-.02 1.64-.91 2.25-1.8.71-1.04 1-2.04 1.01-2.09-.02-.01-1.94-.75-1.96-2.96l-.07-.13zm-1.84-5.45c.51-.62.86-1.48.76-2.34-.74.03-1.63.49-2.16 1.11-.47.55-.89 1.43-.78 2.27.82.07 1.66-.42 2.18-1.04z"/>
+          </svg>
+        </div>
+      )
+    },
+    { 
+      name: 'Friend/Family', 
+      icon: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="#6B7280">
+          <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+        </svg>
+      )
+    },
+    { 
+      name: 'Instagram', 
+      icon: (
+        <div className="w-6 h-6">
+          <svg viewBox="0 0 24 24">
+            <defs>
+              <linearGradient id="igGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#FED576"/>
+                <stop offset="25%" stopColor="#F47133"/>
+                <stop offset="50%" stopColor="#BC3081"/>
+                <stop offset="100%" stopColor="#4C63D2"/>
+              </linearGradient>
+            </defs>
+            <rect width="24" height="24" rx="6" fill="url(#igGradient)"/>
+            <rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="white" strokeWidth="1.5"/>
+            <circle cx="12" cy="12" r="4.5" fill="none" stroke="white" strokeWidth="1.5"/>
+            <circle cx="18" cy="6" r="1.5" fill="white"/>
+          </svg>
+        </div>
+      )
+    },
+    { 
+      name: 'TikTok', 
+      icon: (
+        <div className="w-6 h-6 bg-black rounded-md flex items-center justify-center">
+          <svg className="w-4 h-4" viewBox="0 0 20 24" fill="white">
+            <path d="M17.24 0H13.03v16.28c0 1.94-1.57 3.52-3.5 3.52-1.93 0-3.5-1.58-3.5-3.52 0-1.89 1.49-3.43 3.35-3.51V8.52C5.38 8.6 2 11.72 2 15.76c0 4.1 3.49 7.43 7.78 7.43s7.78-3.33 7.78-7.43V7.93c1.57 1.12 3.47 1.78 5.54 1.83V5.51c-3.42-.13-5.86-2.85-5.86-5.51z"/>
+          </svg>
+        </div>
+      )
+    },
+    { 
+      name: 'YouTube', 
+      icon: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24">
+          <path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+        </svg>
+      )
+    },
+    { 
+      name: 'TV', 
+      icon: (
+        <svg className="w-6 h-6" fill="#4B5563" viewBox="0 0 24 24">
+          <path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/>
+        </svg>
+      )
+    },
+    { 
+      name: 'Facebook', 
+      icon: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24">
+          <path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </svg>
+      )
+    },
+    { 
+      name: 'Other', 
+      icon: (
+        <svg className="w-6 h-6" fill="#9CA3AF" viewBox="0 0 24 24">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+      )
+    }
+  ];
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="mb-4">
+        <h2 className="text-2xl font-bold text-gray-900 mb-1">Where'd you hear us?</h2>
+        <p className="text-sm text-gray-600">Select all that apply</p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto -mx-4 px-4 mb-6" style={{ maxHeight: '400px' }}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {sources.map((source) => (
+            <button
+              key={source.name}
+              onClick={() => {
+                setSelected(prev => 
+                  prev.includes(source.name) 
+                    ? prev.filter(s => s !== source.name)
+                    : [...prev, source.name]
+                );
+              }}
+              className={`relative p-4 rounded-lg border-2 transition-all ${
+                selected.includes(source.name)
+                  ? 'border-[#294a46] bg-[#e6eeec]'
+                  : 'border-gray-200 hover:border-gray-300 bg-white'
+              }`}
+            >
+              {selected.includes(source.name) && (
+                <div className="absolute top-2 right-2">
+                  <svg className="w-5 h-5 text-[#294a46]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              )}
+              
+              <div className="flex flex-col items-center gap-2">
+                {source.icon}
+                <span className="text-xs font-medium text-gray-700">{source.name}</span>
+              </div>
+            </button>
+          ))}
+          
+          <button
+            onClick={() => {
+              updateData({ referralSource: selected.join(', ') });
+              onNext();
+            }}
+            className="relative p-4 rounded-lg border-2 border-[#294a46] bg-[#294a46] text-white hover:bg-[#1e3632] transition-all"
+          >
+            <div className="flex flex-col items-center gap-2">
+              <span className="font-medium">Continue</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PreviousAppsStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 2; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Have you used other car service apps?</h2>
+        <p className="text-gray-600 text-sm">
+          We'd like to understand your experience with similar services
+        </p>
+      </div>
+      
+      <div className="space-y-4">
+        <div className={`transition-all duration-500 ${
+          visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <button
+            onClick={() => {
+              updateData({ usedOtherApps: true })
+              onNext()
+            }}
+            className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">👍</span>
+              <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
+                Yes, I have
+              </h3>
+            </div>
+          </button>
+        </div>
+        
+        <div className={`transition-all duration-500 delay-100 ${
+          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <button
+            onClick={() => {
+              updateData({ usedOtherApps: false })
+              onNext()
+            }}
+            className="w-full p-6 text-left border-2 border-gray-200 rounded-lg hover:border-[#294a46] hover:bg-[#e6eeec] transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">👎</span>
+              <h3 className="font-medium text-gray-900 group-hover:text-[#294a46]">
+                No, this is my first time
+              </h3>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const WhyAxleIsBetterStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 3; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">What you'll get with Axle</h2>
+        <p className="text-gray-600 text-sm">
+          Here's what you can expect as a car owner on our platform
+        </p>
+      </div>
+      
+      <div className="space-y-6 mb-8">
+        <div className={`flex items-center gap-3 transition-all duration-500 ${
+          visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
+            <svg className="w-5 h-5 text-[#294a46]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <span className="text-lg font-medium text-gray-800">Quicker appointment booking</span>
+        </div>
+
+        <div className={`flex items-center gap-3 transition-all duration-500 delay-100 ${
+          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
+            <svg className="w-5 h-5 text-[#294a46]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <span className="text-lg font-medium text-gray-800">Visualize various live quotes</span>
+        </div>
+
+        <div className={`flex items-center gap-3 transition-all duration-500 delay-200 ${
+          visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <div className="p-1 rounded-full" style={{ backgroundColor: "#F9F9F9" }}>
+            <svg className="w-5 h-5 text-[#294a46]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <span className="text-lg font-medium text-gray-800">Multiple Mechanic Options</span>
+        </div>
+      </div>
+
+      <div className="text-center py-4 border-t border-gray-100">
+        <p className="text-sm text-gray-500">Over 80% of our users have avoided major issues</p>
+      </div>
+
+      {showButton && (
+        <div>
+          <button 
+            onClick={onNext}
+            className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+          >
+            Continue
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const LastServiceStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [lastService, setLastService] = useState({
+    date: '',
+    type: '',
+    mileage: ''
+  })
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 3; i++) {
+        await new Promise(resolve => setTimeout(resolve, 200))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Last Service Information</h2>
+        <p className="text-gray-600 text-sm">
+          This helps us understand your car's maintenance history
+        </p>
+      </div>
+      
+      <div className="space-y-4">
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-all duration-500 ${
+          visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Service Date</label>
+            <div className="relative">
+              <input 
+                type="date" 
+                value={lastService.date}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, date: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent appearance-none bg-white"
+              />
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Mileage at Service</label>
+            <input 
+              type="number" 
+              placeholder="45,000"
+              value={lastService.mileage}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, mileage: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+            />
+          </div>
+        </div>
+        
+        <div className={`transition-all duration-500 delay-200 ${
+          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
+          <input 
+            type="text" 
+            placeholder="e.g., Oil Change, Brake Service, Tire Rotation"
+            value={lastService.type}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, type: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+          />
+        </div>
+      </div>
+
+      {showButton && (
+        <button 
+          onClick={() => {
+            updateData({ lastService })
+            onNext()
+          }}
+          className="mt-8 w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
+    </div>
+  )
+}
+
+const ThankYouStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 3; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
+
+  return (
+    <div className="text-center">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Thank you for trusting us!</h2>
+        <p className="text-gray-600 mb-4">
+          We're excited to help you take better care of your vehicle.
+        </p>
+        <div className={`text-4xl transition-all duration-500 ${
+          visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>🤝</div>
+      </div>
+      
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
+    </div>
+  )
+}
+
+const AxleAIBenefitsStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 3; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Axle AI Benefits</h2>
+        <p className="text-gray-600 text-sm">
+          Discover what makes Axle AI the smart choice for car maintenance
+        </p>
+      </div>
+      
+      <div className="space-y-4 mb-6">
+        <div className={`flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg transition-all duration-500 ${
+          visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <div className="text-2xl">🎯</div>
+          <div>
+            <h3 className="font-semibold text-gray-900">Predictive Maintenance</h3>
+            <p className="text-gray-600 text-sm">AI predict your next service</p>
+          </div>
+        </div>
+        
+        <div className={`flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg transition-all duration-500 delay-100 ${
+          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <div className="text-2xl">💰</div>
+          <div>
+            <h3 className="font-semibold text-gray-900">Cost Savings</h3>
+            <p className="text-gray-600 text-sm">Reduce chance of hefty repairs</p>
+          </div>
+        </div>
+        
+        <div className={`flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg transition-all duration-500 delay-200 ${
+          visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+        }`}>
+          <div className="text-2xl">🔧</div>
+          <div>
+            <h3 className="font-semibold text-gray-900">Established Research</h3>
+            <p className="text-gray-600 text-sm">AI has your answers right away</p>
+          </div>
+        </div>
+      </div>
+
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
+    </div>
+  )
+}
+
+const LocationStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [location, setLocation] = useState('')
+  const [visibleItems, setVisibleItems] = useState(0)
+
+  useEffect(() => {
+    const showItems = async () => {
+      for (let i = 1; i <= 2; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setVisibleItems(i)
+      }
+    }
+    showItems()
+  }, [])
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Where are you located?</h2>
+        <p className="text-gray-600 text-sm">
+          Help us find mechanics and services near you
+        </p>
+      </div>
+      
+      <div className={`transition-all duration-500 ${
+        visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+      }`}>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          City or Zip Code
+        </label>
+        <input 
+          type="text" 
+          placeholder="Enter your city or zip code" 
+          value={location}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent mb-8"
+        />
+      </div>
+      
+      {showButton && (
+        <button 
+          onClick={() => {
+            updateData({ location })
+            onNext()
+          }}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
+    </div>
+  )
+}
+
+const NotificationsStep = ({ onNext, updateData, onboardingData }: StepProps) => {
+  const [requesting, setRequesting] = useState(false);
+
+  const handleAllow = async () => {
+    setRequesting(true);
+    
+    updateData({ notifications: true });
+
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          new Notification('Axle Notifications Enabled! 🎉', {
+            body: 'You\'ll receive updates about your vehicle maintenance.',
+            icon: '/images/axle-logo-green.png'
+          });
+        }
+      } catch (error) {
+        console.log('Notification permission error:', error);
+      }
+    }
+
+    setRequesting(false);
+    onNext();
+  };
+
+  const handleDontAllow = () => {
+    updateData({ notifications: false });
+    onNext();
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[400px]">
+      <div className="mb-6">
+        <div className="w-20 h-20 bg-[#294a46] rounded-2xl flex items-center justify-center">
+          <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+        </div>
+      </div>
+
+      <h2 className="text-2xl font-semibold text-gray-900 mb-2 text-center">
+        We Like to Send You Notifications
+      </h2>
+      
+      <p className="text-base text-gray-600 text-center mb-8 max-w-sm">
+        Notifications may include predictive maintenance services, order receipts, mechanics quotes and eta, and more!
+      </p>
+
+      <div className="w-full max-w-xs grid grid-cols-2 gap-3">
+        <button
+          onClick={handleDontAllow}
+          className="py-3 px-6 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+        >
+          Don't Allow
+        </button>
+        
+        <div className="relative">
+          <button
+            onClick={handleAllow}
+            disabled={requesting}
+            className="w-full py-3 px-6 bg-[#294a46] text-white rounded-xl font-medium hover:bg-[#1e3632] transition-colors disabled:opacity-50"
+          >
+            {requesting ? (
+              <span className="flex items-center justify-center">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Allowing...
+              </span>
+            ) : (
+              'Allow'
+            )}
+          </button>
+          
+          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <span className="text-2xl">👆</span>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-xs text-gray-500 text-center mt-12 max-w-xs">
+        You can change this anytime in your device settings
+      </p>
+    </div>
+  );
+};
+
+const AddAnotherCarStep = ({ onNext, updateData, onboardingData, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newVehicle, setNewVehicle] = useState<Vehicle>({
+    year: '',
+    make: '',
+    model: '',
+    vin: '',
+    mileage: '',
+    licensePlate: ''
+  });
+
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
+  const [showMakeDropdown, setShowMakeDropdown] = useState(false);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
+
+  const currentYear = new Date().getFullYear();
+  const allYears = Array.from({length: 80}, (_, i) => (currentYear - i).toString());
+  
+  const filteredYears = allYears.filter(year => year.includes(newVehicle.year));
+  
+  const filteredMakes = CAR_MAKES.filter(make => 
+    make.toLowerCase().includes(newVehicle.make.toLowerCase())
+  );
+  
+  const availableModels = newVehicle.make ? (CAR_MODELS[newVehicle.make] || GENERIC_MODELS) : [];
+  const filteredModels = availableModels.filter(model => 
+    model.toLowerCase().includes(newVehicle.model.toLowerCase())
+  );
+
+  const handleAddVehicle = () => {
+    if (newVehicle.year && newVehicle.make && newVehicle.model) {
+      const updatedVehicles = [...(onboardingData?.additionalVehicles || []), newVehicle];
+      updateData({ additionalVehicles: updatedVehicles });
+      
+      setNewVehicle({
+        year: '',
+        make: '',
+        model: '',
+        vin: '',
+        mileage: '',
+        licensePlate: ''
+      });
+      setShowAddForm(false);
+      
+      alert(`Vehicle ${updatedVehicles.length + 1} added successfully!`);
+    }
+  };
+
+  const totalVehicles = 1 + (onboardingData?.additionalVehicles?.length || 0);
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Add Another Car</h2>
+        <p className="text-gray-600 text-sm">
+          Do you have additional cars you'd like to track?
+        </p>
+      </div>
+
+      <div className="mb-6 space-y-3">
+        {!showAddForm && (
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm text-gray-500">Vehicle 1 (Primary)</span>
+                <p className="font-medium text-gray-900">
+                  {onboardingData?.vehicle?.year} {onboardingData?.vehicle?.make} {onboardingData?.vehicle?.model}
+                </p>
+              </div>
+              <div className="text-[#294a46]">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {onboardingData?.additionalVehicles?.map((vehicle, index) => (
+          <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm text-gray-500">Vehicle {index + 2}</span>
+                <p className="font-medium text-gray-900">
+                  {vehicle.year} {vehicle.make} {vehicle.model}
+                </p>
+              </div>
+              <div className="text-[#294a46]">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {showAddForm && (
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Add Vehicle {totalVehicles + 1}
+          </h3>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Year
+                </label>
+                <input 
+                  type="text"
+                  placeholder="2020"
+                  value={newVehicle.year}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const value = e.target.value
+                    setNewVehicle({...newVehicle, year: value})
+                  }}
+                  onFocus={() => setShowYearDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowYearDropdown(false), 200)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
+                
+                {showYearDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {filteredYears.length > 0 ? (
+                      filteredYears.map(year => (
+                        <button
+                          key={year}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setNewVehicle({...newVehicle, year})
+                            setShowYearDropdown(false)
+                          }}
+                          className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                        >
+                          {year}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-gray-500">
+                        Custom year: {newVehicle.year}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Make
+                </label>
+                <input 
+                  type="text"
+                  placeholder="Toyota"
+                  value={newVehicle.make}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const value = e.target.value
+                    setNewVehicle({...newVehicle, make: value, model: ''})
+                  }}
+                  onFocus={() => setShowMakeDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowMakeDropdown(false), 200)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
+                
+                {showMakeDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {filteredMakes.length > 0 ? (
+                      filteredMakes.map(make => (
+                        <button
+                          key={make}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setNewVehicle({...newVehicle, make, model: ''})
+                            setShowMakeDropdown(false)
+                          }}
+                          className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                        >
+                          {make}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-gray-500">
+                        Custom make: {newVehicle.make}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Model
+                </label>
+                <input 
+                  type="text"
+                  placeholder="Camry"
+                  value={newVehicle.model}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const value = e.target.value
+                    setNewVehicle({...newVehicle, model: value})
+                  }}
+                  onFocus={() => setShowModelDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowModelDropdown(false), 200)}
+                  disabled={!newVehicle.make}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent disabled:bg-gray-100"
+                />
+                
+                {showModelDropdown && newVehicle.make && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {filteredModels.length > 0 ? (
+                      filteredModels.map(model => (
+                        <button
+                          key={model}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setNewVehicle({...newVehicle, model})
+                            setShowModelDropdown(false)
+                          }}
+                          className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
+                        >
+                          {model}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-gray-500">
+                        Custom model: {newVehicle.model}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                VIN (Optional)
+              </label>
+              <input 
+                type="text" 
+                placeholder="1HGBH41JXMN109186"
+                value={newVehicle.vin}
+                onChange={(e) => setNewVehicle({...newVehicle, vin: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Current Mileage
+                </label>
+                <input 
+                  type="number" 
+                  placeholder="45000"
+                  value={newVehicle.mileage}
+                  onChange={(e) => setNewVehicle({...newVehicle, mileage: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  License Plate
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="ABC 1234"
+                  value={newVehicle.licensePlate}
+                  onChange={(e) => setNewVehicle({...newVehicle, licensePlate: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={handleAddVehicle}
+              disabled={!newVehicle.year || !newVehicle.make || !newVehicle.model}
+              className="flex-1 bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:bg-gray-300"
+            >
+              Save Car
+            </button>
+            <button
+              onClick={() => {
+                setShowAddForm(false);
+                setNewVehicle({
+                  year: '',
+                  make: '',
+                  model: '',
+                  vin: '',
+                  mileage: '',
+                  licensePlate: ''
+                });
+              }}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showButton && !showAddForm && (
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="flex-1 border-2 border-[#294a46] text-[#294a46] py-3 px-6 rounded-lg hover:bg-[#e6eeec] transition-colors font-medium flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Car
+          </button>
+          <button
+            onClick={onNext}
+            className="flex-1 bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+          >
+            Continue
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const MaintenanceScheduleStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Maintenance Schedule</h2>
+        <p className="text-gray-600 text-sm">
+          We'll create a personalized maintenance plan for your vehicle
+        </p>
+      </div>
+      
+      <div className="bg-[#e6eeec] border-2 border-[#294a46] rounded-lg p-6 mb-4">
+        <h3 className="font-semibold text-[#294a46] mb-4">Your personalized schedule will include:</h3>
+        <ul className="text-[#294a46] space-y-2">
+          <li className="flex items-center">
+            <span className="mr-2">•</span>
+            Oil change reminders
+          </li>
+          <li className="flex items-center">
+            <span className="mr-2">•</span>
+            Tire rotation schedule
+          </li>
+          <li className="flex items-center">
+            <span className="mr-2">•</span>
+            Fluid level checks
+          </li>
+        </ul>
+      </div>
+
+      <p className="text-center text-gray-600 mb-8">Have axle ai automate your reliability</p>
+
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
+    </div>
+  )
+}
+
+const SettingUpStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
+  return (
+    <div className="text-center">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Setting Up Your Account</h2>
+        <p className="text-gray-600 text-sm">
+          We're configuring your personalized experience
+        </p>
+      </div>
+      
+      <div className="animate-pulse mb-8">
+        <div className="w-16 h-16 bg-blue-200 rounded-full mx-auto mb-4"></div>
+      </div>
+
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
+    </div>
+  )
+}
+
+const PlanReadyStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Plan is Ready!</h2>
+        <p className="text-gray-600 text-sm">
+          We've created a personalized maintenance plan for your vehicle
+        </p>
+      </div>
+      
+      <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 mb-8">
+        <h3 className="font-semibold text-green-900 mb-4">Based on your vehicle information:</h3>
+        <ul className="text-green-800 space-y-2">
+          <li className="flex items-center">
+            <span className="mr-2">•</span>
+            Next oil change: 3,000 miles
+          </li>
+          <li className="flex items-center">
+            <span className="mr-2">•</span>
+            Tire rotation: 6,000 miles
+          </li>
+          <li className="flex items-center">
+            <span className="mr-2">•</span>
+            Brake inspection: 12,000 miles
+          </li>
+        </ul>
+      </div>
+
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Continue
+        </button>
+      )}
+    </div>
+  )
+}
+
+const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const handleSkip = () => {
+    if (setSkippedSteps) {
+      setSkippedSteps((prev: number[]) => [...prev, 14])
+    }
+    onNext()
+  }
+
   return (
     <div className="-mt-8 md:-mt-32">
       <CustomerSignupForm 
@@ -45,7 +1191,7 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData }: any) => {
         onboardingData={onboardingData}
         onSuccess={(userId: string) => {
           if (userId === 'skipped') {
-            onNext();
+            handleSkip();
           } else {
             updateData({ userId });
             onNext();
@@ -56,1211 +1202,171 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData }: any) => {
   );
 };
 
-const PersonalInfoStep = ({ onNext, onBack, updateData, onboardingData, preFilledPhone }: any) => {
-  const [fullName, setFullName] = useState(onboardingData.fullName || '');
-  const [phone, setPhone] = useState(preFilledPhone || onboardingData.phone || '');
-  const [errors, setErrors] = useState<any>({});
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!fullName.trim()) {
-      setErrors({ fullName: 'Name is required' });
-      return;
-    }
-    
-    updateData({ fullName, phone });
-    onNext();
-  };
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">
-        Personal Information
-      </h2>
-      <p className="text-gray-600 mb-6">
-        We just need your name to complete your profile
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Full Name
-          </label>
-          <input
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="John Doe"
-          />
-          {errors.fullName && (
-            <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Phone Number
-          </label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
-            disabled
-          />
-          <p className="mt-1 text-xs text-gray-500">
-            Phone number from your appointment booking
-          </p>
-        </div>
-
-        <div className="flex space-x-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-          >
-            Back
-          </button>
-          <button
-            type="submit"
-            className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            Continue
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-};
-
-const WelcomeBenefitsStep = ({ onNext, onBack }: any) => {
-  const [visibleItems, setVisibleItems] = useState(0);
-
-  useEffect(() => {
-    const showItems = async () => {
-      for (let i = 1; i <= 4; i++) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        setVisibleItems(i);
-      }
-    };
-    showItems();
-  }, []);
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">
-        Welcome to Axle!
-      </h2>
-      
-      <div className="mb-8 space-y-4">
-        <div className={`flex items-start transition-all duration-500 ${
-          visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-        }`}>
-          <div className="flex-shrink-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mr-3">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <span className="text-gray-700">Track all your service history</span>
-        </div>
-
-        <div className={`flex items-start transition-all duration-500 delay-100 ${
-          visibleItems >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-        }`}>
-          <div className="flex-shrink-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mr-3">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <span className="text-gray-700">Get maintenance reminders</span>
-        </div>
-
-        <div className={`flex items-start transition-all duration-500 delay-200 ${
-          visibleItems >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-        }`}>
-          <div className="flex-shrink-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mr-3">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <span className="text-gray-700">Save money with preventive care</span>
-        </div>
-      </div>
-
-      <p className={`text-gray-600 mb-8 transition-all duration-500 ${
-        visibleItems >= 4 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      }`}>
-        Over 80% of our users have avoided major repairs
-      </p>
-
-      <div className="flex space-x-3">
-        <button
-          onClick={onBack}
-          className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-        >
-          Back
-        </button>
-        <button
-          onClick={onNext}
-          className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-        >
-          Continue
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const VehicleVerificationStep = ({ onNext, onBack, updateData, onboardingData, preFilledVehicle }: any) => {
-  const vehicle = preFilledVehicle || onboardingData.vehicle || {};
-  
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">
-        Verify Your Vehicle
-      </h2>
-      <p className="text-gray-600 mb-6">
-        Confirm this is the vehicle from your appointment
-      </p>
-
-      <div className="bg-blue-50 rounded-lg p-6 mb-6">
-        <div className="space-y-3">
-          <div>
-            <span className="text-sm text-gray-600">Vehicle:</span>
-            <p className="font-semibold text-gray-900">
-              {vehicle.year} {vehicle.make} {vehicle.model}
-            </p>
-          </div>
-          
-          {vehicle.vin && (
-            <div>
-              <span className="text-sm text-gray-600">VIN:</span>
-              <p className="font-mono text-gray-900">{vehicle.vin}</p>
-            </div>
-          )}
-          
-          {vehicle.mileage && (
-            <div>
-              <span className="text-sm text-gray-600">Current Mileage:</span>
-              <p className="text-gray-900">{vehicle.mileage} miles</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="flex space-x-3">
-        <button
-          onClick={onBack}
-          className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-        >
-          Back
-        </button>
-        <button
-          onClick={onNext}
-          className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-        >
-          Yes, This is Correct
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const VehicleDetailsStep = ({ onNext, onBack, updateData, onboardingData }: any) => {
-  const [vehicle, setVehicle] = useState(onboardingData.vehicle || {});
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Vehicle Details Confirmation</h2>
-      <p className="text-gray-600 mb-6">
-        Please confirm your vehicle information is correct
-      </p>
-      
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">VIN (Optional)</label>
-            <input
-              type="text"
-              value={vehicle.vin || ''}
-              onChange={(e) => setVehicle({...vehicle, vin: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="1HGBH41JXMN109186"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">License Plate</label>
-            <input
-              type="text"
-              value={vehicle.licensePlate || ''}
-              onChange={(e) => setVehicle({...vehicle, licensePlate: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="ABC123"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="flex gap-3 pt-4">
-        <button
-          onClick={onBack}
-          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-        >
-          Back
-        </button>
-        <button
-          onClick={() => {
-            updateData({ vehicle });
-            onNext();
-          }}
-          className="flex-1 bg-[#294a46] text-white py-2 px-4 rounded-lg hover:bg-[#1e3632]"
-        >
-          Continue
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const ServicePreferencesStep = ({ onNext, onBack, updateData, onboardingData }: any) => {
-  const [preferences, setPreferences] = useState({
-    preferredDay: onboardingData.preferences?.preferredDay || '',
-    preferredTime: onboardingData.preferences?.preferredTime || '',
-    serviceReminders: onboardingData.preferences?.serviceReminders ?? true,
-    promotions: onboardingData.preferences?.promotions ?? true
-  });
-
-  const handleSubmit = () => {
-    updateData({ preferences });
-    onNext();
-  };
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">
-        Service Preferences
-      </h2>
-      <p className="text-gray-600 mb-6">
-        Help us serve you better
-      </p>
-
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Preferred Day for Service
-          </label>
-          <select
-            value={preferences.preferredDay}
-            onChange={(e) => setPreferences({...preferences, preferredDay: e.target.value})}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">No preference</option>
-            <option value="weekday">Weekdays</option>
-            <option value="weekend">Weekends</option>
-            <option value="monday">Monday</option>
-            <option value="tuesday">Tuesday</option>
-            <option value="wednesday">Wednesday</option>
-            <option value="thursday">Thursday</option>
-            <option value="friday">Friday</option>
-            <option value="saturday">Saturday</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Preferred Time
-          </label>
-          <select
-            value={preferences.preferredTime}
-            onChange={(e) => setPreferences({...preferences, preferredTime: e.target.value})}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">No preference</option>
-            <option value="morning">Morning (8AM-12PM)</option>
-            <option value="afternoon">Afternoon (12PM-5PM)</option>
-            <option value="evening">Evening (5PM-8PM)</option>
-          </select>
-        </div>
-
-        <div className="space-y-3 pt-4">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={preferences.serviceReminders}
-              onChange={(e) => setPreferences({...preferences, serviceReminders: e.target.checked})}
-              className="mr-3"
-            />
-            <span className="text-sm">Send me service reminders</span>
-          </label>
-          
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={preferences.promotions}
-              onChange={(e) => setPreferences({...preferences, promotions: e.target.checked})}
-              className="mr-3"
-            />
-            <span className="text-sm">Notify me about special offers</span>
-          </label>
-        </div>
-      </div>
-
-      <div className="flex space-x-3 mt-8">
-        <button
-          onClick={onBack}
-          className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-        >
-          Back
-        </button>
-        <button
-          onClick={handleSubmit}
-          className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-        >
-          Continue
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const CommunicationPreferencesStep = ({ onNext, onBack, updateData, onboardingData }: any) => {
-  const [communication, setCommunication] = useState(onboardingData.communication || {});
-
-  const options = [
-    { key: 'email', label: 'Email', icon: '📧' },
-    { key: 'sms', label: 'Text Messages', icon: '📱' },
-    { key: 'push', label: 'Push Notifications', icon: '🔔' }
-  ];
-
-  const toggleOption = (key: string) => {
-    setCommunication((prev: any) => ({
-      ...prev,
-      [key]: !prev[key as keyof typeof prev]
-    }));
-  };
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Communication Preferences</h2>
-      <p className="text-gray-600 mb-6">
-        How would you like to receive updates about your vehicle?
-      </p>
-      
-      <div className="space-y-3 mb-6">
-        {options.map(option => (
-          <button
-            key={option.key}
-            onClick={() => toggleOption(option.key)}
-            className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
-              communication[option.key]
-                ? 'border-[#294a46] bg-[#e6eeec]'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">{option.icon}</span>
-                <span className="font-medium">{option.label}</span>
-              </div>
-              {communication[option.key] && (
-                <span className="text-[#294a46]">✓</span>
-              )}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      <div className="flex gap-3">
-        <button
-          onClick={onBack}
-          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-        >
-          Back
-        </button>
-        <button
-          onClick={() => {
-            updateData({ communication });
-            onNext();
-          }}
-          className="flex-1 bg-[#294a46] text-white py-2 px-4 rounded-lg hover:bg-[#1e3632]"
-        >
-          Continue
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const NotificationSettingsStep = ({ onNext, onBack, updateData, onboardingData }: any) => {
-  const [notifications, setNotifications] = useState(onboardingData.notifications || {});
-
-  const notificationTypes = [
-    'Appointment reminders',
-    'Service due alerts',
-    'Mechanic updates',
-    'Special offers',
-    'Maintenance tips'
-  ];
-
-  const toggleNotification = (type: string) => {
-    setNotifications((prev: any) => ({
-      ...prev,
-      [type]: !prev[type as keyof typeof prev]
-    }));
-  };
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Notification Settings</h2>
-      <p className="text-gray-600 mb-6">
-        Choose what notifications you'd like to receive
-      </p>
-      
-      <div className="space-y-3 mb-6">
-        {notificationTypes.map(type => (
-          <button
-            key={type}
-            onClick={() => toggleNotification(type)}
-            className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
-              notifications[type]
-                ? 'border-[#294a46] bg-[#e6eeec]'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-medium">{type}</span>
-              {notifications[type] && (
-                <span className="text-[#294a46]">✓</span>
-              )}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      <div className="flex gap-3">
-        <button
-          onClick={onBack}
-          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-        >
-          Back
-        </button>
-        <button
-          onClick={() => {
-            updateData({ notifications });
-            onNext();
-          }}
-          className="flex-1 bg-[#294a46] text-white py-2 px-4 rounded-lg hover:bg-[#1e3632]"
-        >
-          Continue
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const ServiceHistoryStep = ({ onNext, onBack, updateData, onboardingData }: any) => {
-  const [serviceHistory, setServiceHistory] = useState(onboardingData.serviceHistory || {});
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Service History</h2>
-      <p className="text-gray-600 mb-6">
-        Tell us about your recent vehicle services
-      </p>
-      
-      <div className="space-y-4 mb-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Last Service Date</label>
-          <input
-            type="date"
-            value={serviceHistory.lastServiceDate || ''}
-            onChange={(e) => setServiceHistory({...serviceHistory, lastServiceDate: e.target.value})}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
-          <input
-            type="text"
-            value={serviceHistory.lastServiceType || ''}
-            onChange={(e) => setServiceHistory({...serviceHistory, lastServiceType: e.target.value})}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="Oil change, brake service, etc."
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Mileage at Last Service</label>
-          <input
-            type="number"
-            value={serviceHistory.lastServiceMileage || ''}
-            onChange={(e) => setServiceHistory({...serviceHistory, lastServiceMileage: e.target.value})}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="45000"
-          />
-        </div>
-      </div>
-
-      <div className="flex gap-3">
-        <button
-          onClick={onBack}
-          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-        >
-          Back
-        </button>
-        <button
-          onClick={() => {
-            updateData({ serviceHistory });
-            onNext();
-          }}
-          className="flex-1 bg-[#294a46] text-white py-2 px-4 rounded-lg hover:bg-[#1e3632]"
-        >
-          Continue
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const AIHealthPreviewStep = ({ onNext, onBack }: any) => {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">AI Health Preview 🤖</h2>
-      <p className="text-gray-600 mb-6">
-        Get a sneak peek at what our AI can do for your vehicle
-      </p>
-      
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 mb-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Your AI Assistant will:</h3>
-        <ul className="space-y-3">
-          <li className="flex items-center gap-3">
-            <span className="text-blue-600">🔍</span>
-            <span>Analyze your vehicle's health patterns</span>
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="text-blue-600">📅</span>
-            <span>Predict when you'll need maintenance</span>
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="text-blue-600">💰</span>
-            <span>Help you save money on repairs</span>
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="text-blue-600">📊</span>
-            <span>Track your vehicle's performance</span>
-          </li>
-        </ul>
-      </div>
-
-      <div className="flex gap-3">
-        <button
-          onClick={onBack}
-          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-        >
-          Back
-        </button>
-        <button
-          onClick={onNext}
-          className="flex-1 bg-[#294a46] text-white py-2 px-4 rounded-lg hover:bg-[#1e3632]"
-        >
-          Continue
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const InsuranceInfoStep = ({ onNext, onBack, updateData, onboardingData }: any) => {
-  const [insurance, setInsurance] = useState(onboardingData.insurance || {});
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Insurance Information (Optional)</h2>
-      <p className="text-gray-600 mb-6">
-        This helps us provide better service recommendations
-      </p>
-      
-      <div className="space-y-4 mb-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Insurance Provider</label>
-          <input
-            type="text"
-            value={insurance.provider || ''}
-            onChange={(e) => setInsurance({...insurance, provider: e.target.value})}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="State Farm, Geico, etc."
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Policy Number</label>
-          <input
-            type="text"
-            value={insurance.policyNumber || ''}
-            onChange={(e) => setInsurance({...insurance, policyNumber: e.target.value})}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="Optional"
-          />
-        </div>
-      </div>
-
-      <div className="flex gap-3">
-        <button
-          onClick={onBack}
-          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-        >
-          Back
-        </button>
-        <button
-          onClick={() => {
-            updateData({ insurance });
-            onNext();
-          }}
-          className="flex-1 bg-[#294a46] text-white py-2 px-4 rounded-lg hover:bg-[#1e3632]"
-        >
-          Continue
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const EmergencyContactStep = ({ onNext, onBack, updateData, onboardingData }: any) => {
-  const [emergencyContact, setEmergencyContact] = useState({
-    name: onboardingData.emergencyContact?.name || '',
-    phone: onboardingData.emergencyContact?.phone || '',
-    relationship: onboardingData.emergencyContact?.relationship || ''
-  });
-
-  const handleSubmit = () => {
-    updateData({ emergencyContact });
-    onNext();
-  };
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">
-        Emergency Contact
-      </h2>
-      <p className="text-gray-600 mb-6">
-        Who should we contact in case of emergency?
-      </p>
-
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Contact Name
-          </label>
-          <input
-            type="text"
-            value={emergencyContact.name}
-            onChange={(e) => setEmergencyContact({...emergencyContact, name: e.target.value})}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="Jane Doe"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Phone Number
-          </label>
-          <input
-            type="tel"
-            value={emergencyContact.phone}
-            onChange={(e) => setEmergencyContact({...emergencyContact, phone: e.target.value})}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="(555) 123-4567"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Relationship
-          </label>
-          <select
-            value={emergencyContact.relationship}
-            onChange={(e) => setEmergencyContact({...emergencyContact, relationship: e.target.value})}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select relationship</option>
-            <option value="spouse">Spouse</option>
-            <option value="parent">Parent</option>
-            <option value="sibling">Sibling</option>
-            <option value="friend">Friend</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="flex space-x-3 mt-8">
-        <button
-          onClick={onBack}
-          className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-        >
-          Back
-        </button>
-        <button
-          onClick={handleSubmit}
-          className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-        >
-          Continue
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const TermsAcceptanceStep = ({ onNext, onBack }: any) => {
-  const [accepted, setAccepted] = useState(false);
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">
-        Terms & Conditions
-      </h2>
-      <p className="text-gray-600 mb-6">
-        Please review and accept our terms
-      </p>
-
-      <div className="bg-gray-50 rounded-lg p-4 mb-6 h-48 overflow-y-auto text-sm text-gray-600">
-        <h3 className="font-semibold text-gray-900 mb-2">Terms of Service</h3>
-        <p className="mb-3">
-          By using Axle's services, you agree to these terms...
-        </p>
-        
-        <h3 className="font-semibold text-gray-900 mb-2">Privacy Policy</h3>
-        <p className="mb-3">
-          We respect your privacy and protect your personal information...
-        </p>
-        
-        <h3 className="font-semibold text-gray-900 mb-2">Service Agreement</h3>
-        <p>
-          Our mechanics are independent contractors...
-        </p>
-      </div>
-
-      <label className="flex items-start mb-6">
-        <input
-          type="checkbox"
-          checked={accepted}
-          onChange={(e) => setAccepted(e.target.checked)}
-          className="mt-1 mr-3"
-        />
-        <span className="text-sm text-gray-700">
-          I have read and agree to the Terms of Service, Privacy Policy, 
-          and Service Agreement
-        </span>
-      </label>
-
-      <div className="flex space-x-3">
-        <button
-          onClick={onBack}
-          className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-        >
-          Back
-        </button>
-        <button
-          onClick={onNext}
-          disabled={!accepted}
-          className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300"
-        >
-          Accept & Continue
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const FinalWelcomeStep = ({ onNext, onBack, userName, isLastStep }: any) => {
-  return (
-    <div className="text-center">
-      <div className="text-6xl mb-6">🎉</div>
-      
-      <h2 className="text-3xl font-bold text-gray-900 mb-4">
-        Welcome to Axle, {userName}!
-      </h2>
-      
-      <p className="text-lg text-gray-600 mb-8">
-        Your account is all set up. You can now track your appointment, 
-        manage your vehicles, and keep your car healthy.
-      </p>
-
-      <div className="bg-blue-50 rounded-lg p-6 mb-8">
-        <h3 className="font-semibold text-gray-900 mb-3">What's Next?</h3>
-        <ul className="text-left space-y-2 text-gray-700">
-          <li>• Check your email for appointment confirmation</li>
-          <li>• View your upcoming appointment in the dashboard</li>
-          <li>• Set up service reminders for your vehicle</li>
-          <li>• Explore money-saving maintenance tips</li>
-        </ul>
-      </div>
-
-      <button
-        onClick={onNext}
-        className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-      >
-        Go to Dashboard
-      </button>
-    </div>
-  );
-};
-
 export default function PostAppointmentOnboarding() {
-  const router = useRouter();
+  // Define only the steps we want for post-appointment
+  const POST_APPOINTMENT_STEPS = [2, 3, 4, 5, 6, 8, 10, 11, 12, 16, 17, 18, 19];
+  
   const searchParams = useSearchParams();
+  const router = useRouter();
   const supabase = createClientComponentClient();
   
-  const [currentStep, setCurrentStep] = useState(3); // Start at step 3 (Personal Info) since account is already created
-  const [loading, setLoading] = useState(true);
-  const [onboardingData, setOnboardingData] = useState<PostAppointmentData>({
-    email: '',
-    password: '',
-    fullName: '',
-    preferences: {},
-    notifications: {},
-    serviceHistory: {},
-    insurance: {},
-    emergencyContact: {}
+  const [currentStep, setCurrentStep] = useState(2); // Start at step 2 (Referral Source)
+  const [user, setUser] = useState<any>(null);
+  const [formData, setFormData] = useState<any>({
+    // Pre-fill from appointment
+    appointmentId: searchParams.get('appointmentId'),
+    phone: searchParams.get('phone'),
+    // Vehicle data will be loaded from appointment
   });
 
-  // Define which steps to show (shortened flow) - skip account creation since it's already done
-  const STEPS_TO_SHOW = [3, 4, 6, 7, 9, 10, 11, 12, 13, 16, 17, 18, 19];
-  const currentStepIndex = STEPS_TO_SHOW.indexOf(currentStep);
-
+  // Load appointment data and pre-fill vehicle info
   useEffect(() => {
+    const loadAppointmentData = async () => {
+      const appointmentId = searchParams.get('appointmentId');
+      const phone = searchParams.get('phone');
+
+      if (appointmentId) {
+        const { data: appointment } = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('id', appointmentId)
+          .single();
+          
+        if (appointment) {
+          // Pre-fill data we already have
+          setFormData(prev => ({
+            ...prev,
+            // Vehicle info from appointment (for Add Another Car step)
+            vehicles: [{
+              year: appointment.vehicle_year,
+              make: appointment.vehicle_make,
+              model: appointment.vehicle_model,
+              vin: appointment.vehicle_vin || '',
+              mileage: appointment.vehicle_mileage || '',
+              licensePlate: '',
+            }],
+            selectedVehicleIndex: 0,
+            phone: phone || appointment.phone,
+            address: appointment.address,
+            // Location data if available
+            location: appointment.address || '',
+            latitude: appointment.latitude,
+            longitude: appointment.longitude,
+          }));
+        }
+      }
+    };
+
     loadAppointmentData();
   }, []);
 
-  const loadAppointmentData = async () => {
-    try {
-      const appointmentId = searchParams.get('appointmentId');
-      if (!appointmentId) {
-        console.error('No appointment ID provided');
-        router.push('/');
-        return;
-      }
-
-      // Load appointment data to pre-fill form
-      const { data: appointment, error } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('id', appointmentId)
-        .single();
-
-      if (error || !appointment) {
-        console.error('Failed to load appointment data');
-        router.push('/');
-        return;
-      }
-
-      // Pre-fill data from appointment
-      setOnboardingData(prev => ({
-        ...prev,
-        appointmentId,
-        phone: appointment.phone,
-        address: appointment.address,
-        vehicle: {
-          year: appointment.vehicle_year,
-          make: appointment.vehicle_make,
-          model: appointment.vehicle_model,
-          vin: appointment.vehicle_vin,
-          mileage: appointment.vehicle_mileage
-        }
-      }));
-
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading appointment:', error);
-      router.push('/');
-    }
-  };
-
   const handleNext = () => {
-    const nextIndex = currentStepIndex + 1;
-    if (nextIndex < STEPS_TO_SHOW.length) {
-      setCurrentStep(STEPS_TO_SHOW[nextIndex]);
-    } else {
+    const currentIndex = POST_APPOINTMENT_STEPS.indexOf(currentStep);
+    if (currentIndex < POST_APPOINTMENT_STEPS.length - 1) {
+      setCurrentStep(POST_APPOINTMENT_STEPS[currentIndex + 1]);
+    } else if (currentStep === 19) {
+      // After Create Account step, complete onboarding
       completeOnboarding();
     }
   };
 
   const handleBack = () => {
-    const prevIndex = currentStepIndex - 1;
-    if (prevIndex >= 0) {
-      setCurrentStep(STEPS_TO_SHOW[prevIndex]);
+    const currentIndex = POST_APPOINTMENT_STEPS.indexOf(currentStep);
+    if (currentIndex > 0) {
+      setCurrentStep(POST_APPOINTMENT_STEPS[currentIndex - 1]);
     }
-  };
-
-  const updateData = (data: Partial<PostAppointmentData>) => {
-    setOnboardingData(prev => ({ ...prev, ...data }));
   };
 
   const completeOnboarding = async () => {
-    try {
-      // Create user account
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: onboardingData.email,
-        password: onboardingData.password,
-        options: {
-          data: {
-            full_name: onboardingData.fullName,
-            phone: onboardingData.phone,
-            onboarding_type: 'post-appointment'
-          }
-        }
-      });
-
-      if (authError) throw authError;
-
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user!.id,
-          full_name: onboardingData.fullName,
-          phone: onboardingData.phone,
-          email: onboardingData.email,
-          onboarding_completed: true,
-          created_via: 'post-appointment'
-        });
-
-      if (profileError) throw profileError;
-
-      // Save vehicle
-      if (onboardingData.vehicle) {
-        const { error: vehicleError } = await supabase
-          .from('vehicles')
-          .insert({
-            user_id: authData.user!.id,
-            ...onboardingData.vehicle
-          });
-        
-        if (vehicleError) throw vehicleError;
-      }
-
-      // Link appointment to new user
-      if (onboardingData.appointmentId) {
-        await supabase
-          .from('appointments')
-          .update({ customer_id: authData.user!.id })
-          .eq('id', onboardingData.appointmentId);
-      }
-
-      // Save other preferences
-      await saveUserPreferences(authData.user!.id);
-
-      // Redirect to dashboard
-      router.push('/customer-dashboard');
-    } catch (error) {
-      console.error('Error completing onboarding:', error);
-      alert('Failed to create account. Please try again.');
+    // Link appointment to user
+    if (formData.appointmentId && user?.id) {
+      await supabase
+        .from('appointments')
+        .update({ customer_id: user.id })
+        .eq('id', formData.appointmentId);
     }
+
+    // Mark onboarding complete and redirect to dashboard
+    await supabase
+      .from('profiles')
+      .update({ 
+        onboarding_completed: true,
+        onboarding_type: 'post_appointment'
+      })
+      .eq('id', user?.id);
+      
+    router.push('/customer-dashboard');
   };
 
-  const saveUserPreferences = async (userId: string) => {
-    // Save all the additional data collected during onboarding
-    const promises = [];
+  // Calculate progress for the progress bar
+  const currentStepIndex = POST_APPOINTMENT_STEPS.indexOf(currentStep);
+  const progress = ((currentStepIndex + 1) / POST_APPOINTMENT_STEPS.length) * 100;
+  const displayStepNumber = currentStepIndex + 1;
+  const totalSteps = POST_APPOINTMENT_STEPS.length;
 
-    // Save emergency contact
-    if (onboardingData.emergencyContact?.name) {
-      promises.push(
-        supabase.from('emergency_contacts').insert({
-          user_id: userId,
-          ...onboardingData.emergencyContact
-        })
-      );
-    }
-
-    // Save insurance info
-    if (onboardingData.insurance?.provider) {
-      promises.push(
-        supabase.from('insurance_info').insert({
-          user_id: userId,
-          ...onboardingData.insurance
-        })
-      );
-    }
-
-    // Save preferences
-    if (onboardingData.preferences || onboardingData.notifications) {
-      promises.push(
-        supabase.from('user_preferences').insert({
-          user_id: userId,
-          service_preferences: onboardingData.preferences,
-          notification_settings: onboardingData.notifications
-        })
-      );
-    }
-
-    await Promise.all(promises);
+  // Copy ALL the same props and handlers from original onboarding
+  const stepProps = {
+    formData,
+    setFormData,
+    onNext: handleNext,
+    onBack: handleBack,
+    currentStep,
+    // ... all other props from original
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your information...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SiteHeader />
-      
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-2">
+    <div className="min-h-screen bg-[#faf9f8]">
+      {/* EXACT SAME header/progress bar from customer onboarding */}
+      <div className="fixed top-0 left-0 right-0 bg-white z-50 shadow-sm">
+        <div className="max-w-3xl mx-auto px-4">
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center">
+              <button
+                onClick={handleBack}
+                disabled={currentStep === 2}
+                className="mr-4 p-2 rounded-full hover:bg-gray-100 disabled:opacity-50"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <span className="text-sm text-gray-600">
+                Step {displayStepNumber} of {totalSteps}
+              </span>
+            </div>
             <button
-              onClick={handleBack}
-              className="flex items-center px-3 py-2 rounded-lg transition-colors text-[#294a46] hover:bg-gray-100"
+              onClick={() => router.push('/customer-dashboard')}
+              className="text-sm text-gray-500 hover:text-gray-700"
             >
-              <ChevronLeft className="h-4 w-4" />
+              Skip for now
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Complete Your Profile
-            </h1>
-            <span className="text-sm text-gray-600">
-              Step {currentStepIndex + 1} of {STEPS_TO_SHOW.length}
-            </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((currentStepIndex + 1) / STEPS_TO_SHOW.length) * 100}%` }}
+              className="bg-[#294a46] h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
             />
           </div>
         </div>
-
-        {/* Render Current Step */}
-        <div className="bg-white rounded-lg shadow p-6">
-          {currentStep === 3 && (
-            <PersonalInfoStep
-              onNext={handleNext}
-              onBack={handleBack}
-              updateData={updateData}
-              onboardingData={onboardingData}
-              preFilledPhone={onboardingData.phone}
-            />
-          )}
-          
-          {currentStep === 4 && (
-            <WelcomeBenefitsStep
-              onNext={handleNext}
-              onBack={handleBack}
-            />
-          )}
-          
-          {currentStep === 6 && (
-            <VehicleVerificationStep
-              onNext={handleNext}
-              onBack={handleBack}
-              updateData={updateData}
-              onboardingData={onboardingData}
-              preFilledVehicle={onboardingData.vehicle}
-            />
-          )}
-          
-          {currentStep === 7 && (
-            <VehicleDetailsStep
-              onNext={handleNext}
-              onBack={handleBack}
-              updateData={updateData}
-              onboardingData={onboardingData}
-            />
-          )}
-          
-          {currentStep === 9 && (
-            <ServicePreferencesStep
-              onNext={handleNext}
-              onBack={handleBack}
-              updateData={updateData}
-              onboardingData={onboardingData}
-            />
-          )}
-          
-          {currentStep === 10 && (
-            <CommunicationPreferencesStep
-              onNext={handleNext}
-              onBack={handleBack}
-              updateData={updateData}
-              onboardingData={onboardingData}
-            />
-          )}
-          
-          {currentStep === 11 && (
-            <NotificationSettingsStep
-              onNext={handleNext}
-              onBack={handleBack}
-              updateData={updateData}
-              onboardingData={onboardingData}
-            />
-          )}
-          
-          {currentStep === 12 && (
-            <ServiceHistoryStep
-              onNext={handleNext}
-              onBack={handleBack}
-              updateData={updateData}
-              onboardingData={onboardingData}
-            />
-          )}
-          
-          {currentStep === 13 && (
-            <AIHealthPreviewStep
-              onNext={handleNext}
-              onBack={handleBack}
-            />
-          )}
-          
-          {currentStep === 16 && (
-            <InsuranceInfoStep
-              onNext={handleNext}
-              onBack={handleBack}
-              updateData={updateData}
-              onboardingData={onboardingData}
-            />
-          )}
-          
-          {currentStep === 17 && (
-            <EmergencyContactStep
-              onNext={handleNext}
-              onBack={handleBack}
-              updateData={updateData}
-              onboardingData={onboardingData}
-            />
-          )}
-          
-          {currentStep === 18 && (
-            <TermsAcceptanceStep
-              onNext={handleNext}
-              onBack={handleBack}
-            />
-          )}
-          
-          {currentStep === 19 && (
-            <FinalWelcomeStep
-              onNext={handleNext}
-              onBack={handleBack}
-              userName={onboardingData.fullName}
-              isLastStep={true}
-            />
-          )}
-        </div>
-
-        {/* Help Text */}
-        <p className="mt-6 text-center text-sm text-gray-600">
-          Complete your profile to manage your appointments, 
-          track service history, and receive personalized recommendations.
-        </p>
       </div>
-      
-      <Footer />
+
+      {/* Main content - EXACT SAME container as original */}
+      <div className="pt-24 pb-16">
+        <div className="max-w-3xl mx-auto px-4">
+          {/* Render only the steps we want, using the EXACT SAME components */}
+          {currentStep === 2 && <ReferralSourceStep {...stepProps} />}
+          {currentStep === 3 && <PreviousAppsStep {...stepProps} />}
+          {currentStep === 4 && <WhyAxleIsBetterStep {...stepProps} />}
+          {currentStep === 5 && <LastServiceStep {...stepProps} />}
+          {currentStep === 6 && <ThankYouStep {...stepProps} />}
+          {currentStep === 8 && <AxleAIBenefitsStep {...stepProps} />}
+          {currentStep === 10 && <LocationStep {...stepProps} />}
+          {currentStep === 11 && <NotificationsStep {...stepProps} />}
+          {currentStep === 12 && <AddAnotherCarStep {...stepProps} />}
+          {currentStep === 16 && <MaintenanceScheduleStep {...stepProps} />}
+          {currentStep === 17 && <SettingUpStep {...stepProps} />}
+          {currentStep === 18 && <PlanReadyStep {...stepProps} />}
+          {currentStep === 19 && <CreateAccountStep {...stepProps} />}
+        </div>
+      </div>
     </div>
   );
 }
