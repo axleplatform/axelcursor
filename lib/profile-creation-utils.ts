@@ -21,6 +21,7 @@ export interface ProfileCreationData {
   subscription_status?: string
   free_trial_ends_at?: string
   onboarding_data?: any
+  profile_completed_at?: string
 }
 
 export interface ProfileCreationResult {
@@ -32,12 +33,12 @@ export interface ProfileCreationResult {
 }
 
 /**
- * Robust profile creation function that handles all edge cases
+ * Simplified and robust profile creation function
  */
 export async function createOrUpdateUserProfile(
   profileData: ProfileCreationData
 ): Promise<ProfileCreationResult> {
-  console.log('🔧 Starting profile creation/update process...')
+  console.log('🔧 Starting simplified profile creation/update process...')
   console.log('👤 User ID:', profileData.user_id)
   console.log('📧 Email:', profileData.email)
   console.log('📋 Full payload:', JSON.stringify(profileData, null, 2))
@@ -72,25 +73,26 @@ export async function createOrUpdateUserProfile(
 
     console.log('✅ User authentication verified')
 
-    // Step 2: Check if user exists in users table
+    // Step 2: Check if user exists in `users` table
     console.log('🔍 Step 2: Checking if user exists in users table...')
-    const { data: existingUser, error: userCheckError } = await supabase
+    const { data: existingUser, error: userError } = await supabase
       .from('users')
-      .select('id, profile_status, account_type')
+      .select('id, profile_status, account_type, role')
       .eq('id', profileData.user_id)
       .single()
 
-    if (userCheckError && userCheckError.code !== 'PGRST116') {
-      console.error('❌ Error checking user:', userCheckError)
+    if (userError && userError.code !== 'PGRST116') {
+      console.error('❌ Error checking user:', userError)
+      console.error('📋 User check error details:', JSON.stringify(userError, null, 2))
       return {
         success: false,
         error: 'Failed to check user existence',
-        errorCode: userCheckError.code,
+        errorCode: userError.code,
         action: 'failed'
       }
     }
 
-    // Step 3: Create user record if it doesn't exist
+    // Step 3: Insert user if not exists
     if (!existingUser) {
       console.log('📝 Step 3: Creating user record in users table...')
       
@@ -111,80 +113,98 @@ export async function createOrUpdateUserProfile(
       
       console.log('📋 User record data:', JSON.stringify(userRecordData, null, 2))
       
-      const { data: userRecord, error: createUserError } = await supabase
+      const { error: insertUserError } = await supabase
         .from('users')
         .insert(userRecordData)
-        .select()
-        .single()
 
-      if (createUserError) {
-        console.error('❌ Error creating user record:', createUserError)
-        console.error('📋 Error details:', JSON.stringify(createUserError, null, 2))
-        if (createUserError.code === '23505') { // Unique violation
+      if (insertUserError) {
+        console.error('❌ Error inserting user:', insertUserError)
+        console.error('📋 User insert error details:', JSON.stringify(insertUserError, null, 2))
+        
+        if (insertUserError.code === '23505') { // Unique violation
           console.warn('⚠️ User already exists, continuing...')
         } else {
           return {
             success: false,
             error: 'Failed to create user record',
-            errorCode: createUserError.code,
+            errorCode: insertUserError.code,
             action: 'failed'
           }
         }
       } else {
-        console.log('✅ User record created')
+        console.log('✅ User record created successfully')
       }
     } else {
       console.log('✅ User record exists:', existingUser.profile_status)
     }
 
-    // Step 4: Check if profile already exists
+    // Step 4: Check if profile exists in `user_profiles` table
     console.log('🔍 Step 4: Checking if user profile exists...')
-    const { data: existingProfile, error: profileCheckError } = await supabase
+    const { data: existingProfile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select('id, onboarding_completed')
       .eq('user_id', profileData.user_id)
       .single()
 
-    if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-      console.error('❌ Error checking profile:', profileCheckError)
-      console.error('📋 Profile check error details:', JSON.stringify(profileCheckError, null, 2))
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error('❌ Error checking profile:', profileError)
+      console.error('📋 Profile check error details:', JSON.stringify(profileError, null, 2))
       return {
         success: false,
         error: 'Failed to check profile existence',
-        errorCode: profileCheckError.code,
+        errorCode: profileError.code,
         action: 'failed'
       }
     }
 
-    // Step 5: Create or update profile
+    // Step 5: Insert profile if not exists
     if (!existingProfile) {
       console.log('📝 Step 5: Creating new user profile...')
       
       // Ensure user_id matches authenticated user for RLS compliance
       const profileInsertData = {
-        ...profileData,
         user_id: authUser.user.id, // Ensure this matches auth.uid()
+        email: profileData.email,
+        phone: profileData.phone,
+        full_name: profileData.full_name,
+        address: profileData.address,
+        city: profileData.city,
+        state: profileData.state,
+        zip_code: profileData.zip_code,
+        communication_preferences: profileData.communication_preferences || {},
+        notification_settings: profileData.notification_settings || {},
+        onboarding_completed: profileData.onboarding_completed || false,
+        onboarding_type: profileData.onboarding_type,
+        profile_completed_at: profileData.profile_completed_at,
+        vehicles: profileData.vehicles || [],
+        referral_source: profileData.referral_source,
+        last_service: profileData.last_service,
+        notifications_enabled: profileData.notifications_enabled || false,
+        subscription_plan: profileData.subscription_plan,
+        subscription_status: profileData.subscription_status || 'inactive',
+        free_trial_ends_at: profileData.free_trial_ends_at,
+        onboarding_data: profileData.onboarding_data,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
       
       console.log('📋 Profile insert data:', JSON.stringify(profileInsertData, null, 2))
       
-      const { data: newProfile, error: createError } = await supabase
+      const { data: newProfile, error: insertProfileError } = await supabase
         .from('user_profiles')
         .insert(profileInsertData)
         .select()
         .single()
 
-      if (createError) {
-        console.error('❌ Error creating profile:', createError)
-        console.error('📋 Create error details:', JSON.stringify(createError, null, 2))
+      if (insertProfileError) {
+        console.error('❌ Error inserting profile:', insertProfileError)
+        console.error('📋 Profile insert error details:', JSON.stringify(insertProfileError, null, 2))
         
         // Handle specific error codes
-        if (createError.code === '23505') { // Unique violation
+        if (insertProfileError.code === '23505') { // Unique violation
           console.warn('⚠️ Profile already exists, fetching existing...')
           return await fetchExistingProfile(profileData.user_id)
-        } else if (createError.code === '406') {
+        } else if (insertProfileError.code === '406') {
           console.error('❌ RLS policy violation - user not authenticated properly')
           console.error('🔍 Auth user ID:', authUser.user.id)
           console.error('🔍 Profile user_id:', profileData.user_id)
@@ -194,10 +214,10 @@ export async function createOrUpdateUserProfile(
             errorCode: '406',
             action: 'failed'
           }
-        } else if (createError.code === '409') {
+        } else if (insertProfileError.code === '409') {
           console.warn('⚠️ Conflict error, fetching existing profile...')
           return await fetchExistingProfile(profileData.user_id)
-        } else if (createError.code === '403') {
+        } else if (insertProfileError.code === '403') {
           console.error('❌ 403 Forbidden - RLS policy violation')
           console.error('🔍 Auth user ID:', authUser.user.id)
           console.error('🔍 Profile user_id:', profileData.user_id)
@@ -212,7 +232,7 @@ export async function createOrUpdateUserProfile(
           return {
             success: false,
             error: 'Failed to create profile',
-            errorCode: createError.code,
+            errorCode: insertProfileError.code,
             action: 'failed'
           }
         }
@@ -225,40 +245,50 @@ export async function createOrUpdateUserProfile(
         action: 'created'
       }
     } else {
-      console.log('📝 Step 5: Updating existing user profile...')
+      console.log('✅ Profile already exists:', existingProfile.id)
       
-      // Ensure user_id matches authenticated user for RLS compliance
-      const profileUpdateData = {
-        ...profileData,
-        user_id: authUser.user.id, // Ensure this matches auth.uid()
-        updated_at: new Date().toISOString()
-      }
-      
-      console.log('📋 Profile update data:', JSON.stringify(profileUpdateData, null, 2))
-      
-      const { data: updatedProfile, error: updateError } = await supabase
-        .from('user_profiles')
-        .update(profileUpdateData)
-        .eq('user_id', profileData.user_id)
-        .select()
-        .single()
+      // Optionally update existing profile with new data
+      if (profileData.onboarding_completed && !existingProfile.onboarding_completed) {
+        console.log('📝 Step 5: Updating existing profile with completion data...')
+        
+        const profileUpdateData = {
+          ...profileData,
+          user_id: authUser.user.id, // Ensure this matches auth.uid()
+          updated_at: new Date().toISOString()
+        }
+        
+        console.log('📋 Profile update data:', JSON.stringify(profileUpdateData, null, 2))
+        
+        const { data: updatedProfile, error: updateError } = await supabase
+          .from('user_profiles')
+          .update(profileUpdateData)
+          .eq('user_id', profileData.user_id)
+          .select()
+          .single()
 
-      if (updateError) {
-        console.error('❌ Error updating profile:', updateError)
-        console.error('📋 Update error details:', JSON.stringify(updateError, null, 2))
+        if (updateError) {
+          console.error('❌ Error updating profile:', updateError)
+          console.error('📋 Update error details:', JSON.stringify(updateError, null, 2))
+          return {
+            success: false,
+            error: 'Failed to update profile',
+            errorCode: updateError.code,
+            action: 'failed'
+          }
+        }
+
+        console.log('✅ Profile updated successfully')
         return {
-          success: false,
-          error: 'Failed to update profile',
-          errorCode: updateError.code,
-          action: 'failed'
+          success: true,
+          profile: updatedProfile,
+          action: 'updated'
         }
       }
-
-      console.log('✅ Profile updated successfully')
+      
       return {
         success: true,
-        profile: updatedProfile,
-        action: 'updated'
+        profile: existingProfile,
+        action: 'fetched'
       }
     }
   } catch (error) {
