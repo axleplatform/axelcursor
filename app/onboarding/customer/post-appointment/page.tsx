@@ -265,7 +265,7 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
           <button
             onClick={() => {
               updateData({ referralSource: selected.join(', ') });
-              onNext();
+            onNext();
             }}
             className="relative p-4 rounded-lg border-2 border-[#294a46] bg-[#294a46] text-white hover:bg-[#1e3632] transition-all"
           >
@@ -299,8 +299,8 @@ const PreviousAppsStep = ({ onNext, updateData, showButton = true }: StepProps &
         <p className="text-gray-600 text-sm">
           We'd like to understand your experience with similar services
         </p>
-      </div>
-      
+        </div>
+
       <div className="space-y-4">
         <div className={`transition-all duration-500 ${
           visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
@@ -339,7 +339,7 @@ const PreviousAppsStep = ({ onNext, updateData, showButton = true }: StepProps &
             </div>
           </button>
         </div>
-      </div>
+    </div>
     </div>
   )
 }
@@ -407,13 +407,13 @@ const WhyAxleIsBetterStep = ({ onNext, showButton = true }: StepProps & { showBu
 
       {showButton && (
         <div>
-          <button 
-            onClick={onNext}
+        <button
+          onClick={onNext}
             className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-          >
-            Continue
-          </button>
-        </div>
+        >
+          Continue
+        </button>
+      </div>
       )}
     </div>
   )
@@ -436,21 +436,21 @@ const LastServiceStep = ({ onNext, updateData, showButton = true }: StepProps & 
     }
     showItems()
   }, [])
-
+  
   return (
     <div>
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Last Service Information</h2>
         <p className="text-gray-600 text-sm">
           This helps us understand your car's maintenance history
-        </p>
-      </div>
-      
+            </p>
+          </div>
+          
       <div className="space-y-4">
         <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-all duration-500 ${
           visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
         }`}>
-          <div>
+            <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Service Date</label>
             <div className="relative">
               <input 
@@ -463,10 +463,10 @@ const LastServiceStep = ({ onNext, updateData, showButton = true }: StepProps & 
                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-              </div>
+            </div>
             </div>
           </div>
-          <div>
+            <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Mileage at Service</label>
             <input 
               type="number" 
@@ -475,7 +475,7 @@ const LastServiceStep = ({ onNext, updateData, showButton = true }: StepProps & 
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLastService({...lastService, mileage: e.target.value})}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
             />
-          </div>
+            </div>
         </div>
         
         <div className={`transition-all duration-500 delay-200 ${
@@ -493,7 +493,7 @@ const LastServiceStep = ({ onNext, updateData, showButton = true }: StepProps & 
       </div>
 
       {showButton && (
-        <button 
+        <button
           onClick={() => {
             updateData({ lastService })
             onNext()
@@ -533,14 +533,14 @@ const ThankYouStep = ({ onNext, showButton = true }: StepProps & { showButton?: 
       </div>
       
       {showButton && (
-        <button 
+        <button
           onClick={onNext}
           className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
         >
           Continue
         </button>
       )}
-    </div>
+      </div>
   )
 }
 
@@ -599,14 +599,14 @@ const AxleAIBenefitsStep = ({ onNext, showButton = true }: StepProps & { showBut
       </div>
 
       {showButton && (
-        <button 
+        <button
           onClick={onNext}
           className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
         >
           Continue
         </button>
       )}
-    </div>
+      </div>
   )
 }
 
@@ -636,9 +636,9 @@ const LocationStep = ({ onNext, updateData, showButton = true }: StepProps & { s
       <div className={`transition-all duration-500 ${
         visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
       }`}>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
           City or Zip Code
-        </label>
+          </label>
         <input 
           type="text" 
           placeholder="Enter your city or zip code" 
@@ -646,8 +646,8 @@ const LocationStep = ({ onNext, updateData, showButton = true }: StepProps & { s
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent mb-8"
         />
-      </div>
-      
+        </div>
+
       {showButton && (
         <button 
           onClick={() => {
@@ -659,7 +659,7 @@ const LocationStep = ({ onNext, updateData, showButton = true }: StepProps & { s
           Continue
         </button>
       )}
-    </div>
+        </div>
   )
 }
 
@@ -721,7 +721,7 @@ const NotificationsStep = ({ onNext, updateData, onboardingData }: StepProps) =>
         </button>
         
         <div className="relative">
-          <button
+        <button
             onClick={handleAllow}
             disabled={requesting}
             className="w-full py-3 px-6 bg-[#294a46] text-white rounded-xl font-medium hover:bg-[#1e3632] transition-colors disabled:opacity-50"
@@ -734,11 +734,11 @@ const NotificationsStep = ({ onNext, updateData, onboardingData }: StepProps) =>
             ) : (
               'Allow'
             )}
-          </button>
+        </button>
           
           <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
             <span className="text-2xl">👆</span>
-          </div>
+      </div>
         </div>
       </div>
 
@@ -835,7 +835,7 @@ const AddAnotherCarStep = ({ onNext, updateData, onboardingData, showButton = tr
                 <p className="font-medium text-gray-900">
                   {vehicle.year} {vehicle.make} {vehicle.model}
                 </p>
-              </div>
+            </div>
               <div className="text-[#294a46]">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -875,24 +875,24 @@ const AddAnotherCarStep = ({ onNext, updateData, onboardingData, showButton = tr
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     {filteredYears.length > 0 ? (
                       filteredYears.map(year => (
-                        <button
+        <button
                           key={year}
                           onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
+          onClick={() => {
                             setNewVehicle({...newVehicle, year})
                             setShowYearDropdown(false)
-                          }}
+          }}
                           className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
-                        >
+        >
                           {year}
-                        </button>
+        </button>
                       ))
                     ) : (
                       <div className="px-4 py-2 text-gray-500">
                         Custom year: {newVehicle.year}
-                      </div>
+      </div>
                     )}
-                  </div>
+    </div>
                 )}
               </div>
               
@@ -917,7 +917,7 @@ const AddAnotherCarStep = ({ onNext, updateData, onboardingData, showButton = tr
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     {filteredMakes.length > 0 ? (
                       filteredMakes.map(make => (
-                        <button
+          <button
                           key={make}
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
@@ -933,11 +933,11 @@ const AddAnotherCarStep = ({ onNext, updateData, onboardingData, showButton = tr
                       <div className="px-4 py-2 text-gray-500">
                         Custom make: {newVehicle.make}
                       </div>
-                    )}
-                  </div>
+              )}
+            </div>
                 )}
-              </div>
-              
+      </div>
+
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Model
@@ -960,60 +960,60 @@ const AddAnotherCarStep = ({ onNext, updateData, onboardingData, showButton = tr
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     {filteredModels.length > 0 ? (
                       filteredModels.map(model => (
-                        <button
+        <button
                           key={model}
                           onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
+          onClick={() => {
                             setNewVehicle({...newVehicle, model})
                             setShowModelDropdown(false)
-                          }}
+          }}
                           className="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50"
-                        >
+        >
                           {model}
-                        </button>
+        </button>
                       ))
                     ) : (
                       <div className="px-4 py-2 text-gray-500">
                         Custom model: {newVehicle.model}
-                      </div>
+      </div>
                     )}
-                  </div>
+    </div>
                 )}
               </div>
             </div>
 
-            <div>
+    <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 VIN (Optional)
               </label>
-              <input 
+          <input
                 type="text" 
                 placeholder="1HGBH41JXMN109186"
                 value={newVehicle.vin}
                 onChange={(e) => setNewVehicle({...newVehicle, vin: e.target.value})}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
-              />
-            </div>
-
+          />
+        </div>
+        
             <div className="grid grid-cols-2 gap-4">
-              <div>
+        <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Current Mileage
                 </label>
-                <input 
+          <input
                   type="number" 
                   placeholder="45000"
                   value={newVehicle.mileage}
                   onChange={(e) => setNewVehicle({...newVehicle, mileage: e.target.value})}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
-                />
-              </div>
-              
-              <div>
+          />
+        </div>
+        
+        <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   License Plate
                 </label>
-                <input 
+          <input
                   type="text" 
                   placeholder="ABC 1234"
                   value={newVehicle.licensePlate}
@@ -1021,19 +1021,19 @@ const AddAnotherCarStep = ({ onNext, updateData, onboardingData, showButton = tr
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
                 />
               </div>
-            </div>
-          </div>
+        </div>
+      </div>
 
           <div className="flex gap-3 mt-6">
-            <button
+        <button
               onClick={handleAddVehicle}
               disabled={!newVehicle.year || !newVehicle.make || !newVehicle.model}
               className="flex-1 bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:bg-gray-300"
-            >
+        >
               Save Car
-            </button>
-            <button
-              onClick={() => {
+        </button>
+        <button
+          onClick={() => {
                 setShowAddForm(false);
                 setNewVehicle({
                   year: '',
@@ -1066,10 +1066,10 @@ const AddAnotherCarStep = ({ onNext, updateData, onboardingData, showButton = tr
           <button
             onClick={onNext}
             className="flex-1 bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-          >
-            Continue
-          </button>
-        </div>
+        >
+          Continue
+        </button>
+      </div>
       )}
     </div>
   );
@@ -1106,7 +1106,7 @@ const MaintenanceScheduleStep = ({ onNext, showButton = true }: StepProps & { sh
       <p className="text-center text-gray-600 mb-8">Have axle ai automate your reliability</p>
 
       {showButton && (
-        <button 
+        <button
           onClick={onNext}
           className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
         >
@@ -1132,14 +1132,14 @@ const SettingUpStep = ({ onNext, showButton = true }: StepProps & { showButton?:
       </div>
 
       {showButton && (
-        <button 
+        <button
           onClick={onNext}
           className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
         >
           Continue
         </button>
       )}
-    </div>
+      </div>
   )
 }
 
@@ -1204,14 +1204,14 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps
             onNext();
           }
         }}
-      />
-    </div>
+          />
+        </div>
   );
 };
-
+        
 const FreeTrialStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
   return (
-    <div>
+        <div>
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">We want you to try Axle AI for free.</h2>
       </div>
@@ -1228,19 +1228,19 @@ const FreeTrialStep = ({ onNext, updateData, showButton = true }: StepProps & { 
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
         <div>
-          <button 
-            onClick={() => {
+        <button
+          onClick={() => {
               updateData({ freeTrial: true })
               onNext()
-            }}
+          }}
             className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium mb-2"
-          >
+        >
             Try for free
-          </button>
+        </button>
           <p className="text-center text-gray-500 text-sm">
             Just $49.94 per year ($4.16/mo)
           </p>
-        </div>
+      </div>
       )}
     </div>
   )
@@ -1275,8 +1275,8 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
         <p className="text-gray-600 text-sm">
           Select the plan that best fits your needs
         </p>
-      </div>
-      
+        </div>
+
       <div className="grid grid-cols-2 gap-4 mb-4">
         {plans.map((plan, index) => (
           <div key={plan.id} className="relative">
@@ -1346,7 +1346,7 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
                           <Check className="h-4 w-4 text-[#294a46]" />
                         </div>
                         <span className="text-sm text-gray-600">
-                          <span className="hidden md:inline">3rd day<br />Billed.</span>
+                          <span className="hidden md:inline">3rd day Billed.</span>
                           <span className="md:hidden">3rd day Billed.</span>
                         </span>
                       </div>
@@ -1360,7 +1360,7 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
             </button>
           </div>
         ))}
-      </div>
+        </div>
 
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
@@ -1373,10 +1373,10 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
               <span className="text-gray-700 text-sm">
                 {selectedPlan === 'monthly' ? 'No Commitment - Cancel Anytime' : 'No payment due now'}
               </span>
-            </div>
-          </div>
-          
-          <button 
+        </div>
+      </div>
+
+        <button
             onClick={() => {
               updateData({ plan: selectedPlan })
               onNext()
@@ -1384,11 +1384,11 @@ const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & {
             className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium mb-2"
           >
             {selectedPlan === 'monthly' ? 'Start Car Health' : 'Start my 3 day free trial'}
-          </button>
+        </button>
           <p className="text-center text-gray-500 text-sm">
             {selectedPlan === 'monthly' ? '$8 per month' : '3 days free, then $49.94 per year (~$4.16/mo)'}
           </p>
-        </div>
+      </div>
       )}
     </div>
   )
@@ -1410,14 +1410,14 @@ const LimitedOfferStep = ({ onNext, showButton = true }: StepProps & { showButto
 
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
-        <button 
+        <button
           onClick={onNext}
           className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
         >
           Claim Offer
         </button>
       )}
-    </div>
+      </div>
   )
 }
 
@@ -1437,12 +1437,12 @@ const SuccessStep = ({ onNext, showButton = true }: StepProps & { showButton?: b
 
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
-        <button 
-          onClick={onNext}
+      <button
+        onClick={onNext}
           className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
-        >
-          Go to Dashboard
-        </button>
+      >
+        Go to Dashboard
+      </button>
       )}
     </div>
   )
@@ -1488,26 +1488,26 @@ export default function PostAppointmentOnboarding() {
 
   // Load appointment data and pre-fill vehicle info
   useEffect(() => {
-    const loadAppointmentData = async () => {
+  const loadAppointmentData = async () => {
       const appointmentId = searchParams.get('appointmentId');
       const phone = searchParams.get('phone');
 
       if (appointmentId) {
         const { data: appointment } = await supabase
-          .from('appointments')
-          .select('*')
-          .eq('id', appointmentId)
-          .single();
-          
+        .from('appointments')
+        .select('*')
+        .eq('id', appointmentId)
+        .single();
+
         if (appointment) {
           // Pre-fill data we already have
           setFormData((prev: PostAppointmentOnboardingData) => ({
-            ...prev,
+        ...prev,
             // Vehicle info from appointment (for Add Another Car step)
-            vehicle: {
-              year: appointment.vehicle_year,
-              make: appointment.vehicle_make,
-              model: appointment.vehicle_model,
+        vehicle: {
+          year: appointment.vehicle_year,
+          make: appointment.vehicle_make,
+          model: appointment.vehicle_model,
               vin: appointment.vehicle_vin || '',
               mileage: appointment.vehicle_mileage || '',
               licensePlate: '',
@@ -1551,14 +1551,14 @@ export default function PostAppointmentOnboarding() {
 
     // Mark onboarding complete and redirect to dashboard
     await supabase
-      .from('profiles')
+        .from('profiles')
       .update({ 
-        onboarding_completed: true,
+          onboarding_completed: true,
         onboarding_type: 'post_appointment'
       })
       .eq('id', user?.id);
       
-    router.push('/customer-dashboard');
+      router.push('/customer-dashboard');
   };
 
   // Calculate progress for the progress bar
@@ -1583,7 +1583,7 @@ export default function PostAppointmentOnboarding() {
     // ... all other props from original
   };
 
-  return (
+    return (
     <div className="min-h-screen bg-[#faf9f8]">
       {/* Use the same SiteHeader as the rest of the site */}
       <SiteHeader />
@@ -1613,24 +1613,19 @@ export default function PostAppointmentOnboarding() {
                 style={{ left: `calc(${progress}% - 16px)` }}
               >
                 <span className="text-2xl" style={{ transform: 'rotateY(180deg)' }}>🏎️</span>
-              </div>
+          </div>
               {/* Finish flag at the end */}
               <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2">
                 <span className="text-lg">🏁</span>
-              </div>
-            </div>
-            <button
-              onClick={() => router.push('/customer-dashboard')}
-              className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg transition-colors hover:bg-gray-100"
-            >
-              Skip for now
-            </button>
+        </div>
+        </div>
+
           </div>
         </div>
       </div>
-
+      
       {/* Main content - adjusted for new header height */}
-      <div className="pt-32 pb-16">
+      <div className="pt-16 md:pt-32 pb-16">
         <div className="max-w-3xl mx-auto px-4">
           {/* Render only the steps we want, using the EXACT SAME components */}
           {currentStep === 2 && <ReferralSourceStep {...stepProps} />}
