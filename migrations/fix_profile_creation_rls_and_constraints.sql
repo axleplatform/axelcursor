@@ -391,4 +391,4 @@ BEGIN
     END IF;
 
     RAISE NOTICE 'Migration completed successfully! All RLS policies and constraints are in place.';
-END $$; 
+END $$;

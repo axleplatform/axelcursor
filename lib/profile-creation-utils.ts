@@ -358,4 +358,4 @@ export function getProfileErrorMessage(errorCode: string): string {
     default:
       return 'An error occurred while creating your profile. Please try again.'
   }
-} 
+}
