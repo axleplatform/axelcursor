@@ -11,6 +11,7 @@ export default function CustomerDashboard() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [addresses, setAddresses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Book appointment states
   const [selectedVehicle, setSelectedVehicle] = useState('');
@@ -31,47 +32,111 @@ export default function CustomerDashboard() {
   }, []);
 
   const checkAccess = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
-    // Check if user is a mechanic trying to access customer dashboard
-    const { data: mechanic } = await supabase
-      .from('mechanic_profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (mechanic) {
-      // Redirect mechanics to their dashboard
-      router.push('/mechanic/dashboard');
-      return;
-    }
-    
-    // Load customer data
-    loadDashboardData();
-  };
-
-  const loadDashboardData = async () => {
     try {
-      // Check authentication
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
+      console.log('🔐 Checking customer dashboard access...');
+      
+      // Check for valid session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('❌ Session error:', sessionError);
+        await supabase.auth.signOut();
+        setAuthError('Session error. Please log in again.');
         router.push('/login');
         return;
       }
+
+      if (!session) {
+        console.log('❌ No valid session found');
+        await supabase.auth.signOut();
+        setAuthError('No valid session. Please log in.');
+        router.push('/login');
+        return;
+      }
+
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('❌ User error:', userError);
+        await supabase.auth.signOut();
+        setAuthError('User authentication error. Please log in again.');
+        router.push('/login');
+        return;
+      }
+
+      if (!user || !user.id) {
+        console.error('❌ No valid user or user ID');
+        await supabase.auth.signOut();
+        setAuthError('Invalid user. Please log in again.');
+        router.push('/login');
+        return;
+      }
+
+      console.log('✅ Valid session and user found:', user.id);
       setUser(user);
 
+      // Check if user is a mechanic trying to access customer dashboard
+      const { data: mechanic, error: mechanicError } = await supabase
+        .from('mechanic_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (mechanicError) {
+        console.error('❌ Mechanic profile check error:', mechanicError);
+        if (mechanicError.code === '406' || mechanicError.code === '409' || mechanicError.code === '400') {
+          console.warn('⚠️ Mechanic profile check failed but continuing...');
+        } else {
+          setAuthError('Profile check failed. Please try again.');
+          return;
+        }
+      }
+
+      if (mechanic) {
+        console.log('❌ Mechanic trying to access customer dashboard, redirecting...');
+        // Redirect mechanics to their dashboard
+        router.push('/mechanic/dashboard');
+        return;
+      }
+      
+      console.log('✅ User validated as customer, loading dashboard data...');
+      // Load customer data
+      await loadDashboardData(user);
+      
+    } catch (error) {
+      console.error('❌ Access check failed:', error);
+      await supabase.auth.signOut();
+      setAuthError('Access check failed. Please log in again.');
+      router.push('/login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadDashboardData = async (currentUser: any) => {
+    try {
+      console.log('📋 Loading dashboard data for user:', currentUser.id);
+
       // Check if user has customer account and completed profile
-      const { data: userData } = await supabase
+      const { data: userData, error: userDataError } = await supabase
         .from('users')
         .select('profile_status')
-        .eq('id', user.id)
+        .eq('id', currentUser.id)
         .single();
 
+      if (userDataError) {
+        console.error('❌ User data error:', userDataError);
+        if (userDataError.code === '406' || userDataError.code === '409' || userDataError.code === '400') {
+          setAuthError('User data access denied. Please contact support.');
+        } else {
+          setAuthError('Failed to load user data. Please try again.');
+        }
+        return;
+      }
+
       if (userData?.profile_status !== 'customer') {
+        console.log('❌ User is not a customer, redirecting...');
         // Not a customer account - redirect to appropriate dashboard
         if (userData?.profile_status === 'mechanic') {
           router.push('/mechanic/dashboard');
@@ -82,24 +147,48 @@ export default function CustomerDashboard() {
       }
 
       // Get customer profile data
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', currentUser.id)
         .single();
 
+      if (profileError) {
+        console.error('❌ Profile error:', profileError);
+        if (profileError.code === '406' || profileError.code === '409' || profileError.code === '400') {
+          setAuthError('Profile access denied. Please contact support.');
+        } else {
+          setAuthError('Failed to load profile data. Please try again.');
+        }
+        return;
+      }
+
       if (!profile || !profile.onboarding_completed) {
+        console.log('❌ Profile incomplete, redirecting to onboarding...');
         // Redirect to complete profile
         router.push('/onboarding/customer/flow');
         return;
       }
 
+      console.log('✅ Profile validated, loading customer data...');
+
       // Load all customer data in parallel
       const [vehiclesRes, appointmentsRes, addressesRes] = await Promise.all([
-        supabase.from('vehicles').select('*').eq('user_id', user.id),
-        supabase.from('appointments').select('*, mechanic_profiles(business_name)').eq('user_id', user.id).eq('status', 'scheduled'),
-        supabase.from('addresses').select('*').eq('user_id', user.id)
+        supabase.from('vehicles').select('*').eq('user_id', currentUser.id),
+        supabase.from('appointments').select('*, mechanic_profiles(business_name)').eq('user_id', currentUser.id).eq('status', 'scheduled'),
+        supabase.from('addresses').select('*').eq('user_id', currentUser.id)
       ]);
+
+      // Check for errors in parallel requests
+      if (vehiclesRes.error) {
+        console.error('❌ Vehicles error:', vehiclesRes.error);
+      }
+      if (appointmentsRes.error) {
+        console.error('❌ Appointments error:', appointmentsRes.error);
+      }
+      if (addressesRes.error) {
+        console.error('❌ Addresses error:', addressesRes.error);
+      }
 
       setProfile(profile);
       setVehicles(vehiclesRes.data || []);
@@ -110,10 +199,12 @@ export default function CustomerDashboard() {
       if (vehiclesRes.data && vehiclesRes.data.length > 0) {
         setSelectedVehicle(vehiclesRes.data[0].id);
       }
+
+      console.log('✅ Dashboard data loaded successfully');
+      
     } catch (error) {
-      console.error('Error loading dashboard:', error);
-    } finally {
-      setLoading(false);
+      console.error('❌ Error loading dashboard:', error);
+      setAuthError('Failed to load dashboard data. Please try again.');
     }
   };
 
@@ -127,7 +218,7 @@ export default function CustomerDashboard() {
         .eq('id', appointmentId);
       
       // Reload appointments
-      loadDashboardData();
+      loadDashboardData(user);
     } catch (error) {
       console.error('Error cancelling appointment:', error);
       alert('Failed to cancel appointment');
@@ -140,20 +231,34 @@ export default function CustomerDashboard() {
     router.push('/order-service');
   };
 
+  // Show loading state
   if (loading) {
     return (
-      <>
-        <SiteHeader />
-        <div className="min-h-screen bg-gray-50 animate-pulse">
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
-            <div className="space-y-6">
-              <div className="h-48 bg-white rounded-lg shadow"></div>
-              <div className="h-64 bg-white rounded-lg shadow"></div>
-            </div>
+      <div className="min-h-screen bg-[#faf9f8] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294a46] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth error
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-[#faf9f8] flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
+            <p className="text-red-800 mb-4">{authError}</p>
+            <button 
+              onClick={() => router.push('/login')}
+              className="w-full bg-[#294a46] text-white py-2 px-4 rounded-lg hover:bg-[#1e3632] transition-colors"
+            >
+              Go to Login
+            </button>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 

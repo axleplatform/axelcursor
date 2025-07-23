@@ -90,10 +90,12 @@ export default function AppointmentConfirmationPage() {
     // Clear any corrupted auth cookies
     const clearCorruptedCookies = async () => {
       try {
+        console.log('🧹 Clearing any corrupted auth cookies...');
         const { error } = await supabase.auth.signOut();
         if (error) console.log('Error clearing session:', error);
       } catch (e) {
         // Ignore errors when clearing
+        console.log('Ignored error when clearing cookies:', e);
       }
     };
     
@@ -104,20 +106,57 @@ export default function AppointmentConfirmationPage() {
     // Only check user role if user is authenticated
     // Guest users should be able to access appointment confirmation
     const checkAuthAndRole = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        checkUserRole();
+      try {
+        console.log('🔐 Checking authentication and role...');
+        
+        // Check for valid session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('❌ Session error:', sessionError);
+          await supabase.auth.signOut();
+          return;
+        }
+
+        if (session) {
+          console.log('✅ Valid session found, checking user role...');
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          
+          if (userError) {
+            console.error('❌ User error:', userError);
+            await supabase.auth.signOut();
+            return;
+          }
+
+          if (user && user.id) {
+            console.log('✅ Valid user found:', user.id);
+            await checkUserRole();
+          } else {
+            console.log('❌ No valid user found');
+            await supabase.auth.signOut();
+          }
+        } else {
+          console.log('ℹ️ No session found - guest user');
+        }
+      } catch (error) {
+        console.error('❌ Auth check failed:', error);
+        await supabase.auth.signOut();
       }
     };
+    
     checkAuthAndRole();
   }, []);
 
-
-
   const checkUserRole = async () => {
-    const route = await getUserRoleAndRedirect(router);
-    if (route) {
-      setDashboardLink(route);
+    try {
+      console.log('👤 Checking user role...');
+      const route = await getUserRoleAndRedirect(router);
+      if (route) {
+        console.log('✅ User role determined, dashboard link:', route);
+        setDashboardLink(route);
+      }
+    } catch (error) {
+      console.error('❌ Role check failed:', error);
     }
   };
 
@@ -293,17 +332,40 @@ export default function AppointmentConfirmationPage() {
 
   // Separate function to create/update user profile
   const createUserProfile = async (userId: string) => {
-    if (!appointmentData) return;
+    if (!appointmentData) {
+      console.error('❌ No appointment data available for profile creation');
+      setFormErrors({ email: 'No appointment data available. Please try again.' });
+      return;
+    }
+
+    if (!userId) {
+      console.error('❌ No user ID provided for profile creation');
+      setFormErrors({ email: 'Invalid user ID. Please try again.' });
+      return;
+    }
 
     try {
+      console.log('👤 Creating user profile for user:', userId);
+      
       // Check if profile already exists
-      const { data: existingProfile } = await supabase
+      const { data: existingProfile, error: profileCheckError } = await supabase
         .from('user_profiles')
         .select('id')
         .eq('id', userId)
         .single();
 
+      if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+        console.error('❌ Profile check error:', profileCheckError);
+        if (profileCheckError.code === '406' || profileCheckError.code === '409' || profileCheckError.code === '400') {
+          setFormErrors({ email: 'Profile access denied. Please contact support.' });
+        } else {
+          setFormErrors({ email: 'Failed to check profile. Please try again.' });
+        }
+        return;
+      }
+
       if (!existingProfile) {
+        console.log('📝 Creating new user profile...');
         // Create new profile
         const { error: profileError } = await supabase
           .from('user_profiles')
@@ -316,26 +378,75 @@ export default function AppointmentConfirmationPage() {
           });
 
         if (profileError) {
-          console.error('Profile creation error:', profileError);
+          console.error('❌ Profile creation error:', profileError);
+          if (profileError.code === '406' || profileError.code === '409' || profileError.code === '400') {
+            setFormErrors({ email: 'Profile creation failed. Please contact support.' });
+          } else {
+            setFormErrors({ email: 'Failed to create user profile. Please try again.' });
+          }
+          return;
         }
+        console.log('✅ User profile created successfully');
+      } else {
+        console.log('ℹ️ User profile already exists');
       }
 
       // Update appointment to link to user
-      await supabase
+      console.log('🔗 Linking appointment to user...');
+      const { error: appointmentError } = await supabase
         .from('appointments')
         .update({ user_id: userId })
         .eq('id', appointmentData.id);
 
+      if (appointmentError) {
+        console.error('❌ Appointment linking error:', appointmentError);
+        if (appointmentError.code === '406' || appointmentError.code === '409' || appointmentError.code === '400') {
+          console.warn('⚠️ Appointment linking failed but continuing...');
+        } else {
+          setFormErrors({ email: 'Failed to link appointment. Please try again.' });
+          return;
+        }
+      } else {
+        console.log('✅ Appointment linked successfully');
+      }
+
       // Update user profile_status
-      await supabase
+      console.log('👤 Updating user profile status...');
+      const { error: userUpdateError } = await supabase
         .from('users')
         .update({ profile_status: 'customer' })
         .eq('id', userId);
 
+      if (userUpdateError) {
+        console.error('❌ User status update error:', userUpdateError);
+        if (userUpdateError.code === '406' || userUpdateError.code === '409' || userUpdateError.code === '400') {
+          console.warn('⚠️ User status update failed but continuing...');
+        } else {
+          setFormErrors({ email: 'Failed to update user status. Please try again.' });
+          return;
+        }
+      } else {
+        console.log('✅ User status updated successfully');
+      }
+
+      // Final validation before redirect
+      const { data: { user: finalUser }, error: finalUserError } = await supabase.auth.getUser();
+      if (finalUserError || !finalUser || !finalUser.id) {
+        console.error('❌ Final user validation failed');
+        setFormErrors({ email: 'Final validation failed. Please try again.' });
+        return;
+      }
+
+      console.log('🎉 Profile creation completed successfully!');
+      console.log('👤 User ID:', finalUser.id);
+      console.log('📅 Completion time:', new Date().toISOString());
+      console.log('🔗 Redirecting to post-appointment onboarding...');
+
       // Redirect to post-appointment onboarding
       router.push(`/onboarding/customer/post-appointment?appointmentId=${appointmentData.id}&phone=${appointmentData.phone_number}`);
+      
     } catch (error) {
-      console.error('Profile creation error:', error);
+      console.error('❌ Profile creation error:', error);
       setFormErrors({ 
         email: 'Failed to create user profile. Please try again.' 
       });

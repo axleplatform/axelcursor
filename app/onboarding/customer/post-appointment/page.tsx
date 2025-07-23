@@ -40,7 +40,6 @@ type OnboardingData = {
   freeTrial: boolean;
 };
 
-// Extend OnboardingData to include post-appointment specific fields
 interface PostAppointmentOnboardingData extends OnboardingData {
   appointmentId: string | null;
   phone: string | null;
@@ -1459,6 +1458,8 @@ export default function PostAppointmentOnboarding() {
   
   const [currentStep, setCurrentStep] = useState(2); // Start at step 2 (Referral Source)
   const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   
   // Map step index to original step number
   const getOriginalStepNumber = (index: number) => {
@@ -1474,9 +1475,10 @@ export default function PostAppointmentOnboarding() {
     currentStep: currentStepIndex + 1, // Convert 0-based to 1-based
     originalStepNumber: getOriginalStepNumber(currentStepIndex),
     totalSteps: POST_APPOINTMENT_STEPS.length,
-    userId: user?.id,
+    userId: user?.id ?? undefined,
     appointmentId: searchParams.get('appointmentId') ?? undefined
   });
+
   const [formData, setFormData] = useState<PostAppointmentOnboardingData>({
     // Pre-fill from appointment
     appointmentId: searchParams.get('appointmentId'),
@@ -1505,28 +1507,110 @@ export default function PostAppointmentOnboarding() {
     freeTrial: false
   });
 
+  // 1. Check authentication and session on mount
+  useEffect(() => {
+    const checkAuthAndSession = async () => {
+      try {
+        console.log('🔐 Checking authentication and session...');
+        
+        // Check for valid session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('❌ Session error:', sessionError);
+          await supabase.auth.signOut();
+          setAuthError('Session error. Please log in again.');
+          router.push('/login');
+          return;
+        }
+
+        if (!session) {
+          console.log('❌ No valid session found');
+          await supabase.auth.signOut();
+          setAuthError('No valid session. Please log in.');
+          router.push('/login');
+          return;
+        }
+
+        // Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.error('❌ User error:', userError);
+          await supabase.auth.signOut();
+          setAuthError('User authentication error. Please log in again.');
+          router.push('/login');
+          return;
+        }
+
+        if (!user || !user.id) {
+          console.error('❌ No valid user or user ID');
+          await supabase.auth.signOut();
+          setAuthError('Invalid user. Please log in again.');
+          router.push('/login');
+          return;
+        }
+
+        console.log('✅ Valid session and user found:', user.id);
+        setUser(user);
+        setFormData(prev => ({ ...prev, userId: user.id }));
+        
+      } catch (error) {
+        console.error('❌ Auth check failed:', error);
+        await supabase.auth.signOut();
+        setAuthError('Authentication failed. Please log in again.');
+        router.push('/login');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuthAndSession();
+  }, [supabase.auth, router]);
+
   // Load appointment data and pre-fill vehicle info
   useEffect(() => {
-  const loadAppointmentData = async () => {
-      const appointmentId = searchParams.get('appointmentId');
-      const phone = searchParams.get('phone');
+    if (!user?.id) return; // Don't load data without valid user
 
-      if (appointmentId) {
-        const { data: appointment } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('id', appointmentId)
-        .single();
+    const loadAppointmentData = async () => {
+      try {
+        const appointmentId = searchParams.get('appointmentId');
+        const phone = searchParams.get('phone');
+
+        if (!appointmentId) {
+          console.error('❌ No appointment ID provided');
+          setAuthError('No appointment ID provided');
+          return;
+        }
+
+        console.log('📋 Loading appointment data for ID:', appointmentId);
+
+        const { data: appointment, error } = await supabase
+          .from('appointments')
+          .select('*')
+          .eq('id', appointmentId)
+          .single();
+
+        if (error) {
+          console.error('❌ Error loading appointment:', error);
+          if (error.code === '406' || error.code === '409' || error.code === '400') {
+            setAuthError('Appointment not found or access denied. Please check your link.');
+          } else {
+            setAuthError('Failed to load appointment data. Please try again.');
+          }
+          return;
+        }
 
         if (appointment) {
+          console.log('✅ Appointment data loaded successfully');
           // Pre-fill data we already have
           setFormData((prev: PostAppointmentOnboardingData) => ({
-        ...prev,
+            ...prev,
             // Vehicle info from appointment (for Add Another Car step)
-        vehicle: {
-          year: appointment.vehicle_year,
-          make: appointment.vehicle_make,
-          model: appointment.vehicle_model,
+            vehicle: {
+              year: appointment.vehicle_year,
+              make: appointment.vehicle_make,
+              model: appointment.vehicle_model,
               vin: appointment.vehicle_vin || '',
               mileage: appointment.vehicle_mileage || '',
               licensePlate: '',
@@ -1536,11 +1620,14 @@ export default function PostAppointmentOnboarding() {
             location: appointment.address || null,
           }));
         }
+      } catch (error) {
+        console.error('❌ Error in loadAppointmentData:', error);
+        setAuthError('Failed to load appointment data. Please try again.');
       }
     };
 
     loadAppointmentData();
-  }, []);
+  }, [user?.id, searchParams, supabase]);
 
   const handleNext = () => {
     const currentIndex = POST_APPOINTMENT_STEPS.indexOf(currentStep);
@@ -1560,43 +1647,155 @@ export default function PostAppointmentOnboarding() {
   };
 
   const completeOnboarding = async () => {
-    // Update user_profiles instead of users
-    await supabase
-      .from('user_profiles')
-      .update({ 
-        onboarding_completed: true,
-        onboarding_type: 'post_appointment',
-        profile_completed_at: new Date().toISOString(),
-        address: formData.location,
-        city: formData.location?.split(',')[0]?.trim(),
-        state: formData.location?.split(',')[1]?.trim(),
-        zip_code: formData.location?.split(',')[2]?.trim(),
-        communication_preferences: { notifications: formData.notifications },
-        notification_settings: { enabled: formData.notifications },
-        vehicles: [formData.vehicle, ...formData.additionalVehicles],
-        referral_source: formData.referralSource,
-        last_service: formData.lastService,
-        notifications_enabled: formData.notifications,
-        onboarding_data: formData
-      })
-      .eq('id', user?.id);
+    try {
+      console.log('🚀 Starting onboarding completion...');
       
-    // Link appointment to user stays the same
-    if (formData.appointmentId) {
-      await supabase
-        .from('appointments')
-        .update({ user_id: user?.id })
-        .eq('id', formData.appointmentId);
+      // 3. Confirm valid user before proceeding
+      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('❌ User validation error:', userError);
+        await supabase.auth.signOut();
+        setAuthError('User validation failed. Please log in again.');
+        router.push('/login');
+        return;
+      }
+
+      if (!currentUser || !currentUser.id) {
+        console.error('❌ No valid user for onboarding completion');
+        await supabase.auth.signOut();
+        setAuthError('No valid user. Please log in again.');
+        router.push('/login');
+        return;
+      }
+
+      console.log('✅ User validated for onboarding completion:', currentUser.id);
+
+      // 4. Never make API calls with undefined user ID
+      if (!currentUser.id) {
+        console.error('❌ Cannot proceed with undefined user ID');
+        setAuthError('Invalid user ID. Please log in again.');
+        router.push('/login');
+        return;
+      }
+
+      // Update user_profiles instead of users
+      console.log('📝 Updating user profile...');
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({ 
+          onboarding_completed: true,
+          onboarding_type: 'post_appointment',
+          profile_completed_at: new Date().toISOString(),
+          address: formData.location,
+          city: formData.location?.split(',')[0]?.trim(),
+          state: formData.location?.split(',')[1]?.trim(),
+          zip_code: formData.location?.split(',')[2]?.trim(),
+          communication_preferences: { notifications: formData.notifications },
+          notification_settings: { enabled: formData.notifications },
+          vehicles: [formData.vehicle, ...formData.additionalVehicles],
+          referral_source: formData.referralSource,
+          last_service: formData.lastService,
+          notifications_enabled: formData.notifications,
+          onboarding_data: formData
+        })
+        .eq('id', currentUser.id);
+
+      // 5. Add error handling for Supabase errors
+      if (profileError) {
+        console.error('❌ Profile update error:', profileError);
+        if (profileError.code === '406' || profileError.code === '409' || profileError.code === '400') {
+          setAuthError('Profile update failed. Please try again or contact support.');
+        } else {
+          setAuthError('Failed to save profile data. Please try again.');
+        }
+        return;
+      }
+
+      console.log('✅ User profile updated successfully');
+        
+      // Link appointment to user
+      if (formData.appointmentId) {
+        console.log('🔗 Linking appointment to user...');
+        const { error: appointmentError } = await supabase
+          .from('appointments')
+          .update({ user_id: currentUser.id })
+          .eq('id', formData.appointmentId);
+
+        if (appointmentError) {
+          console.error('❌ Appointment linking error:', appointmentError);
+          if (appointmentError.code === '406' || appointmentError.code === '409' || appointmentError.code === '400') {
+            console.warn('⚠️ Appointment linking failed but continuing...');
+          } else {
+            setAuthError('Failed to link appointment. Please try again.');
+            return;
+          }
+        } else {
+          console.log('✅ Appointment linked successfully');
+        }
+      }
+      
+      // Track completion before redirect
+      console.log('📊 Tracking onboarding completion...');
+      await trackCompletion();
+      
+      // 6. Add logging after onboarding completion
+      console.log('🎉 Onboarding completed successfully!');
+      console.log('👤 User ID:', currentUser.id);
+      console.log('📅 Completion time:', new Date().toISOString());
+      console.log('🔗 Redirecting to dashboard...');
+      
+      // Final user validation before redirect
+      const { data: { user: finalUser } } = await supabase.auth.getUser();
+      if (!finalUser || !finalUser.id) {
+        console.error('❌ Final user validation failed');
+        await supabase.auth.signOut();
+        setAuthError('Final validation failed. Please log in again.');
+        router.push('/login');
+        return;
+      }
+
+      console.log('✅ Final user validation passed, redirecting to dashboard');
+      router.push('/customer-dashboard');
+      
+    } catch (error) {
+      console.error('❌ Onboarding completion error:', error);
+      setAuthError('Onboarding completion failed. Please try again.');
     }
-    
-    // Track completion before redirect
-    await trackCompletion();
-    
-    router.push('/customer-dashboard');
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#faf9f8] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#294a46] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading onboarding...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth error
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-[#faf9f8] flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
+            <p className="text-red-800 mb-4">{authError}</p>
+            <Button 
+              onClick={() => router.push('/login')}
+              className="w-full bg-[#294a46] text-white hover:bg-[#1e3632]"
+            >
+              Go to Login
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Calculate progress for the progress bar
-  // currentStepIndex is already defined above for tracking
   const progress = ((currentStepIndex + 1) / POST_APPOINTMENT_STEPS.length) * 100;
   const displayStepNumber = currentStepIndex + 1;
   const totalSteps = POST_APPOINTMENT_STEPS.length;
