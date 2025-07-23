@@ -113,6 +113,109 @@ export async function GET(request: Request) {
             }
             return NextResponse.redirect(`${requestUrl.origin}/appointment-confirmation?linked=true`)
           }
+
+          // Handle post-appointment flow with profile completion check
+          const redirect = requestUrl.searchParams.get('redirect')
+          if (redirect === 'post-appointment') {
+            const appointmentId = requestUrl.searchParams.get('appointmentId')
+            const phone = requestUrl.searchParams.get('phone')
+            
+            console.log('🔄 Handling post-appointment OAuth callback...');
+            console.log('👤 User ID:', user.id);
+            console.log('📧 Email:', user.email);
+            console.log('📱 Phone:', phone);
+            console.log('🔗 Appointment ID:', appointmentId);
+
+            // Create user profile for post-appointment flow
+            const { createOrUpdateUserProfile, updateUserStatus } = await import('@/lib/profile-creation-utils');
+            
+            const profileResult = await createOrUpdateUserProfile({
+              user_id: user.id,
+              email: user.email || '',
+              phone: phone || '',
+              full_name: user.user_metadata?.full_name || '',
+              onboarding_completed: false,
+              onboarding_type: 'post_appointment'
+            });
+
+            if (!profileResult.success) {
+              console.error('❌ Profile creation failed:', profileResult.error);
+              return NextResponse.redirect(`${requestUrl.origin}/login?error=profile_creation_failed`)
+            }
+
+            console.log('✅ Profile operation result:', profileResult.action);
+
+            // Update user status
+            const statusUpdated = await updateUserStatus(user.id, 'customer', 'full');
+            if (!statusUpdated) {
+              console.warn('⚠️ User status update failed but continuing...');
+            }
+
+            // Link appointment to user if provided
+            if (appointmentId) {
+              console.log('🔗 Linking appointment to user...');
+              const { error: appointmentError } = await supabase
+                .from('appointments')
+                .update({ user_id: user.id })
+                .eq('id', appointmentId);
+
+              if (appointmentError) {
+                console.error('❌ Appointment linking error:', appointmentError);
+                if (appointmentError.code === '406' || appointmentError.code === '409' || appointmentError.code === '400') {
+                  console.warn('⚠️ Appointment linking failed but continuing...');
+                }
+              } else {
+                console.log('✅ Appointment linked successfully');
+              }
+            }
+
+            // Check if user already has a completed profile
+            console.log('🔍 Checking if user has completed profile...');
+            const { data: existingProfile, error: profileCheckError } = await supabase
+              .from('user_profiles')
+              .select('onboarding_completed, onboarding_type')
+              .eq('user_id', user.id)
+              .single();
+
+            if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+              console.error('❌ Error checking existing profile:', profileCheckError);
+              // Continue with onboarding as fallback
+            }
+
+            let shouldRedirectToDashboard = false;
+            if (existingProfile) {
+              console.log('📋 Existing profile found:', {
+                onboarding_completed: existingProfile.onboarding_completed,
+                onboarding_type: existingProfile.onboarding_type
+              });
+              
+              // Check if user has completed onboarding
+              if (existingProfile.onboarding_completed) {
+                console.log('✅ User has completed onboarding, redirecting to dashboard');
+                shouldRedirectToDashboard = true;
+              } else {
+                console.log('⏳ User has incomplete onboarding, continuing to post-appointment flow');
+              }
+            } else {
+              console.log('📝 No existing profile found, continuing to post-appointment flow');
+            }
+
+            console.log('🎉 Post-appointment OAuth flow completed successfully!');
+            console.log('👤 User ID:', user.id);
+            console.log('📅 Completion time:', new Date().toISOString());
+
+            // Redirect based on profile completion status
+            if (shouldRedirectToDashboard) {
+              console.log('🔗 Redirecting to customer dashboard...');
+              return NextResponse.redirect(`${requestUrl.origin}/customer-dashboard`);
+            } else {
+              console.log('🔗 Redirecting to post-appointment onboarding...');
+              const redirectUrl = appointmentId && phone 
+                ? `${requestUrl.origin}/onboarding/customer/post-appointment?appointmentId=${appointmentId}&phone=${phone}`
+                : `${requestUrl.origin}/onboarding/customer/post-appointment`;
+              return NextResponse.redirect(redirectUrl);
+            }
+          }
           
           return NextResponse.redirect(`${requestUrl.origin}/`)
         }

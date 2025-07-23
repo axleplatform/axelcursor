@@ -1530,6 +1530,37 @@ export default function PostAppointmentOnboarding() {
         setUser(sessionResult.user);
         setFormData(prev => ({ ...prev, userId: sessionResult.user?.id }));
         
+        // Check if user already has a completed profile
+        console.log('🔍 Checking if user has completed profile...');
+        const { data: existingProfile, error: profileCheckError } = await supabase
+          .from('user_profiles')
+          .select('onboarding_completed, onboarding_type')
+          .eq('user_id', sessionResult.user?.id)
+          .single();
+
+        if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+          console.error('❌ Error checking existing profile:', profileCheckError);
+          // Continue with onboarding as fallback
+        }
+
+        if (existingProfile) {
+          console.log('📋 Existing profile found:', {
+            onboarding_completed: existingProfile.onboarding_completed,
+            onboarding_type: existingProfile.onboarding_type
+          });
+          
+          // Check if user has completed onboarding
+          if (existingProfile.onboarding_completed) {
+            console.log('✅ User has completed onboarding, redirecting to dashboard');
+            router.push('/customer-dashboard');
+            return;
+          } else {
+            console.log('⏳ User has incomplete onboarding, continuing with post-appointment flow');
+          }
+        } else {
+          console.log('📝 No existing profile found, continuing with post-appointment flow');
+        }
+        
       } catch (error) {
         console.error('❌ Auth check failed:', error);
         await supabase.auth.signOut();

@@ -392,13 +392,49 @@ export default function AppointmentConfirmationPage() {
         console.log('✅ Appointment linked successfully');
       }
 
+      // Check if user already has a completed profile
+      console.log('🔍 Checking if user has completed profile...');
+      const { data: existingProfile, error: profileCheckError } = await supabase
+        .from('user_profiles')
+        .select('onboarding_completed, onboarding_type')
+        .eq('user_id', userId)
+        .single();
+
+      if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+        console.error('❌ Error checking existing profile:', profileCheckError);
+        // Continue with onboarding as fallback
+      }
+
+      let shouldRedirectToDashboard = false;
+      if (existingProfile) {
+        console.log('📋 Existing profile found:', {
+          onboarding_completed: existingProfile.onboarding_completed,
+          onboarding_type: existingProfile.onboarding_type
+        });
+        
+        // Check if user has completed onboarding
+        if (existingProfile.onboarding_completed) {
+          console.log('✅ User has completed onboarding, redirecting to dashboard');
+          shouldRedirectToDashboard = true;
+        } else {
+          console.log('⏳ User has incomplete onboarding, continuing to post-appointment flow');
+        }
+      } else {
+        console.log('📝 No existing profile found, continuing to post-appointment flow');
+      }
+
       console.log('🎉 Profile creation/update completed successfully!');
       console.log('👤 User ID:', userId);
       console.log('📅 Completion time:', new Date().toISOString());
-      console.log('🔗 Redirecting to post-appointment onboarding...');
 
-      // Redirect to onboarding with established session
-      router.push(`/onboarding/customer/post-appointment?appointmentId=${appointmentData.id}&phone=${appointmentData.phone_number}`);
+      // Redirect based on profile completion status
+      if (shouldRedirectToDashboard) {
+        console.log('🔗 Redirecting to customer dashboard...');
+        router.push('/customer-dashboard');
+      } else {
+        console.log('🔗 Redirecting to post-appointment onboarding...');
+        router.push(`/onboarding/customer/post-appointment?appointmentId=${appointmentData.id}&phone=${appointmentData.phone_number}`);
+      }
       
     } catch (error) {
       console.error('❌ Profile creation error:', error);
@@ -413,10 +449,12 @@ export default function AppointmentConfirmationPage() {
     if (!appointmentData) return;
     
     try {
+      console.log('🔐 Starting Google signup flow...');
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/onboarding/customer/post-appointment?appointmentId=${appointmentData.id}&phone=${appointmentData.phone_number}`,
+          redirectTo: `${window.location.origin}/auth/callback?redirect=post-appointment&appointmentId=${appointmentData.id}&phone=${appointmentData.phone_number}`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -425,8 +463,10 @@ export default function AppointmentConfirmationPage() {
       });
 
       if (error) throw error;
+      
+      console.log('✅ Google signup initiated successfully');
     } catch (error) {
-      console.error('Google signup error:', error);
+      console.error('❌ Google signup error:', error);
       setFormErrors({ email: 'Failed to sign up with Google' });
     }
   };
