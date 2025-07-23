@@ -103,10 +103,10 @@ export default function AppointmentConfirmationPage() {
 
   // Cooldown timer effect
   React.useEffect(() => {
-    if (cooldownSeconds > 0) {
-      const timer = setTimeout(() => setCooldownSeconds(cooldownSeconds - 1), 1000);
-      return () => clearTimeout(timer);
-    }
+    if (cooldownSeconds <= 0) return;
+    
+    const timer = setTimeout(() => setCooldownSeconds(cooldownSeconds - 1), 1000);
+    return () => clearTimeout(timer);
   }, [cooldownSeconds]);
 
   // Check if user is rate limited
