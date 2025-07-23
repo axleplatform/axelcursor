@@ -89,18 +89,25 @@ export async function createOrUpdateUserProfile(
     // Step 3: Create user record if it doesn't exist
     if (!existingUser) {
       console.log('📝 Step 3: Creating user record in users table...')
-      const { error: createUserError } = await supabase
+      
+      // Determine role based on onboarding type
+      const userRole = profileData.onboarding_type === 'mechanic' ? 'mechanic' : 'customer'
+      const accountType = profileData.onboarding_type === 'mechanic' ? 'mechanic' : 'full'
+      
+      const { data: userRecord, error: createUserError } = await supabase
         .from('users')
         .insert({
           id: profileData.user_id,
           email: profileData.email,
           phone: profileData.phone,
-          profile_status: 'no',
-          account_type: 'temporary',
-          role: 'customer',
+          profile_status: 'pending',
+          account_type: accountType,
+          role: userRole,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
+        .select()
+        .single()
 
       if (createUserError) {
         console.error('❌ Error creating user record:', createUserError)
@@ -273,17 +280,21 @@ async function fetchExistingProfile(userId: string): Promise<ProfileCreationResu
 export async function updateUserStatus(
   userId: string, 
   status: 'customer' | 'mechanic' | 'no',
-  accountType: string = 'full'
+  accountType: string = 'full',
+  role?: 'customer' | 'mechanic' | 'anon'
 ): Promise<boolean> {
-  console.log('🔄 Updating user status:', { userId, status, accountType })
+  console.log('🔄 Updating user status:', { userId, status, accountType, role })
   
   try {
+    // Determine role if not provided
+    const userRole = role || (status === 'mechanic' ? 'mechanic' : 'customer')
+    
     const { error } = await supabase
       .from('users')
       .update({ 
         profile_status: status,
         account_type: accountType,
-        role: status === 'mechanic' ? 'mechanic' : 'customer',
+        role: userRole,
         updated_at: new Date().toISOString()
       })
       .eq('id', userId)
