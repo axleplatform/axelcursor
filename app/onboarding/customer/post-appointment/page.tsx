@@ -229,7 +229,7 @@ const ReferralSourceStep = ({ onNext, updateData, showButton = true }: StepProps
         <p className="text-sm text-gray-600">Select all that apply</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto -mx-4 px-4 mb-6" style={{ maxHeight: '400px' }}>
+      <div className="flex-1 -mx-4 px-4 mb-6">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {sources.map((source) => (
             <button
@@ -1545,16 +1545,16 @@ export default function PostAppointmentOnboarding() {
     if (formData.appointmentId && user?.id) {
       await supabase
         .from('appointments')
-        .update({ customer_id: user.id })
+        .update({ user_id: user.id })
         .eq('id', formData.appointmentId);
     }
 
     // Mark onboarding complete and redirect to dashboard
     await supabase
-        .from('profiles')
+        .from('users')
       .update({ 
           onboarding_completed: true,
-        onboarding_type: 'post_appointment'
+        onboarding_data: formData
       })
       .eq('id', user?.id);
       
@@ -1645,6 +1645,7 @@ export default function PostAppointmentOnboarding() {
           {currentStep === 19 && <SuccessStep {...stepProps} />}
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
