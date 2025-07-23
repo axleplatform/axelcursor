@@ -32,7 +32,7 @@ export default function LoginPage() {
 
   // Detect if input is phone or email
   useEffect(() => {
-    const phoneRegex = /^[\d\s\-\(\)\\+]+$/;
+    const phoneRegex = /^[\d\s\-\(\)\+]+$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
     if (inputValue.length > 5) {
