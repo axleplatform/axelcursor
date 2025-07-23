@@ -1596,7 +1596,7 @@ export default function PostAppointmentOnboarding() {
   };
 
   // Calculate progress for the progress bar
-  const currentStepIndex = POST_APPOINTMENT_STEPS.indexOf(currentStep);
+  // currentStepIndex is already defined above for tracking
   const progress = ((currentStepIndex + 1) / POST_APPOINTMENT_STEPS.length) * 100;
   const displayStepNumber = currentStepIndex + 1;
   const totalSteps = POST_APPOINTMENT_STEPS.length;
