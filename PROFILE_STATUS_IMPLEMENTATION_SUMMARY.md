@@ -54,10 +54,10 @@ Successfully implemented `profile_status` column in the `users` table to quickly
 ## 🗃️ **Database Schema**
 
 ### **profile_status Column**
-```sql
+\`\`\`sql
 ALTER TABLE users ADD COLUMN profile_status VARCHAR(20) DEFAULT 'no';
 CREATE INDEX idx_users_profile_status ON users(profile_status);
-```
+\`\`\`
 
 ### **Automatic Triggers**
 - **user_profiles INSERT**: Sets `profile_status = 'customer'`
@@ -80,19 +80,19 @@ CREATE INDEX idx_users_profile_status ON users(profile_status);
 ## 🚀 **Deployment Instructions**
 
 ### **1. Run Database Migration**
-```bash
+\`\`\`bash
 # Option 1: Use the migration script
 ./scripts/migrate-profile-status.sh
 
 # Option 2: Manual execution
 psql "$DATABASE_URL" -f migrations/add_profile_status_column.sql
-```
+\`\`\`
 
 ### **2. Deploy Code Changes**
 All code changes have been made and are ready for deployment.
 
 ### **3. Verify Migration**
-```sql
+\`\`\`sql
 -- Check column creation
 SELECT column_name, data_type, column_default 
 FROM information_schema.columns 
@@ -105,7 +105,7 @@ SELECT profile_status, COUNT(*) FROM users GROUP BY profile_status;
 SELECT trigger_name, event_manipulation, event_object_table 
 FROM information_schema.triggers 
 WHERE trigger_name LIKE '%profile_status%';
-```
+\`\`\`
 
 ## ✅ **Benefits Achieved**
 
@@ -143,7 +143,7 @@ WHERE trigger_name LIKE '%profile_status%';
 ## 📝 **Usage Examples**
 
 ### **Quick Account Check**
-```typescript
+\`\`\`typescript
 // Check if user has account
 const { data: user } = await supabase
   .from('users')
@@ -158,10 +158,10 @@ if (user?.profile_status === 'customer') {
 } else {
   // Guest/no account
 }
-```
+\`\`\`
 
 ### **Dashboard Access Control**
-```typescript
+\`\`\`typescript
 // Check account type for dashboard access
 const { data: userData } = await supabase
   .from('users')
@@ -176,8 +176,8 @@ if (userData?.profile_status === 'mechanic') {
 } else {
   router.push('/onboarding/customer/flow');
 }
-```
+\`\`\`
 
 ## 🎉 **Implementation Complete**
 
-The `profile_status` column has been successfully implemented with automatic triggers, comprehensive code updates, and performance optimizations. This provides a single source of truth for user account types and significantly improves query performance and code maintainability. 
+The `profile_status` column has been successfully implemented with automatic triggers, comprehensive code updates, and performance optimizations. This provides a single source of truth for user account types and significantly improves query performance and code maintainability.

@@ -131,4 +131,4 @@ CREATE TRIGGER trigger_update_profile_status_mechanic_profile_delete
 -- Add comments for documentation
 COMMENT ON COLUMN users.profile_status IS 'User account type: customer, mechanic, or no (temporary/guest)';
 COMMENT ON FUNCTION update_profile_status_on_user_profile() IS 'Automatically sets profile_status to customer when user_profiles record is created';
-COMMENT ON FUNCTION update_profile_status_on_mechanic_profile() IS 'Automatically sets profile_status to mechanic when mechanic_profiles record is created'; 
+COMMENT ON FUNCTION update_profile_status_on_mechanic_profile() IS 'Automatically sets profile_status to mechanic when mechanic_profiles record is created';
