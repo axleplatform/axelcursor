@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -13,7 +13,8 @@ import { redirectToCorrectDashboard } from "@/lib/auth-helpers"
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState("")
+  const [inputValue, setInputValue] = useState("")
+  const [inputType, setInputType] = useState<'email' | 'phone' | null>(null)
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -21,6 +22,75 @@ export default function LoginPage() {
   const [isResendingEmail, setIsResendingEmail] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  
+  // Vehicle fields for phone auth
+  const [vehicleInfo, setVehicleInfo] = useState({
+    year: '',
+    make: '',
+    model: ''
+  })
+
+  // Detect if input is phone or email
+  useEffect(() => {
+    const phoneRegex = /^[\d\s\-\(\)\+]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (inputValue.length > 5) {
+      if (phoneRegex.test(inputValue) && inputValue.replace(/\D/g, '').length >= 10) {
+        setInputType('phone');
+      } else if (emailRegex.test(inputValue)) {
+        setInputType('email');
+      } else {
+        setInputType(null);
+      }
+    } else {
+      setInputType(null);
+    }
+  }, [inputValue]);
+
+  const normalizePhone = (phone: string) => {
+    return phone.replace(/\D/g, '');
+  };
+
+  const handlePhoneLogin = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const normalizedPhone = normalizePhone(inputValue);
+      
+      // Check if phone + vehicle combination exists in appointments
+      const { data: appointments, error: searchError } = await supabase
+        .from('appointments')
+        .select('*, vehicles(*)')
+        .eq('phone_number', normalizedPhone)
+        .eq('vehicles.year', vehicleInfo.year)
+        .eq('vehicles.make', vehicleInfo.make.toLowerCase())
+        .eq('vehicles.model', vehicleInfo.model.toLowerCase())
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (searchError) throw searchError;
+
+      if (appointments && appointments.length > 0) {
+        const appointment = appointments[0];
+        
+        // Check if user has a full account
+        if (appointment.user_id && appointment.user_id !== appointment.id) {
+          // User has account, redirect to post-appointment onboarding
+          router.push(`/onboarding/customer/post-appointment?appointmentId=${appointment.id}&phone=${normalizedPhone}`);
+        } else {
+          setError('No account found with this phone number. Please create an account first.');
+        }
+      } else {
+        setError('No appointments found with this phone number and vehicle. Please check your information.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
@@ -28,12 +98,21 @@ export default function LoginPage() {
     setError("")
 
     try {
-      if (!email || !password) {
+      if (inputType === 'phone') {
+        if (!vehicleInfo.year || !vehicleInfo.make || !vehicleInfo.model) {
+          setError('Please enter your vehicle information');
+          return;
+        }
+        await handlePhoneLogin();
+        return;
+      }
+
+      if (!inputValue || !password) {
         throw new Error("Please enter both email and password")
       }
 
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: inputValue.trim(),
         password: password,
       })
 
@@ -74,7 +153,7 @@ export default function LoginPage() {
   }
 
   const handleResendConfirmationEmail = async (): Promise<void> => {
-    if (!email) {
+    if (!inputValue || inputType !== 'email') {
       setError("Please enter your email address first")
       return
     }
@@ -83,7 +162,7 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email: email.trim(),
+        email: inputValue.trim(),
       })
 
       if (error) {
@@ -144,23 +223,89 @@ export default function LoginPage() {
 
           <form className="mt-8 space-y-6" onSubmit={handleLogin}>
             <div>
-              <label htmlFor="email" className="block text-lg font-medium text-gray-900 mb-1 tracking-tight">
-                Email
+              <label htmlFor="input" className="block text-lg font-medium text-gray-900 mb-1 tracking-tight">
+                Email or Phone Number
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
+                id="input"
+                name="input"
+                type="text"
                 autoComplete="email"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
                 className="block w-full rounded-md border-0 py-3 px-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-[#294a46] sm:text-sm sm:leading-6"
-                placeholder="Enter your email"
+                placeholder="Enter your email or phone number"
               />
+              {inputType && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Detected: {inputType === 'email' ? 'Email address' : 'Phone number'}
+                </p>
+              )}
             </div>
 
-            <div>
+            {/* Conditional Fields Based on Input Type */}
+            {inputType === 'phone' && (
+              <>
+                <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-900">
+                    <strong>Returning customer?</strong> Enter your vehicle info to access your account
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Year
+                    </label>
+                    <input
+                      type="text"
+                      value={vehicleInfo.year}
+                      onChange={(e) => setVehicleInfo({...vehicleInfo, year: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46]"
+                      placeholder="2020"
+                      maxLength={4}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Make
+                    </label>
+                    <input
+                      type="text"
+                      value={vehicleInfo.make}
+                      onChange={(e) => setVehicleInfo({...vehicleInfo, make: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46]"
+                      placeholder="Honda"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Model
+                    </label>
+                    <input
+                      type="text"
+                      value={vehicleInfo.model}
+                      onChange={(e) => setVehicleInfo({...vehicleInfo, model: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46]"
+                      placeholder="Civic"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <p className="text-xs text-gray-500 mt-2">
+                  Enter the vehicle you used for your recent appointment
+                </p>
+              </>
+            )}
+
+                        {inputType === 'email' && (
+              <div>
               <label htmlFor="password" className="block text-lg font-medium text-gray-900 mb-1 tracking-tight">
                 Password
               </label>
