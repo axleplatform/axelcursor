@@ -59,14 +59,14 @@ export default function LoginPage() {
     try {
       const normalizedPhone = normalizePhone(inputValue);
       
-      // Check if phone + vehicle combination exists in appointments
+      // Search for appointments with phone + vehicle combo
       const { data: appointments, error: searchError } = await supabase
         .from('appointments')
-        .select('*, vehicles(*)')
+        .select('*, profiles(*)')
         .eq('phone_number', normalizedPhone)
-        .eq('vehicles.year', vehicleInfo.year)
-        .eq('vehicles.make', vehicleInfo.make.toLowerCase())
-        .eq('vehicles.model', vehicleInfo.model.toLowerCase())
+        .eq('vehicle_year', vehicleInfo.year)
+        .eq('vehicle_make', vehicleInfo.make.toLowerCase())
+        .eq('vehicle_model', vehicleInfo.model.toLowerCase())
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -75,12 +75,13 @@ export default function LoginPage() {
       if (appointments && appointments.length > 0) {
         const appointment = appointments[0];
         
-        // Check if user has a full account
-        if (appointment.user_id && appointment.user_id !== appointment.id) {
-          // User has account, redirect to post-appointment onboarding
-          router.push(`/onboarding/customer/post-appointment?appointmentId=${appointment.id}&phone=${normalizedPhone}`);
+        // Check if user already has account
+        if (appointment.customer_id && appointment.profiles?.email) {
+          // Has account - normal login
+          setError('Account found! Please use your email and password to sign in.');
         } else {
-          setError('No account found with this phone number. Please create an account first.');
+          // No account - redirect to post-appointment onboarding
+          router.push(`/onboarding/customer/post-appointment?appointmentId=${appointment.id}&phone=${normalizedPhone}`);
         }
       } else {
         setError('No appointments found with this phone number and vehicle. Please check your information.');
