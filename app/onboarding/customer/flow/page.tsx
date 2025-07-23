@@ -2073,20 +2073,33 @@ const createUserWithOnboardingData = async (userId: string, onboardingData: Onbo
 
     if (profileExists) {
       console.log('📝 Updating existing profile...');
+      console.log('📋 Profile update data:', JSON.stringify(profileData, null, 2));
+      console.log('🔍 User ID:', user.id);
+      console.log('🔍 Auth session valid:', !!user);
+      
       // 3. Update existing profile
       profileOperationResult = await supabase
         .from('user_profiles')
         .update(profileData)
-        .eq('id', user.id)
+        .eq('user_id', user.id) // Use user_id instead of id for RLS compliance
         .select('id')
         .single();
     } else {
       console.log('📝 Creating new profile...');
+      console.log('📋 Profile insert data:', JSON.stringify({
+        ...profileData,
+        user_id: user.id, // Ensure user_id matches auth.uid()
+        created_at: new Date().toISOString()
+      }, null, 2));
+      console.log('🔍 User ID:', user.id);
+      console.log('🔍 Auth session valid:', !!user);
+      
       // 3. Create new profile
       profileOperationResult = await supabase
         .from('user_profiles')
         .insert({
           ...profileData,
+          user_id: user.id, // Ensure user_id matches auth.uid()
           created_at: new Date().toISOString()
         })
         .select('id')
@@ -2096,6 +2109,7 @@ const createUserWithOnboardingData = async (userId: string, onboardingData: Onbo
     // 4. Handle 409 errors by fetching existing profile
     if (profileOperationResult.error) {
       console.error('❌ Profile operation error:', profileOperationResult.error);
+      console.error('📋 Error details:', JSON.stringify(profileOperationResult.error, null, 2));
       
       if (profileOperationResult.error.code === '409') {
         console.log('🔄 409 error - profile already exists, fetching existing profile...');
@@ -2104,11 +2118,12 @@ const createUserWithOnboardingData = async (userId: string, onboardingData: Onbo
         const { data: fetchedProfile, error: fetchError } = await supabase
           .from('user_profiles')
           .select('id, onboarding_completed')
-          .eq('id', user.id)
+          .eq('user_id', user.id) // Use user_id instead of id
           .single();
 
         if (fetchError) {
           console.error('❌ Failed to fetch existing profile:', fetchError);
+          console.error('📋 Fetch error details:', JSON.stringify(fetchError, null, 2));
           throw new Error('Profile conflict. Please try again.');
         }
 
@@ -2118,22 +2133,28 @@ const createUserWithOnboardingData = async (userId: string, onboardingData: Onbo
         const { error: retryUpdateError } = await supabase
           .from('user_profiles')
           .update(profileData)
-          .eq('id', user.id);
+          .eq('user_id', user.id); // Use user_id instead of id
 
         if (retryUpdateError) {
           console.error('❌ Retry update failed:', retryUpdateError);
+          console.error('📋 Retry error details:', JSON.stringify(retryUpdateError, null, 2));
           throw new Error('Failed to update profile. Please try again.');
         }
         
         console.log('✅ Retry update succeeded');
       } else if (profileOperationResult.error.code === '406') {
         console.warn('⚠️ 406 error - RLS policy issue, trying alternative approach...');
+        console.error('🔍 Auth user ID:', user.id);
+        console.error('🔍 Auth session valid:', !!user);
         
         // Try with different headers or approach
         const { data: altProfile, error: altError } = await supabase
           .from('user_profiles')
-          .upsert(profileData, { 
-            onConflict: 'id',
+          .upsert({
+            ...profileData,
+            user_id: user.id // Ensure user_id matches auth.uid()
+          }, { 
+            onConflict: 'user_id', // Use user_id as conflict key
             ignoreDuplicates: false 
           })
           .select('id')
@@ -2141,11 +2162,48 @@ const createUserWithOnboardingData = async (userId: string, onboardingData: Onbo
 
         if (altError) {
           console.error('❌ Alternative approach failed:', altError);
+          console.error('📋 Alternative error details:', JSON.stringify(altError, null, 2));
           throw new Error('Profile access denied. Please contact support.');
         }
 
         console.log('✅ Alternative approach succeeded:', altProfile.id);
+      } else if (profileOperationResult.error.code === '403') {
+        console.error('❌ 403 Forbidden - RLS policy violation');
+        console.error('🔍 Auth user ID:', user.id);
+        console.error('🔍 Auth session valid:', !!user);
+        console.error('📋 Full error details:', JSON.stringify(profileOperationResult.error, null, 2));
+        
+        // Try to re-authenticate and retry
+        const { data: { user: reauthUser }, error: reauthError } = await supabase.auth.getUser();
+        if (reauthError || !reauthUser) {
+          console.error('❌ Re-authentication failed:', reauthError);
+          throw new Error('Authentication required. Please log in again.');
+        }
+        
+        console.log('🔄 Re-authenticated user:', reauthUser.id);
+        
+        // Retry with re-authenticated user
+        const { data: retryProfile, error: retryError } = await supabase
+          .from('user_profiles')
+          .upsert({
+            ...profileData,
+            user_id: reauthUser.id
+          }, { 
+            onConflict: 'user_id',
+            ignoreDuplicates: false 
+          })
+          .select('id')
+          .single();
+
+        if (retryError) {
+          console.error('❌ Retry after re-auth failed:', retryError);
+          throw new Error('Profile access denied. Please contact support.');
+        }
+
+        console.log('✅ Retry after re-auth succeeded:', retryProfile.id);
       } else {
+        console.error('❌ Unknown error code:', profileOperationResult.error.code);
+        console.error('📋 Full error details:', JSON.stringify(profileOperationResult.error, null, 2));
         throw profileOperationResult.error;
       }
     } else {

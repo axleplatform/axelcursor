@@ -40,6 +40,7 @@ export async function createOrUpdateUserProfile(
   console.log('🔧 Starting profile creation/update process...')
   console.log('👤 User ID:', profileData.user_id)
   console.log('📧 Email:', profileData.email)
+  console.log('📋 Full payload:', JSON.stringify(profileData, null, 2))
 
   try {
     // Step 1: Verify user exists in auth.users
@@ -56,8 +57,11 @@ export async function createOrUpdateUserProfile(
       }
     }
 
+    console.log('✅ Authenticated user:', authUser.user.id)
+    console.log('🔍 Comparing user IDs - Auth:', authUser.user.id, 'Profile:', profileData.user_id)
+
     if (authUser.user.id !== profileData.user_id) {
-      console.error('❌ User ID mismatch')
+      console.error('❌ User ID mismatch - Auth user:', authUser.user.id, 'Profile user:', profileData.user_id)
       return {
         success: false,
         error: 'User ID mismatch',
@@ -94,23 +98,28 @@ export async function createOrUpdateUserProfile(
       const userRole = profileData.onboarding_type === 'mechanic' ? 'mechanic' : 'customer'
       const accountType = profileData.onboarding_type === 'mechanic' ? 'mechanic' : 'full'
       
+      const userRecordData = {
+        id: profileData.user_id,
+        email: profileData.email,
+        phone: profileData.phone,
+        profile_status: 'pending',
+        account_type: accountType,
+        role: userRole,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      
+      console.log('📋 User record data:', JSON.stringify(userRecordData, null, 2))
+      
       const { data: userRecord, error: createUserError } = await supabase
         .from('users')
-        .insert({
-          id: profileData.user_id,
-          email: profileData.email,
-          phone: profileData.phone,
-          profile_status: 'pending',
-          account_type: accountType,
-          role: userRole,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .insert(userRecordData)
         .select()
         .single()
 
       if (createUserError) {
         console.error('❌ Error creating user record:', createUserError)
+        console.error('📋 Error details:', JSON.stringify(createUserError, null, 2))
         if (createUserError.code === '23505') { // Unique violation
           console.warn('⚠️ User already exists, continuing...')
         } else {
@@ -138,6 +147,7 @@ export async function createOrUpdateUserProfile(
 
     if (profileCheckError && profileCheckError.code !== 'PGRST116') {
       console.error('❌ Error checking profile:', profileCheckError)
+      console.error('📋 Profile check error details:', JSON.stringify(profileCheckError, null, 2))
       return {
         success: false,
         error: 'Failed to check profile existence',
@@ -149,18 +159,26 @@ export async function createOrUpdateUserProfile(
     // Step 5: Create or update profile
     if (!existingProfile) {
       console.log('📝 Step 5: Creating new user profile...')
+      
+      // Ensure user_id matches authenticated user for RLS compliance
+      const profileInsertData = {
+        ...profileData,
+        user_id: authUser.user.id, // Ensure this matches auth.uid()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      
+      console.log('📋 Profile insert data:', JSON.stringify(profileInsertData, null, 2))
+      
       const { data: newProfile, error: createError } = await supabase
         .from('user_profiles')
-        .insert({
-          ...profileData,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .insert(profileInsertData)
         .select()
         .single()
 
       if (createError) {
         console.error('❌ Error creating profile:', createError)
+        console.error('📋 Create error details:', JSON.stringify(createError, null, 2))
         
         // Handle specific error codes
         if (createError.code === '23505') { // Unique violation
@@ -168,6 +186,8 @@ export async function createOrUpdateUserProfile(
           return await fetchExistingProfile(profileData.user_id)
         } else if (createError.code === '406') {
           console.error('❌ RLS policy violation - user not authenticated properly')
+          console.error('🔍 Auth user ID:', authUser.user.id)
+          console.error('🔍 Profile user_id:', profileData.user_id)
           return {
             success: false,
             error: 'Authentication required for profile creation',
@@ -177,6 +197,17 @@ export async function createOrUpdateUserProfile(
         } else if (createError.code === '409') {
           console.warn('⚠️ Conflict error, fetching existing profile...')
           return await fetchExistingProfile(profileData.user_id)
+        } else if (createError.code === '403') {
+          console.error('❌ 403 Forbidden - RLS policy violation')
+          console.error('🔍 Auth user ID:', authUser.user.id)
+          console.error('🔍 Profile user_id:', profileData.user_id)
+          console.error('🔍 Auth session:', authUser.session ? 'Valid' : 'Invalid')
+          return {
+            success: false,
+            error: 'Access denied - RLS policy violation',
+            errorCode: '403',
+            action: 'failed'
+          }
         } else {
           return {
             success: false,
@@ -195,18 +226,26 @@ export async function createOrUpdateUserProfile(
       }
     } else {
       console.log('📝 Step 5: Updating existing user profile...')
+      
+      // Ensure user_id matches authenticated user for RLS compliance
+      const profileUpdateData = {
+        ...profileData,
+        user_id: authUser.user.id, // Ensure this matches auth.uid()
+        updated_at: new Date().toISOString()
+      }
+      
+      console.log('📋 Profile update data:', JSON.stringify(profileUpdateData, null, 2))
+      
       const { data: updatedProfile, error: updateError } = await supabase
         .from('user_profiles')
-        .update({
-          ...profileData,
-          updated_at: new Date().toISOString()
-        })
+        .update(profileUpdateData)
         .eq('user_id', profileData.user_id)
         .select()
         .single()
 
       if (updateError) {
         console.error('❌ Error updating profile:', updateError)
+        console.error('📋 Update error details:', JSON.stringify(updateError, null, 2))
         return {
           success: false,
           error: 'Failed to update profile',
@@ -222,9 +261,9 @@ export async function createOrUpdateUserProfile(
         action: 'updated'
       }
     }
-
   } catch (error) {
     console.error('❌ Unexpected error in profile creation:', error)
+    console.error('📋 Error details:', JSON.stringify(error, null, 2))
     return {
       success: false,
       error: 'Unexpected error occurred',
