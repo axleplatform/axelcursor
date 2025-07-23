@@ -8,6 +8,7 @@ import Link from "next/link"
 import { Loader2, X, Clock } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { GoogleSignInButton } from "@/components/google-signin-button"
+import { createOrUpdateUserProfile, updateUserStatus, getProfileErrorMessage } from "@/lib/profile-creation-utils"
 
 interface CustomerSignupFormProps {
   isOnboarding?: boolean;
@@ -91,144 +92,29 @@ export function CustomerSignupForm({
       if (data.user) {
         console.log('👤 Creating/updating user profile for customer:', data.user.id);
         
-        // 1. Check if profile already exists
-        const { data: existingProfile, error: profileCheckError } = await supabase
-          .from("user_profiles")
-          .select('id, email, phone, full_name, onboarding_completed')
-          .eq('id', data.user.id)
-          .single();
-
-        if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-          console.error('❌ Profile check error:', profileCheckError);
-          if (profileCheckError.code === '406') {
-            console.warn('⚠️ 406 error - checking RLS policies and headers');
-            // Try to fetch with different approach
-            const { data: retryProfile, error: retryError } = await supabase
-              .from('user_profiles')
-              .select('id')
-              .eq('user_id', data.user.id)
-              .maybeSingle();
-            
-            if (retryError) {
-              console.error('❌ Retry failed:', retryError);
-              throw new Error('Profile access denied. Please contact support.');
-            }
-            
-            if (retryProfile) {
-              console.log('✅ Found existing profile via retry:', retryProfile.id);
-              // Continue with existing profile
-            }
-          } else if (profileCheckError.code === '409' || profileCheckError.code === '400') {
-            console.warn('⚠️ 409/400 error - profile may already exist, continuing...');
-            // Continue with profile creation/update
-          } else {
-            throw profileCheckError;
-          }
-        }
-
-        let profileExists = !!existingProfile;
-        console.log('📋 Profile exists check:', profileExists);
-
-        // 2. Create or update profile using upsert logic
-        const profileData = {
-          id: data.user.id,
+        // Use the robust profile creation utility
+        const profileResult = await createOrUpdateUserProfile({
           user_id: data.user.id,
           email: email,
-          phone: null, // Will be added during onboarding
-          full_name: null, // Will be added during onboarding
-          updated_at: new Date().toISOString()
-        };
+          phone: undefined, // Will be added during onboarding
+          full_name: undefined, // Will be added during onboarding
+          onboarding_completed: false,
+          onboarding_type: 'full'
+        });
 
-        let profileOperationResult;
-
-        if (profileExists) {
-          console.log('📝 Updating existing profile...');
-          // 3. Update existing profile
-          profileOperationResult = await supabase
-            .from("user_profiles")
-            .update(profileData)
-            .eq('id', data.user.id)
-            .select('id')
-            .single();
-        } else {
-          console.log('📝 Creating new profile...');
-          // 3. Create new profile
-          profileOperationResult = await supabase
-            .from("user_profiles")
-            .insert({
-              ...profileData,
-              created_at: new Date().toISOString()
-            })
-            .select('id')
-            .single();
+        if (!profileResult.success) {
+          console.error('❌ Profile creation failed:', profileResult.error);
+          const errorMessage = getProfileErrorMessage(profileResult.errorCode || 'UNKNOWN');
+          setError(errorMessage);
+          return;
         }
 
-        // 4. Handle 409 errors by fetching existing profile
-        if (profileOperationResult.error) {
-          console.error('❌ Profile operation error:', profileOperationResult.error);
-          
-          if (profileOperationResult.error.code === '409') {
-            console.log('🔄 409 error - profile already exists, fetching existing profile...');
-            
-            // Fetch the existing profile
-            const { data: fetchedProfile, error: fetchError } = await supabase
-              .from('user_profiles')
-              .select('id, onboarding_completed')
-              .eq('id', data.user.id)
-              .single();
+        console.log('✅ Profile operation result:', profileResult.action);
 
-            if (fetchError) {
-              console.error('❌ Failed to fetch existing profile:', fetchError);
-              throw new Error('Profile conflict. Please try again.');
-            }
-
-            console.log('✅ Successfully fetched existing profile:', fetchedProfile.id);
-            profileExists = true;
-          } else if (profileOperationResult.error.code === '406') {
-            console.warn('⚠️ 406 error - RLS policy issue, trying alternative approach...');
-            
-            // Try with different headers or approach
-            const { data: altProfile, error: altError } = await supabase
-              .from('user_profiles')
-              .upsert(profileData, { 
-                onConflict: 'id',
-                ignoreDuplicates: false 
-              })
-              .select('id')
-              .single();
-
-            if (altError) {
-              console.error('❌ Alternative approach failed:', altError);
-              throw new Error('Profile access denied. Please contact support.');
-            }
-
-            console.log('✅ Alternative approach succeeded:', altProfile.id);
-          } else {
-            throw profileOperationResult.error;
-          }
-        } else {
-          console.log('✅ Profile operation succeeded:', profileOperationResult.data?.id);
-        }
-
-        // 5. Update users table to set profile_status
-        console.log('👤 Updating user profile status...');
-        const { error: userUpdateError } = await supabase
-          .from('users')
-          .update({ 
-            profile_status: 'customer',
-            account_type: 'full'
-          })
-          .eq('id', data.user.id);
-
-        if (userUpdateError) {
-          console.error('❌ User status update error:', userUpdateError);
-          if (userUpdateError.code === '406' || userUpdateError.code === '409' || userUpdateError.code === '400') {
-            console.warn('⚠️ User status update failed but continuing...');
-          } else {
-            throw userUpdateError;
-          }
-        } else {
-          console.log('✅ User status updated successfully');
+        // Update user status
+        const statusUpdated = await updateUserStatus(data.user.id, 'customer', 'full');
+        if (!statusUpdated) {
+          console.warn('⚠️ User status update failed but continuing...');
         }
 
         console.log('🎉 Customer profile creation/update completed successfully!');
