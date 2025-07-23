@@ -244,4 +244,4 @@ export function useOnboardingTracking({
   }, [currentStep, totalSteps, stepName, type, originalStepNumber]);
 
   return { trackCompletion };
-} 
+}
