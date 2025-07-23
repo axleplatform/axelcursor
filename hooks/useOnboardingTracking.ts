@@ -22,47 +22,61 @@ interface TrackingProps {
   originalStepNumber?: number; // For post-appointment
 }
 
-const STEP_NAMES = {
-  customer: {
-    1: 'Vehicle Information',
-    2: 'Referral Source',
-    3: 'Previous Apps',
-    4: 'Why Axle is Better',
-    5: 'Last Service',
-    6: 'Thank you for trusting us',
-    7: 'Skip', // This step is skipped
-    8: 'Axle AI Benefits',
-    9: 'Skip', // This step is skipped
-    10: 'Location',
-    11: 'Notifications',
-    12: 'Add Another Car',
-    13: 'Skip', // This step is skipped
-    14: 'Skip', // This step is skipped
-    15: 'Skip', // This step is skipped
-    16: 'Maintenance Schedule',
-    17: 'Setting Up',
-    18: 'Plan Ready',
-    19: 'Create Account'
-  },
-  post_appointment: {
-    2: 'Referral Source',
-    3: 'Previous Apps',
-    4: 'Why Axle is Better',
-    5: 'Last Service',
-    6: 'Thank you for trusting us',
-    8: 'Location',
-    9: 'Notifications',
-    10: 'Add Another Car',
-    11: 'Maintenance Schedule',
-    12: 'Setting Up',
-    13: 'Plan Ready',
-    16: 'Free Trial',
-    17: 'Choose Plan',
-    18: 'Limited One Time Offer',
-    19: 'Success'
-  },
-  mechanic: {
-    // Add mechanic step names when you have them
+const CUSTOMER_STEP_NAMES: { [key: number]: string } = {
+  1: 'Vehicle Information',
+  2: 'Referral Source',
+  3: 'Previous Apps',
+  4: 'Why Axle is Better',
+  5: 'Last Service',
+  6: 'Thank you for trusting us',
+  7: 'Skip', // This step is skipped
+  8: 'Axle AI Benefits',
+  9: 'Skip', // This step is skipped
+  10: 'Location',
+  11: 'Notifications',
+  12: 'Add Another Car',
+  13: 'Skip', // This step is skipped
+  14: 'Skip', // This step is skipped
+  15: 'Skip', // This step is skipped
+  16: 'Maintenance Schedule',
+  17: 'Setting Up',
+  18: 'Plan Ready',
+  19: 'Create Account'
+};
+
+const POST_APPOINTMENT_STEP_NAMES: { [key: number]: string } = {
+  2: 'Referral Source',
+  3: 'Previous Apps',
+  4: 'Why Axle is Better',
+  5: 'Last Service',
+  6: 'Thank you for trusting us',
+  8: 'Location',
+  9: 'Notifications',
+  10: 'Add Another Car',
+  11: 'Maintenance Schedule',
+  12: 'Setting Up',
+  13: 'Plan Ready',
+  16: 'Free Trial',
+  17: 'Choose Plan',
+  18: 'Limited One Time Offer',
+  19: 'Success'
+};
+
+const MECHANIC_STEP_NAMES: { [key: number]: string } = {
+  // Add mechanic step names when you have them
+};
+
+// Helper function to get step name
+const getStepName = (type: OnboardingType, step: number): string => {
+  switch (type) {
+    case 'customer':
+      return CUSTOMER_STEP_NAMES[step] || `Step ${step}`;
+    case 'post_appointment':
+      return POST_APPOINTMENT_STEP_NAMES[step] || `Step ${step}`;
+    case 'mechanic':
+      return MECHANIC_STEP_NAMES[step] || `Step ${step}`;
+    default:
+      return `Step ${step}`;
   }
 };
 
@@ -116,7 +130,7 @@ export function useOnboardingTracking({
           highest_step_reached: currentStep,
           total_steps: totalSteps,
           user_agent: navigator.userAgent,
-          current_step_name: stepName || STEP_NAMES[type]?.[String(currentStep)] || `Step ${currentStep}`
+          current_step_name: stepName || getStepName(type, currentStep)
         };
 
         if (type === 'post_appointment') {
@@ -149,7 +163,7 @@ export function useOnboardingTracking({
 
       const updateData: any = {
         current_step: currentStep,
-        current_step_name: stepName || STEP_NAMES[type]?.[String(currentStep)] || `Step ${currentStep}`,
+        current_step_name: stepName || getStepName(type, currentStep),
         last_active_at: new Date().toISOString(),
         time_on_last_step_seconds: timeOnLastStep,
         total_time_seconds: totalTime
@@ -212,7 +226,7 @@ export function useOnboardingTracking({
         const dropData = {
           dropped_off: true,
           drop_off_step: currentStep,
-          drop_off_step_name: stepName || STEP_NAMES[type]?.[String(currentStep)] || `Step ${currentStep}`,
+          drop_off_step_name: stepName || getStepName(type, currentStep),
           drop_off_page: window.location.pathname,
           time_on_last_step_seconds: timeOnLastStep,
           total_time_seconds: totalTime,
