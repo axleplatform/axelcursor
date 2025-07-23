@@ -1209,9 +1209,248 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps
   );
 };
 
+const FreeTrialStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">We want you to try Axle AI for free.</h2>
+      </div>
+      
+      <div className="mb-8">
+        <div className="flex items-center mb-4">
+          <div className="p-1 rounded-full mr-3" style={{ backgroundColor: "#F9F9F9" }}>
+            <Check className="h-4 w-4 text-[#294a46]" />
+          </div>
+          <span className="text-gray-700">No payment due now</span>
+        </div>
+      </div>
+
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <div>
+          <button 
+            onClick={() => {
+              updateData({ freeTrial: true })
+              onNext()
+            }}
+            className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium mb-2"
+          >
+            Try for free
+          </button>
+          <p className="text-center text-gray-500 text-sm">
+            Just $49.94 per year ($4.16/mo)
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const ChoosePlanStep = ({ onNext, updateData, showButton = true }: StepProps & { showButton?: boolean }) => {
+  const [selectedPlan, setSelectedPlan] = useState('yearly')
+
+  const plans = [
+    { 
+      id: 'monthly', 
+      name: 'Monthly', 
+      price: '$8 /mo',
+      features: [
+        { icon: '🎯', title: 'Predictive Maintenance' },
+        { icon: '💰', title: 'Cost Savings' },
+        { icon: '🔧', title: 'Established Research' }
+      ]
+    },
+    { 
+      id: 'yearly', 
+      name: 'Yearly', 
+      price: '$4.16/mo',
+      features: ['Advanced AI', 'Priority support', 'Unlimited tracking', 'Save 48%']
+    }
+  ]
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Plan</h2>
+        <p className="text-gray-600 text-sm">
+          Select the plan that best fits your needs
+        </p>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        {plans.map((plan, index) => (
+          <div key={plan.id} className="relative">
+            {plan.id === 'yearly' && (
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                <div className="bg-[#294a46] text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md whitespace-nowrap">
+                  3 days FREE
+                </div>
+              </div>
+            )}
+            <button
+              onClick={() => setSelectedPlan(plan.id)}
+              className={`w-full p-4 text-left border-2 rounded-lg transition-all group ${
+                selectedPlan === plan.id 
+                  ? 'border-[#294a46] bg-[#e6eeec]' 
+                  : 'border-gray-200 md:hover:border-[#294a46] md:hover:bg-[#e6eeec]'
+              }`}
+            >
+              <div className="flex flex-col h-full">
+                <div className="mb-4 text-center">
+                  <h3 className={`font-semibold text-lg ${
+                    selectedPlan === plan.id ? 'text-[#294a46]' : 'text-gray-900 group-hover:text-[#294a46]'
+                  }`}>{plan.name}</h3>
+                </div>
+                <div className="flex-1 mb-4">
+                  {plan.id === 'monthly' ? (
+                    <div className="space-y-3">
+                      {plan.features.map((feature, index) => {
+                        if (typeof feature === 'string') {
+                          return (
+                            <div key={index} className="flex items-center">
+                              <span className="text-green-500 mr-2">✓</span>
+                              <span className="text-sm text-gray-700">{feature}</span>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div key={index} className="flex items-center">
+                              <div className="text-lg mr-2">{feature.icon}</div>
+                              <span className="text-sm font-medium text-gray-900">{feature.title}</span>
+                            </div>
+                          );
+                        }
+                      })}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center">
+                        <div className="p-1 rounded-full mr-3" style={{ backgroundColor: "#F9F9F9" }}>
+                          <Check className="h-4 w-4 text-[#294a46]" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-900">
+                          <span className="hidden md:inline">Today:<br />Save 48%</span>
+                          <span className="md:hidden">Today: Save 48%</span>
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="p-1 rounded-full mr-3" style={{ backgroundColor: "#F9F9F9" }}>
+                          <Check className="h-4 w-4 text-[#294a46]" />
+                        </div>
+                        <span className="text-sm text-gray-600">
+                          In 2 days Reminder
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="p-1 rounded-full mr-3" style={{ backgroundColor: "#F9F9F9" }}>
+                          <Check className="h-4 w-4 text-[#294a46]" />
+                        </div>
+                        <span className="text-sm text-gray-600">
+                          <span className="hidden md:inline">3rd day<br />Billed.</span>
+                          <span className="md:hidden">3rd day Billed.</span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="text-gray-600 text-xl font-medium">{plan.price}</p>
+                </div>
+              </div>
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <div>
+          <div className="text-center mb-4">
+            <div className="flex items-center justify-center">
+              <div className="p-1 rounded-full mr-3" style={{ backgroundColor: "#F9F9F9" }}>
+                <Check className="h-4 w-4 text-[#294a46]" />
+              </div>
+              <span className="text-gray-700 text-sm">
+                {selectedPlan === 'monthly' ? 'No Commitment - Cancel Anytime' : 'No payment due now'}
+              </span>
+            </div>
+          </div>
+          
+          <button 
+            onClick={() => {
+              updateData({ plan: selectedPlan })
+              onNext()
+            }}
+            className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium mb-2"
+          >
+            {selectedPlan === 'monthly' ? 'Start Car Health' : 'Start my 3 day free trial'}
+          </button>
+          <p className="text-center text-gray-500 text-sm">
+            {selectedPlan === 'monthly' ? '$8 per month' : '3 days free, then $49.94 per year (~$4.16/mo)'}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const LimitedOfferStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
+  return (
+    <div className="text-center">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Limited One Time Offer</h2>
+        <p className="text-gray-600 text-sm">
+          Don't miss out on this exclusive deal
+        </p>
+      </div>
+      
+      <div className="bg-red-50 border-2 border-red-200 rounded-lg p-6 mb-8">
+        <p className="text-red-900 font-semibold">Offer expires in 24 hours</p>
+      </div>
+
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Claim Offer
+        </button>
+      )}
+    </div>
+  )
+}
+
+const SuccessStep = ({ onNext, showButton = true }: StepProps & { showButton?: boolean }) => {
+  return (
+    <div className="text-center">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Congratulations!</h2>
+        <p className="text-gray-600">
+          Welcome to Axle
+        </p>
+      </div>
+      
+      <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 mb-8">
+        <p className="text-green-900">You're all set to start tracking your vehicle maintenance!</p>
+      </div>
+
+      {/* Only show button if showButton is true (desktop) */}
+      {showButton && (
+        <button 
+          onClick={onNext}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+        >
+          Go to Dashboard
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function PostAppointmentOnboarding() {
   // Define only the steps we want for post-appointment
-  const POST_APPOINTMENT_STEPS = [2, 3, 4, 5, 6, 8, 10, 11, 12, 16, 17, 18, 19];
+  const POST_APPOINTMENT_STEPS = [2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 16, 17, 18, 19];
   
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -1289,7 +1528,7 @@ export default function PostAppointmentOnboarding() {
     if (currentIndex < POST_APPOINTMENT_STEPS.length - 1) {
       setCurrentStep(POST_APPOINTMENT_STEPS[currentIndex + 1]);
     } else if (currentStep === 19) {
-      // After Create Account step, complete onboarding
+      // After Success step, complete onboarding
       completeOnboarding();
     }
   };
@@ -1346,20 +1585,12 @@ export default function PostAppointmentOnboarding() {
 
   return (
     <div className="min-h-screen bg-[#faf9f8]">
-      {/* EXACT SAME header/progress bar from customer onboarding */}
-      <div className="fixed top-0 left-0 right-0 bg-white z-50 shadow-sm">
-        <div className="max-w-3xl mx-auto px-4">
-          {/* Axle Logo */}
-          <div className="flex items-center justify-center py-3 border-b border-gray-100">
-            <Image
-              src="/images/axle-logo-green.png"
-              alt="Axle Logo"
-              width={100}
-              height={40}
-              className="h-8 w-auto"
-            />
-          </div>
-          
+      {/* Use the same SiteHeader as the rest of the site */}
+      <SiteHeader />
+      
+      {/* Progress bar below the header */}
+      <div className="fixed top-16 left-0 right-0 bg-white z-40 shadow-sm border-b border-gray-100">
+        <div className="max-w-3xl mx-auto px-4 py-3">
           <div className="flex items-center gap-4">
             <button
               onClick={(e) => {
@@ -1398,8 +1629,8 @@ export default function PostAppointmentOnboarding() {
         </div>
       </div>
 
-      {/* Main content - EXACT SAME container as original */}
-      <div className="pt-24 pb-16">
+      {/* Main content - adjusted for new header height */}
+      <div className="pt-32 pb-16">
         <div className="max-w-3xl mx-auto px-4">
           {/* Render only the steps we want, using the EXACT SAME components */}
           {currentStep === 2 && <ReferralSourceStep {...stepProps} />}
@@ -1408,13 +1639,15 @@ export default function PostAppointmentOnboarding() {
           {currentStep === 5 && <LastServiceStep {...stepProps} />}
           {currentStep === 6 && <ThankYouStep {...stepProps} />}
           {currentStep === 8 && <AxleAIBenefitsStep {...stepProps} />}
-          {currentStep === 10 && <LocationStep {...stepProps} />}
-          {currentStep === 11 && <NotificationsStep {...stepProps} />}
-          {currentStep === 12 && <AddAnotherCarStep {...stepProps} />}
-          {currentStep === 16 && <MaintenanceScheduleStep {...stepProps} />}
-          {currentStep === 17 && <SettingUpStep {...stepProps} />}
-          {currentStep === 18 && <PlanReadyStep {...stepProps} />}
-          {currentStep === 19 && <CreateAccountStep {...stepProps} />}
+          {currentStep === 9 && <NotificationsStep {...stepProps} />}
+          {currentStep === 10 && <AddAnotherCarStep {...stepProps} />}
+          {currentStep === 11 && <MaintenanceScheduleStep {...stepProps} />}
+          {currentStep === 12 && <SettingUpStep {...stepProps} />}
+          {currentStep === 13 && <PlanReadyStep {...stepProps} />}
+          {currentStep === 16 && <FreeTrialStep {...stepProps} />}
+          {currentStep === 17 && <ChoosePlanStep {...stepProps} />}
+          {currentStep === 18 && <LimitedOfferStep {...stepProps} />}
+          {currentStep === 19 && <SuccessStep {...stepProps} />}
         </div>
       </div>
     </div>

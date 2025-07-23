@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronLeft, Check } from 'lucide-react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { GoogleSignInButton } from '@/components/google-signin-button'
 import { CustomerSignupForm } from '@/components/customer-signup-form'
@@ -2355,10 +2356,23 @@ export default function CustomerOnboarding() {
           </div>
         </div>
 
-        {/* Main Card - No white background for step 14 */}
+        {/* Axle Logo for step 14 on desktop */}
+        {currentStep === 14 && (
+          <div className="hidden md:flex items-center justify-center py-6">
+            <Image
+              src="/images/axle-logo-green.png"
+              alt="Axle Logo"
+              width={120}
+              height={48}
+              className="h-10 w-auto"
+            />
+          </div>
+        )}
+
+        {/* Main Card - Desktop: normal styling for step 14, Mobile: no white background */}
         {currentStep === 14 ? (
-          <div>
-            {/* Step content with buttons - no white background */}
+          <div className="md:bg-white md:rounded-lg md:shadow-xl md:border-0 md:p-8">
+            {/* Step content with buttons */}
             <div id="step-content">
               {renderCurrentStep({ showButton: true })}
             </div>
