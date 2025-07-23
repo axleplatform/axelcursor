@@ -1978,7 +1978,7 @@ const DashboardRedirectWrapper = ({ onboardingData }: { onboardingData: Onboardi
     type: 'customer',
     currentStep: 20,
     totalSteps: 19,
-    userId: onboardingData.userId
+    userId: onboardingData.userId ?? undefined
   })
   
   return (
