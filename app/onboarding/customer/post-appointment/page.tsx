@@ -11,6 +11,7 @@ import { SiteHeader } from '@/components/site-header'
 import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { useOnboardingTracking } from '@/hooks/useOnboardingTracking'
+import { validateSession, getSessionErrorMessage } from '@/lib/session-utils'
 
 // Type definitions
 type Vehicle = {
@@ -1513,47 +1514,21 @@ export default function PostAppointmentOnboarding() {
       try {
         console.log('🔐 Checking authentication and session...');
         
-        // Check for valid session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // Use the robust session validation utility
+        const sessionResult = await validateSession();
         
-        if (sessionError) {
-          console.error('❌ Session error:', sessionError);
+        if (!sessionResult.success) {
+          console.error('❌ Session validation failed:', sessionResult.error);
           await supabase.auth.signOut();
-          setAuthError('Session error. Please log in again.');
+          const errorMessage = getSessionErrorMessage(sessionResult.errorCode || 'UNKNOWN');
+          setAuthError(errorMessage);
           router.push('/login');
           return;
         }
 
-        if (!session) {
-          console.log('❌ No valid session found');
-          await supabase.auth.signOut();
-          setAuthError('No valid session. Please log in.');
-          router.push('/login');
-          return;
-        }
-
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) {
-          console.error('❌ User error:', userError);
-          await supabase.auth.signOut();
-          setAuthError('User authentication error. Please log in again.');
-          router.push('/login');
-          return;
-        }
-
-        if (!user || !user.id) {
-          console.error('❌ No valid user or user ID');
-          await supabase.auth.signOut();
-          setAuthError('Invalid user. Please log in again.');
-          router.push('/login');
-          return;
-        }
-
-        console.log('✅ Valid session and user found:', user.id);
-        setUser(user);
-        setFormData(prev => ({ ...prev, userId: user.id }));
+        console.log('✅ Valid session and user found:', sessionResult.user?.id);
+        setUser(sessionResult.user);
+        setFormData(prev => ({ ...prev, userId: sessionResult.user?.id }));
         
       } catch (error) {
         console.error('❌ Auth check failed:', error);

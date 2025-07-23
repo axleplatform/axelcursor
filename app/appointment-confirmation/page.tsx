@@ -13,6 +13,7 @@ import { formatDate } from "@/lib/utils"
 import { GoogleMapsLink } from "@/components/google-maps-link"
 import { GoogleSignInButton } from "@/components/google-signin-button"
 import { getUserRoleAndRedirect } from "@/lib/auth-helpers"
+import { handleSignupWithSession, handleSigninWithSession, getSessionErrorMessage } from "@/lib/session-utils"
 
 interface AppointmentData {
   id: string
@@ -281,44 +282,43 @@ export default function AppointmentConfirmationPage() {
         return;
       }
 
-      // Create auth account
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password: password,
-        options: {
-          data: {
-            phone: appointmentData?.phone_number,
-            appointment_id: appointmentData?.id,
-            full_name: appointmentData?.vehicles?.make || '',
-            created_from: 'appointment_confirmation'
-          }
+      // Use the robust signup with session waiting
+      const signupResult = await handleSignupWithSession(
+        email.trim(),
+        password,
+        {
+          phone: appointmentData?.phone_number,
+          appointment_id: appointmentData?.id,
+          full_name: appointmentData?.vehicles?.make || '',
+          created_from: 'appointment_confirmation'
         }
-      });
+      );
 
-      if (authError) {
+      if (!signupResult.success) {
         // Check if it's a duplicate user error
-        if (authError.message.includes('already registered')) {
+        if (signupResult.error?.includes('already registered')) {
+          console.log('🔄 User already exists, attempting signin...');
+          
           // Try to sign in instead
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: email.trim(),
-            password: password
-          });
+          const signinResult = await handleSigninWithSession(email.trim(), password);
 
-          if (signInData?.user) {
-            // Successfully signed in, continue with profile creation
-            await createUserProfile(signInData.user.id);
+          if (signinResult.success && signinResult.user) {
+            console.log('✅ Signin successful, continuing with profile creation');
+            await createUserProfile(signinResult.user.id);
           } else {
-            setFormErrors({ 
-              email: 'An account exists with this email. Please use the correct password or reset it.' 
-            });
+            const errorMessage = getSessionErrorMessage(signinResult.errorCode || 'UNKNOWN');
+            setFormErrors({ email: errorMessage });
             return;
           }
         } else {
-          throw authError;
+          const errorMessage = getSessionErrorMessage(signupResult.errorCode || 'UNKNOWN');
+          setFormErrors({ email: errorMessage });
+          return;
         }
-      } else if (authData?.user) {
-        // New user created successfully
-        await createUserProfile(authData.user.id);
+      } else if (signupResult.user) {
+        // New user created successfully with established session
+        console.log('✅ Signup successful with established session');
+        await createUserProfile(signupResult.user.id);
       }
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -347,131 +347,33 @@ export default function AppointmentConfirmationPage() {
     try {
       console.log('👤 Creating/updating user profile for user:', userId);
       
-      // 1. Check if profile already exists
-      const { data: existingProfile, error: profileCheckError } = await supabase
-        .from('user_profiles')
-        .select('id, email, phone, full_name, onboarding_completed')
-        .eq('id', userId)
-        .single();
-
-      if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-        console.error('❌ Profile check error:', profileCheckError);
-        if (profileCheckError.code === '406') {
-          console.warn('⚠️ 406 error - checking RLS policies and headers');
-          // Try to fetch with different approach
-          const { data: retryProfile, error: retryError } = await supabase
-            .from('user_profiles')
-            .select('id')
-            .eq('user_id', userId)
-            .maybeSingle();
-          
-          if (retryError) {
-            console.error('❌ Retry failed:', retryError);
-            setFormErrors({ email: 'Profile access denied. Please contact support.' });
-            return;
-          }
-          
-          if (retryProfile) {
-            console.log('✅ Found existing profile via retry:', retryProfile.id);
-            // Continue with existing profile
-          }
-        } else if (profileCheckError.code === '409' || profileCheckError.code === '400') {
-          console.warn('⚠️ 409/400 error - profile may already exist, continuing...');
-          // Continue with profile creation/update
-        } else {
-          setFormErrors({ email: 'Failed to check profile. Please try again.' });
-          return;
-        }
-      }
-
-      let profileExists = !!existingProfile;
-      console.log('📋 Profile exists check:', profileExists);
-
-      // 2. Create or update profile using upsert logic
-      const profileData = {
-        id: userId,
+      // Use the robust profile creation utility
+      const { createOrUpdateUserProfile, updateUserStatus } = await import('@/lib/profile-creation-utils');
+      
+      const profileResult = await createOrUpdateUserProfile({
         user_id: userId,
         email: email,
         phone: appointmentData.phone_number,
         full_name: appointmentData.vehicles?.make || '',
-        updated_at: new Date().toISOString()
-      };
+        onboarding_completed: false,
+        onboarding_type: 'post_appointment'
+      });
 
-      let profileOperationResult;
-
-      if (profileExists) {
-        console.log('📝 Updating existing profile...');
-        // 3. Update existing profile
-        profileOperationResult = await supabase
-          .from('user_profiles')
-          .update(profileData)
-          .eq('id', userId)
-          .select('id')
-          .single();
-      } else {
-        console.log('📝 Creating new profile...');
-        // 3. Create new profile
-        profileOperationResult = await supabase
-          .from('user_profiles')
-          .insert({
-            ...profileData,
-            created_at: new Date().toISOString()
-          })
-          .select('id')
-          .single();
+      if (!profileResult.success) {
+        console.error('❌ Profile creation failed:', profileResult.error);
+        setFormErrors({ email: profileResult.error || 'Failed to create profile. Please try again.' });
+        return;
       }
 
-      // 4. Handle 409 errors by fetching existing profile
-      if (profileOperationResult.error) {
-        console.error('❌ Profile operation error:', profileOperationResult.error);
-        
-        if (profileOperationResult.error.code === '409') {
-          console.log('🔄 409 error - profile already exists, fetching existing profile...');
-          
-          // Fetch the existing profile
-          const { data: fetchedProfile, error: fetchError } = await supabase
-            .from('user_profiles')
-            .select('id, onboarding_completed')
-            .eq('id', userId)
-            .single();
+      console.log('✅ Profile operation result:', profileResult.action);
 
-          if (fetchError) {
-            console.error('❌ Failed to fetch existing profile:', fetchError);
-            setFormErrors({ email: 'Profile conflict. Please try again.' });
-            return;
-          }
-
-          console.log('✅ Successfully fetched existing profile:', fetchedProfile.id);
-          profileExists = true;
-        } else if (profileOperationResult.error.code === '406') {
-          console.warn('⚠️ 406 error - RLS policy issue, trying alternative approach...');
-          
-          // Try with different headers or approach
-          const { data: altProfile, error: altError } = await supabase
-            .from('user_profiles')
-            .upsert(profileData, { 
-              onConflict: 'id',
-              ignoreDuplicates: false 
-            })
-            .select('id')
-            .single();
-
-          if (altError) {
-            console.error('❌ Alternative approach failed:', altError);
-            setFormErrors({ email: 'Profile access denied. Please contact support.' });
-            return;
-          }
-
-          console.log('✅ Alternative approach succeeded:', altProfile.id);
-        } else {
-          setFormErrors({ email: 'Failed to create/update profile. Please try again.' });
-          return;
-        }
-      } else {
-        console.log('✅ Profile operation succeeded:', profileOperationResult.data?.id);
+      // Update user status
+      const statusUpdated = await updateUserStatus(userId, 'customer', 'full');
+      if (!statusUpdated) {
+        console.warn('⚠️ User status update failed but continuing...');
       }
 
-      // 5. Update appointment to link to user
+      // Link appointment to user
       console.log('🔗 Linking appointment to user...');
       const { error: appointmentError } = await supabase
         .from('appointments')
@@ -490,39 +392,12 @@ export default function AppointmentConfirmationPage() {
         console.log('✅ Appointment linked successfully');
       }
 
-      // 6. Update user profile_status
-      console.log('👤 Updating user profile status...');
-      const { error: userUpdateError } = await supabase
-        .from('users')
-        .update({ profile_status: 'customer' })
-        .eq('id', userId);
-
-      if (userUpdateError) {
-        console.error('❌ User status update error:', userUpdateError);
-        if (userUpdateError.code === '406' || userUpdateError.code === '409' || userUpdateError.code === '400') {
-          console.warn('⚠️ User status update failed but continuing...');
-        } else {
-          setFormErrors({ email: 'Failed to update user status. Please try again.' });
-          return;
-        }
-      } else {
-        console.log('✅ User status updated successfully');
-      }
-
-      // 7. Final validation before redirect
-      const { data: { user: finalUser }, error: finalUserError } = await supabase.auth.getUser();
-      if (finalUserError || !finalUser || !finalUser.id) {
-        console.error('❌ Final user validation failed');
-        setFormErrors({ email: 'Final validation failed. Please try again.' });
-        return;
-      }
-
       console.log('🎉 Profile creation/update completed successfully!');
-      console.log('👤 User ID:', finalUser.id);
+      console.log('👤 User ID:', userId);
       console.log('📅 Completion time:', new Date().toISOString());
       console.log('🔗 Redirecting to post-appointment onboarding...');
 
-      // 8. Ensure onboarding flow continues even if profile already exists
+      // Redirect to onboarding with established session
       router.push(`/onboarding/customer/post-appointment?appointmentId=${appointmentData.id}&phone=${appointmentData.phone_number}`);
       
     } catch (error) {
