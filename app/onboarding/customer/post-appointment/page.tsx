@@ -1681,35 +1681,159 @@ export default function PostAppointmentOnboarding() {
 
       // Update user_profiles instead of users
       console.log('📝 Updating user profile...');
-      const { error: profileError } = await supabase
+      
+      // 1. Check if profile already exists
+      const { data: existingProfile, error: profileCheckError } = await supabase
         .from('user_profiles')
-        .update({ 
-          onboarding_completed: true,
-          onboarding_type: 'post_appointment',
-          profile_completed_at: new Date().toISOString(),
-          address: formData.location,
-          city: formData.location?.split(',')[0]?.trim(),
-          state: formData.location?.split(',')[1]?.trim(),
-          zip_code: formData.location?.split(',')[2]?.trim(),
-          communication_preferences: { notifications: formData.notifications },
-          notification_settings: { enabled: formData.notifications },
-          vehicles: [formData.vehicle, ...formData.additionalVehicles],
-          referral_source: formData.referralSource,
-          last_service: formData.lastService,
-          notifications_enabled: formData.notifications,
-          onboarding_data: formData
-        })
-        .eq('id', currentUser.id);
+        .select('id, onboarding_completed, onboarding_type')
+        .eq('id', currentUser.id)
+        .single();
 
-      // 5. Add error handling for Supabase errors
-      if (profileError) {
-        console.error('❌ Profile update error:', profileError);
-        if (profileError.code === '406' || profileError.code === '409' || profileError.code === '400') {
-          setAuthError('Profile update failed. Please try again or contact support.');
+      if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+        console.error('❌ Profile check error:', profileCheckError);
+        if (profileCheckError.code === '406') {
+          console.warn('⚠️ 406 error - checking RLS policies and headers');
+          // Try to fetch with different approach
+          const { data: retryProfile, error: retryError } = await supabase
+            .from('user_profiles')
+            .select('id')
+            .eq('user_id', currentUser.id)
+            .maybeSingle();
+          
+          if (retryError) {
+            console.error('❌ Retry failed:', retryError);
+            setAuthError('Profile access denied. Please contact support.');
+            return;
+          }
+          
+          if (retryProfile) {
+            console.log('✅ Found existing profile via retry:', retryProfile.id);
+            // Continue with existing profile
+          }
+        } else if (profileCheckError.code === '409' || profileCheckError.code === '400') {
+          console.warn('⚠️ 409/400 error - profile may already exist, continuing...');
+          // Continue with profile update
+        } else {
+          setAuthError('Failed to check profile. Please try again.');
+          return;
+        }
+      }
+
+      let profileExists = !!existingProfile;
+      console.log('📋 Profile exists check:', profileExists);
+
+      // 2. Prepare profile update data
+      const profileUpdateData = {
+        onboarding_completed: true,
+        onboarding_type: 'post_appointment',
+        profile_completed_at: new Date().toISOString(),
+        address: formData.location,
+        city: formData.location?.split(',')[0]?.trim(),
+        state: formData.location?.split(',')[1]?.trim(),
+        zip_code: formData.location?.split(',')[2]?.trim(),
+        communication_preferences: { notifications: formData.notifications },
+        notification_settings: { enabled: formData.notifications },
+        vehicles: [formData.vehicle, ...formData.additionalVehicles],
+        referral_source: formData.referralSource,
+        last_service: formData.lastService,
+        notifications_enabled: formData.notifications,
+        onboarding_data: formData,
+        updated_at: new Date().toISOString()
+      };
+
+      let profileOperationResult;
+
+      if (profileExists) {
+        console.log('📝 Updating existing profile...');
+        // 3. Update existing profile
+        profileOperationResult = await supabase
+          .from('user_profiles')
+          .update(profileUpdateData)
+          .eq('id', currentUser.id)
+          .select('id')
+          .single();
+      } else {
+        console.log('📝 Creating new profile (should not happen in post-appointment flow)...');
+        // 3. Create new profile if somehow missing
+        profileOperationResult = await supabase
+          .from('user_profiles')
+          .insert({
+            id: currentUser.id,
+            user_id: currentUser.id,
+            email: currentUser.email || '',
+            ...profileUpdateData,
+            created_at: new Date().toISOString()
+          })
+          .select('id')
+          .single();
+      }
+
+      // 4. Handle 409 errors by fetching existing profile
+      if (profileOperationResult.error) {
+        console.error('❌ Profile operation error:', profileOperationResult.error);
+        
+        if (profileOperationResult.error.code === '409') {
+          console.log('🔄 409 error - profile already exists, fetching existing profile...');
+          
+          // Fetch the existing profile
+          const { data: fetchedProfile, error: fetchError } = await supabase
+            .from('user_profiles')
+            .select('id, onboarding_completed')
+            .eq('id', currentUser.id)
+            .single();
+
+          if (fetchError) {
+            console.error('❌ Failed to fetch existing profile:', fetchError);
+            setAuthError('Profile conflict. Please try again.');
+            return;
+          }
+
+          console.log('✅ Successfully fetched existing profile:', fetchedProfile.id);
+          
+          // Try update again on the existing profile
+          const { error: retryUpdateError } = await supabase
+            .from('user_profiles')
+            .update(profileUpdateData)
+            .eq('id', currentUser.id);
+
+          if (retryUpdateError) {
+            console.error('❌ Retry update failed:', retryUpdateError);
+            setAuthError('Failed to update profile. Please try again.');
+            return;
+          }
+          
+          console.log('✅ Retry update succeeded');
+        } else if (profileOperationResult.error.code === '406') {
+          console.warn('⚠️ 406 error - RLS policy issue, trying alternative approach...');
+          
+          // Try with different headers or approach
+          const { data: altProfile, error: altError } = await supabase
+            .from('user_profiles')
+            .upsert({
+              id: currentUser.id,
+              user_id: currentUser.id,
+              email: currentUser.email || '',
+              ...profileUpdateData
+            }, { 
+              onConflict: 'id',
+              ignoreDuplicates: false 
+            })
+            .select('id')
+            .single();
+
+          if (altError) {
+            console.error('❌ Alternative approach failed:', altError);
+            setAuthError('Profile access denied. Please contact support.');
+            return;
+          }
+
+          console.log('✅ Alternative approach succeeded:', altProfile.id);
         } else {
           setAuthError('Failed to save profile data. Please try again.');
+          return;
         }
-        return;
+      } else {
+        console.log('✅ Profile operation succeeded:', profileOperationResult.data?.id);
       }
 
       console.log('✅ User profile updated successfully');

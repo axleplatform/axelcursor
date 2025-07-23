@@ -345,53 +345,133 @@ export default function AppointmentConfirmationPage() {
     }
 
     try {
-      console.log('👤 Creating user profile for user:', userId);
+      console.log('👤 Creating/updating user profile for user:', userId);
       
-      // Check if profile already exists
+      // 1. Check if profile already exists
       const { data: existingProfile, error: profileCheckError } = await supabase
         .from('user_profiles')
-        .select('id')
+        .select('id, email, phone, full_name, onboarding_completed')
         .eq('id', userId)
         .single();
 
       if (profileCheckError && profileCheckError.code !== 'PGRST116') {
         console.error('❌ Profile check error:', profileCheckError);
-        if (profileCheckError.code === '406' || profileCheckError.code === '409' || profileCheckError.code === '400') {
-          setFormErrors({ email: 'Profile access denied. Please contact support.' });
+        if (profileCheckError.code === '406') {
+          console.warn('⚠️ 406 error - checking RLS policies and headers');
+          // Try to fetch with different approach
+          const { data: retryProfile, error: retryError } = await supabase
+            .from('user_profiles')
+            .select('id')
+            .eq('user_id', userId)
+            .maybeSingle();
+          
+          if (retryError) {
+            console.error('❌ Retry failed:', retryError);
+            setFormErrors({ email: 'Profile access denied. Please contact support.' });
+            return;
+          }
+          
+          if (retryProfile) {
+            console.log('✅ Found existing profile via retry:', retryProfile.id);
+            // Continue with existing profile
+          }
+        } else if (profileCheckError.code === '409' || profileCheckError.code === '400') {
+          console.warn('⚠️ 409/400 error - profile may already exist, continuing...');
+          // Continue with profile creation/update
         } else {
           setFormErrors({ email: 'Failed to check profile. Please try again.' });
-        }
-        return;
-      }
-
-      if (!existingProfile) {
-        console.log('📝 Creating new user profile...');
-        // Create new profile
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert({
-            id: userId,
-            user_id: userId,
-            email: email,
-            phone: appointmentData.phone_number,
-            full_name: appointmentData.vehicles?.make || ''
-          });
-
-        if (profileError) {
-          console.error('❌ Profile creation error:', profileError);
-          if (profileError.code === '406' || profileError.code === '409' || profileError.code === '400') {
-            setFormErrors({ email: 'Profile creation failed. Please contact support.' });
-          } else {
-            setFormErrors({ email: 'Failed to create user profile. Please try again.' });
-          }
           return;
         }
-        console.log('✅ User profile created successfully');
-      } else {
-        console.log('ℹ️ User profile already exists');
       }
 
-      // Update appointment to link to user
+      let profileExists = !!existingProfile;
+      console.log('📋 Profile exists check:', profileExists);
+
+      // 2. Create or update profile using upsert logic
+      const profileData = {
+        id: userId,
+        user_id: userId,
+        email: email,
+        phone: appointmentData.phone_number,
+        full_name: appointmentData.vehicles?.make || '',
+        updated_at: new Date().toISOString()
+      };
+
+      let profileOperationResult;
+
+      if (profileExists) {
+        console.log('📝 Updating existing profile...');
+        // 3. Update existing profile
+        profileOperationResult = await supabase
+          .from('user_profiles')
+          .update(profileData)
+          .eq('id', userId)
+          .select('id')
+          .single();
+      } else {
+        console.log('📝 Creating new profile...');
+        // 3. Create new profile
+        profileOperationResult = await supabase
+          .from('user_profiles')
+          .insert({
+            ...profileData,
+            created_at: new Date().toISOString()
+          })
+          .select('id')
+          .single();
+      }
+
+      // 4. Handle 409 errors by fetching existing profile
+      if (profileOperationResult.error) {
+        console.error('❌ Profile operation error:', profileOperationResult.error);
+        
+        if (profileOperationResult.error.code === '409') {
+          console.log('🔄 409 error - profile already exists, fetching existing profile...');
+          
+          // Fetch the existing profile
+          const { data: fetchedProfile, error: fetchError } = await supabase
+            .from('user_profiles')
+            .select('id, onboarding_completed')
+            .eq('id', userId)
+            .single();
+
+          if (fetchError) {
+            console.error('❌ Failed to fetch existing profile:', fetchError);
+            setFormErrors({ email: 'Profile conflict. Please try again.' });
+            return;
+          }
+
+          console.log('✅ Successfully fetched existing profile:', fetchedProfile.id);
+          profileExists = true;
+        } else if (profileOperationResult.error.code === '406') {
+          console.warn('⚠️ 406 error - RLS policy issue, trying alternative approach...');
+          
+          // Try with different headers or approach
+          const { data: altProfile, error: altError } = await supabase
+            .from('user_profiles')
+            .upsert(profileData, { 
+              onConflict: 'id',
+              ignoreDuplicates: false 
+            })
+            .select('id')
+            .single();
+
+          if (altError) {
+            console.error('❌ Alternative approach failed:', altError);
+            setFormErrors({ email: 'Profile access denied. Please contact support.' });
+            return;
+          }
+
+          console.log('✅ Alternative approach succeeded:', altProfile.id);
+        } else {
+          setFormErrors({ email: 'Failed to create/update profile. Please try again.' });
+          return;
+        }
+      } else {
+        console.log('✅ Profile operation succeeded:', profileOperationResult.data?.id);
+      }
+
+      // 5. Update appointment to link to user
       console.log('🔗 Linking appointment to user...');
       const { error: appointmentError } = await supabase
         .from('appointments')
@@ -410,7 +490,7 @@ export default function AppointmentConfirmationPage() {
         console.log('✅ Appointment linked successfully');
       }
 
-      // Update user profile_status
+      // 6. Update user profile_status
       console.log('👤 Updating user profile status...');
       const { error: userUpdateError } = await supabase
         .from('users')
@@ -429,7 +509,7 @@ export default function AppointmentConfirmationPage() {
         console.log('✅ User status updated successfully');
       }
 
-      // Final validation before redirect
+      // 7. Final validation before redirect
       const { data: { user: finalUser }, error: finalUserError } = await supabase.auth.getUser();
       if (finalUserError || !finalUser || !finalUser.id) {
         console.error('❌ Final user validation failed');
@@ -437,12 +517,12 @@ export default function AppointmentConfirmationPage() {
         return;
       }
 
-      console.log('🎉 Profile creation completed successfully!');
+      console.log('🎉 Profile creation/update completed successfully!');
       console.log('👤 User ID:', finalUser.id);
       console.log('📅 Completion time:', new Date().toISOString());
       console.log('🔗 Redirecting to post-appointment onboarding...');
 
-      // Redirect to post-appointment onboarding
+      // 8. Ensure onboarding flow continues even if profile already exists
       router.push(`/onboarding/customer/post-appointment?appointmentId=${appointmentData.id}&phone=${appointmentData.phone_number}`);
       
     } catch (error) {
