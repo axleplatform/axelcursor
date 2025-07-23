@@ -10,6 +10,7 @@ import { CustomerSignupForm } from '@/components/customer-signup-form'
 import { SiteHeader } from '@/components/site-header'
 import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
+import { useOnboardingTracking } from '@/hooks/useOnboardingTracking'
 
 // Type definitions
 type Vehicle = {
@@ -1458,6 +1459,24 @@ export default function PostAppointmentOnboarding() {
   
   const [currentStep, setCurrentStep] = useState(2); // Start at step 2 (Referral Source)
   const [user, setUser] = useState<any>(null);
+  
+  // Map step index to original step number
+  const getOriginalStepNumber = (index: number) => {
+    return POST_APPOINTMENT_STEPS[index];
+  };
+  
+  // Get current step index for tracking
+  const currentStepIndex = POST_APPOINTMENT_STEPS.indexOf(currentStep);
+  
+  // Initialize onboarding tracking
+  const { trackCompletion } = useOnboardingTracking({
+    type: 'post_appointment',
+    currentStep: currentStepIndex + 1, // Convert 0-based to 1-based
+    originalStepNumber: getOriginalStepNumber(currentStepIndex),
+    totalSteps: POST_APPOINTMENT_STEPS.length,
+    userId: user?.id,
+    appointmentId: searchParams.get('appointmentId')
+  });
   const [formData, setFormData] = useState<PostAppointmentOnboardingData>({
     // Pre-fill from appointment
     appointmentId: searchParams.get('appointmentId'),
@@ -1569,6 +1588,9 @@ export default function PostAppointmentOnboarding() {
         .update({ user_id: user?.id })
         .eq('id', formData.appointmentId);
     }
+    
+    // Track completion before redirect
+    await trackCompletion();
     
     router.push('/customer-dashboard');
   };

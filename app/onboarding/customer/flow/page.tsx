@@ -10,6 +10,7 @@ import { CustomerSignupForm } from '@/components/customer-signup-form'
 import { SiteHeader } from '@/components/site-header'
 import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
+import { useOnboardingTracking } from '@/hooks/useOnboardingTracking'
 
 // Type definitions
 type Vehicle = {
@@ -1899,7 +1900,7 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
   )
 }
 
-const DashboardRedirect = ({ onboardingData, setCurrentStep }: { onboardingData: OnboardingData; setCurrentStep?: (step: number) => void }) => {
+const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: { onboardingData: OnboardingData; setCurrentStep?: (step: number) => void; trackCompletion?: () => Promise<void> }) => {
   const router = useRouter()
 
   useEffect(() => {
@@ -1938,6 +1939,11 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep }: { onboardingData:
         localStorage.removeItem('onboardingData')
         localStorage.removeItem('pendingOnboarding')
         
+        // Track completion before redirect
+        if (trackCompletion) {
+          await trackCompletion()
+        }
+        
         // Redirect to customer dashboard
         router.push('/customer-dashboard')
       } catch (error) {
@@ -1967,10 +1973,19 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep }: { onboardingData:
 const DashboardRedirectWrapper = ({ onboardingData }: { onboardingData: OnboardingData }) => {
   const [currentStepState, setCurrentStepState] = useState(1)
   
+  // Get trackCompletion from the parent component context
+  const { trackCompletion } = useOnboardingTracking({
+    type: 'customer',
+    currentStep: 20,
+    totalSteps: 19,
+    userId: onboardingData.userId
+  })
+  
   return (
     <DashboardRedirect 
       onboardingData={onboardingData} 
-      setCurrentStep={setCurrentStepState} 
+      setCurrentStep={setCurrentStepState}
+      trackCompletion={trackCompletion}
     />
   )
 }
@@ -2053,6 +2068,7 @@ export default function CustomerOnboarding() {
   const [currentStep, setCurrentStep] = useState(urlStep ? parseInt(urlStep) : 1)
   const [skippedSteps, setSkippedSteps] = useState<number[]>([])
   const [carAnimating, setCarAnimating] = useState(false)
+  const [user, setUser] = useState<any>(null)
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     vehicle: {
       year: '',
@@ -2142,6 +2158,23 @@ export default function CustomerOnboarding() {
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [currentStep])
+
+  // Get user auth state
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+    getUser()
+  }, [])
+
+  // Initialize onboarding tracking
+  const { trackCompletion } = useOnboardingTracking({
+    type: 'customer',
+    currentStep,
+    totalSteps: 19,
+    userId: user?.id
+  })
 
   // Confetti effect when reaching step 20
   useEffect(() => {
