@@ -1541,24 +1541,36 @@ export default function PostAppointmentOnboarding() {
   };
 
   const completeOnboarding = async () => {
-    // Link appointment to user
-    if (formData.appointmentId && user?.id) {
-      await supabase
-        .from('appointments')
-        .update({ user_id: user.id })
-        .eq('id', formData.appointmentId);
-    }
-
-    // Mark onboarding complete and redirect to dashboard
+    // Update user_profiles instead of users
     await supabase
-        .from('users')
+      .from('user_profiles')
       .update({ 
-          onboarding_completed: true,
+        onboarding_completed: true,
+        onboarding_type: 'post_appointment',
+        profile_completed_at: new Date().toISOString(),
+        address: formData.location,
+        city: formData.location?.split(',')[0]?.trim(),
+        state: formData.location?.split(',')[1]?.trim(),
+        zip_code: formData.location?.split(',')[2]?.trim(),
+        communication_preferences: { notifications: formData.notifications },
+        notification_settings: { enabled: formData.notifications },
+        vehicles: [formData.vehicle, ...formData.additionalVehicles],
+        referral_source: formData.referralSource,
+        last_service: formData.lastService,
+        notifications_enabled: formData.notifications,
         onboarding_data: formData
       })
       .eq('id', user?.id);
       
-      router.push('/customer-dashboard');
+    // Link appointment to user stays the same
+    if (formData.appointmentId) {
+      await supabase
+        .from('appointments')
+        .update({ user_id: user?.id })
+        .eq('id', formData.appointmentId);
+    }
+    
+    router.push('/customer-dashboard');
   };
 
   // Calculate progress for the progress bar

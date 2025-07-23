@@ -229,26 +229,24 @@ export default function AppointmentConfirmationPage() {
       if (authError) throw authError;
 
       if (authData.user && appointmentData) {
-        // Create user record in users table
-        const { error: userError } = await supabase
-          .from('users')
-          .upsert({
+        // Create user_profiles record for the customer
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .insert({
             id: authData.user.id,
+            user_id: authData.user.id,
             email: email,
             phone: appointmentData.phone_number,
-            created_at: new Date().toISOString(),
-            account_type: 'full',
-            temp_user_merged_from: appointmentData.user_id // Link to temp user
+            full_name: appointmentData.vehicles?.make || ''
           });
 
-        if (userError) console.error('User table error:', userError);
+        if (profileError) { console.error('Profile creation error:', profileError); }
 
         // Update appointment to link to new user
         const { error: appointmentError } = await supabase
           .from('appointments')
           .update({ 
-            user_id: authData.user.id,
-            customer_id: authData.user.id 
+            user_id: authData.user.id
           })
           .eq('id', appointmentData.id);
 

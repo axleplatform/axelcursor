@@ -75,10 +75,16 @@ export default function LoginPage() {
       if (appointments && appointments.length > 0) {
         const appointment = appointments[0];
         
-        // Check if user already has account
-        if (appointment.customer_id && appointment.profiles?.email) {
-          // Has account - normal login
-          setError('Account found! Please use your email and password to sign in.');
+        // Check if user has a user_profiles record (full account)
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('phone', normalizedPhone)
+          .single();
+
+        if (profile) {
+          // Has full account - prompt for email/password login
+          setError('You have an account. Please login with email and password.');
         } else {
           // No account - redirect to post-appointment onboarding
           router.push(`/onboarding/customer/post-appointment?appointmentId=${appointment.id}&phone=${normalizedPhone}`);

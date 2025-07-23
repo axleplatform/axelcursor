@@ -1986,18 +1986,27 @@ const createUserWithOnboardingData = async (userId: string, onboardingData: Onbo
       return;
     }
 
-    // Now insert/update user data
-    const { error } = await supabase.from('users').upsert({
+    // Update user_profiles instead of users
+    const { error } = await supabase.from('user_profiles').upsert({
       id: user.id,
+      user_id: user.id,
       email: user.email || '',
-      name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
-      role: 'customer',
+      full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
+      phone: onboardingData.phoneNumber,
+      address: onboardingData.location,
+      city: onboardingData.location?.split(',')[0]?.trim(),
+      state: onboardingData.location?.split(',')[1]?.trim(),
+      zip_code: onboardingData.location?.split(',')[2]?.trim(),
       vehicles: [onboardingData.vehicle, ...onboardingData.additionalVehicles],
       referral_source: onboardingData.referralSource,
       last_service: onboardingData.lastService,
-      location: onboardingData.location,
-      phone: onboardingData.phoneNumber,
       notifications_enabled: onboardingData.notifications,
+      communication_preferences: { notifications: onboardingData.notifications },
+      notification_settings: { enabled: onboardingData.notifications },
+      onboarding_completed: true,
+      onboarding_type: 'full',
+      profile_completed_at: new Date().toISOString(),
+      onboarding_data: onboardingData,
       subscription_plan: onboardingData.plan,
       subscription_status: onboardingData.freeTrial ? 'trial' : 'inactive',
       free_trial_ends_at: onboardingData.freeTrial ? 

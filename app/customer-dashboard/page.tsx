@@ -64,15 +64,27 @@ export default function CustomerDashboard() {
       }
       setUser(user);
 
+      // Check if user has completed profile
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile || !profile.onboarding_completed) {
+        // Redirect to complete profile
+        router.push('/onboarding/customer/flow');
+        return;
+      }
+
       // Load all customer data in parallel
-      const [profileRes, vehiclesRes, appointmentsRes, addressesRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
+      const [vehiclesRes, appointmentsRes, addressesRes] = await Promise.all([
         supabase.from('vehicles').select('*').eq('user_id', user.id),
-        supabase.from('appointments').select('*, mechanic_profiles(business_name)').eq('customer_id', user.id).eq('status', 'scheduled'),
+        supabase.from('appointments').select('*, mechanic_profiles(business_name)').eq('user_id', user.id).eq('status', 'scheduled'),
         supabase.from('addresses').select('*').eq('user_id', user.id)
       ]);
 
-      setProfile(profileRes.data);
+      setProfile(profile);
       setVehicles(vehiclesRes.data || []);
       setAppointments(appointmentsRes.data || []);
       setAddresses(addressesRes.data || []);

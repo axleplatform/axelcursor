@@ -89,16 +89,16 @@ export function CustomerSignupForm({
       }
 
       if (data.user) {
-        // Create a customer profile in the database
-        const { error: profileError } = await supabase.from("users").insert([
-          {
+        // Create user_profiles record for the customer
+        const { error: profileError } = await supabase
+          .from("user_profiles")
+          .insert({
             id: data.user.id,
+            user_id: data.user.id,
             email: email,
-            role: "customer",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-        ])
+            phone: null, // Will be added during onboarding
+            full_name: null // Will be added during onboarding
+          });
 
         if (profileError) throw profileError
 
