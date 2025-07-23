@@ -38,6 +38,12 @@ type OnboardingData = {
   freeTrial: boolean;
 };
 
+// Extend OnboardingData to include post-appointment specific fields
+interface PostAppointmentOnboardingData extends OnboardingData {
+  appointmentId: string | null;
+  phone: string | null;
+}
+
 type StepProps = {
   onNext: () => void;
   updateData: (data: Partial<OnboardingData>) => void;
@@ -1212,8 +1218,10 @@ export default function PostAppointmentOnboarding() {
   
   const [currentStep, setCurrentStep] = useState(2); // Start at step 2 (Referral Source)
   const [user, setUser] = useState<any>(null);
-  const [formData, setFormData] = useState<OnboardingData>({
+  const [formData, setFormData] = useState<PostAppointmentOnboardingData>({
     // Pre-fill from appointment
+    appointmentId: searchParams.get('appointmentId'),
+    phone: searchParams.get('phone'),
     vehicle: {
       year: '',
       make: '',
@@ -1253,7 +1261,7 @@ export default function PostAppointmentOnboarding() {
           
         if (appointment) {
           // Pre-fill data we already have
-          setFormData((prev: OnboardingData) => ({
+          setFormData((prev: PostAppointmentOnboardingData) => ({
             ...prev,
             // Vehicle info from appointment (for Add Another Car step)
             vehicle: {
@@ -1320,8 +1328,8 @@ export default function PostAppointmentOnboarding() {
   const totalSteps = POST_APPOINTMENT_STEPS.length;
 
   // Add updateData function (copied from original onboarding)
-  const updateData = (newData: Partial<OnboardingData>) => {
-    setFormData(prev => ({ ...prev, ...newData }));
+  const updateData = (data: Partial<PostAppointmentOnboardingData>) => {
+    setFormData(prev => ({ ...prev, ...data }));
   };
 
   // Copy ALL the same props and handlers from original onboarding
