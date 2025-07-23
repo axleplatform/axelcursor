@@ -102,6 +102,15 @@ export default function MechanicSignupPage() {
 
           if (profileError) throw profileError
 
+          // Update users table to set profile_status
+          await supabase
+            .from('users')
+            .update({ 
+              profile_status: 'mechanic',
+              account_type: 'mechanic'
+            })
+            .eq('id', data.user.id);
+
           // Redirect to the next onboarding step
           router.push("/onboarding-mechanic-1")
         }

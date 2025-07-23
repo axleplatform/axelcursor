@@ -64,7 +64,24 @@ export default function CustomerDashboard() {
       }
       setUser(user);
 
-      // Check if user has completed profile
+      // Check if user has customer account and completed profile
+      const { data: userData } = await supabase
+        .from('users')
+        .select('profile_status')
+        .eq('id', user.id)
+        .single();
+
+      if (userData?.profile_status !== 'customer') {
+        // Not a customer account - redirect to appropriate dashboard
+        if (userData?.profile_status === 'mechanic') {
+          router.push('/mechanic/dashboard');
+        } else {
+          router.push('/onboarding/customer/flow');
+        }
+        return;
+      }
+
+      // Get customer profile data
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('*')

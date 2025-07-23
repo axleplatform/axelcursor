@@ -234,6 +234,7 @@ BEGIN
         id,
         email,
         account_type,
+        profile_status,
         created_via,
         created_at,
         updated_at
@@ -241,6 +242,7 @@ BEGIN
         new_user_id,
         temp_email,
         'temporary',
+        'no',
         'web_guest',
         NOW(),
         NOW()

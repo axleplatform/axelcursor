@@ -242,6 +242,16 @@ export default function AppointmentConfirmationPage() {
 
         if (profileError) { console.error('Profile creation error:', profileError); }
 
+        // Update users table to set profile_status (trigger will handle this automatically)
+        // But we can also set it explicitly for clarity
+        await supabase
+          .from('users')
+          .update({ 
+            profile_status: 'customer',
+            account_type: 'full'
+          })
+          .eq('id', authData.user.id);
+
         // Update appointment to link to new user
         const { error: appointmentError } = await supabase
           .from('appointments')

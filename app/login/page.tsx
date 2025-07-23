@@ -75,18 +75,21 @@ export default function LoginPage() {
       if (appointments && appointments.length > 0) {
         const appointment = appointments[0];
         
-        // Check if user has a user_profiles record (full account)
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('*')
+        // Check if user has an account using profile_status
+        const { data: user } = await supabase
+          .from('users')
+          .select('profile_status')
           .eq('phone', normalizedPhone)
           .single();
 
-        if (profile) {
-          // Has full account - prompt for email/password login
+        if (user?.profile_status === 'customer') {
+          // Has customer account - prompt for email/password login
           setError('You have an account. Please login with email and password.');
+        } else if (user?.profile_status === 'mechanic') {
+          // Has mechanic account - prompt for email/password login
+          setError('You have a mechanic account. Please login with email and password.');
         } else {
-          // No account - redirect to post-appointment onboarding
+          // No account or guest user - redirect to post-appointment onboarding
           router.push(`/onboarding/customer/post-appointment?appointmentId=${appointment.id}&phone=${normalizedPhone}`);
         }
       } else {

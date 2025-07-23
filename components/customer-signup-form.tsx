@@ -102,6 +102,16 @@ export function CustomerSignupForm({
 
         if (profileError) throw profileError
 
+        // Update users table to set profile_status (trigger will handle this automatically)
+        // But we can also set it explicitly for clarity
+        await supabase
+          .from('users')
+          .update({ 
+            profile_status: 'customer',
+            account_type: 'full'
+          })
+          .eq('id', data.user.id);
+
         // Handle success based on context
         if (isOnboarding && onSuccess) {
           // Continue onboarding flow

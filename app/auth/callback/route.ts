@@ -50,6 +50,15 @@ export async function GET(request: Request) {
             }
 
             console.log('✅ Mechanic profile created successfully')
+            
+            // Update users table to set profile_status
+            await supabase
+              .from('users')
+              .update({ 
+                profile_status: 'mechanic',
+                account_type: 'mechanic'
+              })
+              .eq('id', user.id);
           } else {
             console.log('Mechanic already exists')
           }
