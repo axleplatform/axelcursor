@@ -1330,10 +1330,16 @@ export default function PostAppointmentOnboarding() {
   const displayStepNumber = currentStepIndex + 1;
   const totalSteps = POST_APPOINTMENT_STEPS.length;
 
+  // Add updateData function (copied from original onboarding)
+  const updateData = (newData: Partial<OnboardingFormData>) => {
+    setFormData(prev => ({ ...prev, ...newData }));
+  };
+
   // Copy ALL the same props and handlers from original onboarding
   const stepProps = {
     formData,
     setFormData,
+    updateData,
     onNext: handleNext,
     onBack: handleBack,
     currentStep,
