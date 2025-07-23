@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { ChevronLeft, Check } from 'lucide-react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { GoogleSignInButton } from '@/components/google-signin-button'
@@ -1348,31 +1349,51 @@ export default function PostAppointmentOnboarding() {
       {/* EXACT SAME header/progress bar from customer onboarding */}
       <div className="fixed top-0 left-0 right-0 bg-white z-50 shadow-sm">
         <div className="max-w-3xl mx-auto px-4">
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center">
-              <button
-                onClick={handleBack}
-                disabled={currentStep === 2}
-                className="mr-4 p-2 rounded-full hover:bg-gray-100 disabled:opacity-50"
+          {/* Axle Logo */}
+          <div className="flex items-center justify-center py-3 border-b border-gray-100">
+            <Image
+              src="/images/axle-logo-green.png"
+              alt="Axle Logo"
+              width={100}
+              height={40}
+              className="h-8 w-auto"
+            />
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                handleBack();
+              }}
+              disabled={currentStep === 2}
+              className="flex items-center px-3 py-2 rounded-lg transition-colors text-[#294a46] hover:bg-gray-100 relative z-50 disabled:opacity-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <div className="flex-1 bg-gray-200 rounded-full h-2 relative">
+              <div 
+                className="bg-[#294a46] h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${progress}%` }}
+              />
+              {/* Race car emoji that moves with progress */}
+              <div 
+                className="absolute top-0 transform -translate-y-1/2 transition-all duration-300"
+                style={{ left: `calc(${progress}% - 16px)` }}
               >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <span className="text-sm text-gray-600">
-                Step {displayStepNumber} of {totalSteps}
-              </span>
+                <span className="text-2xl" style={{ transform: 'rotateY(180deg)' }}>🏎️</span>
+              </div>
+              {/* Finish flag at the end */}
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2">
+                <span className="text-lg">🏁</span>
+              </div>
             </div>
             <button
               onClick={() => router.push('/customer-dashboard')}
-              className="text-sm text-gray-500 hover:text-gray-700"
+              className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-lg transition-colors hover:bg-gray-100"
             >
               Skip for now
             </button>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-            <div
-              className="bg-[#294a46] h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
           </div>
         </div>
       </div>

@@ -187,8 +187,15 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
 
-
+          {/* Axle Logo */}
           <div className="text-center">
+            <Image
+              src="/images/axle-logo-green.png"
+              alt="Axle Logo"
+              width={120}
+              height={40}
+              className="mx-auto mb-6"
+            />
             <h2 className="mt-6 text-3xl font-bold tracking-tight text-[#294a46]">Sign in to your account</h2>
             <p className="mt-2 text-sm text-gray-600">
               Or{" "}
