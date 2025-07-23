@@ -84,6 +84,21 @@ export default function AppointmentConfirmationPage() {
   const [formErrors, setFormErrors] = React.useState<{ email?: string }>({})
   const [showAccountCreation, setShowAccountCreation] = React.useState(false)
   const [dashboardLink, setDashboardLink] = React.useState('/customer-dashboard')
+  const [error, setError] = React.useState<string>('')
+
+  React.useEffect(() => {
+    // Clear any corrupted auth cookies
+    const clearCorruptedCookies = async () => {
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) console.log('Error clearing session:', error);
+      } catch (e) {
+        // Ignore errors when clearing
+      }
+    };
+    
+    clearCorruptedCookies();
+  }, []);
 
   React.useEffect(() => {
     // Only check user role if user is authenticated
@@ -212,6 +227,21 @@ export default function AppointmentConfirmationPage() {
     setLoading(true);
 
     try {
+      // First, check if user already exists by phone number
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id, email')
+        .eq('phone', appointmentData?.phone_number)
+        .single();
+
+      if (existingUser && existingUser.email) {
+        // User already has an account
+        setError('You already have an account. Please sign in instead.');
+        // Optionally redirect to login
+        router.push(`/login?phone=${appointmentData?.phone_number}&redirect=post-appointment&appointmentId=${appointmentData?.id}`);
+        return;
+      }
+
       // Create auth account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
@@ -226,44 +256,30 @@ export default function AppointmentConfirmationPage() {
         }
       });
 
-      if (authError) throw authError;
-
-      if (authData.user && appointmentData) {
-        // Create user_profiles record for the customer
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert({
-            id: authData.user.id,
-            user_id: authData.user.id,
-            email: email,
-            phone: appointmentData.phone_number,
-            full_name: appointmentData.vehicles?.make || ''
+      if (authError) {
+        // Check if it's a duplicate user error
+        if (authError.message.includes('already registered')) {
+          // Try to sign in instead
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password: password
           });
 
-        if (profileError) { console.error('Profile creation error:', profileError); }
-
-        // Update users table to set profile_status (trigger will handle this automatically)
-        // But we can also set it explicitly for clarity
-        await supabase
-          .from('users')
-          .update({ 
-            profile_status: 'customer',
-            account_type: 'full'
-          })
-          .eq('id', authData.user.id);
-
-        // Update appointment to link to new user
-        const { error: appointmentError } = await supabase
-          .from('appointments')
-          .update({ 
-            user_id: authData.user.id
-          })
-          .eq('id', appointmentData.id);
-
-        if (appointmentError) console.error('Appointment update error:', appointmentError);
-
-        // Redirect to post-appointment onboarding
-        router.push(`/onboarding/customer/post-appointment?appointmentId=${appointmentData.id}&phone=${appointmentData.phone_number}`);
+          if (signInData?.user) {
+            // Successfully signed in, continue with profile creation
+            await createUserProfile(signInData.user.id);
+          } else {
+            setFormErrors({ 
+              email: 'An account exists with this email. Please use the correct password or reset it.' 
+            });
+            return;
+          }
+        } else {
+          throw authError;
+        }
+      } else if (authData?.user) {
+        // New user created successfully
+        await createUserProfile(authData.user.id);
       }
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -272,6 +288,57 @@ export default function AppointmentConfirmationPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Separate function to create/update user profile
+  const createUserProfile = async (userId: string) => {
+    if (!appointmentData) return;
+
+    try {
+      // Check if profile already exists
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('id', userId)
+        .single();
+
+      if (!existingProfile) {
+        // Create new profile
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .insert({
+            id: userId,
+            user_id: userId,
+            email: email,
+            phone: appointmentData.phone_number,
+            full_name: appointmentData.vehicles?.make || ''
+          });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+        }
+      }
+
+      // Update appointment to link to user
+      await supabase
+        .from('appointments')
+        .update({ user_id: userId })
+        .eq('id', appointmentData.id);
+
+      // Update user profile_status
+      await supabase
+        .from('users')
+        .update({ profile_status: 'customer' })
+        .eq('id', userId);
+
+      // Redirect to post-appointment onboarding
+      router.push(`/onboarding/customer/post-appointment?appointmentId=${appointmentData.id}&phone=${appointmentData.phone_number}`);
+    } catch (error) {
+      console.error('Profile creation error:', error);
+      setFormErrors({ 
+        email: 'Failed to create user profile. Please try again.' 
+      });
     }
   };
 
@@ -631,6 +698,9 @@ export default function AppointmentConfirmationPage() {
                       />
                       {formErrors.email && (
                         <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
+                      )}
+                      {error && (
+                        <p className="mt-1 text-sm text-red-600">{error}</p>
                       )}
                     </div>
 
