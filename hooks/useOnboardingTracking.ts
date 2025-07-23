@@ -116,7 +116,7 @@ export function useOnboardingTracking({
           highest_step_reached: currentStep,
           total_steps: totalSteps,
           user_agent: navigator.userAgent,
-          current_step_name: stepName || STEP_NAMES[type]?.[currentStep] || `Step ${currentStep}`
+          current_step_name: stepName || STEP_NAMES[type]?.[String(currentStep)] || `Step ${currentStep}`
         };
 
         if (type === 'post_appointment') {
@@ -149,7 +149,7 @@ export function useOnboardingTracking({
 
       const updateData: any = {
         current_step: currentStep,
-        current_step_name: stepName || STEP_NAMES[type]?.[currentStep] || `Step ${currentStep}`,
+        current_step_name: stepName || STEP_NAMES[type]?.[String(currentStep)] || `Step ${currentStep}`,
         last_active_at: new Date().toISOString(),
         time_on_last_step_seconds: timeOnLastStep,
         total_time_seconds: totalTime
@@ -212,7 +212,7 @@ export function useOnboardingTracking({
         const dropData = {
           dropped_off: true,
           drop_off_step: currentStep,
-          drop_off_step_name: stepName || STEP_NAMES[type]?.[currentStep] || `Step ${currentStep}`,
+          drop_off_step_name: stepName || STEP_NAMES[type]?.[String(currentStep)] || `Step ${currentStep}`,
           drop_off_page: window.location.pathname,
           time_on_last_step_seconds: timeOnLastStep,
           total_time_seconds: totalTime,
