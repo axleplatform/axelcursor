@@ -599,7 +599,7 @@ export default function AppointmentConfirmationPage() {
             {/* Right Column - Account Creation */}
             <div className="bg-white rounded-lg shadow-md p-6 order-1 lg:order-2">
               {showAccountCreation ? (
-                <div className="mt-8 p-6 bg-blue-50 rounded-lg">
+                <div className="mt-8 p-6 bg-[#e6eeec] rounded-lg">
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     Create an Account
                   </h3>
@@ -617,7 +617,7 @@ export default function AppointmentConfirmationPage() {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46]"
                         placeholder="your@email.com"
                         required
                       />
@@ -635,7 +635,7 @@ export default function AppointmentConfirmationPage() {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-[#294a46]"
                         placeholder="Minimum 6 characters"
                         minLength={6}
                         required
@@ -656,7 +656,7 @@ export default function AppointmentConfirmationPage() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300"
+                      className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:bg-gray-300"
                     >
                       {loading ? 'Creating Account...' : 'Create Account & Continue'}
                     </button>
@@ -669,7 +669,7 @@ export default function AppointmentConfirmationPage() {
                         <div className="w-full border-t border-gray-200"></div>
                       </div>
                       <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-blue-50 text-gray-500">Or</span>
+                        <span className="px-2 bg-[#e6eeec] text-gray-500">Or</span>
                       </div>
                     </div>
 
