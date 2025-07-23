@@ -298,7 +298,6 @@ export default function SignUp() {
             <div className="mt-4">
               <GoogleSignInButton
                 userType="customer"
-                from="signup"
                 className="w-full"
               >
                 Continue with Google
