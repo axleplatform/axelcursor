@@ -1475,7 +1475,7 @@ export default function PostAppointmentOnboarding() {
     originalStepNumber: getOriginalStepNumber(currentStepIndex),
     totalSteps: POST_APPOINTMENT_STEPS.length,
     userId: user?.id,
-    appointmentId: searchParams.get('appointmentId')
+    appointmentId: searchParams.get('appointmentId') ?? undefined
   });
   const [formData, setFormData] = useState<PostAppointmentOnboardingData>({
     // Pre-fill from appointment
