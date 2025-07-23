@@ -912,7 +912,7 @@ export default function PostAppointmentOnboarding() {
   const searchParams = useSearchParams();
   const supabase = createClientComponentClient();
   
-  const [currentStep, setCurrentStep] = useState(2); // Start at step 2
+  const [currentStep, setCurrentStep] = useState(3); // Start at step 3 (Personal Info) since account is already created
   const [loading, setLoading] = useState(true);
   const [onboardingData, setOnboardingData] = useState<PostAppointmentData>({
     email: '',
@@ -925,8 +925,8 @@ export default function PostAppointmentOnboarding() {
     emergencyContact: {}
   });
 
-  // Define which steps to show (shortened flow)
-  const STEPS_TO_SHOW = [2, 3, 4, 6, 7, 9, 10, 11, 12, 13, 16, 17, 18, 19];
+  // Define which steps to show (shortened flow) - skip account creation since it's already done
+  const STEPS_TO_SHOW = [3, 4, 6, 7, 9, 10, 11, 12, 13, 16, 17, 18, 19];
   const currentStepIndex = STEPS_TO_SHOW.indexOf(currentStep);
 
   useEffect(() => {
@@ -1123,7 +1123,7 @@ export default function PostAppointmentOnboarding() {
               <ChevronLeft className="h-4 w-4" />
             </button>
             <h1 className="text-2xl font-bold text-gray-900">
-              Complete Your Account
+              Complete Your Profile
             </h1>
             <span className="text-sm text-gray-600">
               Step {currentStepIndex + 1} of {STEPS_TO_SHOW.length}
@@ -1139,14 +1139,6 @@ export default function PostAppointmentOnboarding() {
 
         {/* Render Current Step */}
         <div className="bg-white rounded-lg shadow p-6">
-          {currentStep === 2 && (
-            <CreateAccountStep
-              onNext={handleNext}
-              updateData={updateData}
-              onboardingData={onboardingData}
-            />
-          )}
-          
           {currentStep === 3 && (
             <PersonalInfoStep
               onNext={handleNext}
@@ -1263,7 +1255,7 @@ export default function PostAppointmentOnboarding() {
 
         {/* Help Text */}
         <p className="mt-6 text-center text-sm text-gray-600">
-          Creating an account will allow you to manage your appointments, 
+          Complete your profile to manage your appointments, 
           track service history, and receive personalized recommendations.
         </p>
       </div>
