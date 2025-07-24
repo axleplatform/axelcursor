@@ -13,8 +13,8 @@ import { formatDate } from "@/lib/utils"
 import { GoogleMapsLink } from "@/components/google-maps-link"
 import { GoogleSignInButton } from "@/components/google-signin-button"
 import { getUserRoleAndRedirect } from "@/lib/auth-helpers"
-import { handleSignupWithSession, handleSigninWithSession, getSessionErrorMessage } from "@/lib/session-utils"
-import { createSimplifiedProfile } from '@/lib/simplified-profile-creation'
+
+
 
 interface AppointmentData {
   id: string
@@ -79,12 +79,7 @@ export default function AppointmentConfirmationPage() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [isCancelled, setIsCancelled] = React.useState(false)
   
-  // Simplified account creation form state
-  const [email, setEmail] = React.useState("")
-  const [password, setPassword] = React.useState("")
-  const [loading, setLoading] = React.useState(false)
-  const [formErrors, setFormErrors] = React.useState<{ email?: string }>({})
-  const [showAccountCreation, setShowAccountCreation] = React.useState(false)
+
   const [dashboardLink, setDashboardLink] = React.useState('/customer-dashboard')
   const [error, setError] = React.useState<string>('')
 
@@ -243,231 +238,21 @@ export default function AppointmentConfirmationPage() {
     }
   }, [appointmentId, toast])
 
-  // Validate form fields
-  const validateForm = () => {
-    const errors: { email?: string } = {}
 
-    if (!email.trim()) {
-      errors.email = "Email is required"
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = "Please enter a valid email address"
-    }
-
-    if (!password || password.length < 6) {
-      errors.email = "Password must be at least 6 characters"
-    }
-
-    setFormErrors(errors)
-    return Object.keys(errors).length === 0
-  }
 
   // Handle account creation with email and password
-  const handleCreateAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormErrors({});
-    setLoading(true);
 
-    try {
-      // Note: We don't need to check for existing users by phone number here
-      // because the signup process will handle duplicate email addresses
-      // and the profile creation will handle phone number conflicts
-      console.log('🚀 Starting account creation process...');
 
-      // Use the robust signup with session waiting
-      const signupResult = await handleSignupWithSession(
-        email.trim(),
-        password,
-        {
-          phone: appointmentData?.phone_number,
-          appointment_id: appointmentData?.id,
-          full_name: appointmentData?.vehicles?.make || '',
-          created_from: 'appointment_confirmation'
-        }
-      );
 
-      if (!signupResult.success) {
-        // Check if it's a duplicate user error
-        if (signupResult.error?.includes('already registered')) {
-          console.log('🔄 User already exists, attempting signin...');
-          
-          // Try to sign in instead
-          const signinResult = await handleSigninWithSession(email.trim(), password);
 
-          if (signinResult.success && signinResult.user) {
-            console.log('✅ Signin successful, continuing with profile creation');
-            await createUserProfile(signinResult.user.id);
-          } else {
-            const errorMessage = getSessionErrorMessage(signinResult.errorCode || 'UNKNOWN');
-            setFormErrors({ email: errorMessage });
-            return;
-          }
-        } else {
-          const errorMessage = getSessionErrorMessage(signupResult.errorCode || 'UNKNOWN');
-          setFormErrors({ email: errorMessage });
-          return;
-        }
-      } else if (signupResult.user) {
-        // New user created successfully with established session
-        console.log('✅ Signup successful with established session');
-        await createUserProfile(signupResult.user.id);
-      }
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      setFormErrors({ 
-        email: error.message || 'Failed to create account. Please try again.' 
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  // Separate function to create/update user profile
-  const createUserProfile = async (userId: string) => {
-    if (!appointmentData) {
-      console.error('❌ No appointment data available for profile creation');
-      setFormErrors({ email: 'No appointment data available. Please try again.' });
-      return;
-    }
 
-    if (!userId) {
-      console.error('❌ No user ID provided for profile creation');
-      setFormErrors({ email: 'Invalid user ID. Please try again.' });
-      return;
-    }
-
-    try {
-      console.log('👤 Creating/updating user profile for user:', userId);
-      
-      // Use the robust profile creation utility
-      const { createOrUpdateUserProfile, updateUserStatus } = await import('@/lib/profile-creation-utils');
-      
-      const profileResult = await createOrUpdateUserProfile({
-        user_id: userId,
-        email: email,
-        phone: appointmentData.phone_number,
-        full_name: appointmentData.vehicles?.make || '',
-        onboarding_completed: false,
-        onboarding_type: 'post_appointment'
-      });
-
-      if (!profileResult.success) {
-        console.error('❌ Profile creation failed:', profileResult.error);
-        setFormErrors({ email: profileResult.error || 'Failed to create profile. Please try again.' });
-        return;
-      }
-
-      console.log('✅ Profile operation result:', profileResult.action);
-
-      // Update user status
-      const statusUpdated = await updateUserStatus(userId, 'customer', 'full');
-      if (!statusUpdated) {
-        console.warn('⚠️ User status update failed but continuing...');
-      }
-
-      // Link appointment to user
-      console.log('🔗 Linking appointment to user...');
-      const { error: appointmentError } = await supabase
-        .from('appointments')
-        .update({ user_id: userId })
-        .eq('id', appointmentData.id);
-
-      if (appointmentError) {
-        console.error('❌ Appointment linking error:', appointmentError);
-        if (appointmentError.code === '406' || appointmentError.code === '409' || appointmentError.code === '400') {
-          console.warn('⚠️ Appointment linking failed but continuing...');
-        } else {
-          setFormErrors({ email: 'Failed to link appointment. Please try again.' });
-          return;
-        }
-      } else {
-        console.log('✅ Appointment linked successfully');
-      }
-
-      // Check if user already has a completed profile
-      console.log('🔍 Checking if user has completed profile...');
-      const { data: existingProfile, error: profileCheckError } = await supabase
-        .from('user_profiles')
-        .select('onboarding_completed, onboarding_type')
-        .eq('user_id', userId)
-        .single();
-
-      if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-        console.error('❌ Error checking existing profile:', profileCheckError);
-        // Continue with onboarding as fallback
-      }
-
-      let shouldRedirectToDashboard = false;
-      if (existingProfile) {
-        console.log('📋 Existing profile found:', {
-          onboarding_completed: existingProfile.onboarding_completed,
-          onboarding_type: existingProfile.onboarding_type
-        });
-        
-        // Check if user has completed onboarding
-        if (existingProfile.onboarding_completed) {
-          console.log('✅ User has completed onboarding, redirecting to dashboard');
-          shouldRedirectToDashboard = true;
-        } else {
-          console.log('⏳ User has incomplete onboarding, continuing to post-appointment flow');
-        }
-      } else {
-        console.log('📝 No existing profile found, continuing to post-appointment flow');
-      }
-
-      console.log('🎉 Profile creation/update completed successfully!');
-      console.log('👤 User ID:', userId);
-      console.log('📅 Completion time:', new Date().toISOString());
-
-      // Redirect based on profile completion status
-      if (shouldRedirectToDashboard) {
-        console.log('🔗 Redirecting to customer dashboard...');
-        router.push('/customer-dashboard');
-      } else {
-        console.log('🔗 Redirecting to post-appointment onboarding...');
-        router.push(`/onboarding/customer/post-appointment?appointmentId=${appointmentData.id}&phone=${appointmentData.phone_number}`);
-      }
-      
-    } catch (error) {
-      console.error('❌ Profile creation error:', error);
-      setFormErrors({ 
-        email: 'Failed to create user profile. Please try again.' 
-      });
-    }
-  };
-
-  // Handle Google signup
-  const handleGoogleSignup = async () => {
-    if (!appointmentData) return;
-    
-    try {
-      console.log('🔐 Starting Google signup flow...');
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirect=post-appointment&appointmentId=${appointmentData.id}&phone=${appointmentData.phone_number}`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        }
-      });
-
-      if (error) throw error;
-      
-      console.log('✅ Google signup initiated successfully');
-    } catch (error) {
-      console.error('❌ Google signup error:', error);
-      setFormErrors({ email: 'Failed to sign up with Google' });
-    }
-  };
-
-  // Handle account creation
+  // Handle account creation - simplified approach
   const handleAccountCreation = async () => {
     try {
-      console.log('🚀 Starting account creation process...')
+      console.log('🚀 Starting simplified account creation...')
       
-      // Step 1: Sign up with Google
+      // Just initiate OAuth - let callback handle everything
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -476,7 +261,7 @@ export default function AppointmentConfirmationPage() {
       })
 
       if (error) {
-        console.error('❌ Signup error:', error)
+        console.error('❌ OAuth error:', error)
         toast({
           title: "Error",
           description: "Failed to create account",
@@ -485,7 +270,7 @@ export default function AppointmentConfirmationPage() {
         return
       }
 
-      console.log('✅ Signup initiated successfully')
+      console.log('✅ OAuth initiated successfully - callback will handle everything')
       
     } catch (error) {
       console.error('❌ Account creation error:', error)
