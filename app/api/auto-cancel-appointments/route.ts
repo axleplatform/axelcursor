@@ -1,4 +1,3 @@
-// Use Node.js runtime for Supabase v2+ compatibility
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
