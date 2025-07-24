@@ -68,6 +68,8 @@ export function CustomerSignupForm({
       // Clear any corrupted session data before signup
       clearCorruptedSessionData();
       
+      console.log('🚀 About to call supabase.auth.signUp...');
+      
       // Sign up with Supabase Auth - trigger will handle profile creation
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -81,7 +83,10 @@ export function CustomerSignupForm({
         },
       })
 
+      console.log('📊 Signup result:', { data, error: signUpError });
+
       if (signUpError) {
+        console.log('❌ Signup failed or no user:', { error: signUpError });
         // Check for rate limit errors
         if (
           signUpError.message.toLowerCase().includes("rate limit") ||
@@ -97,7 +102,9 @@ export function CustomerSignupForm({
         return
       }
 
-      if (data.user) {
+      if (data?.user && !signUpError) {
+        console.log('✅ Signup successful, user created:', data.user.id);
+        console.log('📋 Onboarding data available:', onboardingData);
         console.log('🎉 Customer signup completed successfully!');
         console.log('👤 User ID:', data.user.id);
         
