@@ -12,6 +12,7 @@ import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { useOnboardingTracking } from '@/hooks/useOnboardingTracking'
 import { validateSession, getSessionErrorMessage } from '@/lib/session-utils'
+import { mergeTemporaryUserData } from '@/lib/simplified-profile-creation'
 
 // Type definitions
 type Vehicle = {
@@ -1684,6 +1685,19 @@ export default function PostAppointmentOnboarding() {
 
       console.log('✅ User validated for onboarding completion:', currentUser.id);
       console.log('✅ Session valid:', !!session);
+
+      // Step 1: Merge any remaining temporary user data
+      if (formData.phone) {
+        console.log('🔄 Checking for temporary user data to merge...');
+        const mergeResult = await mergeTemporaryUserData(
+          currentUser.id,
+          formData.phone,
+          formData.appointmentId || undefined
+        );
+        if (mergeResult.success && mergeResult.mergedAppointments && mergeResult.mergedAppointments > 0) {
+          console.log(`✅ Merged ${mergeResult.mergedAppointments} additional appointments during onboarding`);
+        }
+      }
 
       // Update user_profiles instead of users
       console.log('📝 Updating user profile...');

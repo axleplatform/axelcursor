@@ -14,6 +14,7 @@ import { GoogleMapsLink } from "@/components/google-maps-link"
 import { GoogleSignInButton } from "@/components/google-signin-button"
 import { getUserRoleAndRedirect } from "@/lib/auth-helpers"
 import { handleSignupWithSession, handleSigninWithSession, getSessionErrorMessage } from "@/lib/session-utils"
+import { mergeTemporaryUserData } from "@/lib/simplified-profile-creation"
 
 
 interface AppointmentData {
@@ -292,7 +293,20 @@ export default function AppointmentConfirmationPage() {
           const signinResult = await handleSigninWithSession(email.trim(), password)
 
           if (signinResult.success && signinResult.user) {
-            console.log('✅ Signin successful, redirecting to post-appointment onboarding')
+            console.log('✅ Signin successful, merging temporary data...')
+            
+            // Merge temporary user data to existing account
+            if (appointmentData?.phone_number) {
+              const mergeResult = await mergeTemporaryUserData(
+                signinResult.user.id, 
+                appointmentData.phone_number, 
+                appointmentData.id
+              )
+              if (mergeResult.success) {
+                console.log(`✅ Merged ${mergeResult.mergedAppointments} appointments to existing account`)
+              }
+            }
+            
             router.push(`/onboarding/customer/post-appointment?appointmentId=${appointmentData?.id}&phone=${appointmentData?.phone_number}`)
           } else {
             const errorMessage = getSessionErrorMessage(signinResult.errorCode || 'UNKNOWN')
@@ -307,6 +321,20 @@ export default function AppointmentConfirmationPage() {
       } else if (signupResult.user) {
         // New user created successfully with established session
         console.log('✅ Signup successful with established session')
+        
+        // Merge temporary user data to new account
+        if (appointmentData?.phone_number) {
+          console.log('🔄 Merging temporary user data to new account...')
+          const mergeResult = await mergeTemporaryUserData(
+            signupResult.user.id, 
+            appointmentData.phone_number, 
+            appointmentData.id
+          )
+          if (mergeResult.success) {
+            console.log(`✅ Merged ${mergeResult.mergedAppointments} appointments to new account`)
+          }
+        }
+        
         router.push(`/onboarding/customer/post-appointment?appointmentId=${appointmentData?.id}&phone=${appointmentData?.phone_number}`)
       }
     } catch (error: any) {

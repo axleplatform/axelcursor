@@ -146,11 +146,62 @@ RETURNS UUID AS $$
 DECLARE
     existing_user_id UUID;
     appointment_count INTEGER;
+    temp_user_id UUID;
 BEGIN
-    -- Check if phone already exists on another user
+    -- First, check if there's a temporary user with this phone number
+    SELECT id INTO temp_user_id 
+    FROM users 
+    WHERE phone = phone_to_check 
+    AND account_type = 'temporary'
+    AND id != current_user_id
+    LIMIT 1;
+    
+    -- If we found a temporary user, merge all their data
+    IF temp_user_id IS NOT NULL THEN
+        RAISE NOTICE 'Found temporary user % with phone %, merging data to user %', temp_user_id, phone_to_check, current_user_id;
+        
+        -- Move ALL appointments from temporary user to current user
+        UPDATE appointments 
+        SET user_id = current_user_id, updated_at = NOW()
+        WHERE user_id = temp_user_id;
+        
+        -- Get appointment count for the current user after merge
+        SELECT COUNT(*) INTO appointment_count
+        FROM appointments 
+        WHERE user_id = current_user_id;
+        
+        -- Update the current user's account type based on appointment count
+        UPDATE users 
+        SET 
+            phone = phone_to_check,
+            account_type = CASE 
+                WHEN appointment_count > 1 THEN 'phone_returning'
+                ELSE 'phone_only' 
+            END,
+            updated_at = NOW()
+        WHERE id = current_user_id;
+        
+        -- Delete the temporary user (since all data is now moved)
+        DELETE FROM users WHERE id = temp_user_id;
+        
+        -- Try to delete from auth.users as well (if possible)
+        BEGIN
+            DELETE FROM auth.users WHERE id = temp_user_id;
+        EXCEPTION WHEN OTHERS THEN
+            -- Ignore auth.users deletion errors
+            RAISE NOTICE 'Could not delete temporary user from auth.users: %', SQLERRM;
+        END;
+        
+        RAISE NOTICE 'Successfully merged % appointments from temporary user % to user %', appointment_count, temp_user_id, current_user_id;
+        RETURN current_user_id;
+    END IF;
+    
+    -- Check if phone already exists on another non-temporary user
     SELECT id INTO existing_user_id 
     FROM users 
-    WHERE phone = phone_to_check AND id != current_user_id
+    WHERE phone = phone_to_check 
+    AND id != current_user_id
+    AND account_type != 'temporary'
     LIMIT 1;
     
     IF existing_user_id IS NOT NULL THEN
@@ -174,9 +225,16 @@ BEGIN
             updated_at = NOW()
         WHERE id = existing_user_id;
         
-        -- Delete the temporary user (since we merged everything)
-        DELETE FROM auth.users WHERE id = current_user_id;
+        -- Delete the current user (since we merged everything)
         DELETE FROM users WHERE id = current_user_id;
+        
+        -- Try to delete from auth.users as well
+        BEGIN
+            DELETE FROM auth.users WHERE id = current_user_id;
+        EXCEPTION WHEN OTHERS THEN
+            -- Ignore auth.users deletion errors
+            RAISE NOTICE 'Could not delete user from auth.users: %', SQLERRM;
+        END;
         
         RETURN existing_user_id;
     ELSE

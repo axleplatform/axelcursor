@@ -2,7 +2,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
-import { createSimplifiedProfile } from '@/lib/simplified-profile-creation'
+import { createSimplifiedProfile, mergeTemporaryUserData } from '@/lib/simplified-profile-creation'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
@@ -76,13 +76,63 @@ export async function GET(request: Request) {
             .single()
 
           if (!existingUser) {
-            // Create in users table
+            // Check if there's a temporary user with this phone number that we should upgrade
+            const phone = requestUrl.searchParams.get('phone')
+            let shouldUpgradeTemporary = false
+            let temporaryUserId = null
+            
+            if (phone) {
+              const { data: tempUser } = await supabase
+                .from('users')
+                .select('id')
+                .eq('phone', phone)
+                .eq('account_type', 'temporary')
+                .single()
+              
+              if (tempUser) {
+                shouldUpgradeTemporary = true
+                temporaryUserId = tempUser.id
+                console.log('🔄 Found temporary user to upgrade:', tempUser.id)
+              }
+            }
+            
+            if (shouldUpgradeTemporary && temporaryUserId) {
+              // Move appointments from temporary user to new user ID
+              const { error: moveError } = await supabase
+                .from('appointments')
+                .update({ 
+                  user_id: user.id,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('user_id', temporaryUserId)
+              
+              if (moveError) {
+                console.error('Error moving appointments:', moveError)
+                return NextResponse.redirect(`${requestUrl.origin}/login?error=appointment_move_failed`)
+              }
+              
+              // Delete the temporary user
+              const { error: deleteError } = await supabase
+                .from('users')
+                .delete()
+                .eq('id', temporaryUserId)
+              
+              if (deleteError) {
+                console.warn('Warning: Could not delete temporary user:', deleteError)
+              }
+              
+              console.log('✅ Appointments moved from temporary user to new user')
+            }
+            
+            // Create new user in users table (or this will be the upgraded user)
             const { error: insertError } = await supabase.from('users').insert({
               id: user.id,
               email: user.email,
               name: user.user_metadata?.full_name,
               avatar_url: user.user_metadata?.avatar_url,
               role: 'customer',
+              account_type: 'full',
+              profile_status: 'pending',
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             })
@@ -92,7 +142,7 @@ export async function GET(request: Request) {
               return NextResponse.redirect(`${requestUrl.origin}/login?error=user_creation_failed`)
             }
 
-            console.log('✅ Customer user created successfully')
+                        console.log('✅ New customer user created successfully')
           } else {
             console.log('Customer user already exists')
           }
@@ -136,7 +186,18 @@ export async function GET(request: Request) {
               console.log('👤 Full Name:', fullName)
               
               try {
-                // Use simplified profile creation
+                // Step 1: Merge all temporary user data (appointments, etc.) to new account
+                console.log('🔄 Merging temporary user data...')
+                const mergeResult = await mergeTemporaryUserData(user.id, phone, appointmentId)
+                
+                if (!mergeResult.success) {
+                  console.error('❌ Failed to merge temporary user data:', mergeResult.error)
+                  // Continue anyway - user can still complete onboarding
+                } else {
+                  console.log(`✅ Merged ${mergeResult.mergedAppointments} appointments from temporary user`)
+                }
+                
+                // Step 2: Create user profile
                 const profileResult = await createSimplifiedProfile({
                   user_id: user.id,
                   email: user.email!,
@@ -148,12 +209,6 @@ export async function GET(request: Request) {
                 if (profileResult.success) {
                   if (profileResult.existingUser) {
                     console.log('✅ Linked to existing account')
-                    // Link appointment to existing user
-                    await supabase
-                      .from('appointments')
-                      .update({ user_id: profileResult.userId })
-                      .eq('id', appointmentId)
-                    
                     // Redirect to existing user's dashboard
                     return NextResponse.redirect(new URL('/customer-dashboard', request.url))
                   } else {
