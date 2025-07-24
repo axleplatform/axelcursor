@@ -88,28 +88,14 @@ export default function MechanicSignupPage() {
         }
 
         if (data.user) {
-          // Create a mechanic profile in the database
-          const { error: profileError } = await supabase.from("mechanic_profiles").insert([
-            {
-              user_id: data.user.id,
-              email: email,
-              onboarding_completed: false,
-              onboarding_step: "personal_info",
-            },
-          ])
+          // Profile creation is handled by database trigger
+          console.log('🎉 Mechanic signup completed successfully!');
+          console.log('👤 User ID:', data.user.id);
 
           if (!isActive) return
 
-          if (profileError) throw profileError
-
-          // Update users table to set profile_status
-          await supabase
-            .from('users')
-            .update({ 
-              profile_status: 'mechanic',
-              account_type: 'mechanic'
-            })
-            .eq('id', data.user.id);
+          // Profile status is handled by database trigger
+          console.log('✅ Profile creation handled by database trigger');
 
           // Redirect to the next onboarding step
           router.push("/onboarding-mechanic-1")

@@ -312,3 +312,30 @@ export function getSessionErrorMessage(errorCode: string): string {
       return 'Authentication error. Please try again'
   }
 }
+
+/**
+ * Clear corrupted session data including cookies, localStorage, and sessionStorage
+ * Use this before any Supabase operations when experiencing session issues
+ */
+export function clearCorruptedSessionData(): void {
+  console.log('🧹 Clearing corrupted session data...')
+  
+  if (typeof window !== 'undefined') {
+    try {
+      // Clear corrupted cookies
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      });
+      
+      // Clear storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      console.log('✅ Session data cleared successfully')
+    } catch (error) {
+      console.error('❌ Error clearing session data:', error)
+    }
+  } else {
+    console.log('⚠️ Not in browser environment, skipping session data clearing')
+  }
+}

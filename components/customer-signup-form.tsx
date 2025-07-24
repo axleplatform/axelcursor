@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Loader2, X, Clock } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { GoogleSignInButton } from "@/components/google-signin-button"
-import { createOrUpdateUserProfile, updateUserStatus, getProfileErrorMessage } from "@/lib/profile-creation-utils"
+import { clearCorruptedSessionData } from "@/lib/session-utils"
 
 interface CustomerSignupFormProps {
   isOnboarding?: boolean;
@@ -62,13 +62,18 @@ export function CustomerSignupForm({
     setError(null)
 
     try {
-      // Sign up with Supabase Auth
+      // Clear any corrupted session data before signup
+      clearCorruptedSessionData();
+      
+      // Sign up with Supabase Auth - trigger will handle profile creation
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             user_type: "customer",
+            onboarding_completed: false,
+            onboarding_type: 'full'
           },
         },
       })
@@ -90,34 +95,7 @@ export function CustomerSignupForm({
       }
 
       if (data.user) {
-        console.log('👤 Creating/updating user profile for customer:', data.user.id);
-        
-        // Use the robust profile creation utility
-        const profileResult = await createOrUpdateUserProfile({
-          user_id: data.user.id,
-          email: email,
-          phone: undefined, // Will be added during onboarding
-          full_name: undefined, // Will be added during onboarding
-          onboarding_completed: false,
-          onboarding_type: 'full'
-        });
-
-        if (!profileResult.success) {
-          console.error('❌ Profile creation failed:', profileResult.error);
-          const errorMessage = getProfileErrorMessage(profileResult.errorCode || 'UNKNOWN');
-          setError(errorMessage);
-          return;
-        }
-
-        console.log('✅ Profile operation result:', profileResult.action);
-
-        // Update user status
-        const statusUpdated = await updateUserStatus(data.user.id, 'customer', 'full');
-        if (!statusUpdated) {
-          console.warn('⚠️ User status update failed but continuing...');
-        }
-
-        console.log('🎉 Customer profile creation/update completed successfully!');
+        console.log('🎉 Customer signup completed successfully!');
         console.log('👤 User ID:', data.user.id);
         console.log('📅 Completion time:', new Date().toISOString());
 
