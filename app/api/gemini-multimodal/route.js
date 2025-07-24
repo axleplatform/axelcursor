@@ -1,3 +1,6 @@
+// Use Node.js runtime for better compatibility
+export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import sharp from 'sharp';

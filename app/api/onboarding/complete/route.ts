@@ -1,3 +1,6 @@
+// Use Node.js runtime for Supabase v2+ compatibility
+export const runtime = 'nodejs'
+
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
