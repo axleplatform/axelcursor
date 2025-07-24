@@ -1656,34 +1656,34 @@ export default function PostAppointmentOnboarding() {
     try {
       console.log('🚀 Starting onboarding completion...');
       
-      // 3. Confirm valid user before proceeding
-      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+      // 1. Get current session first
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (userError) {
-        console.error('❌ User validation error:', userError);
-        await supabase.auth.signOut();
-        setAuthError('User validation failed. Please log in again.');
+      if (sessionError) {
+        console.error('❌ Session error:', sessionError);
+        setAuthError('Session error. Please try again.');
+        return;
+      }
+
+      if (!session) {
+        console.error('❌ No valid session for onboarding completion');
+        setAuthError('No valid session. Please log in again.');
         router.push('/login');
         return;
       }
 
+      // 2. Get current user from session
+      const currentUser = session.user;
+      
       if (!currentUser || !currentUser.id) {
         console.error('❌ No valid user for onboarding completion');
-        await supabase.auth.signOut();
         setAuthError('No valid user. Please log in again.');
         router.push('/login');
         return;
       }
 
       console.log('✅ User validated for onboarding completion:', currentUser.id);
-
-      // 4. Never make API calls with undefined user ID
-      if (!currentUser.id) {
-        console.error('❌ Cannot proceed with undefined user ID');
-        setAuthError('Invalid user ID. Please log in again.');
-        router.push('/login');
-        return;
-      }
+      console.log('✅ Session valid:', !!session);
 
       // Update user_profiles instead of users
       console.log('📝 Updating user profile...');
@@ -1857,13 +1857,15 @@ export default function PostAppointmentOnboarding() {
           console.error('🔍 Auth session valid:', !!currentUser);
           console.error('📋 Full error details:', JSON.stringify(profileOperationResult.error, null, 2));
           
-          // Try to re-authenticate and retry
-          const { data: { user: reauthUser }, error: reauthError } = await supabase.auth.getUser();
-          if (reauthError || !reauthUser) {
+          // Try to get current session and retry
+          const { data: { session: reauthSession }, error: reauthError } = await supabase.auth.getSession();
+          if (reauthError || !reauthSession || !reauthSession.user) {
             console.error('❌ Re-authentication failed:', reauthError);
             setAuthError('Authentication required. Please log in again.');
             return;
           }
+          
+          const reauthUser = reauthSession.user;
           
           console.log('🔄 Re-authenticated user:', reauthUser.id);
           
@@ -1931,17 +1933,17 @@ export default function PostAppointmentOnboarding() {
       console.log('📅 Completion time:', new Date().toISOString());
       console.log('🔗 Redirecting to dashboard...');
       
-      // Final user validation before redirect
-      const { data: { user: finalUser } } = await supabase.auth.getUser();
-      if (!finalUser || !finalUser.id) {
-        console.error('❌ Final user validation failed');
-        await supabase.auth.signOut();
+      // Final session validation before redirect
+      const { data: { session: finalSession } } = await supabase.auth.getSession();
+      if (!finalSession || !finalSession.user || !finalSession.user.id) {
+        console.error('❌ Final session validation failed');
         setAuthError('Final validation failed. Please log in again.');
         router.push('/login');
         return;
       }
 
-      console.log('✅ Final user validation passed, redirecting to dashboard');
+      console.log('✅ Final session validation passed, redirecting to dashboard');
+      console.log('👤 Final user ID:', finalSession.user.id);
       router.push('/customer-dashboard');
       
     } catch (error) {
