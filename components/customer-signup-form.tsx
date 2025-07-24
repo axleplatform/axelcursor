@@ -110,6 +110,7 @@ export function CustomerSignupForm({
               userId: data.user.id,
               email: data.user.email,
               phone: onboardingData?.phone_number,
+              appointmentId: onboardingData?.appointmentId || onboardingData?.id,
               userType: 'customer'
             })
           });

@@ -10,9 +10,9 @@ export async function POST(request: Request) {
     // Use SSR client instead of direct createClient
     const supabaseAdmin = createRouteHandlerClient({ cookies: () => cookies() })
     
-    const { userId, email, phone, userType = 'customer' } = await request.json()
+    const { userId, email, phone, userType = 'customer', appointmentId } = await request.json()
     
-    console.log('🔄 Creating user profile via API:', { userId, email, userType })
+    console.log('🔄 Creating user profile via API:', { userId, email, userType, appointmentId })
     
     // Create user record
     const { error: userError } = await supabaseAdmin
@@ -67,6 +67,26 @@ export async function POST(request: Request) {
       if (profileError) {
         console.error('❌ Error creating mechanic profile:', profileError)
         throw new Error(`Mechanic profile creation failed: ${profileError.message}`)
+      }
+    }
+    
+    // Link appointment to user if appointmentId is provided
+    if (appointmentId) {
+      console.log('🔗 Linking appointment to user:', { appointmentId, userId })
+      
+      const { error: appointmentError } = await supabaseAdmin
+        .from('appointments')
+        .update({
+          user_id: userId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', appointmentId)
+      
+      if (appointmentError) {
+        console.error('❌ Error linking appointment to user:', appointmentError)
+        // Don't throw error here as profile creation succeeded
+      } else {
+        console.log('✅ Appointment linked to user successfully')
       }
     }
     
