@@ -18,7 +18,7 @@ fi
 
 # Run the migration
 echo "📝 Running user_profiles schema fix migration..."
-psql "$DATABASE_URL" -f migrations/ensure_user_profiles_schema_direct.sql
+psql "$DATABASE_URL" -f migrations/ensure_user_profiles_schema_final.sql
 
 if [ $? -eq 0 ]; then
     echo "✅ Successfully fixed user_profiles table schema"
