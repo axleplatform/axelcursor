@@ -161,32 +161,34 @@ export async function createOrUpdateUserProfile(
     if (!existingProfile) {
       console.log('📝 Step 5: Creating new user profile...')
       
-      // Ensure user_id matches authenticated user for RLS compliance
-      const profileInsertData = {
+      // Build profile insert data with only provided fields
+      const profileInsertData: any = {
         user_id: authUser.user.id, // Ensure this matches auth.uid()
         email: profileData.email,
-        phone: profileData.phone,
-        full_name: profileData.full_name,
-        address: profileData.address,
-        city: profileData.city,
-        state: profileData.state,
-        zip_code: profileData.zip_code,
-        communication_preferences: profileData.communication_preferences || {},
-        notification_settings: profileData.notification_settings || {},
-        onboarding_completed: profileData.onboarding_completed || false,
-        onboarding_type: profileData.onboarding_type,
-        profile_completed_at: profileData.profile_completed_at,
-        vehicles: profileData.vehicles || [],
-        referral_source: profileData.referral_source,
-        last_service: profileData.last_service,
-        notifications_enabled: profileData.notifications_enabled || false,
-        subscription_plan: profileData.subscription_plan,
-        subscription_status: profileData.subscription_status || 'inactive',
-        free_trial_ends_at: profileData.free_trial_ends_at,
-        onboarding_data: profileData.onboarding_data,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
+
+      // Only add optional fields if they are provided
+      if (profileData.phone) profileInsertData.phone = profileData.phone
+      if (profileData.full_name) profileInsertData.full_name = profileData.full_name
+      if (profileData.address) profileInsertData.address = profileData.address
+      if (profileData.city) profileInsertData.city = profileData.city
+      if (profileData.state) profileInsertData.state = profileData.state
+      if (profileData.zip_code) profileInsertData.zip_code = profileData.zip_code
+      if (profileData.communication_preferences) profileInsertData.communication_preferences = profileData.communication_preferences
+      if (profileData.notification_settings) profileInsertData.notification_settings = profileData.notification_settings
+      if (profileData.onboarding_completed !== undefined) profileInsertData.onboarding_completed = profileData.onboarding_completed
+      if (profileData.onboarding_type) profileInsertData.onboarding_type = profileData.onboarding_type
+      if (profileData.profile_completed_at) profileInsertData.profile_completed_at = profileData.profile_completed_at
+      if (profileData.vehicles) profileInsertData.vehicles = profileData.vehicles
+      if (profileData.referral_source) profileInsertData.referral_source = profileData.referral_source
+      if (profileData.last_service) profileInsertData.last_service = profileData.last_service
+      if (profileData.notifications_enabled !== undefined) profileInsertData.notifications_enabled = profileData.notifications_enabled
+      if (profileData.subscription_plan) profileInsertData.subscription_plan = profileData.subscription_plan
+      if (profileData.subscription_status) profileInsertData.subscription_status = profileData.subscription_status
+      if (profileData.free_trial_ends_at) profileInsertData.free_trial_ends_at = profileData.free_trial_ends_at
+      if (profileData.onboarding_data) profileInsertData.onboarding_data = profileData.onboarding_data
       
       console.log('📋 Profile insert data:', JSON.stringify(profileInsertData, null, 2))
       
@@ -228,6 +230,16 @@ export async function createOrUpdateUserProfile(
             errorCode: '403',
             action: 'failed'
           }
+        } else if (insertProfileError.code === '400') {
+          console.error('❌ 400 Bad Request - Schema mismatch')
+          console.error('🔍 This usually means a column does not exist in the table')
+          console.error('📋 Error details:', JSON.stringify(insertProfileError, null, 2))
+          return {
+            success: false,
+            error: 'Database schema mismatch. Please contact support.',
+            errorCode: '400',
+            action: 'failed'
+          }
         } else {
           return {
             success: false,
@@ -251,11 +263,32 @@ export async function createOrUpdateUserProfile(
       if (profileData.onboarding_completed && !existingProfile.onboarding_completed) {
         console.log('📝 Step 5: Updating existing profile with completion data...')
         
-        const profileUpdateData = {
-          ...profileData,
+        // Build profile update data with only provided fields
+        const profileUpdateData: any = {
           user_id: authUser.user.id, // Ensure this matches auth.uid()
           updated_at: new Date().toISOString()
         }
+
+        // Only add optional fields if they are provided
+        if (profileData.phone) profileUpdateData.phone = profileData.phone
+        if (profileData.full_name) profileUpdateData.full_name = profileData.full_name
+        if (profileData.address) profileUpdateData.address = profileData.address
+        if (profileData.city) profileUpdateData.city = profileData.city
+        if (profileData.state) profileUpdateData.state = profileData.state
+        if (profileData.zip_code) profileUpdateData.zip_code = profileData.zip_code
+        if (profileData.communication_preferences) profileUpdateData.communication_preferences = profileData.communication_preferences
+        if (profileData.notification_settings) profileUpdateData.notification_settings = profileData.notification_settings
+        if (profileData.onboarding_completed !== undefined) profileUpdateData.onboarding_completed = profileData.onboarding_completed
+        if (profileData.onboarding_type) profileUpdateData.onboarding_type = profileData.onboarding_type
+        if (profileData.profile_completed_at) profileUpdateData.profile_completed_at = profileData.profile_completed_at
+        if (profileData.vehicles) profileUpdateData.vehicles = profileData.vehicles
+        if (profileData.referral_source) profileUpdateData.referral_source = profileData.referral_source
+        if (profileData.last_service) profileUpdateData.last_service = profileData.last_service
+        if (profileData.notifications_enabled !== undefined) profileUpdateData.notifications_enabled = profileData.notifications_enabled
+        if (profileData.subscription_plan) profileUpdateData.subscription_plan = profileData.subscription_plan
+        if (profileData.subscription_status) profileUpdateData.subscription_status = profileData.subscription_status
+        if (profileData.free_trial_ends_at) profileUpdateData.free_trial_ends_at = profileData.free_trial_ends_at
+        if (profileData.onboarding_data) profileUpdateData.onboarding_data = profileData.onboarding_data
         
         console.log('📋 Profile update data:', JSON.stringify(profileUpdateData, null, 2))
         
