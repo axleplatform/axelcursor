@@ -102,6 +102,8 @@ export function CustomerSignupForm({
         console.log('👤 User ID:', data.user.id);
         
         // Create user profile via API
+        console.log('🔄 Creating user profile via API...');
+        
         try {
           const profileResponse = await fetch('/api/create-user-profile', {
             method: 'POST',
@@ -115,14 +117,15 @@ export function CustomerSignupForm({
             })
           });
           
-          if (!profileResponse.ok) {
+          if (profileResponse.ok) {
+            console.log('✅ User profile created successfully');
+          } else {
+            console.error('❌ Failed to create user profile');
             const errorData = await profileResponse.json();
             console.error('❌ Profile creation failed:', errorData.error);
             setError('Profile creation failed. Please try again.');
             return;
           }
-          
-          console.log('✅ User profile created successfully via API');
         } catch (error) {
           console.error('❌ Error creating profile:', error);
           setError('Profile creation failed. Please try again.');
