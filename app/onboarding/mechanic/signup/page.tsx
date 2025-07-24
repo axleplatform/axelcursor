@@ -11,6 +11,7 @@ import { SiteHeader } from "@/components/site-header"
 import Footer from "@/components/footer"
 import { supabase } from "@/lib/supabase"
 import { GoogleSignInButton } from "@/components/google-signin-button"
+import { clearCorruptedCookies, clearCorruptedSessionData } from "@/lib/session-utils"
 
 export default function MechanicSignupPage() {
   const router = useRouter()
@@ -57,6 +58,12 @@ export default function MechanicSignupPage() {
       setError(null)
 
       try {
+        // Clear corrupted cookies before auth operations
+        clearCorruptedCookies();
+        
+        // Clear any corrupted session data before signup
+        clearCorruptedSessionData();
+        
         // Sign up with Supabase Auth
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,

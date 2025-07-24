@@ -322,7 +322,17 @@ export function clearCorruptedSessionData(): void {
   
   if (typeof window !== 'undefined') {
     try {
-      // Clear corrupted cookies
+      // Clear corrupted base64 cookies specifically
+      const cookies = document.cookie.split(';');
+      cookies.forEach(cookie => {
+        if (cookie.includes('base64-')) {
+          const eqPos = cookie.indexOf('=');
+          const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+        }
+      });
+      
+      // Clear all other cookies
       document.cookie.split(";").forEach(function(c) { 
         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
       });
@@ -337,5 +347,33 @@ export function clearCorruptedSessionData(): void {
     }
   } else {
     console.log('⚠️ Not in browser environment, skipping session data clearing')
+  }
+}
+
+/**
+ * Clear corrupted cookies before any auth operations
+ * Specifically targets base64-encoded cookies that cause parsing errors
+ */
+export function clearCorruptedCookies(): void {
+  console.log('🍪 Clearing corrupted cookies...')
+  
+  if (typeof window !== 'undefined') {
+    try {
+      const cookies = document.cookie.split(';');
+      cookies.forEach(cookie => {
+        if (cookie.includes('base64-')) {
+          const eqPos = cookie.indexOf('=');
+          const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+          console.log(`🗑️ Cleared corrupted cookie: ${name}`);
+        }
+      });
+      
+      console.log('✅ Corrupted cookies cleared successfully')
+    } catch (error) {
+      console.error('❌ Error clearing corrupted cookies:', error)
+    }
+  } else {
+    console.log('⚠️ Not in browser environment, skipping cookie clearing')
   }
 }

@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Loader2, X, Clock } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { GoogleSignInButton } from "@/components/google-signin-button"
-import { clearCorruptedSessionData } from "@/lib/session-utils"
+import { clearCorruptedSessionData, clearCorruptedCookies } from "@/lib/session-utils"
 
 interface CustomerSignupFormProps {
   isOnboarding?: boolean;
@@ -62,6 +62,9 @@ export function CustomerSignupForm({
     setError(null)
 
     try {
+      // Clear corrupted cookies before auth operations
+      clearCorruptedCookies();
+      
       // Clear any corrupted session data before signup
       clearCorruptedSessionData();
       
