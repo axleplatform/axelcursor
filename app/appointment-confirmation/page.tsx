@@ -14,6 +14,7 @@ import { GoogleMapsLink } from "@/components/google-maps-link"
 import { GoogleSignInButton } from "@/components/google-signin-button"
 import { getUserRoleAndRedirect } from "@/lib/auth-helpers"
 import { handleSignupWithSession, handleSigninWithSession, getSessionErrorMessage } from "@/lib/session-utils"
+import { createSimplifiedProfile } from '@/lib/simplified-profile-creation'
 
 interface AppointmentData {
   id: string
@@ -461,6 +462,32 @@ export default function AppointmentConfirmationPage() {
     }
   };
 
+  // Handle account creation
+  const handleAccountCreation = async () => {
+    try {
+      console.log('🚀 Starting account creation process...')
+      
+      // Step 1: Sign up with Google
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?appointment_id=${appointmentId}&phone=${encodeURIComponent(appointmentData?.phone_number || '')}&full_name=${encodeURIComponent(appointmentData?.vehicles?.make || '')}`
+        }
+      })
+
+      if (error) {
+        console.error('❌ Signup error:', error)
+        toast.error('Failed to create account')
+        return
+      }
+
+      console.log('✅ Signup initiated successfully')
+      
+    } catch (error) {
+      console.error('❌ Account creation error:', error)
+      toast.error('Failed to create account')
+    }
+  }
 
 
   // Handle appointment cancellation

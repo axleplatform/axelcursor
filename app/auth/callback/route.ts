@@ -2,6 +2,8 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+import { createSimplifiedProfile } from '@/lib/simplified-profile-creation'
+
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
@@ -119,6 +121,7 @@ export async function GET(request: Request) {
           if (redirect === 'post-appointment') {
             const appointmentId = requestUrl.searchParams.get('appointmentId')
             const phone = requestUrl.searchParams.get('phone')
+            const fullName = requestUrl.searchParams.get('fullName')
             
             console.log('🔄 Handling post-appointment OAuth callback...');
             console.log('👤 User ID:', user.id);
@@ -126,46 +129,46 @@ export async function GET(request: Request) {
             console.log('📱 Phone:', phone);
             console.log('🔗 Appointment ID:', appointmentId);
 
-            // Create user profile for post-appointment flow
-            const { createOrUpdateUserProfile, updateUserStatus } = await import('@/lib/profile-creation-utils');
-            
-            const profileResult = await createOrUpdateUserProfile({
-              user_id: user.id,
-              email: user.email || '',
-              phone: phone || '',
-              full_name: user.user_metadata?.full_name || '',
-              onboarding_completed: false,
-              onboarding_type: 'post_appointment'
-            });
-
-            if (!profileResult.success) {
-              console.error('❌ Profile creation failed:', profileResult.error);
-              return NextResponse.redirect(`${requestUrl.origin}/login?error=profile_creation_failed`)
-            }
-
-            console.log('✅ Profile operation result:', profileResult.action);
-
-            // Update user status
-            const statusUpdated = await updateUserStatus(user.id, 'customer', 'full');
-            if (!statusUpdated) {
-              console.warn('⚠️ User status update failed but continuing...');
-            }
-
-            // Link appointment to user if provided
-            if (appointmentId) {
-              console.log('🔗 Linking appointment to user...');
-              const { error: appointmentError } = await supabase
-                .from('appointments')
-                .update({ user_id: user.id })
-                .eq('id', appointmentId);
-
-              if (appointmentError) {
-                console.error('❌ Appointment linking error:', appointmentError);
-                if (appointmentError.code === '406' || appointmentError.code === '409' || appointmentError.code === '400') {
-                  console.warn('⚠️ Appointment linking failed but continuing...');
+            // Handle post-appointment account creation
+            if (appointmentId && phone && fullName) {
+              console.log('📋 Post-appointment account creation detected')
+              console.log('📱 Phone:', phone)
+              console.log('👤 Full Name:', fullName)
+              
+              try {
+                // Use simplified profile creation
+                const profileResult = await createSimplifiedProfile({
+                  user_id: user.id,
+                  email: user.email!,
+                  phone: phone,
+                  full_name: fullName,
+                  onboarding_type: 'post_appointment'
+                })
+                
+                if (profileResult.success) {
+                  if (profileResult.existingUser) {
+                    console.log('✅ Linked to existing account')
+                    // Link appointment to existing user
+                    await supabase
+                      .from('appointments')
+                      .update({ user_id: profileResult.userId })
+                      .eq('id', appointmentId)
+                    
+                    // Redirect to existing user's dashboard
+                    return NextResponse.redirect(new URL('/customer-dashboard', request.url))
+                  } else {
+                    console.log('✅ New account created successfully')
+                    // Redirect to post-appointment onboarding
+                    return NextResponse.redirect(new URL('/onboarding/customer/post-appointment', request.url))
+                  }
+                } else {
+                  console.error('❌ Profile creation failed:', profileResult.error)
+                  return NextResponse.redirect(new URL('/onboarding/customer/post-appointment', request.url))
                 }
-              } else {
-                console.log('✅ Appointment linked successfully');
+                
+              } catch (error) {
+                console.error('❌ Error in post-appointment flow:', error)
+                return NextResponse.redirect(new URL('/onboarding/customer/post-appointment', request.url))
               }
             }
 
