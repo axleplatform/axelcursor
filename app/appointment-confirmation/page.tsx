@@ -322,6 +322,33 @@ export default function AppointmentConfirmationPage() {
         // New user created successfully with established session
         console.log('✅ Signup successful with established session')
         
+        // Create user profile via API
+        console.log('🔄 Creating user profile via API...');
+        
+        try {
+          const profileResponse = await fetch('/api/create-user-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: signupResult.user.id,
+              email: signupResult.user.email,
+              phone: appointmentData?.phone_number,
+              appointmentId: appointmentData?.id,
+              userType: 'customer'
+            })
+          });
+          
+          if (profileResponse.ok) {
+            console.log('✅ User profile created successfully');
+          } else {
+            console.error('❌ Failed to create user profile');
+            const errorData = await profileResponse.json();
+            console.error('❌ Profile creation failed:', errorData.error);
+          }
+        } catch (error) {
+          console.error('❌ Error creating profile:', error);
+        }
+        
         // Merge temporary user data to new account
         if (appointmentData?.phone_number) {
           console.log('🔄 Merging temporary user data to new account...')
