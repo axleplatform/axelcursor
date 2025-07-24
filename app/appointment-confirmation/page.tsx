@@ -267,20 +267,10 @@ export default function AppointmentConfirmationPage() {
     setLoading(true);
 
     try {
-      // First, check if user already exists by phone number
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id, email')
-        .eq('phone', appointmentData?.phone_number)
-        .single();
-
-      if (existingUser && existingUser.email) {
-        // User already has an account
-        setError('You already have an account. Please sign in instead.');
-        // Optionally redirect to login
-        router.push(`/login?phone=${appointmentData?.phone_number}&redirect=post-appointment&appointmentId=${appointmentData?.id}`);
-        return;
-      }
+      // Note: We don't need to check for existing users by phone number here
+      // because the signup process will handle duplicate email addresses
+      // and the profile creation will handle phone number conflicts
+      console.log('🚀 Starting account creation process...');
 
       // Use the robust signup with session waiting
       const signupResult = await handleSignupWithSession(
