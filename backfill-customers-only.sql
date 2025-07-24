@@ -131,4 +131,4 @@ FROM mechanic_profiles mp
 ORDER BY mp.created_at DESC
 LIMIT 10;
 
--- ✅ DONE! Only customers should have user_profiles, mechanics stay in mechanic_profiles. 
+-- ✅ DONE! Only customers should have user_profiles, mechanics stay in mechanic_profiles.

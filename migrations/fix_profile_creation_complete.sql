@@ -231,4 +231,4 @@ GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT ALL ON user_profiles TO authenticated;
 GRANT ALL ON users TO authenticated;
 GRANT EXECUTE ON FUNCTION check_user_exists_by_phone(TEXT) TO authenticated;
-GRANT EXECUTE ON FUNCTION check_user_exists_by_email(TEXT) TO authenticated; 
+GRANT EXECUTE ON FUNCTION check_user_exists_by_email(TEXT) TO authenticated;

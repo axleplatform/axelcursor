@@ -188,4 +188,4 @@ WHERE NOT EXISTS (
     SELECT 1 FROM user_profiles up WHERE up.user_id = u.id
 );
 
--- ✅ DONE! User profiles should now be created automatically for new users. 
+-- ✅ DONE! User profiles should now be created automatically for new users.

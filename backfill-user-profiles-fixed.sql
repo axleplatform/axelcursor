@@ -103,4 +103,4 @@ WHERE u.email IS NULL
 ORDER BY u.created_at DESC
 LIMIT 5;
 
--- ✅ DONE! User profiles created for users with valid emails only. 
+-- ✅ DONE! User profiles created for users with valid emails only.

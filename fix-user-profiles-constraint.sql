@@ -93,4 +93,4 @@ WHERE NOT EXISTS (
     SELECT 1 FROM user_profiles up WHERE up.user_id = u.id
 );
 
--- ✅ DONE! The constraint error should now be fixed. 
+-- ✅ DONE! The constraint error should now be fixed.

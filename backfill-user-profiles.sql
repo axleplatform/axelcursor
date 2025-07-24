@@ -71,4 +71,4 @@ FROM user_profiles up
 ORDER BY up.created_at DESC
 LIMIT 10;
 
--- ✅ DONE! All 87 users should now have profiles. 
+-- ✅ DONE! All 87 users should now have profiles.
