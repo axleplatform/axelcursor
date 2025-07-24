@@ -73,30 +73,46 @@ export async function createOrUpdateUserProfile(
 
     console.log('✅ User authentication verified')
 
-    // Step 2: Check if user exists in `users` table
+    // Step 2: Check if user exists in users table
     console.log('🔍 Step 2: Checking if user exists in users table...')
-    const { data: existingUser, error: userError } = await supabase
-      .from('users')
-      .select('id, profile_status, account_type, role')
-      .eq('id', profileData.user_id)
-      .single()
+    
+    // Use a safer approach to check user existence - avoid direct query that might cause 406
+    let existingUser = null
+    try {
+      const { data: userCheck, error: userError } = await supabase
+        .from('users')
+        .select('id, profile_status, account_type, role')
+        .eq('id', profileData.user_id)
+        .single()
 
-    if (userError && userError.code !== 'PGRST116') {
-      console.error('❌ Error checking user:', userError)
-      console.error('📋 User check error details:', JSON.stringify(userError, null, 2))
-      return {
-        success: false,
-        error: 'Failed to check user existence',
-        errorCode: userError.code,
-        action: 'failed'
+      if (userError) {
+        if (userError.code === '406') {
+          console.warn('⚠️ 406 error checking users table - proceeding with user creation')
+          // Continue with user creation even if we can't check
+        } else if (userError.code === 'PGRST116') {
+          console.log('📝 User does not exist in users table, will create...')
+        } else {
+          console.error('❌ Error checking user:', userError)
+          return {
+            success: false,
+            error: 'Failed to check user existence',
+            errorCode: userError.code,
+            action: 'failed'
+          }
+        }
+      } else {
+        existingUser = userCheck
+        console.log('✅ User already exists in users table')
       }
+    } catch (error) {
+      console.warn('⚠️ Error checking users table, proceeding with user creation:', error)
     }
 
-    // Step 3: Insert user if not exists
+    // Step 3: Create user record if not exists
     if (!existingUser) {
       console.log('📝 Step 3: Creating user record in users table...')
       
-      // Determine role based on onboarding type
+      // Determine role and account type based on onboarding type
       const userRole = profileData.onboarding_type === 'mechanic' ? 'mechanic' : 'customer'
       const accountType = profileData.onboarding_type === 'mechanic' ? 'mechanic' : 'full'
       
@@ -113,48 +129,72 @@ export async function createOrUpdateUserProfile(
       
       console.log('📋 User record data:', JSON.stringify(userRecordData, null, 2))
       
-      const { error: insertUserError } = await supabase
+      const { data: userRecord, error: createUserError } = await supabase
         .from('users')
         .insert(userRecordData)
+        .select()
+        .single()
 
-      if (insertUserError) {
-        console.error('❌ Error inserting user:', insertUserError)
-        console.error('📋 User insert error details:', JSON.stringify(insertUserError, null, 2))
+      if (createUserError) {
+        console.error('❌ Error creating user record:', createUserError)
+        console.error('📋 User creation error details:', JSON.stringify(createUserError, null, 2))
         
-        if (insertUserError.code === '23505') { // Unique violation
+        if (createUserError.code === '23505') { // Unique violation
           console.warn('⚠️ User already exists, continuing...')
+        } else if (createUserError.code === '406') {
+          console.error('❌ 406 error creating user - RLS policy issue')
+          return {
+            success: false,
+            error: 'Authentication required for user creation',
+            errorCode: '406',
+            action: 'failed'
+          }
         } else {
           return {
             success: false,
             error: 'Failed to create user record',
-            errorCode: insertUserError.code,
+            errorCode: createUserError.code,
             action: 'failed'
           }
         }
       } else {
         console.log('✅ User record created successfully')
       }
-    } else {
-      console.log('✅ User record exists:', existingUser.profile_status)
     }
 
-    // Step 4: Check if profile exists in `user_profiles` table
+    // Step 4: Check if user profile exists
     console.log('🔍 Step 4: Checking if user profile exists...')
-    const { data: existingProfile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('id, onboarding_completed')
-      .eq('user_id', profileData.user_id)
-      .single()
+    
+    let existingProfile = null
+    try {
+      const { data: profileCheck, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('id, onboarding_completed')
+        .eq('user_id', profileData.user_id)
+        .single()
 
-    if (profileError && profileError.code !== 'PGRST116') {
-      console.error('❌ Error checking profile:', profileError)
-      console.error('📋 Profile check error details:', JSON.stringify(profileError, null, 2))
-      return {
-        success: false,
-        error: 'Failed to check profile existence',
-        errorCode: profileError.code,
-        action: 'failed'
+      if (profileError) {
+        if (profileError.code === '406') {
+          console.warn('⚠️ 406 error checking user_profiles table - proceeding with profile creation')
+          // Continue with profile creation even if we can't check
+        } else if (profileError.code === 'PGRST116') {
+          console.log('📝 Profile does not exist, will create...')
+        } else {
+          console.error('❌ Error checking profile:', profileError)
+          console.error('📋 Profile check error details:', JSON.stringify(profileError, null, 2))
+          return {
+            success: false,
+            error: 'Failed to check profile existence',
+            errorCode: profileError.code,
+            action: 'failed'
+          }
+        }
+      } else {
+        existingProfile = profileCheck
+        console.log('✅ Profile already exists:', existingProfile.id)
       }
+    } catch (error) {
+      console.warn('⚠️ Error checking user_profiles table, proceeding with profile creation:', error)
     }
 
     // Step 5: Insert profile if not exists
@@ -163,6 +203,7 @@ export async function createOrUpdateUserProfile(
       
       // Build profile insert data with only provided fields
       const profileInsertData: any = {
+        id: crypto.randomUUID(), // Generate UUID for the profile
         user_id: authUser.user.id, // Ensure this matches auth.uid()
         email: profileData.email,
         created_at: new Date().toISOString(),
@@ -238,6 +279,15 @@ export async function createOrUpdateUserProfile(
             success: false,
             error: 'Database schema mismatch. Please contact support.',
             errorCode: '400',
+            action: 'failed'
+          }
+        } else if (insertProfileError.code === '23502') {
+          console.error('❌ 23502 Not Null Violation - Missing required field')
+          console.error('📋 Error details:', JSON.stringify(insertProfileError, null, 2))
+          return {
+            success: false,
+            error: 'Missing required field in profile creation',
+            errorCode: '23502',
             action: 'failed'
           }
         } else {
