@@ -70,4 +70,4 @@ echo "✅ Proper temporary user handling"
 echo "✅ Clean database schema"
 echo ""
 
-echo "Ready to deploy? Copy the migration content and run it in Supabase!" 
+echo "Ready to deploy? Copy the migration content and run it in Supabase!"

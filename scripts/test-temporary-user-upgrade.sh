@@ -65,4 +65,4 @@ echo "✅ All appointments linked to valid user accounts"
 echo "✅ User profiles created for full accounts"
 echo ""
 
-echo "Run these queries in your Supabase SQL Editor to verify the fix!" 
+echo "Run these queries in your Supabase SQL Editor to verify the fix!"

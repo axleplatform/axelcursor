@@ -19,7 +19,7 @@ When users create appointments without accounts, they get temporary user records
 ## 📊 **How It Works**
 
 ### **Step 1: Temporary User Creation** 📝
-```sql
+\`\`\`sql
 -- When appointment is created
 INSERT INTO auth.users (id, email) VALUES (
   'temp_uuid', 
@@ -38,10 +38,10 @@ INSERT INTO appointments (id, user_id, phone_number) VALUES (
   'temp_uuid',
   '5551234567'
 );
-```
+\`\`\`
 
 ### **Step 2: Account Creation** 👤
-```typescript
+\`\`\`typescript
 // When user creates account (in auth callback)
 if (phone && tempUser) {
   // Move appointments from temporary user to new user ID
@@ -56,10 +56,10 @@ if (phone && tempUser) {
     .delete()
     .eq('id', tempUser.id)
 }
-```
+\`\`\`
 
 ### **Step 3: Data Transfer** 🔄
-```sql
+\`\`\`sql
 -- Move ALL appointments from temporary user to new user
 UPDATE appointments 
 SET user_id = new_user_id, updated_at = NOW()
@@ -75,7 +75,7 @@ INSERT INTO users (id, email, phone, account_type) VALUES (
 
 -- Delete temporary user
 DELETE FROM users WHERE id = temp_user_id;
-```
+\`\`\`
 
 ## 🚀 **Implementation Details**
 
@@ -135,20 +135,20 @@ DELETE FROM users WHERE id = temp_user_id;
 5. Check dashboard shows complete history
 
 ### **Automated Testing**
-```bash
+\`\`\`bash
 # Run test script
 ./scripts/test-merge-functionality.sh
-```
+\`\`\`
 
 ### **Database Verification**
-```sql
+\`\`\`sql
 -- Check for orphaned temporary users
 SELECT COUNT(*) FROM users u 
 WHERE u.account_type = 'temporary' 
 AND NOT EXISTS (SELECT 1 FROM appointments a WHERE a.user_id = u.id);
 
 -- Should return 0
-```
+\`\`\`
 
 ## 🔄 **Flow Summary**
 
@@ -168,4 +168,4 @@ AND NOT EXISTS (SELECT 1 FROM appointments a WHERE a.user_id = u.id);
 - ✅ **Seamless UX**: Users see complete history immediately
 - ✅ **System reliability**: Robust error handling
 
-The solution ensures that when someone creates an appointment and then creates an account, **ALL** their information is properly tied together! 🎯 
+The solution ensures that when someone creates an appointment and then creates an account, **ALL** their information is properly tied together! 🎯
