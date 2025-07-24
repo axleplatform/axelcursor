@@ -1,16 +1,15 @@
 // Use Node.js runtime for Supabase v2+ compatibility
 export const runtime = 'nodejs'
 
-import { createClient } from '@supabase/supabase-js'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export async function POST(request: Request) {
   try {
+    // Use SSR client instead of direct createClient
+    const supabaseAdmin = createRouteHandlerClient({ cookies: () => cookies() })
+    
     const { userId, email, phone, userType = 'customer' } = await request.json()
     
     console.log('🔄 Creating user profile via API:', { userId, email, userType })
@@ -74,7 +73,7 @@ export async function POST(request: Request) {
     console.log('✅ User profile created successfully via API')
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    console.error('❌ Error creating user profile:', error)
+    console.error('Error creating user profile:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
