@@ -113,4 +113,4 @@ async function checkExistingAccount(email: string, phone?: string): Promise<any>
     console.warn('⚠️ Error in account check:', error)
     return null
   }
-} 
+}

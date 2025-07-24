@@ -32,4 +32,4 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION check_existing_account(TEXT, TEXT) TO authenticated, service_role;
 
 -- Refresh schema cache
-NOTIFY pgrst, 'reload schema'; 
+NOTIFY pgrst, 'reload schema';

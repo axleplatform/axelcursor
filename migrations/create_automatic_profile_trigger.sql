@@ -51,4 +51,4 @@ GRANT EXECUTE ON FUNCTION create_user_profile_trigger() TO service_role;
 GRANT USAGE ON SCHEMA public TO service_role;
 
 -- Step 4: Refresh schema cache
-NOTIFY pgrst, 'reload schema'; 
+NOTIFY pgrst, 'reload schema';
