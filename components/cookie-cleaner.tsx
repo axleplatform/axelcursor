@@ -15,4 +15,4 @@ export default function CookieCleaner() {
   }, []);
 
   return null;
-} 
+}
