@@ -104,26 +104,64 @@ BEGIN
     END IF;
 END $$;
 
--- Step 2: Ensure default values are set for existing records
-UPDATE user_profiles 
-SET notifications_enabled = FALSE 
-WHERE notifications_enabled IS NULL;
+-- Step 2: Ensure default values are set for existing records (only if columns exist)
+DO $$
+BEGIN
+    -- Update notifications_enabled only if column exists
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'user_profiles' AND column_name = 'notifications_enabled'
+    ) THEN
+        UPDATE user_profiles 
+        SET notifications_enabled = FALSE 
+        WHERE notifications_enabled IS NULL;
+        RAISE NOTICE 'Updated notifications_enabled defaults';
+    END IF;
 
-UPDATE user_profiles 
-SET subscription_status = 'inactive' 
-WHERE subscription_status IS NULL;
+    -- Update subscription_status only if column exists
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'user_profiles' AND column_name = 'subscription_status'
+    ) THEN
+        UPDATE user_profiles 
+        SET subscription_status = 'inactive' 
+        WHERE subscription_status IS NULL;
+        RAISE NOTICE 'Updated subscription_status defaults';
+    END IF;
 
-UPDATE user_profiles 
-SET vehicles = '[]' 
-WHERE vehicles IS NULL;
+    -- Update vehicles only if column exists
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'user_profiles' AND column_name = 'vehicles'
+    ) THEN
+        UPDATE user_profiles 
+        SET vehicles = '[]' 
+        WHERE vehicles IS NULL;
+        RAISE NOTICE 'Updated vehicles defaults';
+    END IF;
 
-UPDATE user_profiles 
-SET communication_preferences = '{}' 
-WHERE communication_preferences IS NULL;
+    -- Update communication_preferences only if column exists
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'user_profiles' AND column_name = 'communication_preferences'
+    ) THEN
+        UPDATE user_profiles 
+        SET communication_preferences = '{}' 
+        WHERE communication_preferences IS NULL;
+        RAISE NOTICE 'Updated communication_preferences defaults';
+    END IF;
 
-UPDATE user_profiles 
-SET notification_settings = '{}' 
-WHERE notification_settings IS NULL;
+    -- Update notification_settings only if column exists
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'user_profiles' AND column_name = 'notification_settings'
+    ) THEN
+        UPDATE user_profiles 
+        SET notification_settings = '{}' 
+        WHERE notification_settings IS NULL;
+        RAISE NOTICE 'Updated notification_settings defaults';
+    END IF;
+END $$;
 
 -- Step 3: Refresh PostgREST schema cache
 NOTIFY pgrst, 'reload schema';
