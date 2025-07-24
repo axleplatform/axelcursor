@@ -95,14 +95,37 @@ export default function MechanicSignupPage() {
         }
 
         if (data.user) {
-          // Profile creation is handled by database trigger
           console.log('🎉 Mechanic signup completed successfully!');
           console.log('👤 User ID:', data.user.id);
 
           if (!isActive) return
 
-          // Profile status is handled by database trigger
-          console.log('✅ Profile creation handled by database trigger');
+          // Create mechanic profile via API
+          try {
+            const profileResponse = await fetch('/api/create-user-profile', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: data.user.id,
+                email: data.user.email,
+                phone: undefined, // Will be added during onboarding
+                userType: 'mechanic'
+              })
+            });
+            
+            if (!profileResponse.ok) {
+              const errorData = await profileResponse.json();
+              console.error('❌ Mechanic profile creation failed:', errorData.error);
+              setError('Profile creation failed. Please try again.');
+              return;
+            }
+            
+            console.log('✅ Mechanic profile created successfully via API');
+          } catch (error) {
+            console.error('❌ Error creating mechanic profile:', error);
+            setError('Profile creation failed. Please try again.');
+            return;
+          }
 
           // Redirect to the next onboarding step
           router.push("/onboarding-mechanic-1")
