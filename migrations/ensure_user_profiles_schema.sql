@@ -190,4 +190,4 @@ BEGIN
         RAISE NOTICE '  %: % (nullable: %, default: %)', 
             col.column_name, col.data_type, col.is_nullable, col.column_default;
     END LOOP;
-END $$; 
+END $$;

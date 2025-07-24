@@ -6,4 +6,4 @@ ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS notifications_enabled BOOLEAN
 
 -- Show the result
 SELECT column_name, data_type FROM information_schema.columns 
-WHERE table_name = 'user_profiles' AND column_name = 'notifications_enabled'; 
+WHERE table_name = 'user_profiles' AND column_name = 'notifications_enabled';

@@ -115,4 +115,4 @@ BEGIN
     RAISE NOTICE '- Update their own profile';
     RAISE NOTICE '- Insert their own record';
     RAISE NOTICE '- Check for existing users by email/phone via functions';
-END $$; 
+END $$;
