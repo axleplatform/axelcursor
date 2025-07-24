@@ -109,7 +109,7 @@ export function CustomerSignupForm({
             body: JSON.stringify({
               userId: data.user.id,
               email: data.user.email,
-              phone: undefined, // Will be added during onboarding
+              phone: onboardingData?.phone_number,
               userType: 'customer'
             })
           });
