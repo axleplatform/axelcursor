@@ -292,8 +292,8 @@ export default function AppointmentConfirmationPage() {
           const signinResult = await handleSigninWithSession(email.trim(), password)
 
           if (signinResult.success && signinResult.user) {
-            console.log('✅ Signin successful, redirecting to dashboard')
-            router.push('/customer-dashboard')
+            console.log('✅ Signin successful, redirecting to post-appointment onboarding')
+            router.push(`/onboarding/customer/post-appointment?appointmentId=${appointmentData?.id}&phone=${appointmentData?.phone_number}`)
           } else {
             const errorMessage = getSessionErrorMessage(signinResult.errorCode || 'UNKNOWN')
             setFormErrors({ email: errorMessage })
@@ -307,7 +307,7 @@ export default function AppointmentConfirmationPage() {
       } else if (signupResult.user) {
         // New user created successfully with established session
         console.log('✅ Signup successful with established session')
-        router.push('/onboarding/customer/post-appointment')
+        router.push(`/onboarding/customer/post-appointment?appointmentId=${appointmentData?.id}&phone=${appointmentData?.phone_number}`)
       }
     } catch (error: any) {
       console.error('Signup error:', error)

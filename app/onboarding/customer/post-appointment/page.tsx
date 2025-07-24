@@ -1584,8 +1584,8 @@ export default function PostAppointmentOnboarding() {
         const phone = searchParams.get('phone');
 
         if (!appointmentId) {
-          console.error('❌ No appointment ID provided');
-          setAuthError('No appointment ID provided');
+          console.log('ℹ️ No appointment ID provided - user may have come from account creation');
+          // Don't show error, just continue without appointment data
           return;
         }
 
