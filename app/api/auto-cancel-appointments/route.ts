@@ -1,7 +1,8 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 
 // Interface for the appointment data returned from the query
 interface AppointmentData {
@@ -11,25 +12,12 @@ interface AppointmentData {
   location: string
 }
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    // Use the SSR client instead of direct createClient
+    const supabase = createRouteHandlerClient({ cookies: () => cookies() })
+
     console.log('🕒 API route: Auto-cancelling overdue appointments...')
-    
-    // Create Supabase client with service role key
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('❌ Missing environment variables for Supabase')
-      return NextResponse.json(
-        { success: false, error: 'Server configuration error' },
-        { status: 500 }
-      )
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    console.log('🕒 Starting overdue appointment cleanup...')
 
     // Calculate the cutoff time (15 minutes ago)
     const cutoffTime = new Date(Date.now() - 15 * 60 * 1000) // 15 minutes ago
@@ -100,29 +88,15 @@ export async function POST(request: NextRequest) {
       if (quotesError) {
         console.error('⚠️ Error cleaning up mechanic quotes:', quotesError)
         // Don't return error here as the main operation succeeded
-      } else {
-        console.log('🧹 Cleaned up associated mechanic quotes')
       }
     }
 
-    const result = { 
+    return NextResponse.json({ 
       success: true, 
-      message: `Successfully eliminated ${eliminatedAppointments?.length || 0} overdue appointments`,
-      eliminatedCount: eliminatedAppointments?.length || 0,
-      eliminatedAppointments: eliminatedAppointments?.map((apt: { id: string }) => apt.id) || []
-    }
-
-    console.log('✅ Auto-cancel function result:', result)
-    return NextResponse.json(result)
-    
+      eliminatedCount: eliminatedAppointments?.length || 0 
+    })
   } catch (error) {
-    console.error('❌ Error in auto-cancel API route:', error)
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
-      },
-      { status: 500 }
-    )
+    console.error('Error in auto-cancel-appointments:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
