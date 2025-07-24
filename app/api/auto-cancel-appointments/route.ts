@@ -1,5 +1,8 @@
+// Use Node.js runtime for Supabase v2+ compatibility
+export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server'
-const { createClient } = require('@supabase/supabase-js')
+import { createClient } from '@supabase/supabase-js'
 
 // Interface for the appointment data returned from the query
 interface AppointmentData {
