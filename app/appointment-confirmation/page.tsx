@@ -477,7 +477,11 @@ export default function AppointmentConfirmationPage() {
 
       if (error) {
         console.error('❌ Signup error:', error)
-        toast.error('Failed to create account')
+        toast({
+          title: "Error",
+          description: "Failed to create account",
+          variant: "destructive",
+        })
         return
       }
 
@@ -485,7 +489,11 @@ export default function AppointmentConfirmationPage() {
       
     } catch (error) {
       console.error('❌ Account creation error:', error)
-      toast.error('Failed to create account')
+      toast({
+        title: "Error",
+        description: "Failed to create account",
+        variant: "destructive",
+      })
     }
   }
 
