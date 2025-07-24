@@ -261,4 +261,4 @@ SELECT
     'true = can access full dashboard' as true_meaning,
     'false = must complete onboarding first' as false_meaning;
 
--- ✅ DONE! Users with both email and phone get profiles, onboarding status determines dashboard access. 
+-- ✅ DONE! Users with both email and phone get profiles, onboarding status determines dashboard access.

@@ -193,4 +193,4 @@ WHERE u.phone IS NOT NULL AND u.email IS NULL
 ORDER BY u.created_at DESC
 LIMIT 10;
 
--- ✅ DONE! Now includes phone-only users properly. 
+-- ✅ DONE! Now includes phone-only users properly.

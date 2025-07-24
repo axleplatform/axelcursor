@@ -11,7 +11,7 @@
 ### **What Gets Created:**
 
 #### **1. `auth.users` Table**
-```sql
+\`\`\`sql
 INSERT INTO auth.users (
   id,                    -- 'temp_uuid_123'
   email,                 -- 'temp_uuid_123@guest.axle.com'
@@ -33,10 +33,10 @@ INSERT INTO auth.users (
   false,
   'authenticated'
 );
-```
+\`\`\`
 
 #### **2. `public.users` Table**
-```sql
+\`\`\`sql
 INSERT INTO public.users (
   id,                    -- 'temp_uuid_123'
   email,                 -- 'temp_uuid_123@guest.axle.com'
@@ -56,10 +56,10 @@ INSERT INTO public.users (
   NOW(),
   NOW()
 );
-```
+\`\`\`
 
 #### **3. `appointments` Table**
-```sql
+\`\`\`sql
 INSERT INTO appointments (
   id,                    -- 'appointment_uuid_456'
   user_id,               -- 'temp_uuid_123' (links to temporary user)
@@ -85,10 +85,10 @@ INSERT INTO appointments (
   NOW(),
   NOW()
 );
-```
+\`\`\`
 
 #### **4. `vehicles` Table** (if vehicle info provided)
-```sql
+\`\`\`sql
 INSERT INTO vehicles (
   id,                    -- 'vehicle_uuid_789'
   appointment_id,        -- 'appointment_uuid_456'
@@ -106,7 +106,7 @@ INSERT INTO vehicles (
   45000,
   '1HGBH41JXMN109186'
 );
-```
+\`\`\`
 
 ---
 
@@ -115,14 +115,14 @@ INSERT INTO vehicles (
 ### **What Gets Updated:**
 
 #### **1. `public.users` Table**
-```sql
+\`\`\`sql
 UPDATE public.users 
 SET 
   phone = '5551234567',
   account_type = 'phone_only',
   updated_at = NOW()
 WHERE id = 'temp_uuid_123';
-```
+\`\`\`
 
 **Result:**
 - `phone`: `'5551234567'` (now has phone)
@@ -135,7 +135,7 @@ WHERE id = 'temp_uuid_123';
 ### **What Happens During Account Creation:**
 
 #### **1. Auth Callback Detects Temporary User**
-```typescript
+\`\`\`typescript
 // In auth callback
 const phone = '5551234567';
 const { data: tempUser } = await supabase
@@ -146,31 +146,31 @@ const { data: tempUser } = await supabase
   .single();
 
 // Found: tempUser.id = 'temp_uuid_123'
-```
+\`\`\`
 
 #### **2. Appointments Get Moved**
-```sql
+\`\`\`sql
 UPDATE appointments 
 SET 
   user_id = 'auth_uuid_999',  -- New authenticated user ID
   updated_at = NOW()
 WHERE user_id = 'temp_uuid_123';  -- Old temporary user ID
-```
+\`\`\`
 
 **Result:**
 - `appointment_uuid_456.user_id`: `'auth_uuid_999'` (moved to new user)
 
 #### **3. Temporary User Gets Deleted**
-```sql
+\`\`\`sql
 DELETE FROM users WHERE id = 'temp_uuid_123';
 DELETE FROM auth.users WHERE id = 'temp_uuid_123';
-```
+\`\`\`
 
 **Result:**
 - Temporary user completely removed from both tables
 
 #### **4. New User Record Created**
-```sql
+\`\`\`sql
 INSERT INTO public.users (
   id,                    -- 'auth_uuid_999'
   email,                 -- 'user@example.com'
@@ -190,10 +190,10 @@ INSERT INTO public.users (
   NOW(),
   NOW()
 );
-```
+\`\`\`
 
 #### **5. User Profile Created**
-```sql
+\`\`\`sql
 INSERT INTO user_profiles (
   id,                    -- 'profile_uuid_777'
   user_id,               -- 'auth_uuid_999'
@@ -213,7 +213,7 @@ INSERT INTO user_profiles (
   NOW(),
   NOW()
 );
-```
+\`\`\`
 
 ---
 
@@ -222,7 +222,7 @@ INSERT INTO user_profiles (
 ### **What Gets Updated:**
 
 #### **1. `user_profiles` Table**
-```sql
+\`\`\`sql
 UPDATE user_profiles 
 SET 
   full_name = 'John Doe',
@@ -232,16 +232,16 @@ SET
   vehicles = '[{"year": "2020", "make": "Toyota", "model": "Camry"}]',
   updated_at = NOW()
 WHERE user_id = 'auth_uuid_999';
-```
+\`\`\`
 
 #### **2. `public.users` Table**
-```sql
+\`\`\`sql
 UPDATE public.users 
 SET 
   profile_status = 'customer',
   updated_at = NOW()
 WHERE id = 'auth_uuid_999';
-```
+\`\`\`
 
 ---
 
@@ -287,4 +287,4 @@ WHERE id = 'auth_uuid_999';
 4. **Proper Relationships**: All foreign keys properly updated
 5. **Account Types**: Clear progression from temporary → phone_only → full
 
-The system ensures that when someone books an appointment and then creates an account, **ALL** their information is properly consolidated into a single, clean user record! 🎉 
+The system ensures that when someone books an appointment and then creates an account, **ALL** their information is properly consolidated into a single, clean user record! 🎉

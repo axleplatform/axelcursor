@@ -100,4 +100,4 @@ WHERE u.email IS NOT NULL
 ORDER BY u.created_at DESC
 LIMIT 10;
 
--- ✅ DONE! Trigger should now work properly. 
+-- ✅ DONE! Trigger should now work properly.

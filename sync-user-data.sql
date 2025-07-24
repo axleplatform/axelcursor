@@ -109,4 +109,4 @@ FROM users u
 LEFT JOIN user_profiles up ON u.id = up.user_id
 WHERE (u.email IS NOT NULL OR u.phone IS NOT NULL) AND up.id IS NULL;
 
--- ✅ DONE! Data should now be synced between tables. 
+-- ✅ DONE! Data should now be synced between tables.

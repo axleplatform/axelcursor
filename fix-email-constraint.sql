@@ -169,4 +169,4 @@ SELECT
 FROM users
 WHERE email IS NOT NULL AND phone IS NOT NULL;
 
--- ✅ DONE! Email constraint fixed and all users now have profiles. 
+-- ✅ DONE! Email constraint fixed and all users now have profiles.

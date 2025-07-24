@@ -206,4 +206,4 @@ SELECT
     'Requires careful handling of foreign keys' as reason,
     'Consider using a migration script' as recommendation;
 
--- ✅ DONE! This shows the duplicate user problem and merge strategy. 
+-- ✅ DONE! This shows the duplicate user problem and merge strategy.

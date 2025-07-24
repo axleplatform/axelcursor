@@ -166,4 +166,4 @@ SELECT
     'Phone-only users cannot have profiles' as explanation,
     'Consider modifying schema to allow NULL email' as suggestion;
 
--- ✅ DONE! Email users now have profiles. Phone-only users cannot have profiles due to email constraint. 
+-- ✅ DONE! Email users now have profiles. Phone-only users cannot have profiles due to email constraint.

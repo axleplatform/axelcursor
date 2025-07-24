@@ -137,4 +137,4 @@ FROM users u
 LEFT JOIN user_profiles up ON u.id = up.user_id
 WHERE (u.email IS NOT NULL OR u.phone IS NOT NULL) AND up.id IS NULL;
 
--- ✅ DONE! Public.users should now be synced with auth.users. 
+-- ✅ DONE! Public.users should now be synced with auth.users.

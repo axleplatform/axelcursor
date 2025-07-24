@@ -301,4 +301,4 @@ SELECT
     'For mechanics only' as purpose,
     'Contains mechanic profile data' as description;
 
--- ✅ DONE! Only customers get user_profiles, mechanics use mechanic_profiles. 
+-- ✅ DONE! Only customers get user_profiles, mechanics use mechanic_profiles.

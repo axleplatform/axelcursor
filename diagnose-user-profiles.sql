@@ -145,4 +145,4 @@ FROM users u
 INNER JOIN user_profiles up ON u.id = up.user_id
 WHERE u.email IS NOT NULL OR u.phone IS NOT NULL;
 
--- ✅ DIAGNOSIS COMPLETE! Check the results above. 
+-- ✅ DIAGNOSIS COMPLETE! Check the results above.

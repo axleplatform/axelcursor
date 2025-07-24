@@ -160,4 +160,4 @@ SELECT
 FROM users
 WHERE email IS NOT NULL AND phone IS NOT NULL;
 
--- ✅ DONE! All users should now have profiles with correct schema. 
+-- ✅ DONE! All users should now have profiles with correct schema.

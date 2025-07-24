@@ -146,4 +146,4 @@ SELECT
 FROM users
 WHERE email IS NOT NULL AND phone IS NOT NULL;
 
--- ✅ DONE! All users should now have profiles. 
+-- ✅ DONE! All users should now have profiles.

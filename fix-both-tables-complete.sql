@@ -143,4 +143,4 @@ FROM information_schema.columns
 WHERE table_name = 'user_profiles' AND table_schema = 'public'
 ORDER BY ordinal_position;
 
--- ✅ DONE! Both tables should now have email and phone. 
+-- ✅ DONE! Both tables should now have email and phone.

@@ -111,4 +111,4 @@ WHERE (u.email IS NOT NULL OR u.phone IS NOT NULL) AND up.id IS NULL;
 -- 9. Clean up temporary table
 DROP TABLE unique_users;
 
--- ✅ DONE! Duplicate users should now be cleaned up. 
+-- ✅ DONE! Duplicate users should now be cleaned up.

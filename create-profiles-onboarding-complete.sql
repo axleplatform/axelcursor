@@ -244,4 +244,4 @@ SELECT
     'Only for users with both email and phone' as description,
     'Enables customer dashboard access' as result;
 
--- ✅ DONE! Only onboarding-complete users (email + phone) have profiles for dashboard access. 
+-- ✅ DONE! Only onboarding-complete users (email + phone) have profiles for dashboard access.

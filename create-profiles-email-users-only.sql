@@ -217,4 +217,4 @@ SELECT
     'No profiles, go to customer onboarding' as flow,
     'Guest users until account creation' as access;
 
--- ✅ DONE! Email users have profiles, phone users remain guests for onboarding. 
+-- ✅ DONE! Email users have profiles, phone users remain guests for onboarding.

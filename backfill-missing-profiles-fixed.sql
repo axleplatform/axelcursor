@@ -84,4 +84,4 @@ FROM auth.users u
 LEFT JOIN user_profiles up ON u.id = up.user_id
 WHERE u.email IS NOT NULL AND up.id IS NULL;
 
--- ✅ DONE! All existing users should now have profiles. 
+-- ✅ DONE! All existing users should now have profiles.

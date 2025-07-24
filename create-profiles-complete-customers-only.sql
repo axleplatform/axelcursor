@@ -223,4 +223,4 @@ SELECT
     'No profiles, need to add email in onboarding' as flow,
     'Guest users - needs email' as access;
 
--- ✅ DONE! Only complete customers (email + phone) have profiles for dashboard access. 
+-- ✅ DONE! Only complete customers (email + phone) have profiles for dashboard access.

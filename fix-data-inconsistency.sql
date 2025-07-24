@@ -105,4 +105,4 @@ WHERE u.email IS NOT NULL
 ORDER BY u.created_at DESC
 LIMIT 10;
 
--- ✅ DONE! Data should now be consistent between tables. 
+-- ✅ DONE! Data should now be consistent between tables.

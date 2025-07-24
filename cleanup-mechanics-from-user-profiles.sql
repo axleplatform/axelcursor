@@ -133,4 +133,4 @@ WHERE u.email IS NOT NULL
 ORDER BY u.created_at DESC
 LIMIT 10;
 
--- ✅ DONE! Mechanics removed from user_profiles, proper separation restored. 
+-- ✅ DONE! Mechanics removed from user_profiles, proper separation restored.
