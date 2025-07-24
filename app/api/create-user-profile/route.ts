@@ -74,4 +74,4 @@ export async function POST(request: Request) {
     console.error('❌ Error creating user profile:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-} 
+}
