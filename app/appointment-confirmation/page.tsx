@@ -113,6 +113,8 @@ export default function AppointmentConfirmationPage() {
       try {
         console.log('🔐 Checking authentication and role...');
         
+
+        
         // Check for valid session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         

@@ -20,7 +20,7 @@ export function createClient() {
 }
 
 // Export the singleton instance
-export const supabase = createClient()
+export const supabase = createClient()!
 
 // Export a function to get a fresh client instance (if needed)
 export const getSupabaseClient = () => createClient()
