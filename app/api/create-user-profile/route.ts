@@ -38,6 +38,7 @@ export async function POST(request: Request) {
       const { error: profileError } = await supabaseAdmin
         .from('user_profiles')
         .upsert({
+          id: crypto.randomUUID(), // Add this line
           user_id: userId,
           email: email,
           phone: phone,
