@@ -38,10 +38,11 @@ export async function POST(request: Request) {
       const { error: profileError } = await supabaseAdmin
         .from('user_profiles')
         .upsert({
-          id: crypto.randomUUID(), // Add this line
+          id: crypto.randomUUID(),
           user_id: userId,
           email: email,
           phone: phone,
+          appointment_id: appointmentId, // Add this line!
           onboarding_completed: false,
           onboarding_type: 'post_appointment',
           created_at: new Date().toISOString(),
