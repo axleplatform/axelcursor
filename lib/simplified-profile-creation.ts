@@ -50,7 +50,7 @@ export async function createSimplifiedProfile(
     }
     
     // Step 1.5: Check if we're upgrading a temporary user (should have already been handled in auth callback)
-    const { data: tempUser } = await supabase
+    const { data: tempUser } = await supabase!
       .from('users')
       .select('id, account_type')
       .eq('id', profileData.user_id)
@@ -59,7 +59,7 @@ export async function createSimplifiedProfile(
     if (tempUser && tempUser.account_type === 'temporary') {
       console.log('🔄 Upgrading temporary user to full account')
       // Update the temporary user to full account
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabase!
         .from('users')
         .update({
           email: profileData.email,
@@ -101,7 +101,7 @@ export async function createSimplifiedProfile(
       updated_at: new Date().toISOString()
     }
     
-    const { data: newUser, error: userError } = await supabase
+    const { data: newUser, error: userError } = await supabase!
       .from('users')
       .insert(userData)
       .select('id, email, profile_status')
@@ -182,7 +182,7 @@ export async function mergeTemporaryUserData(
     console.log('✅ Found temporary user:', tempUser.id)
     
     // Step 2: Move ALL appointments from temporary user to new user
-    const { data: movedAppointments, error: moveError } = await supabase
+    const { data: movedAppointments, error: moveError } = await supabase!
       .from('appointments')
       .update({ 
         user_id: newUserId,
@@ -202,7 +202,7 @@ export async function mergeTemporaryUserData(
     // Step 3: Update new user with phone number and proper account type
     const accountType = appointmentCount > 1 ? 'phone_returning' : 'phone_only'
     
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabase!
       .from('users')
       .update({
         phone: phone,
@@ -225,7 +225,7 @@ export async function mergeTemporaryUserData(
       // Continue anyway - the public.users record will be cleaned up
     }
     
-    const { error: deleteUserError } = await supabase
+    const { error: deleteUserError } = await supabase!
       .from('users')
       .delete()
       .eq('id', tempUser.id)
@@ -261,7 +261,7 @@ async function checkExistingAccount(email: string, phone?: string): Promise<any>
   
   try {
     // Use a safe SQL function to check for existing accounts
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .rpc('check_existing_account', {
         user_email: email,
         user_phone: phone || ''
