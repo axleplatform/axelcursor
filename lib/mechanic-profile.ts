@@ -123,7 +123,7 @@ export async function logProfileChange(
             jsonb: (supabase as any).rpc("coalesce", {
               val1: (supabase as any).rpc("jsonb_get", {
                 jsonb: (supabase as any).rpc("coalesce", {
-                  val1: supabase.raw("metadata"),
+                  val1: (supabase as any).raw("metadata"),
                   val2: "{}",
                 }),
                 path: "logs",
@@ -138,7 +138,7 @@ export async function logProfileChange(
               (supabase as any).rpc("coalesce", {
                 val1: (supabase as any).rpc("jsonb_get", {
                   jsonb: (supabase as any).rpc("coalesce", {
-                    val1: supabase.raw("metadata"),
+                    val1: (supabase as any).raw("metadata"),
                     val2: "{}",
                   }),
                   path: "logs",
