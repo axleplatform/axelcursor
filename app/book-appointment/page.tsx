@@ -1262,7 +1262,7 @@ function BookAppointmentContent() {
         const fileName = `${timestamp}-${randomId}.${fileExtension}`
         
         // Upload to Supabase storage
-        const { data, error } = await (supabase.storage as any)
+        const { data, error } = await (supabase as any).storage
           .from('appointment-media')
           .upload(fileName, blob, {
             contentType: file.mimeType,
@@ -1275,7 +1275,7 @@ function BookAppointmentContent() {
         }
         
         // Get public URL
-        const { data: urlData } = (supabase.storage as any)
+        const { data: urlData } = (supabase as any).storage
           .from('appointment-media')
           .getPublicUrl(fileName)
         
