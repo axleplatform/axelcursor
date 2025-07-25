@@ -198,7 +198,7 @@ export function useMechanicAppointments(mechanicId: string) {
     fetchAppointments()
 
     // REAL-TIME FIX: Enhanced subscription with proper state updates
-    const appointmentsSubscription = (supabase as any)
+    const appointmentsSubscription = ((supabase as any)
       .channel("appointments-changes-optimized")
       .on(
         "postgres_changes",
@@ -213,7 +213,7 @@ export function useMechanicAppointments(mechanicId: string) {
           // Refresh appointments when changes occur
           fetchAppointments()
         },
-      )
+      ) as any)
       .subscribe((status: SubscriptionStatus) => {
         if (status === 'SUBSCRIBED') {
           console.log('✅ REAL-TIME: Successfully subscribed to appointments changes')
@@ -231,7 +231,7 @@ export function useMechanicAppointments(mechanicId: string) {
       })
 
     // Enhanced quotes subscription
-    const quotesSubscription = (supabase as any)
+    const quotesSubscription = ((supabase as any)
       .channel("mechanic-quotes-changes-optimized")
       .on(
         "postgres_changes",
@@ -245,7 +245,7 @@ export function useMechanicAppointments(mechanicId: string) {
           // Refresh appointments when quotes change
           fetchAppointments()
         },
-      )
+      ) as any)
       .subscribe((status: SubscriptionStatus) => {
         if (status === 'SUBSCRIBED') {
           console.log('✅ REAL-TIME: Successfully subscribed to quotes changes')
@@ -263,7 +263,7 @@ export function useMechanicAppointments(mechanicId: string) {
       })
 
     // Subscribe to mechanic skips for real-time skip updates
-    const skipsSubscription = (supabase as any)
+    const skipsSubscription = ((supabase as any)
       .channel("mechanic-skips-changes")
       .on(
         "postgres_changes",
@@ -278,7 +278,7 @@ export function useMechanicAppointments(mechanicId: string) {
           // Refresh appointments when skips change
           fetchAppointments()
         },
-      )
+      ) as any)
       .subscribe()
 
     return () => {
