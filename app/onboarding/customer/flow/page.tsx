@@ -1995,12 +1995,17 @@ const createUserWithOnboardingData = async (userId: string, onboardingData: Onbo
   try {
     console.log('👤 Creating/updating user profile with onboarding data for user:', userId);
     
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized')
+      throw new Error('Database connection error')
+    }
+    
     // First get the user's auth data
-            const { data: { user } } = await (supabase.auth as any).getUser();
+    const { data: { user }, error: authError } = await (supabase.auth as any).getUser();
 
-    if (!user) {
-      console.error('❌ No authenticated user found');
-      return;
+    if (authError || !user) {
+      console.error('❌ Authentication error:', authError)
+      throw new Error('User not authenticated')
     }
 
     // 1. Check if profile already exists
@@ -2012,8 +2017,8 @@ const createUserWithOnboardingData = async (userId: string, onboardingData: Onbo
 
     if (profileCheckError && profileCheckError.code !== 'PGRST116') {
       console.error('❌ Profile check error:', profileCheckError);
-      if (profileCheckError.code === '406') {
-        console.warn('⚠️ 406 error - checking RLS policies and headers');
+      if (profileCheckError.code === '406' || profileCheckError.code === '401') {
+        console.warn('⚠️ RLS/Authentication issue detected. Check user permissions and RLS policies.');
         // Try to fetch with different approach
         const { data: retryProfile, error: retryError } = await supabase
           .from('user_profiles')
@@ -2347,8 +2352,24 @@ export default function CustomerOnboarding() {
   // Get user auth state
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await (supabase.auth as any).getUser()
-      setUser(user)
+      try {
+        if (!supabase) {
+          console.error('❌ Supabase client not initialized')
+          return
+        }
+        
+        const { data: { user }, error } = await (supabase.auth as any).getUser()
+        
+        if (error) {
+          console.error('❌ Error getting user:', error)
+          return
+        }
+        
+        setUser(user)
+        console.log('✅ User auth state updated:', user?.id ? 'Authenticated' : 'Not authenticated')
+      } catch (error) {
+        console.error('❌ Error in getUser:', error)
+      }
     }
     getUser()
   }, [])

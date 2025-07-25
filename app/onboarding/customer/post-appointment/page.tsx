@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { ChevronLeft, Check } from 'lucide-react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { supabase } from '@/lib/supabase'
 import { GoogleSignInButton } from '@/components/google-signin-button'
 import { CustomerSignupForm } from '@/components/customer-signup-form'
 import { SiteHeader } from '@/components/site-header'
@@ -1456,7 +1456,8 @@ export default function PostAppointmentOnboarding() {
   
   const searchParams = useSearchParams();
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  
+  if (!supabase) throw new Error("Supabase client is not initialized");
   
   const [currentStep, setCurrentStep] = useState(2); // Start at step 2 (Referral Source)
   const [user, setUser] = useState<any>(null);

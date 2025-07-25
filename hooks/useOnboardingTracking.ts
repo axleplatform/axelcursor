@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { supabase } from '@/lib/supabase';
 import { ensureOnboardingSession, validateSessionWithRetry } from '@/lib/session-utils';
 
@@ -91,7 +90,8 @@ export function useOnboardingTracking({
   appointmentId,
   originalStepNumber
 }: TrackingProps) {
-  const supabase = createClientComponentClient();
+  if (!supabase) throw new Error("Supabase client is not initialized");
+  
   const sessionIdRef = useRef<string>();
   const trackingIdRef = useRef<string>();
   const stepStartTimeRef = useRef<number>(Date.now());
