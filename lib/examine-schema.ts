@@ -13,7 +13,7 @@ export async function examineSchema() {
       console.error("Error fetching appointments schema:", appointmentsError)
 
       // Alternative approach if RPC is not available
-      const { data: appointmentsInfo, error: infoError } = await supabase.from("appointments").select("*").limit(1)
+      const { data: appointmentsInfo, error: infoError } = await supabase!.from("appointments").select("*").limit(1)
 
       if (infoError) {
         console.error("Error fetching sample appointment:", infoError)
@@ -32,7 +32,7 @@ export async function examineSchema() {
     }
 
     // Check for junction tables
-    const { data: tables, error: tablesError } = await supabase
+    const { data: tables, error: tablesError } = await supabase!
       .from("pg_tables")
       .select("tablename")
       .eq("schemaname", "public")

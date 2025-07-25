@@ -72,7 +72,7 @@ export async function saveMechanicProfile(
  * Utility function to get mechanic profile data
  */
 export async function getMechanicProfile(userId: string) {
-  const { data, error } = await supabase.from("mechanic_profiles").select("*, metadata").eq("user_id", userId).single()
+  const { data, error } = await supabase!.from("mechanic_profiles").select("*, metadata").eq("user_id", userId).single()
 
   if (error) {
     if (error.code === "PGRST116") {
@@ -88,7 +88,7 @@ export async function getMechanicProfile(userId: string) {
  * Utility function to mark onboarding as complete
  */
 export async function completeMechanicOnboarding(profileId: string) {
-  const { error } = await supabase
+  const { error } = await supabase!
     .from("mechanic_profiles")
     .update({
       onboarding_completed: true,
@@ -115,7 +115,7 @@ export async function logProfileChange(
 ) {
   try {
     // Store logs in a separate table or in metadata
-    const { error } = await supabase
+    const { error } = await supabase!
       .from("mechanic_profiles")
       .update({
         metadata: (supabase as any).rpc("jsonb_set", {

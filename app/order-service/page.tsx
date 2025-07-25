@@ -1726,7 +1726,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
 
           if (vehicleError) {
             // If vehicle creation fails, clean up the appointment
-            await supabase.from('appointments').delete().eq('id', finalAppointmentId)
+            await supabase!.from('appointments').delete().eq('id', finalAppointmentId)
             throw vehicleError
           }
 
