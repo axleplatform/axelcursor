@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS customer_onboarding_tracking (
     time_on_last_step_seconds INTEGER,
     total_time_seconds INTEGER,
     user_agent TEXT,
-    appointment_id UUID REFERENCES appointments(id) ON DELETE SET NULL,
+    appointment_id UUID, -- Remove foreign key constraint to avoid issues
     completed_at TIMESTAMP WITH TIME ZONE,
     dropped_off BOOLEAN DEFAULT FALSE,
     drop_off_step INTEGER,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS post_appointment_onboarding_tracking (
     time_on_last_step_seconds INTEGER,
     total_time_seconds INTEGER,
     user_agent TEXT,
-    appointment_id UUID REFERENCES appointments(id) ON DELETE SET NULL,
+    appointment_id UUID, -- Remove foreign key constraint to avoid issues
     completed_at TIMESTAMP WITH TIME ZONE,
     dropped_off BOOLEAN DEFAULT FALSE,
     drop_off_step INTEGER,
@@ -76,11 +76,9 @@ CREATE TABLE IF NOT EXISTS mechanic_onboarding_tracking (
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_customer_onboarding_tracking_session_id ON customer_onboarding_tracking(session_id);
 CREATE INDEX IF NOT EXISTS idx_customer_onboarding_tracking_user_id ON customer_onboarding_tracking(user_id);
-CREATE INDEX IF NOT EXISTS idx_customer_onboarding_tracking_appointment_id ON customer_onboarding_tracking(appointment_id);
 
 CREATE INDEX IF NOT EXISTS idx_post_appointment_onboarding_tracking_session_id ON post_appointment_onboarding_tracking(session_id);
 CREATE INDEX IF NOT EXISTS idx_post_appointment_onboarding_tracking_user_id ON post_appointment_onboarding_tracking(user_id);
-CREATE INDEX IF NOT EXISTS idx_post_appointment_onboarding_tracking_appointment_id ON post_appointment_onboarding_tracking(appointment_id);
 
 CREATE INDEX IF NOT EXISTS idx_mechanic_onboarding_tracking_session_id ON mechanic_onboarding_tracking(session_id);
 CREATE INDEX IF NOT EXISTS idx_mechanic_onboarding_tracking_user_id ON mechanic_onboarding_tracking(user_id);
