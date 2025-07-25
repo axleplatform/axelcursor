@@ -1051,9 +1051,6 @@ export default function MechanicDashboard() {
       try {
         const result = await supabase.auth.getSession()
         const sessionData = result.data
-        const error = result.error
-        if (error) throw error
-
         const session = sessionData?.session
         if (!session?.user) {
           router.push('/login')
