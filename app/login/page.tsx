@@ -146,7 +146,8 @@ export default function LoginPage() {
       await new Promise(resolve => setTimeout(resolve, 100))
       
       // Force refresh the session
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: sessionData } = await supabase.auth.getSession()
+      const session = sessionData?.session
       
       if (session) {
         // Use the redirectToCorrectDashboard function
