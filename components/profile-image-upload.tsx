@@ -49,10 +49,10 @@ export default function ProfileImageUpload({ initialImageUrl, onImageChange, use
     try {
       // Ensure the storage bucket exists
       try {
-        const { error: bucketError } = await supabase.storage.getBucket("profile-images")
+        const { error: bucketError } = await (supabase as any).storage.getBucket("profile-images")
         if (bucketError && bucketError.message.includes("does not exist")) {
           // Create the bucket if it doesn't exist
-          await supabase.storage.createBucket("profile-images", {
+          await (supabase as any).storage.createBucket("profile-images", {
             public: true,
             fileSizeLimit: 5 * 1024 * 1024, // 5MB
           })
@@ -67,7 +67,7 @@ export default function ProfileImageUpload({ initialImageUrl, onImageChange, use
         try {
           const previousPath = imageUrl.split("/").pop()
           if (previousPath) {
-            await supabase.storage.from("profile-images").remove([previousPath])
+            await (supabase as any).storage.from("profile-images").remove([previousPath])
           }
         } catch (deleteError) {
           console.warn("Error deleting previous image:", deleteError)
@@ -81,14 +81,14 @@ export default function ProfileImageUpload({ initialImageUrl, onImageChange, use
       const filePath = `${fileName}`
 
       // Upload the new image
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError, data } = await (supabase as any).storage
         .from("profile-images")
         .upload(filePath, file, { upsert: true })
 
       if (uploadError) throw uploadError
 
       // Get the public URL
-      const { data: publicUrlData } = supabase.storage.from("profile-images").getPublicUrl(filePath)
+      const { data: publicUrlData } = (supabase as any).storage.from("profile-images").getPublicUrl(filePath)
 
       const newImageUrl = publicUrlData.publicUrl
       setImageUrl(newImageUrl)
@@ -112,7 +112,7 @@ export default function ProfileImageUpload({ initialImageUrl, onImageChange, use
       // Delete the image from storage
       const filePath = imageUrl.split("/").pop()
       if (filePath) {
-        const { error: deleteError } = await supabase.storage.from("profile-images").remove([filePath])
+        const { error: deleteError } = await (supabase as any).storage.from("profile-images").remove([filePath])
         
         if (deleteError) {
           console.warn("Error deleting previous image:", deleteError)
