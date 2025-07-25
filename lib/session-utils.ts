@@ -23,7 +23,7 @@ export async function ensureOnboardingSession(): Promise<SessionValidationResult
     await new Promise(resolve => setTimeout(resolve, 100))
     
     // Step 3: Check for existing session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const { data: { session }, error: sessionError } = await (supabase.auth as any).getSession()
     
     if (sessionError) {
       console.error('❌ Session error during onboarding:', sessionError)
@@ -45,7 +45,7 @@ export async function ensureOnboardingSession(): Promise<SessionValidationResult
 
     // Step 4: If no session, try to refresh
     console.log('🔄 No session found, attempting to refresh...')
-    const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession()
+    const { data: { session: refreshedSession }, error: refreshError } = await (supabase.auth as any).refreshSession()
     
     if (refreshError) {
       console.error('❌ Session refresh failed:', refreshError)
@@ -133,7 +133,7 @@ export async function waitForSession(
       console.log(`🔍 Session check attempt ${attempt}/${maxAttempts}`)
       
       // Check for session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      const { data: { session }, error: sessionError } = await (supabase.auth as any).getSession()
       
       if (sessionError) {
         console.error('❌ Session error:', sessionError)
@@ -146,7 +146,7 @@ export async function waitForSession(
 
       if (session) {
         // Verify user exists
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        const { data: { user }, error: userError } = await (supabase.auth as any).getUser()
         
         if (userError) {
           console.error('❌ User error:', userError)
@@ -199,7 +199,7 @@ export async function validateSession(): Promise<SessionValidationResult> {
   
   try {
     // Check for valid session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const { data: { session }, error: sessionError } = await (supabase.auth as any).getSession()
     
     if (sessionError) {
       console.error('❌ Session error:', sessionError)
@@ -220,7 +220,7 @@ export async function validateSession(): Promise<SessionValidationResult> {
     }
 
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    const { data: { user }, error: userError } = await (supabase.auth as any).getUser()
     
     if (userError) {
       console.error('❌ User error:', userError)
@@ -268,7 +268,7 @@ export async function ensureAuthenticated(redirectTo?: string): Promise<SessionV
     console.log('🔐 User not authenticated, redirecting to login...')
     
     // Clear any corrupted session
-    await supabase.auth.signOut()
+    await (supabase.auth as any).signOut()
     
     // Redirect to login with return URL
     const loginUrl = redirectTo 
@@ -295,7 +295,7 @@ export async function handleSignupWithSession(
   
   try {
     // Perform signup
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await (supabase.auth as any).signUp({
       email,
       password,
       options: {
@@ -355,7 +355,7 @@ export async function handleSigninWithSession(
   
   try {
     // Perform signin
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await (supabase.auth as any).signInWithPassword({
       email,
       password
     })
