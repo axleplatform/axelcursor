@@ -95,7 +95,7 @@ export default function AppointmentConfirmationPage() {
     const clearCorruptedCookies = async () => {
       try {
         console.log('🧹 Clearing any corrupted auth cookies...');
-        const { error } = await supabase.auth.signOut();
+        const { error } = await (supabase.auth as any).signOut();
         if (error) console.log('Error clearing session:', error);
       } catch (e) {
         // Ignore errors when clearing
@@ -116,7 +116,7 @@ export default function AppointmentConfirmationPage() {
 
         
         // Check for valid session
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await (supabase.auth as any).getSession();
         const session = sessionData?.session;
         if (session) {
           console.log('✅ Valid session found, checking user role...');
@@ -127,14 +127,14 @@ export default function AppointmentConfirmationPage() {
             await checkUserRole();
           } else {
             console.log('❌ No valid user found');
-            await supabase.auth.signOut();
+            await (supabase.auth as any).signOut();
           }
         } else {
           console.log('ℹ️ No session found - guest user');
         }
       } catch (error) {
         console.error('❌ Auth check failed:', error);
-        await supabase.auth.signOut();
+                  await (supabase.auth as any).signOut();
       }
     };
     

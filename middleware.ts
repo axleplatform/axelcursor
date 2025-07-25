@@ -62,7 +62,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Verify session with Supabase
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const { data: { session }, error: sessionError } = await (supabase.auth as any).getSession()
     
     if (sessionError) {
       console.error("❌ Session verification error:", sessionError)

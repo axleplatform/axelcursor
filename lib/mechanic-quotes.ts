@@ -710,7 +710,7 @@ export async function selectQuoteForAppointment(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Start a transaction
-    const { error: transactionError } = await supabase.rpc("begin_transaction")
+    const { error: transactionError } = await (supabase as any).rpc("begin_transaction")
     if (transactionError) throw transactionError
 
     // Get the quote details
@@ -762,13 +762,13 @@ export async function selectQuoteForAppointment(
     if (rejectError) throw rejectError
 
     // Commit the transaction
-    const { error: commitError } = await supabase.rpc("commit_transaction")
+    const { error: commitError } = await (supabase as any).rpc("commit_transaction")
     if (commitError) throw commitError
 
     return { success: true }
   } catch (err) {
     // Rollback on error
-    await supabase.rpc("rollback_transaction")
+    await (supabase as any).rpc("rollback_transaction")
     console.error("Exception in selectQuoteForAppointment:", err)
     return { success: false, error: "An unexpected error occurred" }
   }
@@ -783,7 +783,7 @@ export async function acceptQuote(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Start a transaction
-    const { error: transactionError } = await supabase.rpc("begin_transaction")
+    const { error: transactionError } = await (supabase as any).rpc("begin_transaction")
     if (transactionError) throw transactionError
 
     // Get the quote details
@@ -853,13 +853,13 @@ export async function acceptQuote(
     }
 
     // Commit the transaction
-    const { error: commitError } = await supabase.rpc("commit_transaction")
+    const { error: commitError } = await (supabase as any).rpc("commit_transaction")
     if (commitError) throw commitError
 
     return { success: true }
   } catch (error) {
     // Rollback on error
-    await supabase.rpc("rollback_transaction")
+    await (supabase as any).rpc("rollback_transaction")
     console.error("Error in acceptQuote:", error)
     return { success: false, error: error instanceof Error ? error.message : "An unexpected error occurred" }
   }

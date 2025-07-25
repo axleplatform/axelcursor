@@ -4,7 +4,7 @@ import type { Feedback, CreateFeedbackRequest, FeedbackResponse } from '@/types/
 export async function submitFeedback(feedback: CreateFeedbackRequest): Promise<FeedbackResponse> {
   try {
     // Get current user if logged in
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await (supabase.auth as any).getUser();
     
     // Submit feedback to Supabase
     const { data, error } = await supabase

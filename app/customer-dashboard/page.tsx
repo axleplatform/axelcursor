@@ -36,11 +36,11 @@ export default function CustomerDashboard() {
       console.log('🔐 Checking customer dashboard access...');
       
       // Check for valid session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await (supabase.auth as any).getSession();
       
       if (sessionError) {
         console.error('❌ Session error:', sessionError);
-        await supabase.auth.signOut();
+        await (supabase.auth as any).signOut();
         setAuthError('Session error. Please log in again.');
         router.push('/login');
         return;
@@ -48,18 +48,18 @@ export default function CustomerDashboard() {
 
       if (!session) {
         console.log('❌ No valid session found');
-        await supabase.auth.signOut();
+        await (supabase.auth as any).signOut();
         setAuthError('No valid session. Please log in.');
         router.push('/login');
         return;
       }
 
       // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await (supabase.auth as any).getUser();
       
       if (userError) {
         console.error('❌ User error:', userError);
-        await supabase.auth.signOut();
+        await (supabase.auth as any).signOut();
         setAuthError('User authentication error. Please log in again.');
         router.push('/login');
         return;
@@ -67,7 +67,7 @@ export default function CustomerDashboard() {
 
       if (!user || !user.id) {
         console.error('❌ No valid user or user ID');
-        await supabase.auth.signOut();
+        await (supabase.auth as any).signOut();
         setAuthError('Invalid user. Please log in again.');
         router.push('/login');
         return;
@@ -106,7 +106,7 @@ export default function CustomerDashboard() {
       
     } catch (error) {
       console.error('❌ Access check failed:', error);
-      await supabase.auth.signOut();
+      await (supabase.auth as any).signOut();
       setAuthError('Access check failed. Please log in again.');
       router.push('/login');
     } finally {

@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const supabase = createRouteHandlerClient({ cookies })
     
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await (supabase.auth as any).getUser()
     
     if (authError || !user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })

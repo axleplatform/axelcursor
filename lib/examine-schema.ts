@@ -5,7 +5,7 @@ import { supabase } from "./supabase"
 export async function examineSchema() {
   try {
     // Get the schema of the appointments table
-    const { data: appointmentsColumns, error: appointmentsError } = await supabase.rpc("get_table_columns", {
+    const { data: appointmentsColumns, error: appointmentsError } = await (supabase as any).rpc("get_table_columns", {
       table_name: "appointments",
     })
 

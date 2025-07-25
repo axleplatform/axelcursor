@@ -219,7 +219,7 @@ export async function mergeTemporaryUserData(
     console.log(`✅ Updated new user account type to: ${accountType}`)
     
     // Step 4: Delete the temporary user (since all data is now moved)
-    const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(tempUser.id)
+          const { error: deleteAuthError } = await (supabase.auth as any).admin.deleteUser(tempUser.id)
     if (deleteAuthError) {
       console.warn('⚠️ Could not delete temporary auth user:', deleteAuthError)
       // Continue anyway - the public.users record will be cleaned up

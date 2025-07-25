@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const supabase = createRouteHandlerClient({ cookies })
     
     try {
-      const { data: { user } } = await supabase.auth.exchangeCodeForSession(code)
+      const { data: { user } } = await (supabase.auth as any).exchangeCodeForSession(code)
       
       if (user) {
         console.log('✅ OAuth successful for user:', user.id, 'Email:', user.email, 'UserType:', userType)

@@ -46,7 +46,7 @@ export async function createOrUpdateUserProfile(
   try {
     // Step 1: Verify user exists in auth.users
     console.log('🔍 Step 1: Verifying user exists in auth.users...')
-    const { data: authUser, error: authError } = await supabase.auth.getUser()
+    const { data: authUser, error: authError } = await (supabase.auth as any).getUser()
     
     if (authError || !authUser.user) {
       console.error('❌ Authentication error:', authError)

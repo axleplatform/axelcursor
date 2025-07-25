@@ -26,7 +26,7 @@ export function ProfileDropdown() {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
-      await supabase.auth.signOut()
+      await (supabase.auth as any).signOut()
       router.replace("/login")
     } catch (error) {
       console.error("Error logging out:", error)

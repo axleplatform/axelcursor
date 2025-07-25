@@ -4,7 +4,7 @@ export async function getUserRoleAndRedirect(router: any) {
   
   try {
     // Get current user
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { data: { user }, error } = await (supabase.auth as any).getUser();
     if (error || !user) {
       router.push('/login');
       return null;

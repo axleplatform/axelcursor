@@ -1303,7 +1303,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
   const createTemporaryUser = async () => {
     try {
       // Call Supabase function to create a temporary user
-      const { data: userId, error: userError } = await supabase.rpc('create_temporary_user')
+      const { data: userId, error: userError } = await (supabase as any).rpc('create_temporary_user')
 
       if (userError) {
         console.error('Error creating temporary user:', userError)
@@ -1653,7 +1653,7 @@ const HomePageContent = React.memo(function HomePageContent(): React.JSX.Element
           
           // Also send immediate channel notification for instant updates
           try {
-            await supabase.channel('appointment-updates')
+            await (supabase as any).channel('appointment-updates')
               .send({
                 type: 'broadcast',
                 event: 'appointment_edited',

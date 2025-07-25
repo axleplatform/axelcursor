@@ -1049,7 +1049,7 @@ export default function MechanicDashboard() {
   useEffect(() => {
     const checkAuth = async (): Promise<void> => {
       try {
-        const result = await supabase.auth.getSession()
+        const result = await (supabase.auth as any).getSession()
         const sessionData = result.data
         const session = sessionData?.session
         if (!session?.user) {

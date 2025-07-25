@@ -3,7 +3,7 @@ import { supabase } from "./supabase"
 export async function createProfileImagesBucket() {
   try {
     // Check if the bucket already exists
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets()
+    const { data: buckets, error: listError } = await (supabase as any).storage.listBuckets()
 
     if (listError) {
       throw listError
@@ -13,7 +13,7 @@ export async function createProfileImagesBucket() {
 
     if (!bucketExists) {
       // Create the bucket if it doesn't exist
-      const { error: createError } = await supabase.storage.createBucket("profile-images", {
+      const { error: createError } = await (supabase as any).storage.createBucket("profile-images", {
         public: true, // Make the bucket public so we can access images without authentication
         fileSizeLimit: 5242880, // 5MB limit
         allowedMimeTypes: ["image/png", "image/jpeg", "image/gif", "image/webp"],
