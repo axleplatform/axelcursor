@@ -846,17 +846,20 @@ function BookAppointmentContent() {
           // Notify mechanics about the appointment update from book-appointment page
           if (appointmentId && data) {
             try {
-              await supabase.channel('appointment-updates')
-                .send({
-                  type: 'broadcast',
-                  event: 'appointment_edited',
-                  payload: {
-                    appointment_id: appointmentId,
-                    edited_at: new Date().toISOString()
-                  }
-                });
+              // Use the correct Supabase realtime API for broadcasting
+              const { error } = await supabase
+                .from('appointments')
+                .update({ 
+                  updated_at: new Date().toISOString(),
+                  edited_from: 'book_appointment_page'
+                })
+                .eq('id', appointmentId);
                 
-              console.log('📢 Notified mechanics about appointment update from book-appointment page');
+              if (error) {
+                console.error('⚠️ Warning: Could not update appointment timestamp:', error);
+              } else {
+                console.log('📢 Updated appointment timestamp to notify mechanics about appointment update from book-appointment page');
+              }
             } catch (error) {
               console.error('⚠️ Warning: Could not send real-time notification:', error);
             }
