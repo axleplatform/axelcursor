@@ -11,7 +11,7 @@ import { SiteHeader } from '@/components/site-header'
 import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { useOnboardingTracking } from '@/hooks/useOnboardingTracking'
-import { validateSession, getSessionErrorMessage, ensureOnboardingSession } from '@/lib/session-utils'
+import { validateSession, getSessionErrorMessage, ensureOnboardingSession, validateSessionWithRetry } from '@/lib/session-utils'
 import { mergeTemporaryUserData } from '@/lib/simplified-profile-creation'
 
 // Type definitions
