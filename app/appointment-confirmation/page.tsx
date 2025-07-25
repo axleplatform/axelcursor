@@ -367,7 +367,7 @@ export default function AppointmentConfirmationPage() {
       console.log('🚀 Starting simplified account creation...')
       
       // Just initiate OAuth - let callback handle everything
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await (supabase.auth as any).signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback?appointment_id=${appointmentId}&phone=${encodeURIComponent(appointmentData?.phone_number || '')}&full_name=${encodeURIComponent(appointmentData?.vehicles?.make || '')}`
