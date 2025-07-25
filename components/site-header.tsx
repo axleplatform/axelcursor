@@ -22,7 +22,7 @@ function MobileFeedbackForm({ onClose }: { onClose: () => void }) {
     try {
       setIsSubmitting(true);
       
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase.auth as any).getUser();
       
       const { error } = await supabase
         .from('feedback')
@@ -115,7 +115,7 @@ function FeedbackButton() {
     try {
       setIsSubmitting(true);
       
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await (supabase.auth as any).getUser();
       
       const { error } = await supabase
         .from('feedback')
