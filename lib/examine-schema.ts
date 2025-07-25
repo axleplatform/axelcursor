@@ -3,6 +3,8 @@
 import { supabase } from "./supabase"
 
 export async function examineSchema() {
+  if (!supabase) throw new Error("Supabase client is not initialized")
+  
   try {
     // Get the schema of the appointments table
     const { data: appointmentsColumns, error: appointmentsError } = await (supabase as any).rpc("get_table_columns", {
@@ -13,7 +15,7 @@ export async function examineSchema() {
       console.error("Error fetching appointments schema:", appointmentsError)
 
       // Alternative approach if RPC is not available
-      const { data: appointmentsInfo, error: infoError } = await supabase!.from("appointments").select("*").limit(1)
+      const { data: appointmentsInfo, error: infoError } = await supabase.from("appointments").select("*").limit(1)
 
       if (infoError) {
         console.error("Error fetching sample appointment:", infoError)
@@ -32,7 +34,7 @@ export async function examineSchema() {
     }
 
     // Check for junction tables
-    const { data: tables, error: tablesError } = await supabase!
+    const { data: tables, error: tablesError } = await supabase
       .from("pg_tables")
       .select("tablename")
       .eq("schemaname", "public")

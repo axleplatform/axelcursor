@@ -26,7 +26,7 @@ export default function SchemaCheckPage() {
         }
 
         // Get a sample appointment
-        const { data: appointment, error: appointmentError } = await supabase!.from("appointments").select("*").limit(1)
+        const { data: appointment, error: appointmentError } = await supabase.from("appointments").select("*").limit(1)
 
         if (appointmentError) {
           console.error("Error fetching sample appointment:", appointmentError)

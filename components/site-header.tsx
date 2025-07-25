@@ -213,6 +213,8 @@ function FeedbackButton() {
 }
 
 export function SiteHeader() {
+  if (!supabase) throw new Error("Supabase client is not initialized")
+  
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -223,7 +225,7 @@ export function SiteHeader() {
   // Check authentication state
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: sessionData } = await supabase!.auth.getSession()
+      const { data: sessionData } = await supabase.auth.getSession()
       const session = sessionData?.session
       setIsLoggedIn(!!session)
     }
@@ -256,7 +258,7 @@ export function SiteHeader() {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
-      await supabase!.auth.signOut()
+      await supabase.auth.signOut()
       router.replace("/login")
     } catch (error) {
       console.error("Error logging out:", error)

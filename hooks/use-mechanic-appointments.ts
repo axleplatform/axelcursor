@@ -59,6 +59,8 @@ function getMechanicColumn(appointment: Record<string, unknown>): string | null 
 type SubscriptionStatus = 'SUBSCRIBED' | 'CLOSED' | 'CHANNEL_ERROR'
 
 export function useMechanicAppointments(mechanicId: string) {
+  if (!supabase) throw new Error("Supabase client is not initialized")
+  
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
   const [availableAppointments, setAvailableAppointments] = useState<Appointment[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -223,7 +225,7 @@ export function useMechanicAppointments(mechanicId: string) {
     }
 
     try {
-      const { error } = await supabase!.from("appointments").update({ status }).eq("id", appointmentId)
+      const { error } = await supabase.from("appointments").update({ status }).eq("id", appointmentId)
 
       if (error) throw error
 
@@ -262,7 +264,7 @@ export function useMechanicAppointments(mechanicId: string) {
       if (error) throw error
 
       // Update appointment status to quoted
-      const { error: updateAppointmentError } = await supabase!
+      const { error: updateAppointmentError } = await supabase
         .from("appointments")
         .update({
           status: "quoted",
@@ -288,7 +290,7 @@ export function useMechanicAppointments(mechanicId: string) {
 
     try {
       // Price is always stored in mechanic_quotes table, not appointments table
-      const { error } = await supabase!
+      const { error } = await supabase
         .from("mechanic_quotes")
         .update({ price, updated_at: new Date().toISOString() })
         .eq("appointment_id", appointmentId)

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
           if (!existingMechanic) {
             // Create in mechanic_profiles table
-            const { error: insertError } = await supabase!.from('mechanic_profiles').insert({
+            const { error: insertError } = await supabase.from('mechanic_profiles').insert({
               user_id: user.id,
               email: user.email,
               full_name: user.user_metadata?.full_name,
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
             console.log('✅ Mechanic profile created successfully')
             
             // Update users table to set profile_status
-            await supabase!
+            await supabase
               .from('users')
               .update({ 
                 profile_status: 'mechanic',
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
           
         } else {
           // Customer flow - create in users table
-          const { data: existingUser } = await supabase!
+          const { data: existingUser } = await supabase
             .from('users')
             .select()
             .eq('email', user.email)
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
             let temporaryUserId = null
             
             if (phone) {
-              const { data: tempUser } = await supabase!
+              const { data: tempUser } = await supabase
                 .from('users')
                 .select('id')
                 .eq('phone', phone)
@@ -98,7 +98,7 @@ export async function GET(request: Request) {
             
             if (shouldUpgradeTemporary && temporaryUserId) {
               // Move appointments from temporary user to new user ID
-              const { error: moveError } = await supabase!
+              const { error: moveError } = await supabase
                 .from('appointments')
                 .update({ 
                   user_id: user.id,
@@ -112,7 +112,7 @@ export async function GET(request: Request) {
               }
               
               // Delete the temporary user
-              const { error: deleteError } = await supabase!
+              const { error: deleteError } = await supabase
                 .from('users')
                 .delete()
                 .eq('id', temporaryUserId)
@@ -125,7 +125,7 @@ export async function GET(request: Request) {
             }
             
             // Create new user in users table (or this will be the upgraded user)
-            const { error: insertError } = await supabase!.from('users').insert({
+            const { error: insertError } = await supabase.from('users').insert({
               id: user.id,
               email: user.email,
               name: user.user_metadata?.full_name,
