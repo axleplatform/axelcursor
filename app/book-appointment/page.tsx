@@ -1788,21 +1788,19 @@ function BookAppointmentContent() {
           console.log('✅ Mechanics notified of appointment update via real-time')
         }
         
-        // Also send channel notification for immediate updates
+        // Send notification via database update instead of realtime channel
         try {
-          await supabase.channel('appointment-updates')
-            .send({
-              type: 'broadcast',
-              event: 'appointment_edited',
-              payload: {
-                appointment_id: appointmentId,
-                edited_at: new Date().toISOString()
-              }
-            });
+          await supabase
+            .from('appointments')
+            .update({ 
+              mechanic_notified_of_edit: true,
+              last_edited_at: new Date().toISOString()
+            })
+            .eq('id', appointmentId);
             
-          console.log('📢 Sent immediate channel notification to mechanics');
+          console.log('📢 Sent notification to mechanics via database update');
         } catch (error) {
-          console.error('⚠️ Warning: Could not send channel notification:', error);
+          console.error('⚠️ Warning: Could not send notification:', error);
         }
 
         console.log('✅ Appointment edited and reset to available')
