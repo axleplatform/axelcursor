@@ -121,7 +121,7 @@ export default function LoginPage() {
         throw new Error("Please enter both email and password")
       }
 
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await (supabase.auth as any).signInWithPassword({
         email: inputValue.trim(),
         password: password,
       })
