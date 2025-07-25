@@ -207,31 +207,24 @@ export default function AppointmentConfirmationPage() {
 
     fetchAppointmentData()
 
-    // Subscribe to real-time updates
-    const subscription = supabase
-      .channel("appointment-confirmation")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "appointments",
-          filter: `id=eq.${appointmentId}`,
-        },
-        (payload: RealtimePayload) => {
-          if (payload.eventType === "UPDATE") {
+    // Subscribe to real-time updates using the correct Supabase realtime API
+    if (appointmentId) {
+      const subscription = supabase
+        .from('appointments')
+        .on('UPDATE', (payload: { new: AppointmentData; old: AppointmentData }) => {
+          if (payload.new.id === appointmentId) {
             setAppointmentData(payload.new)
             // Check if appointment was cancelled
             if (payload.new.status === 'cancelled') {
               setIsCancelled(true)
             }
           }
-        },
-      )
-      .subscribe()
+        })
+        .subscribe()
 
-    return () => {
-      subscription.unsubscribe()
+      return () => {
+        subscription.unsubscribe()
+      }
     }
   }, [appointmentId, toast])
 
