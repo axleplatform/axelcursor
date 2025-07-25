@@ -21,7 +21,7 @@ export default function MechanicAppointmentsPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser()
+        const { data: { user }, error } = await (supabase.auth as any).getUser()
         if (error || !user) {
           router.push('/login')
           return
