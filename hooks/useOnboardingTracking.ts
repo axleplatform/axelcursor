@@ -184,6 +184,8 @@ export function useOnboardingTracking({
       } catch (error) {
         console.error('❌ Error in session maintenance:', error);
       }
+      
+      return; // Add explicit return for all code paths
     };
     
     maintainSession();
