@@ -208,8 +208,9 @@ export default function AppointmentConfirmationPage() {
     fetchAppointmentData()
 
     // Subscribe to real-time updates using the correct Supabase realtime API
+    let subscription: any = null
     if (appointmentId) {
-      const subscription = supabase
+      subscription = supabase
         .from('appointments')
         .on('UPDATE', (payload: { new: AppointmentData; old: AppointmentData }) => {
           if (payload.new.id === appointmentId) {
@@ -221,8 +222,11 @@ export default function AppointmentConfirmationPage() {
           }
         })
         .subscribe()
+    }
 
-      return () => {
+    // Return cleanup function
+    return () => {
+      if (subscription) {
         subscription.unsubscribe()
       }
     }
