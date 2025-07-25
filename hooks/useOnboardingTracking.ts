@@ -23,6 +23,28 @@ interface TrackingProps {
   originalStepNumber?: number; // For post-appointment
 }
 
+// Base tracking data interface
+interface BaseTrackingData {
+  session_id: string;
+  user_id?: string;
+  current_step: number;
+  highest_step_reached: number;
+  total_steps: number;
+  user_agent: string;
+  current_step_name: string;
+  created_at?: string;
+  last_active_at?: string;
+}
+
+// Post-appointment specific tracking data
+interface PostAppointmentTrackingData extends BaseTrackingData {
+  appointment_id?: string;
+  current_step_original_number?: number;
+}
+
+// Union type for all tracking data
+type TrackingData = BaseTrackingData | PostAppointmentTrackingData;
+
 const CUSTOMER_STEP_NAMES: { [key: number]: string } = {
   1: 'Vehicle Information',
   2: 'Referral Source',
@@ -131,7 +153,7 @@ export function useOnboardingTracking({
           }
 
           // Create new tracking record in database
-          const trackingData = {
+          const trackingData: TrackingData = {
             session_id: sessionId,
             user_id: userId,
             current_step: currentStep,
@@ -141,9 +163,10 @@ export function useOnboardingTracking({
             current_step_name: stepName || getStepName(type, currentStep)
           };
 
+          // Add post-appointment specific fields using type assertion
           if (type === 'post_appointment') {
-            trackingData.appointment_id = appointmentId;
-            trackingData.current_step_original_number = originalStepNumber || currentStep;
+            (trackingData as PostAppointmentTrackingData).appointment_id = appointmentId;
+            (trackingData as PostAppointmentTrackingData).current_step_original_number = originalStepNumber || currentStep;
           }
 
           const { data: newTracking, error: insertError } = await supabase
@@ -173,7 +196,7 @@ export function useOnboardingTracking({
         trackingIdRef.current = tracking.id;
       } else {
         // Create new tracking record in localStorage
-        const trackingData = {
+        const trackingData: TrackingData = {
           id: generateUUID(),
           session_id: sessionId,
           user_id: userId,
@@ -186,9 +209,10 @@ export function useOnboardingTracking({
           last_active_at: new Date().toISOString()
         };
 
+        // Add post-appointment specific fields using type assertion
         if (type === 'post_appointment') {
-          trackingData.appointment_id = appointmentId;
-          trackingData.current_step_original_number = originalStepNumber || currentStep;
+          (trackingData as PostAppointmentTrackingData).appointment_id = appointmentId;
+          (trackingData as PostAppointmentTrackingData).current_step_original_number = originalStepNumber || currentStep;
         }
 
         localStorage.setItem(trackingKey, JSON.stringify(trackingData));
@@ -244,7 +268,7 @@ export function useOnboardingTracking({
       const timeOnLastStep = Math.floor((Date.now() - stepStartTimeRef.current) / 1000);
       const totalTime = Math.floor((Date.now() - sessionStartTimeRef.current) / 1000);
 
-      const updateData = {
+      const updateData: any = {
         current_step: currentStep,
         current_step_name: stepName || getStepName(type, currentStep),
         last_active_at: new Date().toISOString(),
@@ -343,7 +367,7 @@ export function useOnboardingTracking({
         const timeOnLastStep = Math.floor((Date.now() - stepStartTimeRef.current) / 1000);
         const totalTime = Math.floor((Date.now() - sessionStartTimeRef.current) / 1000);
 
-        const dropData = {
+        const dropData: any = {
           dropped_off: true,
           drop_off_step: currentStep,
           drop_off_step_name: stepName || getStepName(type, currentStep),
