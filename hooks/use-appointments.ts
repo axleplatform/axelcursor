@@ -70,7 +70,7 @@ export function useAppointments() {
     fetchAppointments()
 
     // Subscribe to real-time updates
-    const subscription = supabase
+    const subscription = (supabase as any)
       .channel("appointments")
       .on(
         "postgres_changes",
