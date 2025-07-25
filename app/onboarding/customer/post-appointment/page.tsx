@@ -1525,7 +1525,7 @@ export default function PostAppointmentOnboarding() {
           
           if (!retryResult.success) {
             console.error('❌ Session validation failed after retry:', retryResult.error);
-            await supabase.auth.signOut();
+            await (supabase.auth as any).signOut();
             const errorMessage = getSessionErrorMessage(retryResult.errorCode || 'UNKNOWN');
             setAuthError(errorMessage);
             router.push('/login');
@@ -1573,7 +1573,7 @@ export default function PostAppointmentOnboarding() {
         
       } catch (error) {
         console.error('❌ Auth check failed:', error);
-        await supabase.auth.signOut();
+        await (supabase.auth as any).signOut();
         setAuthError('Authentication failed. Please log in again.');
         router.push('/login');
       } finally {
@@ -1877,7 +1877,7 @@ export default function PostAppointmentOnboarding() {
           console.error('📋 Full error details:', JSON.stringify(profileOperationResult.error, null, 2));
           
           // Try to get current session and retry
-          const { data: { session: reauthSession }, error: reauthError } = await supabase.auth.getSession();
+          const { data: { session: reauthSession }, error: reauthError } = await (supabase.auth as any).getSession();
           if (reauthError || !reauthSession || !reauthSession.user) {
             console.error('❌ Re-authentication failed:', reauthError);
             setAuthError('Authentication required. Please log in again.');

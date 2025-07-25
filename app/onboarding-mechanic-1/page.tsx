@@ -32,7 +32,7 @@ export default function MechanicOnboardingStep1Page() {
   useEffect(() => {
     const checkAuth = async (): Promise<void> => {
       try {
-        const { data: sessionData } = await supabase.auth.getSession()
+        const { data: sessionData } = await (supabase.auth as any).getSession()
         const session = sessionData?.session
         if (!session?.user) {
           router.push('/login')

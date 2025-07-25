@@ -53,7 +53,7 @@ export default function MechanicOnboardingStep5Page() {
         const {
           data: { user },
           error: authError,
-        } = await supabase.auth.getUser()
+        } = await (supabase.auth as any).getUser()
 
         if (authError) throw authError
 
@@ -261,7 +261,7 @@ export default function MechanicOnboardingStep5Page() {
       if (mechanicError) throw mechanicError
 
       // Update user metadata
-      const { error: userError } = await supabase.auth.updateUser({
+      const { error: userError } = await (supabase.auth as any).updateUser({
         data: {
           onboarding_completed: true,
           onboarding_step: "completed",

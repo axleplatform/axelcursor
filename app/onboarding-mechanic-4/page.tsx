@@ -123,7 +123,7 @@ export default function MechanicOnboardingStep4Page() {
         const {
           data: { user },
           error: authError,
-        } = await supabase.auth.getUser()
+        } = await (supabase.auth as any).getUser()
 
         if (authError) throw authError
 
@@ -250,7 +250,7 @@ export default function MechanicOnboardingStep4Page() {
       }
 
       // Update user metadata
-      await supabase.auth.updateUser({
+      await (supabase.auth as any).updateUser({
         data: {
           onboarding_step: "profile_completion",
         },

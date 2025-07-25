@@ -65,7 +65,7 @@ export default function MechanicSignupPage() {
         clearCorruptedSessionData();
         
         // Sign up with Supabase Auth
-        const { data, error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await (supabase.auth as any).signUp({
           email,
           password,
           options: {
@@ -191,7 +191,7 @@ export default function MechanicSignupPage() {
     setIsLoading(true)
 
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await (supabase.auth as any).signInWithOAuth({
         provider: "google",
         options: {
           queryParams: {

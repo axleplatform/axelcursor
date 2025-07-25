@@ -136,7 +136,7 @@ export default function MechanicOnboardingStep3Page() {
         const {
           data: { user },
           error: authError,
-        } = await supabase.auth.getUser()
+        } = await (supabase.auth as any).getUser()
 
         if (authError) throw authError
 
@@ -493,7 +493,7 @@ export default function MechanicOnboardingStep3Page() {
       }
 
       // Update user metadata with all form data
-      const { error: updateError } = await supabase.auth.updateUser({
+      const { error: updateError } = await (supabase.auth as any).updateUser({
         data: {
           ...formDataToSave,
           // Add a timestamp for tracking

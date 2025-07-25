@@ -1996,7 +1996,7 @@ const createUserWithOnboardingData = async (userId: string, onboardingData: Onbo
     console.log('👤 Creating/updating user profile with onboarding data for user:', userId);
     
     // First get the user's auth data
-    const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await (supabase.auth as any).getUser();
 
     if (!user) {
       console.error('❌ No authenticated user found');
@@ -2174,7 +2174,7 @@ const createUserWithOnboardingData = async (userId: string, onboardingData: Onbo
         console.error('📋 Full error details:', JSON.stringify(profileOperationResult.error, null, 2));
         
         // Try to re-authenticate and retry
-        const { data: { user: reauthUser }, error: reauthError } = await supabase.auth.getUser();
+        const { data: { user: reauthUser }, error: reauthError } = await (supabase.auth as any).getUser();
         if (reauthError || !reauthUser) {
           console.error('❌ Re-authentication failed:', reauthError);
           throw new Error('Authentication required. Please log in again.');
@@ -2347,7 +2347,7 @@ export default function CustomerOnboarding() {
   // Get user auth state
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user } } = await (supabase.auth as any).getUser()
       setUser(user)
     }
     getUser()

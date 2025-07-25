@@ -9,7 +9,7 @@ export default function AuthCallback() {
 
   useEffect(() => {
     async function handleAuth() {
-      const { data } = await supabase.auth.getSession()
+      const { data } = await (supabase.auth as any).getSession()
 
       if (data?.session) {
         const user = data.session.user
