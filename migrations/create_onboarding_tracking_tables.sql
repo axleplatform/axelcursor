@@ -168,4 +168,4 @@ COMMENT ON TABLE post_appointment_onboarding_tracking IS 'Tracks customer progre
 COMMENT ON TABLE mechanic_onboarding_tracking IS 'Tracks mechanic progress through onboarding';
 
 -- Refresh PostgREST schema cache
-NOTIFY pgrst, 'reload schema'; 
+NOTIFY pgrst, 'reload schema';
