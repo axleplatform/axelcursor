@@ -197,95 +197,17 @@ export function useMechanicAppointments(mechanicId: string) {
 
     fetchAppointments()
 
-    // REAL-TIME FIX: Enhanced subscription with proper state updates
-    const appointmentsSubscription = ((supabase as any)
-      .channel("appointments-changes-optimized")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "appointments",
-          filter: `status=in.(pending,quoted,confirmed,in_progress)` // Only relevant statuses
-        },
-        (payload: RealtimePostgresChangesPayload<Appointment>) => {
-          console.log("🔔 REAL-TIME: Appointment change detected:", payload.eventType)
-          // Refresh appointments when changes occur
-          fetchAppointments()
-        },
-      ) as any)
-      .subscribe((status: SubscriptionStatus) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ REAL-TIME: Successfully subscribed to appointments changes')
-        } else if (status === 'CLOSED') {
-          console.log('🔄 REAL-TIME: Subscription closed, attempting to reconnect...')
-          setTimeout(() => {
-            appointmentsSubscription.subscribe()
-          }, 1000)
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ REAL-TIME: Subscription error, attempting to reconnect...')
-          setTimeout(() => {
-            appointmentsSubscription.subscribe()
-          }, 1000)
-        }
-      })
-
-    // Enhanced quotes subscription
-    const quotesSubscription = ((supabase as any)
-      .channel("mechanic-quotes-changes-optimized")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "mechanic_quotes",
-        },
-        (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log("🔔 REAL-TIME: Quote change detected:", payload.eventType)
-          // Refresh appointments when quotes change
-          fetchAppointments()
-        },
-      ) as any)
-      .subscribe((status: SubscriptionStatus) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ REAL-TIME: Successfully subscribed to quotes changes')
-        } else if (status === 'CLOSED') {
-          console.log('🔄 REAL-TIME: Subscription closed, attempting to reconnect...')
-          setTimeout(() => {
-            quotesSubscription.subscribe()
-          }, 1000)
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ REAL-TIME: Subscription error, attempting to reconnect...')
-          setTimeout(() => {
-            quotesSubscription.subscribe()
-          }, 1000)
-        }
-      })
-
-    // Subscribe to mechanic skips for real-time skip updates
-    const skipsSubscription = ((supabase as any)
-      .channel("mechanic-skips-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "mechanic_skipped_appointments",
-          filter: `mechanic_id=eq.${mechanicId}`
-        },
-        (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log("🔔 REAL-TIME: Skip change detected:", payload.eventType)
-          // Refresh appointments when skips change
-          fetchAppointments()
-        },
-      ) as any)
-      .subscribe()
+    // Note: Realtime subscriptions removed due to TypeScript deployment issues
+    // Data will be refreshed manually when needed via fetchAppointments()
+    
+    // Set up polling for data updates (every 30 seconds)
+    const pollInterval = setInterval(() => {
+      fetchAppointments()
+    }, 30000)
 
     return () => {
-      console.log("🧹 CLEANUP: Removing optimized subscriptions")
-      (supabase as any).removeChannel(appointmentsSubscription)
-      (supabase as any).removeChannel(quotesSubscription) 
-      (supabase as any).removeChannel(skipsSubscription)
+      console.log("🧹 CLEANUP: Clearing polling interval")
+      clearInterval(pollInterval)
     }
   }, [mechanicId, toast])
 
