@@ -198,7 +198,7 @@ export function useMechanicAppointments(mechanicId: string) {
     fetchAppointments()
 
     // REAL-TIME FIX: Enhanced subscription with proper state updates
-    const appointmentsSubscription = supabase
+    const appointmentsSubscription = (supabase as any)
       .channel("appointments-changes-optimized")
       .on(
         "postgres_changes",
@@ -231,7 +231,7 @@ export function useMechanicAppointments(mechanicId: string) {
       })
 
     // Enhanced quotes subscription
-    const quotesSubscription = supabase
+    const quotesSubscription = (supabase as any)
       .channel("mechanic-quotes-changes-optimized")
       .on(
         "postgres_changes",
@@ -263,7 +263,7 @@ export function useMechanicAppointments(mechanicId: string) {
       })
 
     // Subscribe to mechanic skips for real-time skip updates
-    const skipsSubscription = supabase
+    const skipsSubscription = (supabase as any)
       .channel("mechanic-skips-changes")
       .on(
         "postgres_changes",
