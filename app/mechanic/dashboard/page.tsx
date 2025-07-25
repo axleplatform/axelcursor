@@ -1049,7 +1049,9 @@ export default function MechanicDashboard() {
   useEffect(() => {
     const checkAuth = async (): Promise<void> => {
       try {
-        const { data: sessionData, error } = await supabase.auth.getSession()
+        const result = await supabase.auth.getSession()
+        const sessionData = result.data
+        const error = result.error
         if (error) throw error
 
         const session = sessionData?.session
