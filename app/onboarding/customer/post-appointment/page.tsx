@@ -1516,7 +1516,7 @@ export default function PostAppointmentOnboarding() {
         console.log('🔐 Checking authentication and session with enhanced persistence...');
         
         // Use the enhanced session persistence utility
-        const sessionResult = await ensureOnboardingSession();
+        let sessionResult = await ensureOnboardingSession();
         
         if (!sessionResult.success) {
           console.error('❌ Session persistence failed:', sessionResult.error);
