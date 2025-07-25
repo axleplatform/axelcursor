@@ -1675,7 +1675,7 @@ function BookAppointmentContent() {
           const normalizedPhone = formData.phoneNumber.replace(/\D/g, '')
           
           // Use Supabase function to merge users by phone number
-          const { data: finalUserId, error: mergeError } = await supabase.rpc(
+          const { data: finalUserId, error: mergeError } = await (supabase as any).rpc(
             'merge_users_by_phone',
             {
               p_phone: normalizedPhone,
