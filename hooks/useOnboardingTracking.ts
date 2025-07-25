@@ -98,9 +98,7 @@ export function useOnboardingTracking({
   const sessionStartTimeRef = useRef<number>(Date.now());
   const lastStepRef = useRef<number>(currentStep);
 
-  const tableName = `${type}_onboarding_tracking`;
-
-  // Initialize session
+  // Initialize session tracking (localStorage for unauthenticated, database for authenticated)
   useEffect(() => {
     const initSession = async () => {
       // Get or create session ID
@@ -114,25 +112,78 @@ export function useOnboardingTracking({
 
       sessionIdRef.current = sessionId;
 
-      // Check if tracking record exists
-      const { data: existing } = await supabase
-        .from(tableName)
-        .select('id')
-        .eq('session_id', sessionId)
-        .single();
+      const tableName = `${type}_onboarding_tracking`;
 
-      if (existing) {
-        trackingIdRef.current = existing.id;
+      if (userId) {
+        // Authenticated user - try to use database first
+        try {
+          // Check if tracking record exists in database
+          const { data: existing, error } = await supabase
+            .from(tableName)
+            .select('id')
+            .eq('session_id', sessionId)
+            .single();
+
+          if (existing && !error) {
+            trackingIdRef.current = existing.id;
+            console.log('✅ Found existing tracking record in database');
+            return;
+          }
+
+          // Create new tracking record in database
+          const trackingData = {
+            session_id: sessionId,
+            user_id: userId,
+            current_step: currentStep,
+            highest_step_reached: currentStep,
+            total_steps: totalSteps,
+            user_agent: navigator.userAgent,
+            current_step_name: stepName || getStepName(type, currentStep)
+          };
+
+          if (type === 'post_appointment') {
+            trackingData.appointment_id = appointmentId;
+            trackingData.current_step_original_number = originalStepNumber || currentStep;
+          }
+
+          const { data: newTracking, error: insertError } = await supabase
+            .from(tableName)
+            .insert(trackingData)
+            .select()
+            .single();
+
+          if (newTracking && !insertError) {
+            trackingIdRef.current = newTracking.id;
+            console.log('✅ Created new tracking record in database');
+            return;
+          }
+
+          console.warn('⚠️ Database tracking failed, falling back to localStorage');
+        } catch (error) {
+          console.warn('⚠️ Database tracking error, falling back to localStorage:', error);
+        }
+      }
+
+      // Fallback to localStorage (for unauthenticated users or database failures)
+      const trackingKey = `${type}_onboarding_tracking`;
+      const existingTracking = localStorage.getItem(trackingKey);
+      
+      if (existingTracking) {
+        const tracking = JSON.parse(existingTracking);
+        trackingIdRef.current = tracking.id;
       } else {
-        // Create new tracking record
-        const trackingData: any = {
+        // Create new tracking record in localStorage
+        const trackingData = {
+          id: generateUUID(),
           session_id: sessionId,
           user_id: userId,
           current_step: currentStep,
           highest_step_reached: currentStep,
           total_steps: totalSteps,
           user_agent: navigator.userAgent,
-          current_step_name: stepName || getStepName(type, currentStep)
+          current_step_name: stepName || getStepName(type, currentStep),
+          created_at: new Date().toISOString(),
+          last_active_at: new Date().toISOString()
         };
 
         if (type === 'post_appointment') {
@@ -140,22 +191,16 @@ export function useOnboardingTracking({
           trackingData.current_step_original_number = originalStepNumber || currentStep;
         }
 
-        const { data: newTracking } = await supabase
-          .from(tableName)
-          .insert(trackingData)
-          .select()
-          .single();
-
-        if (newTracking) {
-          trackingIdRef.current = newTracking.id;
-        }
+        localStorage.setItem(trackingKey, JSON.stringify(trackingData));
+        trackingIdRef.current = trackingData.id;
+        console.log('✅ Created tracking record in localStorage');
       }
     };
 
     initSession();
-  }, [type, userId, appointmentId]);
+  }, [type, userId, appointmentId, currentStep, stepName, totalSteps, originalStepNumber]);
 
-  // Enhanced session persistence during onboarding
+  // Enhanced session persistence during onboarding (only for authenticated users)
   useEffect(() => {
     const maintainSession = async () => {
       if (!userId) return;
@@ -191,7 +236,7 @@ export function useOnboardingTracking({
     maintainSession();
   }, [userId]);
 
-  // Track step changes
+  // Track step changes (database for authenticated, localStorage for unauthenticated)
   useEffect(() => {
     const trackStepChange = async () => {
       if (!trackingIdRef.current || currentStep === lastStepRef.current) return;
@@ -199,7 +244,7 @@ export function useOnboardingTracking({
       const timeOnLastStep = Math.floor((Date.now() - stepStartTimeRef.current) / 1000);
       const totalTime = Math.floor((Date.now() - sessionStartTimeRef.current) / 1000);
 
-      const updateData: any = {
+      const updateData = {
         current_step: currentStep,
         current_step_name: stepName || getStepName(type, currentStep),
         last_active_at: new Date().toISOString(),
@@ -211,21 +256,52 @@ export function useOnboardingTracking({
         updateData.current_step_original_number = originalStepNumber;
       }
 
-      // Update highest step if needed
-      const { data: current } = await supabase
-        .from(tableName)
-        .select('highest_step_reached')
-        .eq('id', trackingIdRef.current)
-        .single();
+      const tableName = `${type}_onboarding_tracking`;
 
-      if (current && currentStep > current.highest_step_reached) {
-        updateData.highest_step_reached = currentStep;
+      if (userId) {
+        // Try to update database first for authenticated users
+        try {
+          // Update highest step if needed
+          const { data: current } = await supabase
+            .from(tableName)
+            .select('highest_step_reached')
+            .eq('id', trackingIdRef.current)
+            .single();
+
+          if (current && currentStep > current.highest_step_reached) {
+            updateData.highest_step_reached = currentStep;
+          }
+
+          await supabase
+            .from(tableName)
+            .update(updateData)
+            .eq('id', trackingIdRef.current);
+
+          console.log('✅ Updated tracking in database');
+          // Reset step timer
+          stepStartTimeRef.current = Date.now();
+          lastStepRef.current = currentStep;
+          return;
+        } catch (error) {
+          console.warn('⚠️ Database update failed, falling back to localStorage:', error);
+        }
       }
 
-      await supabase
-        .from(tableName)
-        .update(updateData)
-        .eq('id', trackingIdRef.current);
+      // Fallback to localStorage (for unauthenticated users or database failures)
+      const trackingKey = `${type}_onboarding_tracking`;
+      const existingTracking = localStorage.getItem(trackingKey);
+      
+      if (existingTracking) {
+        const tracking = JSON.parse(existingTracking);
+        
+        // Update highest step if needed
+        if (currentStep > tracking.highest_step_reached) {
+          updateData.highest_step_reached = currentStep;
+        }
+        
+        const updatedTracking = { ...tracking, ...updateData };
+        localStorage.setItem(trackingKey, JSON.stringify(updatedTracking));
+      }
 
       // Reset step timer
       stepStartTimeRef.current = Date.now();
@@ -233,28 +309,34 @@ export function useOnboardingTracking({
     };
 
     trackStepChange();
-  }, [currentStep, stepName, type, originalStepNumber]);
+  }, [currentStep, stepName, type, originalStepNumber, userId]);
 
-  // Track completion
+  // Track completion (localStorage-based for unauthenticated users)
   const trackCompletion = async () => {
     if (!trackingIdRef.current) return;
 
     const totalTime = Math.floor((Date.now() - sessionStartTimeRef.current) / 1000);
 
-    await supabase
-      .from(tableName)
-      .update({
+    // Update tracking data in localStorage
+    const trackingKey = `${type}_onboarding_tracking`;
+    const existingTracking = localStorage.getItem(trackingKey);
+    
+    if (existingTracking) {
+      const tracking = JSON.parse(existingTracking);
+      const updatedTracking = {
+        ...tracking,
         completed_at: new Date().toISOString(),
         total_time_seconds: totalTime,
         dropped_off: false
-      })
-      .eq('id', trackingIdRef.current);
+      };
+      localStorage.setItem(trackingKey, JSON.stringify(updatedTracking));
+    }
 
     // Clear session
     sessionStorage.removeItem(`${type}_onboarding_session`);
   };
 
-  // Track drop-off when component unmounts
+  // Track drop-off when component unmounts (localStorage-based)
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (trackingIdRef.current && currentStep < totalSteps) {
@@ -272,18 +354,30 @@ export function useOnboardingTracking({
         };
 
         if (type === 'post_appointment' && originalStepNumber) {
-          (dropData as any).drop_off_original_step_number = originalStepNumber;
+          dropData.drop_off_original_step_number = originalStepNumber;
         }
 
-        // Use sendBeacon for reliability
-        navigator.sendBeacon(
-          `/api/track-onboarding-dropoff`,
-          JSON.stringify({
-            table: tableName,
-            id: trackingIdRef.current,
-            data: dropData
-          })
-        );
+        // Update tracking data in localStorage
+        const trackingKey = `${type}_onboarding_tracking`;
+        const existingTracking = localStorage.getItem(trackingKey);
+        
+        if (existingTracking) {
+          const tracking = JSON.parse(existingTracking);
+          const updatedTracking = { ...tracking, ...dropData };
+          localStorage.setItem(trackingKey, JSON.stringify(updatedTracking));
+        }
+
+        // Use sendBeacon for reliability (only if authenticated)
+        if (userId) {
+          navigator.sendBeacon(
+            `/api/track-onboarding-dropoff`,
+            JSON.stringify({
+              table: `${type}_onboarding_tracking`,
+              id: trackingIdRef.current,
+              data: dropData
+            })
+          );
+        }
       }
     };
 
@@ -293,7 +387,7 @@ export function useOnboardingTracking({
       window.removeEventListener('beforeunload', handleBeforeUnload);
       handleBeforeUnload(); // Also call on component unmount
     };
-  }, [currentStep, totalSteps, stepName, type, originalStepNumber]);
+  }, [currentStep, totalSteps, stepName, type, originalStepNumber, userId]);
 
   return { trackCompletion };
 }

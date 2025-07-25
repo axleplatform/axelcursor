@@ -2349,7 +2349,7 @@ export default function CustomerOnboarding() {
     window.scrollTo(0, 0)
   }, [currentStep])
 
-  // Get user auth state
+  // Get user auth state with proper error handling
   useEffect(() => {
     const getUser = async () => {
       try {
@@ -2362,24 +2362,32 @@ export default function CustomerOnboarding() {
         
         if (error) {
           console.error('❌ Error getting user:', error)
+          // Don't return here - set user to null to indicate unauthenticated state
+          setUser(null)
           return
         }
         
         setUser(user)
         console.log('✅ User auth state updated:', user?.id ? 'Authenticated' : 'Not authenticated')
+        
+        // Update onboarding data with user ID if authenticated
+        if (user?.id) {
+          setOnboardingData(prev => ({ ...prev, userId: user.id }))
+        }
       } catch (error) {
         console.error('❌ Error in getUser:', error)
+        setUser(null)
       }
     }
     getUser()
   }, [])
 
-  // Initialize onboarding tracking
+  // Initialize onboarding tracking (works for both authenticated and unauthenticated users)
   const { trackCompletion } = useOnboardingTracking({
     type: 'customer',
     currentStep,
     totalSteps: 19,
-    userId: user?.id
+    userId: user?.id || undefined
   })
 
   // Confetti effect when reaching step 20

@@ -20,7 +20,10 @@ export async function POST(request: Request) {
     
     if (authError || !user) {
       console.error('❌ Authentication error:', authError)
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return NextResponse.json({ 
+        error: 'Not authenticated. Please create an account to save your onboarding data.',
+        code: 'AUTH_REQUIRED'
+      }, { status: 401 })
     }
 
     console.log('✅ User authenticated for onboarding completion:', user.id)
