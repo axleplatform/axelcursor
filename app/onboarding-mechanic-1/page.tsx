@@ -228,7 +228,7 @@ export default function MechanicOnboardingStep1Page() {
       console.log("✅ Profile verified:", verifyProfile)
 
       // Update user metadata
-      const { error: userError } = await supabase.auth.updateUser({
+      const { error: userError } = await (supabase.auth as any).updateUser({
         data: {
           onboarding_step: "professional_info",
         },
