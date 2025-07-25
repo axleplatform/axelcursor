@@ -267,7 +267,7 @@ async function checkExistingAccount(email: string, phone?: string): Promise<any>
   
   try {
     // Use a safe SQL function to check for existing accounts
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .rpc('check_existing_account', {
         user_email: email,
         user_phone: phone || ''
