@@ -223,7 +223,8 @@ export function SiteHeader() {
   // Check authentication state
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: sessionData } = await supabase.auth.getSession()
+      const session = sessionData?.session
       setIsLoggedIn(!!session)
     }
     
