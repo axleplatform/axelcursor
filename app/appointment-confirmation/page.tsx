@@ -116,24 +116,12 @@ export default function AppointmentConfirmationPage() {
 
         
         // Check for valid session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('❌ Session error:', sessionError);
-          await supabase.auth.signOut();
-          return;
-        }
-
+        const { data: sessionData } = await supabase.auth.getSession();
+        const session = sessionData?.session;
         if (session) {
           console.log('✅ Valid session found, checking user role...');
-          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          const user = session.user;
           
-          if (userError) {
-            console.error('❌ User error:', userError);
-            await supabase.auth.signOut();
-            return;
-          }
-
           if (user && user.id) {
             console.log('✅ Valid user found:', user.id);
             await checkUserRole();
