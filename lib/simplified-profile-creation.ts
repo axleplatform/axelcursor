@@ -151,7 +151,7 @@ export async function mergeTemporaryUserData(
     console.log('🔗 Appointment ID:', appointmentId)
     
     // Step 1: Find temporary user with this phone number
-    const { data: tempUser, error: tempUserError } = await supabase
+    const { data: tempUser, error: tempUserError } = await supabase!
       .from('users')
       .select('id, email, account_type, created_at')
       .eq('phone', phone)
