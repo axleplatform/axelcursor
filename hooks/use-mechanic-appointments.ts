@@ -283,9 +283,9 @@ export function useMechanicAppointments(mechanicId: string) {
 
     return () => {
       console.log("🧹 CLEANUP: Removing optimized subscriptions")
-      supabase.removeChannel(appointmentsSubscription)
-      supabase.removeChannel(quotesSubscription) 
-      supabase.removeChannel(skipsSubscription)
+      ;(supabase as any).removeChannel(appointmentsSubscription)
+      ;(supabase as any).removeChannel(quotesSubscription) 
+      ;(supabase as any).removeChannel(skipsSubscription)
     }
   }, [mechanicId, toast])
 
