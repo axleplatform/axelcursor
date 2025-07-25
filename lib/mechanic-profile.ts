@@ -118,11 +118,11 @@ export async function logProfileChange(
     const { error } = await supabase
       .from("mechanic_profiles")
       .update({
-        metadata: supabase.rpc("jsonb_set", {
-          jsonb: supabase.rpc("jsonb_get", {
-            jsonb: supabase.rpc("coalesce", {
-              val1: supabase.rpc("jsonb_get", {
-                jsonb: supabase.rpc("coalesce", {
+        metadata: (supabase as any).rpc("jsonb_set", {
+          jsonb: (supabase as any).rpc("jsonb_get", {
+            jsonb: (supabase as any).rpc("coalesce", {
+              val1: (supabase as any).rpc("jsonb_get", {
+                jsonb: (supabase as any).rpc("coalesce", {
                   val1: supabase.raw("metadata"),
                   val2: "{}",
                 }),
@@ -135,9 +135,9 @@ export async function logProfileChange(
           path: "",
           value: JSON.stringify([
             ...JSON.parse(
-              supabase.rpc("coalesce", {
-                val1: supabase.rpc("jsonb_get", {
-                  jsonb: supabase.rpc("coalesce", {
+              (supabase as any).rpc("coalesce", {
+                val1: (supabase as any).rpc("jsonb_get", {
+                  jsonb: (supabase as any).rpc("coalesce", {
                     val1: supabase.raw("metadata"),
                     val2: "{}",
                   }),
