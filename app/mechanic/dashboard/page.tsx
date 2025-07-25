@@ -1239,7 +1239,7 @@ export default function MechanicDashboard() {
 
   // Add debug function for mechanic profile
   const debugMechanicProfile = async (): Promise<any> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await (supabase.auth as any).getUser();
     console.log('=== MECHANIC PROFILE DEBUG ===');
     console.log('1. Current auth user ID:', user?.id);
     
@@ -1267,7 +1267,7 @@ export default function MechanicDashboard() {
 
   // Add function to create mechanic profile if needed
   const createMechanicProfile = async (): Promise<any> => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await (supabase.auth as any).getUser();
     
     const { data: newProfile, error } = await supabase
       .from('mechanic_profiles')
@@ -1369,7 +1369,7 @@ export default function MechanicDashboard() {
       console.log('userId:', userId);
       
       // Get current user to compare
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await (supabase.auth as any).getUser();
       console.log('Current auth user:', user);
       console.log('User error:', userError);
 
