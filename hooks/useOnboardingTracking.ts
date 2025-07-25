@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { supabase } from '@/lib/supabase';
+import { ensureOnboardingSession, validateSessionWithRetry } from '@/lib/session-utils';
 
 // Simple UUID generator function
 const generateUUID = () => {
@@ -152,6 +154,40 @@ export function useOnboardingTracking({
 
     initSession();
   }, [type, userId, appointmentId]);
+
+  // Enhanced session persistence during onboarding
+  useEffect(() => {
+    const maintainSession = async () => {
+      if (!userId) return;
+      
+      try {
+        console.log('🔐 Maintaining session during onboarding...');
+        
+        // Check session every 30 seconds during onboarding
+        const interval = setInterval(async () => {
+          const sessionResult = await ensureOnboardingSession();
+          
+          if (!sessionResult.success) {
+            console.warn('⚠️ Session lost during onboarding, attempting recovery...');
+            const retryResult = await validateSessionWithRetry(2, 500);
+            
+            if (!retryResult.success) {
+              console.error('❌ Session recovery failed during onboarding');
+              // Don't redirect here - let the user continue and handle at completion
+            } else {
+              console.log('✅ Session recovered during onboarding');
+            }
+          }
+        }, 30000); // Check every 30 seconds
+        
+        return () => clearInterval(interval);
+      } catch (error) {
+        console.error('❌ Error in session maintenance:', error);
+      }
+    };
+    
+    maintainSession();
+  }, [userId]);
 
   // Track step changes
   useEffect(() => {

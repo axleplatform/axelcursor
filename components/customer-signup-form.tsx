@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Loader2, X, Clock } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { GoogleSignInButton } from "@/components/google-signin-button"
-import { clearCorruptedSessionData, clearCorruptedCookies } from "@/lib/session-utils"
+import { clearCorruptedSessionData, clearCorruptedCookies, ensureOnboardingSession } from "@/lib/session-utils"
 
 interface CustomerSignupFormProps {
   isOnboarding?: boolean;
@@ -68,6 +68,9 @@ export function CustomerSignupForm({
       // Clear any corrupted session data before signup
       clearCorruptedSessionData();
       
+      // Wait a moment for clearing to take effect
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       console.log('🚀 About to call supabase.auth.signUp...');
       
       // Sign up with Supabase Auth - trigger will handle profile creation
@@ -105,6 +108,18 @@ export function CustomerSignupForm({
       if (data?.user && !signUpError) {
         console.log('✅ Signup successful, user created:', data.user.id);
         console.log('📋 Onboarding data available:', onboardingData);
+        
+        // Ensure session is properly established after signup
+        console.log('🔐 Ensuring session establishment after signup...');
+        const sessionResult = await ensureOnboardingSession();
+        
+        if (!sessionResult.success) {
+          console.error('❌ Session establishment failed after signup:', sessionResult.error);
+          setError('Session establishment failed. Please try again.');
+          return;
+        }
+        
+        console.log('✅ Session established successfully after signup');
         console.log('🎉 Customer signup completed successfully!');
         console.log('👤 User ID:', data.user.id);
         

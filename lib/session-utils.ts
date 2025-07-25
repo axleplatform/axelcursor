@@ -9,6 +9,116 @@ export interface SessionValidationResult {
 }
 
 /**
+ * Comprehensive session persistence function for onboarding
+ * Handles cookie clearing, session validation, and ensures proper session establishment
+ */
+export async function ensureOnboardingSession(): Promise<SessionValidationResult> {
+  console.log('🔐 Ensuring onboarding session persistence...')
+  
+  try {
+    // Step 1: Clear corrupted cookies first
+    clearCorruptedCookies()
+    
+    // Step 2: Wait a moment for cookie clearing to take effect
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // Step 3: Check for existing session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError) {
+      console.error('❌ Session error during onboarding:', sessionError)
+      return {
+        success: false,
+        error: 'Session error occurred',
+        errorCode: 'SESSION_ERROR'
+      }
+    }
+
+    if (session && session.user) {
+      console.log('✅ Existing valid session found:', session.user.id)
+      return {
+        success: true,
+        user: session.user,
+        session
+      }
+    }
+
+    // Step 4: If no session, try to refresh
+    console.log('🔄 No session found, attempting to refresh...')
+    const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession()
+    
+    if (refreshError) {
+      console.error('❌ Session refresh failed:', refreshError)
+      return {
+        success: false,
+        error: 'Session refresh failed',
+        errorCode: 'REFRESH_ERROR'
+      }
+    }
+
+    if (refreshedSession && refreshedSession.user) {
+      console.log('✅ Session refreshed successfully:', refreshedSession.user.id)
+      return {
+        success: true,
+        user: refreshedSession.user,
+        session: refreshedSession
+      }
+    }
+
+    console.log('❌ No valid session found after refresh')
+    return {
+      success: false,
+      error: 'No valid session found',
+      errorCode: 'NO_SESSION'
+    }
+    
+  } catch (error) {
+    console.error('❌ Error ensuring onboarding session:', error)
+    return {
+      success: false,
+      error: 'Session persistence failed',
+      errorCode: 'UNKNOWN_ERROR'
+    }
+  }
+}
+
+/**
+ * Enhanced session validation with retry logic
+ */
+export async function validateSessionWithRetry(
+  maxRetries: number = 3,
+  delayMs: number = 1000
+): Promise<SessionValidationResult> {
+  console.log('🔐 Validating session with retry logic...')
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    console.log(`🔄 Session validation attempt ${attempt}/${maxRetries}`)
+    
+    const result = await validateSession()
+    
+    if (result.success) {
+      console.log('✅ Session validation successful on attempt', attempt)
+      return result
+    }
+    
+    if (attempt < maxRetries) {
+      console.log(`⏳ Session validation failed, retrying in ${delayMs}ms...`)
+      await new Promise(resolve => setTimeout(resolve, delayMs))
+      
+      // Clear cookies before retry
+      clearCorruptedCookies()
+    }
+  }
+  
+  console.error('❌ Session validation failed after all retries')
+  return {
+    success: false,
+    error: 'Session validation failed after retries',
+    errorCode: 'RETRY_FAILED'
+  }
+}
+
+/**
  * Wait for session to be established after signup/signin
  * This is crucial for preventing 406 errors in subsequent operations
  */

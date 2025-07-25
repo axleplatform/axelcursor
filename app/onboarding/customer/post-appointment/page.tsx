@@ -1509,22 +1509,31 @@ export default function PostAppointmentOnboarding() {
     freeTrial: false
   });
 
-  // 1. Check authentication and session on mount
+  // 1. Check authentication and session on mount with enhanced persistence
   useEffect(() => {
     const checkAuthAndSession = async () => {
       try {
-        console.log('🔐 Checking authentication and session...');
+        console.log('🔐 Checking authentication and session with enhanced persistence...');
         
-        // Use the robust session validation utility
-        const sessionResult = await validateSession();
+        // Use the enhanced session persistence utility
+        const sessionResult = await ensureOnboardingSession();
         
         if (!sessionResult.success) {
-          console.error('❌ Session validation failed:', sessionResult.error);
-          await supabase.auth.signOut();
-          const errorMessage = getSessionErrorMessage(sessionResult.errorCode || 'UNKNOWN');
-          setAuthError(errorMessage);
-          router.push('/login');
-          return;
+          console.error('❌ Session persistence failed:', sessionResult.error);
+          // Try one more time with retry logic
+          const retryResult = await validateSessionWithRetry(2, 500);
+          
+          if (!retryResult.success) {
+            console.error('❌ Session validation failed after retry:', retryResult.error);
+            await supabase.auth.signOut();
+            const errorMessage = getSessionErrorMessage(retryResult.errorCode || 'UNKNOWN');
+            setAuthError(errorMessage);
+            router.push('/login');
+            return;
+          }
+          
+          // Use retry result
+          sessionResult = retryResult;
         }
 
         console.log('✅ Valid session and user found:', sessionResult.user?.id);
@@ -1657,24 +1666,20 @@ export default function PostAppointmentOnboarding() {
     try {
       console.log('🚀 Starting onboarding completion...');
       
-      // 1. Get current session first
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // 1. Ensure session persistence before completion
+      console.log('🔐 Ensuring session persistence before onboarding completion...');
+      const sessionResult = await ensureOnboardingSession();
       
-      if (sessionError) {
-        console.error('❌ Session error:', sessionError);
+      if (!sessionResult.success) {
+        console.error('❌ Session persistence failed during completion:', sessionResult.error);
         setAuthError('Session error. Please try again.');
-        return;
-      }
-
-      if (!session) {
-        console.error('❌ No valid session for onboarding completion');
-        setAuthError('No valid session. Please log in again.');
         router.push('/login');
         return;
       }
 
-      // 2. Get current user from session
-      const currentUser = session.user;
+      // 2. Get current user from validated session
+      const currentUser = sessionResult.user;
+      const session = sessionResult.session;
       
       if (!currentUser || !currentUser.id) {
         console.error('❌ No valid user for onboarding completion');
@@ -1947,9 +1952,11 @@ export default function PostAppointmentOnboarding() {
       console.log('📅 Completion time:', new Date().toISOString());
       console.log('🔗 Redirecting to dashboard...');
       
-      // Final session validation before redirect
-      const { data: { session: finalSession } } = await supabase.auth.getSession();
-      if (!finalSession || !finalSession.user || !finalSession.user.id) {
+      // Final session validation before redirect with enhanced persistence
+      console.log('🔐 Final session validation before redirect...');
+      const finalSessionResult = await ensureOnboardingSession();
+      
+      if (!finalSessionResult.success) {
         console.error('❌ Final session validation failed');
         setAuthError('Final validation failed. Please log in again.');
         router.push('/login');
@@ -1957,7 +1964,7 @@ export default function PostAppointmentOnboarding() {
       }
 
       console.log('✅ Final session validation passed, redirecting to dashboard');
-      console.log('👤 Final user ID:', finalSession.user.id);
+      console.log('👤 Final user ID:', finalSessionResult.user?.id);
       router.push('/customer-dashboard');
       
     } catch (error) {
