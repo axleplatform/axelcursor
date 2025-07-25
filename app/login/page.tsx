@@ -171,7 +171,7 @@ export default function LoginPage() {
 
     setIsResendingEmail(true)
     try {
-      const { error } = await supabase.auth.resend({
+      const { error } = await (supabase.auth as any).resend({
         type: 'signup',
         email: inputValue.trim(),
       })
