@@ -67,7 +67,7 @@ export default function MechanicOnboardingStep5Page() {
 
         // Ensure the mechanic_profiles table exists
         try {
-          await supabase.rpc("run_sql", {
+          await (supabase as any).rpc("run_sql", {
             sql: `
               CREATE TABLE IF NOT EXISTS mechanic_profiles (
                 id UUID PRIMARY KEY,
