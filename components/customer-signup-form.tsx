@@ -74,7 +74,7 @@ export function CustomerSignupForm({
       console.log('🚀 About to call supabase.auth.signUp...');
       
       // Sign up with Supabase Auth - trigger will handle profile creation
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await (supabase.auth as any).signUp({
         email,
         password,
         options: {
