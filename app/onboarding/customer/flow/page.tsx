@@ -1586,8 +1586,9 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
         const profileData = {
           user_id: tempUserId,
           phone: normalizedPhone,
-          onboarding_completed: false,
+          onboarding_completed: true, // Phone-only users get full access immediately
           onboarding_type: 'customer',
+          auth_method: 'phone', // Track auth method for internal use
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
