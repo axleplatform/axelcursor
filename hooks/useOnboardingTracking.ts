@@ -25,6 +25,7 @@ interface TrackingProps {
 
 // Base tracking data interface
 interface BaseTrackingData {
+  id?: string;
   session_id: string;
   user_id?: string;
   current_step: number;
@@ -34,6 +35,7 @@ interface BaseTrackingData {
   current_step_name: string;
   created_at?: string;
   last_active_at?: string;
+  updated_at?: string;
 }
 
 // Post-appointment specific tracking data
