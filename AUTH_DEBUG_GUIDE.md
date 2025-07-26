@@ -43,48 +43,48 @@ The API now tries three different authentication methods:
 1. Open browser developer tools
 2. Navigate to onboarding completion step
 3. Check console for token logs:
-   ```
+   \`\`\`
    🔐 Session data available: true/false
    🔐 Access token available: true/false
    🔐 Refresh token available: true/false
    🔐 Frontend - Token expiry: [timestamp]
    🔐 Frontend - Token expired: true/false
-   ```
+   \`\`\`
 
 ### Step 2: Check Backend Token Logging
 1. Check server logs for API call
 2. Look for token extraction logs:
-   ```
+   \`\`\`
    🔐 Authorization header present: true/false
    🔐 Extracted token length: [number]
    🔐 Token starts with: [first 20 chars]...
    🔐 Token expiry: [timestamp]
    🔐 Token expired: true/false
-   ```
+   \`\`\`
 
 ### Step 3: Check Authentication Method Results
 Look for authentication method logs:
-```
+\`\`\`
 🔐 Method 1: Using createRouteHandlerClient with token...
 ✅ Session set successfully with token
-```
+\`\`\`
 OR
-```
+\`\`\`
 ❌ Error setting session with token: [error]
 🔐 Method 2: Trying getUser directly with token...
 ✅ Direct getUser authentication successful
-```
+\`\`\`
 OR
-```
+\`\`\`
 ❌ Error getting user with token: [error]
 🔐 Method 3: Trying with service role client...
 ✅ Service role client authentication successful
-```
+\`\`\`
 
 ### Step 4: Run Test Script
-```bash
+\`\`\`bash
 node test-auth.js
-```
+\`\`\`
 
 This will test:
 - Supabase client creation
@@ -119,7 +119,7 @@ This will test:
 
 ## Environment Variables Required
 
-```bash
+\`\`\`bash
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
@@ -129,16 +129,16 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-```
+\`\`\`
 
 ## Testing the Fix
 
 1. **Local Testing**:
-   ```bash
+   \`\`\`bash
    npm run dev
    # Navigate to onboarding flow
    # Check console logs
-   ```
+   \`\`\`
 
 2. **Production Testing**:
    - Deploy to Vercel
@@ -153,7 +153,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ## Expected Log Flow
 
 ### Successful Authentication:
-```
+\`\`\`
 🚀 Onboarding completion API called
 📥 Request headers: [headers]
 🔐 Authorization header present: true
@@ -167,17 +167,17 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 📝 Profile data prepared with onboarding_completed: true
 ✅ User profile updated successfully: [profile_id]
 🚀 Returning success response: [response]
-```
+\`\`\`
 
 ### Failed Authentication:
-```
+\`\`\`
 🚀 Onboarding completion API called
 📥 Request headers: [headers]
 🔐 Authorization header present: false
 ❌ No token provided, using default Supabase client
 🔐 Getting user after session setup...
 ❌ Authentication error: [error]
-```
+\`\`\`
 
 ## Next Steps
 
@@ -193,4 +193,4 @@ If the issue persists after following this guide:
 1. Collect all console logs (frontend and backend)
 2. Note the specific error messages and codes
 3. Check environment variable configuration
-4. Verify Supabase project settings 
+4. Verify Supabase project settings
