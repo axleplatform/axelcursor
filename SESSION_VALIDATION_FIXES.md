@@ -22,7 +22,7 @@ The issue was likely caused by:
 - ✅ **Step 4**: Verify profile with refreshed user session
 
 **Key Features**:
-```typescript
+\`\`\`typescript
 // Step 1: Pre-API session validation
 const { data: sessionDataBefore } = await (supabase.auth as any).getSession();
 const { data: { user: userBefore } } = await (supabase.auth as any).getUser();
@@ -36,7 +36,7 @@ const sessionResult = await validateSessionWithRetry(2, 500);
 if (sessionResult.success && sessionResult.user) {
   finalUser = sessionResult.user;
 }
-```
+\`\`\`
 
 ### 2. Enhanced Session Validation in handleGoToDashboard Function
 
@@ -49,14 +49,14 @@ if (sessionResult.success && sessionResult.user) {
 - ✅ **Step 4**: Clear localStorage and proceed to dashboard
 
 **Key Features**:
-```typescript
+\`\`\`typescript
 // Comprehensive session validation before dashboard access
 const sessionResult = await validateSessionWithRetry(2, 500);
 if (sessionResult.success && sessionResult.user) {
   finalUser = sessionResult.user;
   // Proceed with profile verification
 }
-```
+\`\`\`
 
 ### 3. Enhanced Session Validation in DashboardRedirect Component
 
@@ -69,7 +69,7 @@ if (sessionResult.success && sessionResult.user) {
 - ✅ Enhanced error handling and logging
 
 **Key Features**:
-```typescript
+\`\`\`typescript
 // Session refresh after API call
 const sessionResult = await validateSessionWithRetry(2, 500);
 if (sessionResult.success && sessionResult.user) {
@@ -80,7 +80,7 @@ if (sessionResult.success && sessionResult.user) {
     .eq('user_id', sessionResult.user.id)
     .single();
 }
-```
+\`\`\`
 
 ### 4. Leveraged Existing Session Utilities
 
@@ -109,7 +109,7 @@ if (sessionResult.success && sessionResult.user) {
 ## Expected Log Flow
 
 ### Successful Session Validation:
-```
+\`\`\`
 🔐 Step 1: Checking session state BEFORE API call...
 🔐 - Session exists: true
 🔐 - User exists: true
@@ -125,10 +125,10 @@ if (sessionResult.success && sessionResult.user) {
 ✅ - onboarding_completed: true
 ✅ - auth_method: [method]
 ✅ SUCCESS: Onboarding completion verified!
-```
+\`\`\`
 
 ### Session Refresh Scenario:
-```
+\`\`\`
 🔐 Step 2: Checking session state AFTER API call...
 🔐 - Session exists: false
 🔐 - User exists: false
@@ -140,7 +140,7 @@ if (sessionResult.success && sessionResult.user) {
 ✅ Profile verification after completion:
 ✅ - onboarding_completed: true
 ✅ SUCCESS: Onboarding completion verified!
-```
+\`\`\`
 
 ## Benefits of the Implementation
 
@@ -166,4 +166,4 @@ if (sessionResult.success && sessionResult.user) {
 4. **Performance Monitoring**: Ensure session refresh doesn't impact performance
 5. **Error Tracking**: Monitor for any remaining session-related errors
 
-The implementation provides a robust solution for session validation during onboarding completion, ensuring users can successfully complete the process and access their dashboard without authentication issues. 
+The implementation provides a robust solution for session validation during onboarding completion, ensuring users can successfully complete the process and access their dashboard without authentication issues.
