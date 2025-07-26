@@ -1586,7 +1586,7 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
         let authMethod = 'phone'; // Default for phone-only users
         
         // Check if user also has email (from previous steps)
-        if (onboardingData.userId) {
+        if (onboardingData?.userId) {
           // User has an email account, so they have both
           authMethod = 'both';
         }
@@ -1603,7 +1603,7 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
         }
 
         console.log('📝 Creating phone user profile with auth_method:', authMethod);
-        console.log('📝 User has email account:', !!onboardingData.userId);
+        console.log('📝 User has email account:', !!onboardingData?.userId);
 
         const { data: profileResult, error: profileError } = await supabase
           .from('user_profiles')
@@ -1978,16 +1978,16 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
         
         // Prepare onboarding data for API call
         const apiData = {
-          vehicle: onboardingData.vehicle,
-          referralSource: onboardingData.referralSource,
-          usedOtherApps: onboardingData.usedOtherApps,
-          lastService: onboardingData.lastService,
-          location: onboardingData.location,
-          notifications: onboardingData.notifications,
-          additionalVehicles: onboardingData.additionalVehicles,
-          phoneNumber: onboardingData.phoneNumber,
-          plan: onboardingData.plan,
-          freeTrial: onboardingData.freeTrial
+          vehicle: onboardingData?.vehicle,
+          referralSource: onboardingData?.referralSource,
+          usedOtherApps: onboardingData?.usedOtherApps,
+          lastService: onboardingData?.lastService,
+          location: onboardingData?.location,
+          notifications: onboardingData?.notifications,
+          additionalVehicles: onboardingData?.additionalVehicles,
+          phoneNumber: onboardingData?.phoneNumber,
+          plan: onboardingData?.plan,
+          freeTrial: onboardingData?.freeTrial
         };
         
         console.log('📤 API request data:', apiData);
@@ -2229,7 +2229,7 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
         console.log('🔄 Completing onboarding and preparing for dashboard...');
         
         // Check if user has either email-based account OR phone-based account
-        const hasAccount = onboardingData.userId || false
+        const hasAccount = onboardingData?.userId || false
         
         if (!hasAccount) {
           // No account created - this shouldn't happen with new logic
@@ -2339,7 +2339,7 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
     }
 
     completeOnboarding()
-  }, [router, onboardingData.userId, setCurrentStep])
+  }, [router, onboardingData?.userId, setCurrentStep])
 
   return (
     <div className="text-center">
@@ -2365,7 +2365,7 @@ const DashboardRedirectWrapper = ({ onboardingData }: { onboardingData: Onboardi
     type: 'customer',
     currentStep: 20,
     totalSteps: 19,
-    userId: onboardingData.userId ?? undefined
+    userId: onboardingData?.userId ?? undefined
   })
   
   return (
@@ -2439,24 +2439,24 @@ const createUserWithOnboardingData = async (userId: string, onboardingData: Onbo
       user_id: user.id,
       email: user.email || '',
       full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
-      phone: onboardingData.phoneNumber,
-      address: onboardingData.location,
-      city: onboardingData.location?.split(',')[0]?.trim(),
-      state: onboardingData.location?.split(',')[1]?.trim(),
-      zip_code: onboardingData.location?.split(',')[2]?.trim(),
-      vehicles: [onboardingData.vehicle, ...onboardingData.additionalVehicles],
-      referral_source: onboardingData.referralSource,
-      last_service: onboardingData.lastService,
-      notifications_enabled: onboardingData.notifications,
-      communication_preferences: { notifications: onboardingData.notifications },
-      notification_settings: { enabled: onboardingData.notifications },
+      phone: onboardingData?.phoneNumber,
+      address: onboardingData?.location,
+      city: onboardingData?.location?.split(',')[0]?.trim(),
+      state: onboardingData?.location?.split(',')[1]?.trim(),
+      zip_code: onboardingData?.location?.split(',')[2]?.trim(),
+      vehicles: [onboardingData?.vehicle, ...(onboardingData?.additionalVehicles || [])],
+      referral_source: onboardingData?.referralSource,
+      last_service: onboardingData?.lastService,
+      notifications_enabled: onboardingData?.notifications,
+      communication_preferences: { notifications: onboardingData?.notifications },
+      notification_settings: { enabled: onboardingData?.notifications },
       onboarding_completed: true,
       onboarding_type: 'full',
       profile_completed_at: new Date().toISOString(),
       onboarding_data: onboardingData,
-      subscription_plan: onboardingData.plan,
-      subscription_status: onboardingData.freeTrial ? 'trial' : 'inactive',
-      free_trial_ends_at: onboardingData.freeTrial ? 
+      subscription_plan: onboardingData?.plan,
+      subscription_status: onboardingData?.freeTrial ? 'trial' : 'inactive',
+      free_trial_ends_at: onboardingData?.freeTrial ? 
         new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
       updated_at: new Date().toISOString()
     };
