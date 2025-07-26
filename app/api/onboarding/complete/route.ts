@@ -24,6 +24,8 @@ export async function POST(request: Request) {
     
     // Create Supabase client with explicit token in headers
     let supabase;
+    let sessionSetSuccessfully = false;
+    
     if (token) {
       console.log('🔐 Creating Supabase client with explicit token in headers');
       console.log('🔐 Token being used:', token.substring(0, 50) + '...');
@@ -41,18 +43,28 @@ export async function POST(request: Request) {
         
         if (sessionError) {
           console.error('❌ Error setting session with token:', sessionError);
+          console.error('❌ Session error code:', sessionError.code);
+          console.error('❌ Session error message:', sessionError.message);
+          return NextResponse.json({ 
+            error: 'Failed to authenticate with provided token. Please ensure you are logged in.',
+            code: 'SESSION_SET_FAILED',
+            details: sessionError.message
+          }, { status: 401 });
         } else {
           console.log('✅ Session set successfully with token');
+          sessionSetSuccessfully = true;
         }
       } catch (error) {
         console.error('❌ Error creating Supabase client with token:', error);
-        // Fallback to default client
-        supabase = createRouteHandlerClient({ cookies });
-        console.log('🔄 Fallback to default Supabase client');
+        return NextResponse.json({ 
+          error: 'Failed to initialize authentication. Please try again.',
+          code: 'CLIENT_INIT_FAILED',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        }, { status: 500 });
       }
     } else {
       console.log('🔐 No token provided, using default Supabase client');
-      supabase = createRouteHandlerClient({ cookies })
+      supabase = createRouteHandlerClient({ cookies });
     }
     
     if (!supabase) {
@@ -60,7 +72,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Database connection error' }, { status: 500 })
     }
     
+    // If we had a token but session setting failed, don't proceed
+    if (token && !sessionSetSuccessfully) {
+      console.error('❌ Token provided but session setting failed, aborting');
+      return NextResponse.json({ 
+        error: 'Authentication failed. Please ensure you are logged in.',
+        code: 'AUTH_FAILED'
+      }, { status: 401 });
+    }
+    
     // Get current user - this will validate the token from headers
+    console.log('🔐 Getting user after session setup...');
     const { data: { user }, error: authError } = await (supabase.auth as any).getUser()
     
     console.log('🔐 Auth check result - user exists:', !!user);
