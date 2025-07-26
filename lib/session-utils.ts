@@ -16,11 +16,8 @@ export async function ensureOnboardingSession(): Promise<SessionValidationResult
   console.log('🔐 Ensuring onboarding session persistence...')
   
   try {
-    // Step 1: Clear corrupted cookies first
-    clearCorruptedCookies()
-    
-    // Step 2: Wait a moment for cookie clearing to take effect
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // Note: Removed cookie clearing step to prevent interference with signup flow
+    // Valid Supabase auth cookies are now preserved by the updated clearCorruptedCookies function
     
     // Step 3: Check for existing session
     const { data: { session }, error: sessionError } = await (supabase.auth as any).getSession()
@@ -426,32 +423,45 @@ export function getSessionErrorMessage(errorCode: string): string {
 /**
  * Clear corrupted session data including cookies, localStorage, and sessionStorage
  * Use this before any Supabase operations when experiencing session issues
+ * Preserves valid Supabase auth cookies
  */
 export function clearCorruptedSessionData(): void {
   console.log('🧹 Clearing corrupted session data...')
   
   if (typeof window !== 'undefined') {
     try {
-      // Clear corrupted base64 cookies specifically
+      // Helper function to check if a cookie is a valid Supabase auth cookie
+      const isSupabaseAuthCookie = (cookieName: string) => {
+        return cookieName.includes('auth-token') && cookieName.startsWith('sb-');
+      };
+
+      // Clear corrupted base64 cookies specifically (but preserve Supabase auth cookies)
       const cookies = document.cookie.split(';');
       cookies.forEach(cookie => {
         if (cookie.includes('base64-')) {
           const eqPos = cookie.indexOf('=');
           const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+          
+          // Don't clear if it's a valid Supabase auth cookie
+          if (!isSupabaseAuthCookie(name)) {
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+          }
         }
       });
       
-      // Clear all other cookies
+      // Clear all other cookies (but preserve Supabase auth cookies)
       document.cookie.split(";").forEach(function(c) { 
-        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        const name = c.replace(/^ +/, "").replace(/=.*/, "");
+        if (!isSupabaseAuthCookie(name)) {
+          document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        }
       });
       
       // Clear storage
       localStorage.clear();
       sessionStorage.clear();
       
-      console.log('✅ Session data cleared successfully')
+      console.log('✅ Session data cleared successfully (preserved Supabase auth cookies)')
     } catch (error) {
       console.error('❌ Error clearing session data:', error)
     }
@@ -463,23 +473,38 @@ export function clearCorruptedSessionData(): void {
 /**
  * Clear corrupted cookies before any auth operations
  * Specifically targets base64-encoded cookies that cause parsing errors
+ * Preserves valid Supabase auth cookies
  */
 export function clearCorruptedCookies(): void {
   console.log('🍪 Clearing corrupted cookies...')
   
   if (typeof window !== 'undefined') {
     try {
+      // Helper function to check if a cookie is a valid Supabase auth cookie
+      const isSupabaseAuthCookie = (cookieName: string) => {
+        return cookieName.includes('auth-token') && cookieName.startsWith('sb-');
+      };
+
       const cookies = document.cookie.split(';');
+      let clearedCount = 0;
+      
       cookies.forEach(cookie => {
         if (cookie.includes('base64-')) {
           const eqPos = cookie.indexOf('=');
           const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-          console.log(`🗑️ Cleared corrupted cookie: ${name}`);
+          
+          // Don't clear if it's a valid Supabase auth cookie
+          if (!isSupabaseAuthCookie(name)) {
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+            console.log(`🗑️ Cleared corrupted cookie: ${name}`);
+            clearedCount++;
+          } else {
+            console.log(`🛡️ Preserved valid Supabase auth cookie: ${name}`);
+          }
         }
       });
       
-      console.log('✅ Corrupted cookies cleared successfully')
+      console.log(`✅ Corrupted cookies cleared successfully. Preserved Supabase auth cookies.`)
     } catch (error) {
       console.error('❌ Error clearing corrupted cookies:', error)
     }
