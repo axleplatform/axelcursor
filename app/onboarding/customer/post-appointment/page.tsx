@@ -1542,34 +1542,34 @@ export default function PostAppointmentOnboarding() {
         setFormData(prev => ({ ...prev, userId: sessionResult.user?.id }));
         
         // Check if user already has a completed profile
-        console.log('🔍 Checking if user has completed profile...');
-        const { data: existingProfile, error: profileCheckError } = await supabase
-          .from('user_profiles')
-          .select('onboarding_completed, onboarding_type')
-          .eq('user_id', sessionResult.user?.id)
+        console.log('🔍 Checking if user has completed onboarding in users table...');
+        const { data: existingUser, error: userCheckError } = await supabase
+          .from('users')
+          .select('onboarding_completed, profile_status')
+          .eq('id', sessionResult.user?.id)
           .single();
 
-        if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-          console.error('❌ Error checking existing profile:', profileCheckError);
+        if (userCheckError && userCheckError.code !== 'PGRST116') {
+          console.error('❌ Error checking existing user:', userCheckError);
           // Continue with onboarding as fallback
         }
 
-        if (existingProfile) {
-          console.log('📋 Existing profile found:', {
-            onboarding_completed: existingProfile.onboarding_completed,
-            onboarding_type: existingProfile.onboarding_type
+        if (existingUser) {
+          console.log('📋 Existing user found:', {
+            onboarding_completed: existingUser.onboarding_completed,
+            profile_status: existingUser.profile_status
           });
           
-          // Check if user has completed onboarding
-          if (existingProfile.onboarding_completed) {
-            console.log('✅ User has completed onboarding, redirecting to dashboard');
+          // CRITICAL: Check onboarding completion in users table (primary source)
+          if (existingUser.onboarding_completed) {
+            console.log('✅ User has completed onboarding in users table, redirecting to dashboard');
             router.push('/customer-dashboard');
             return;
           } else {
-            console.log('⏳ User has incomplete onboarding, continuing with post-appointment flow');
+            console.log('⏳ User has incomplete onboarding in users table, continuing with post-appointment flow');
           }
         } else {
-          console.log('📝 No existing profile found, continuing with post-appointment flow');
+          console.log('📝 No existing user record found, continuing with post-appointment flow');
         }
         
       } catch (error) {

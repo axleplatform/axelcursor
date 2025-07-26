@@ -422,6 +422,44 @@ export async function POST(request: Request) {
     console.log('✅ Profile auth_method:', updateResult.data?.[0]?.auth_method);
     console.log('✅ Profile user_id:', updateResult.data?.[0]?.user_id);
     
+    // CRITICAL: Update users table onboarding_completed status (primary source)
+    console.log('🔐 Updating users table onboarding_completed status...');
+    console.log('🔐 Using authenticated user ID for users table update:', user.id);
+    console.log('🔐 Client type for users table update:', clientType);
+    
+    const { data: userUpdateResult, error: userUpdateError } = await supabase
+      .from('users')
+      .update({ 
+        onboarding_completed: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id)
+      .select('id, onboarding_completed, updated_at')
+    
+    if (userUpdateError) {
+      console.error('❌ Error updating users table onboarding status:', userUpdateError);
+      console.error('❌ User update error code:', userUpdateError.code);
+      console.error('❌ User update error message:', userUpdateError.message);
+      console.error('🔐 CRITICAL: Users table update failed - this is the primary source!');
+      
+      return NextResponse.json({ 
+        error: 'Failed to update user onboarding status',
+        code: 'USER_UPDATE_FAILED',
+        details: userUpdateError.message,
+        hint: 'The users table onboarding_completed status could not be updated',
+        debug: {
+          clientType,
+          authenticatedUserId: user.id,
+          operationType: 'USERS_UPDATE',
+          rlsError: userUpdateError.code === '406' || userUpdateError.code === '401'
+        }
+      }, { status: 500 });
+    }
+    
+    console.log('✅ Users table updated successfully:', userUpdateResult.data?.[0]?.id);
+    console.log('✅ Users table onboarding_completed:', userUpdateResult.data?.[0]?.onboarding_completed);
+    console.log('✅ Users table updated_at:', userUpdateResult.data?.[0]?.updated_at);
+    
     // Double-check that the profile was actually updated
     console.log('🔍 Double-checking profile update...');
     console.log('🔍 Verifying profile with authenticated user ID:', user.id);
