@@ -180,16 +180,9 @@ export default function CustomerDashboard() {
 
       console.log('✅ Profile loaded successfully:', profile);
 
-      // Check if profile has valid authentication (either email OR phone)
-      const hasValidAuth = profile.email || profile.phone;
-      if (!hasValidAuth) {
-        console.log('❌ Profile missing both email and phone, redirecting to onboarding...');
-        router.push('/onboarding/customer/flow');
-        return;
-      }
-
+      // ONLY check if onboarding is completed - don't check individual fields
       if (!profile.onboarding_completed) {
-        console.log('❌ Profile incomplete, redirecting to onboarding...');
+        console.log('❌ Profile onboarding not completed, redirecting to onboarding...');
         // Redirect to complete profile
         router.push('/onboarding/customer/flow');
         return;
@@ -308,8 +301,8 @@ export default function CustomerDashboard() {
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="space-y-8">
-            {/* Profile Completion Section - Show if optional fields are missing */}
-            {profile && (!profile.phone || !profile.full_name) && (
+            {/* Profile Completion Section - Show if phone is missing (full_name is never collected during onboarding) */}
+            {profile && !profile.phone && (
               <section className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -317,43 +310,24 @@ export default function CustomerDashboard() {
                       Complete Your Profile
                     </h2>
                     <p className="text-blue-700 mb-4">
-                      Add your phone number and full name to get the most out of your experience.
+                      Add your phone number to get the most out of your experience.
                     </p>
                     
                     <div className="space-y-3">
-                      {!profile.full_name && (
-                        <div>
-                          <label className="block text-sm font-medium text-blue-800 mb-1">
-                            Full Name
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Enter your full name"
-                            className="w-full px-3 py-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            onChange={(e) => {
-                              // Update profile state immediately for better UX
-                              setProfile((prev: any) => prev ? { ...prev, full_name: e.target.value } : prev);
-                            }}
-                          />
-                        </div>
-                      )}
-                      
-                      {!profile.phone && (
-                        <div>
-                          <label className="block text-sm font-medium text-blue-800 mb-1">
-                            Phone Number
-                          </label>
-                          <input
-                            type="tel"
-                            placeholder="Enter your phone number"
-                            className="w-full px-3 py-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            onChange={(e) => {
-                              // Update profile state immediately for better UX
-                              setProfile((prev: any) => prev ? { ...prev, phone: e.target.value } : prev);
-                            }}
-                          />
-                        </div>
-                      )}
+                      <div>
+                        <label className="block text-sm font-medium text-blue-800 mb-1">
+                          Phone Number
+                        </label>
+                        <input
+                          type="tel"
+                          placeholder="Enter your phone number"
+                          className="w-full px-3 py-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          onChange={(e) => {
+                            // Update profile state immediately for better UX
+                            setProfile((prev: any) => prev ? { ...prev, phone: e.target.value } : prev);
+                          }}
+                        />
+                      </div>
                     </div>
                     
                     <button
@@ -362,7 +336,6 @@ export default function CustomerDashboard() {
                           const { error } = await supabase
                             .from('user_profiles')
                             .update({
-                              full_name: profile.full_name || undefined,
                               phone: profile.phone || undefined,
                               updated_at: new Date().toISOString()
                             })
