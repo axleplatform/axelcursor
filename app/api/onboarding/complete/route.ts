@@ -83,15 +83,18 @@ export async function POST(request: Request) {
     console.log('✅ User metadata:', user.user_metadata)
     console.log('✅ User app metadata:', user.app_metadata)
 
-    // Check if user profile exists first
+    // Check if user profile exists first - use authenticated user's ID
+    console.log('🔍 Checking for existing profile with authenticated user ID:', user.id);
     const { data: existingProfile, error: profileCheckError } = await supabase
       .from('user_profiles')
-      .select('id, onboarding_completed, auth_method')
+      .select('id, onboarding_completed, auth_method, user_id')
       .eq('user_id', user.id)
       .single()
 
     if (profileCheckError && profileCheckError.code !== 'PGRST116') {
       console.error('❌ Profile check error:', profileCheckError)
+      console.error('❌ Profile check error code:', profileCheckError.code);
+      console.error('❌ Profile check error message:', profileCheckError.message);
       if (profileCheckError.code === '406' || profileCheckError.code === '401') {
         console.warn('⚠️ RLS/Authentication issue detected. Check user permissions and RLS policies.')
         return NextResponse.json({ 
@@ -102,7 +105,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to check user profile' }, { status: 500 })
     }
 
-    console.log('📋 Current profile status - exists:', !!existingProfile, 'onboarding_completed:', existingProfile?.onboarding_completed, 'auth_method:', existingProfile?.auth_method);
+    console.log('📋 Current profile status - exists:', !!existingProfile);
+    console.log('📋 Profile details - onboarding_completed:', existingProfile?.onboarding_completed);
+    console.log('📋 Profile details - auth_method:', existingProfile?.auth_method);
+    console.log('📋 Profile details - user_id:', existingProfile?.user_id);
+    console.log('📋 Profile details - profile_id:', existingProfile?.id);
 
     // Determine auth method - preserve existing if already set, otherwise determine based on user data
     let authMethod = existingProfile?.auth_method; // Preserve existing auth_method if set
@@ -165,25 +172,31 @@ export async function POST(request: Request) {
 
     let updateResult;
     if (existingProfile) {
-      // Update existing profile
+      // Update existing profile - use authenticated user's ID
       console.log('📝 Updating existing user profile...')
+      console.log('📝 Using authenticated user ID for update:', user.id);
       console.log('📝 Existing profile - onboarding_completed:', existingProfile.onboarding_completed, 'auth_method:', existingProfile.auth_method);
+      console.log('📝 Profile data to update:', JSON.stringify(profileData, null, 2));
+      
       updateResult = await supabase
         .from('user_profiles')
         .update(profileData)
-        .eq('user_id', user.id)
-        .select('id, onboarding_completed, auth_method')
+        .eq('user_id', user.id) // Use authenticated user's ID
+        .select('id, onboarding_completed, auth_method, user_id')
     } else {
-      // Create new profile
+      // Create new profile - use authenticated user's ID
       console.log('📝 Creating new user profile...')
+      console.log('📝 Using authenticated user ID for creation:', user.id);
       console.log('📝 No existing profile found, creating new one');
+      console.log('📝 Profile data to insert:', JSON.stringify({ user_id: user.id, ...profileData }, null, 2));
+      
       updateResult = await supabase
         .from('user_profiles')
         .insert({
-          user_id: user.id,
+          user_id: user.id, // Use authenticated user's ID
           ...profileData
         })
-        .select('id, onboarding_completed, auth_method')
+        .select('id, onboarding_completed, auth_method, user_id')
     }
 
     console.log('📝 Update result:', updateResult);
@@ -206,13 +219,15 @@ export async function POST(request: Request) {
     console.log('✅ User profile updated successfully:', updateResult.data?.[0]?.id);
     console.log('✅ Profile onboarding_completed flag:', updateResult.data?.[0]?.onboarding_completed);
     console.log('✅ Profile auth_method:', updateResult.data?.[0]?.auth_method);
+    console.log('✅ Profile user_id:', updateResult.data?.[0]?.user_id);
     
     // Double-check that the profile was actually updated
     console.log('🔍 Double-checking profile update...');
+    console.log('🔍 Verifying profile with authenticated user ID:', user.id);
     const { data: verificationProfile, error: verificationError } = await supabase
       .from('user_profiles')
-      .select('onboarding_completed, auth_method, user_id')
-      .eq('user_id', user.id)
+      .select('onboarding_completed, auth_method, user_id, id')
+      .eq('user_id', user.id) // Use authenticated user's ID for verification
       .single();
       
     if (verificationError) {
@@ -223,11 +238,20 @@ export async function POST(request: Request) {
       console.log('✅ Verification - Profile onboarding_completed:', verificationProfile?.onboarding_completed);
       console.log('✅ Verification - Profile auth_method:', verificationProfile?.auth_method);
       console.log('✅ Verification - Profile user_id:', verificationProfile?.user_id);
+      console.log('✅ Verification - Profile id:', verificationProfile?.id);
+      
       if (!verificationProfile?.onboarding_completed) {
         console.error('❌ CRITICAL: Profile still shows onboarding_completed: false after update!');
         console.error('❌ Full verification profile:', verificationProfile);
       } else {
         console.log('✅ SUCCESS: Profile properly updated with onboarding_completed: true');
+      }
+      
+      if (!verificationProfile?.auth_method) {
+        console.error('❌ CRITICAL: Profile still shows auth_method: null after update!');
+        console.error('❌ Expected auth_method to be set, but got:', verificationProfile?.auth_method);
+      } else {
+        console.log('✅ SUCCESS: Profile properly updated with auth_method:', verificationProfile?.auth_method);
       }
     }
     
