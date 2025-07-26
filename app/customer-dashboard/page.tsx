@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
 
@@ -24,7 +24,6 @@ export default function CustomerDashboard() {
     recommendedServices: [] as any[]
   });
 
-  const supabase = createClientComponentClient();
   const router = useRouter();
 
   useEffect(() => {

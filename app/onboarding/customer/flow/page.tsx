@@ -11,6 +11,7 @@ import { SiteHeader } from '@/components/site-header'
 import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { useOnboardingTracking } from '@/hooks/useOnboardingTracking'
+import { validateSessionForNavigation, waitForSessionEstablishment } from '@/lib/session-utils'
 
 // Type definitions
 type Vehicle = {
@@ -1906,6 +1907,8 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
   useEffect(() => {
     const completeOnboarding = async () => {
       try {
+        console.log('🔄 Completing onboarding and preparing for dashboard...');
+        
         // Check if required steps were completed
         if (!onboardingData.userId) {
           // User skipped account creation
@@ -1914,6 +1917,30 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
             setCurrentStep(14) // Go back to account creation
           }
           return
+        }
+
+        // Validate session before proceeding
+        if (!supabase) {
+          console.error('❌ Supabase client not initialized');
+          throw new Error('Database connection error');
+        }
+
+        // Use the new session validation utility
+        const sessionResult = await validateSessionForNavigation();
+        
+        if (sessionResult.success) {
+          console.log('✅ Valid session confirmed for navigation:', sessionResult.user?.id);
+        } else {
+          console.warn('⚠️ Session validation result:', sessionResult.error);
+          // Try to wait for session establishment
+          console.log('⏳ Attempting to wait for session establishment...');
+          const establishmentResult = await waitForSessionEstablishment();
+          
+          if (establishmentResult.success) {
+            console.log('✅ Session established successfully:', establishmentResult.user?.id);
+          } else {
+            console.warn('⚠️ Session establishment failed, proceeding anyway:', establishmentResult.error);
+          }
         }
 
         // Get pending onboarding data from localStorage
@@ -1932,6 +1959,8 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
 
           if (!response.ok) {
             console.error('Failed to save onboarding data')
+          } else {
+            console.log('✅ Onboarding data saved successfully');
           }
         }
 
@@ -1944,10 +1973,15 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
           await trackCompletion()
         }
         
+        // Add a small delay to ensure session is properly established
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        console.log('🚀 Redirecting to customer dashboard...');
         // Redirect to customer dashboard
         router.push('/customer-dashboard')
       } catch (error) {
-        console.error('Error completing onboarding:', error)
+        console.error('❌ Error completing onboarding:', error)
+        // Still redirect to dashboard - let it handle any auth issues
         router.push('/customer-dashboard')
       }
     }
@@ -1964,6 +1998,7 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Setting up your account...</h2>
+        <p className="text-gray-600">Please wait while we prepare your dashboard...</p>
       </div>
     </div>
   )

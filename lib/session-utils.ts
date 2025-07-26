@@ -512,3 +512,127 @@ export function clearCorruptedCookies(): void {
     console.log('⚠️ Not in browser environment, skipping cookie clearing')
   }
 }
+
+/**
+ * Validate and maintain session during navigation
+ * This is especially important after onboarding completion
+ */
+export async function validateSessionForNavigation(): Promise<SessionValidationResult> {
+  console.log('🔐 Validating session for navigation...')
+  
+  try {
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized')
+      return {
+        success: false,
+        error: 'Supabase client not initialized',
+        errorCode: 'CLIENT_ERROR'
+      }
+    }
+
+    // Check for existing session
+    const { data: { session }, error: sessionError } = await (supabase.auth as any).getSession()
+    
+    if (sessionError) {
+      console.error('❌ Session error during navigation validation:', sessionError)
+      return {
+        success: false,
+        error: 'Session error occurred',
+        errorCode: 'SESSION_ERROR'
+      }
+    }
+
+    if (session && session.user) {
+      console.log('✅ Valid session found for navigation:', session.user.id)
+      return {
+        success: true,
+        user: session.user,
+        session
+      }
+    }
+
+    // Try to refresh session
+    console.log('🔄 No session found, attempting to refresh...')
+    const { data: { session: refreshedSession }, error: refreshError } = await (supabase.auth as any).refreshSession()
+    
+    if (refreshError) {
+      console.error('❌ Session refresh failed during navigation:', refreshError)
+      return {
+        success: false,
+        error: 'Session refresh failed',
+        errorCode: 'REFRESH_ERROR'
+      }
+    }
+
+    if (refreshedSession && refreshedSession.user) {
+      console.log('✅ Session refreshed successfully for navigation:', refreshedSession.user.id)
+      return {
+        success: true,
+        user: refreshedSession.user,
+        session: refreshedSession
+      }
+    }
+
+    console.log('⚠️ No valid session found after refresh - this may be expected for some flows')
+    return {
+      success: false,
+      error: 'No valid session found',
+      errorCode: 'NO_SESSION'
+    }
+    
+  } catch (error) {
+    console.error('❌ Error validating session for navigation:', error)
+    return {
+      success: false,
+      error: 'Session validation failed',
+      errorCode: 'UNKNOWN_ERROR'
+    }
+  }
+}
+
+/**
+ * Wait for session to be properly established after signup/signin
+ * This is crucial for preventing session loss during navigation
+ */
+export async function waitForSessionEstablishment(
+  maxAttempts: number = 15,
+  delayMs: number = 300
+): Promise<SessionValidationResult> {
+  console.log('⏳ Waiting for session establishment...')
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`🔍 Session establishment check attempt ${attempt}/${maxAttempts}`)
+      
+      const result = await validateSessionForNavigation()
+      
+      if (result.success) {
+        console.log('✅ Session established successfully')
+        return result
+      }
+
+      // Wait before next attempt
+      if (attempt < maxAttempts) {
+        console.log(`⏳ Session not ready, waiting ${delayMs}ms...`)
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
+      
+    } catch (error) {
+      console.error('❌ Error checking session establishment:', error)
+      if (attempt === maxAttempts) {
+        return {
+          success: false,
+          error: 'Session establishment failed',
+          errorCode: 'UNKNOWN_ERROR'
+        }
+      }
+    }
+  }
+
+  console.error('❌ Session not established after maximum attempts')
+  return {
+    success: false,
+    error: 'Session establishment timeout',
+    errorCode: 'TIMEOUT'
+  }
+}
