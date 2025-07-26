@@ -433,7 +433,14 @@ export async function POST(request: Request) {
     console.error('❌ Error in onboarding completion:', error)
     console.error('❌ Error type:', typeof error)
     console.error('❌ Error constructor:', error?.constructor?.name)
-    console.error('❌ Error stack:', error?.stack)
+    
+    // Safely access error.stack only if it's an Error instance
+    if (error instanceof Error) {
+      console.error('❌ Error stack:', error.stack)
+    } else {
+      console.error('❌ Error stack: (not an Error instance)', error)
+    }
+    
     console.error('❌ Full error object:', JSON.stringify(error, null, 2))
     
     // Provide more specific error information
@@ -447,7 +454,8 @@ export async function POST(request: Request) {
     } else if (typeof error === 'string') {
       errorMessage = error
     } else if (error && typeof error === 'object') {
-      errorMessage = error.message || 'Unknown object error'
+      // Safely access message property if it exists
+      errorMessage = (error as any).message || 'Unknown object error'
       errorDetails = JSON.stringify(error)
     }
     
