@@ -498,7 +498,7 @@ export default function CustomerDashboard() {
                   </label>
                   <select
                     value={selectedVehicle}
-                    onChange={(e) => setSelectedVehicle(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedVehicle(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
                     disabled={vehicles.length === 0}
                   >
@@ -521,7 +521,7 @@ export default function CustomerDashboard() {
                   </label>
                   <textarea
                     value={appointmentData.description}
-                    onChange={(e) => setAppointmentData({...appointmentData, description: e.target.value})}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAppointmentData({...appointmentData, description: e.target.value})}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
                     rows={3}
                     placeholder="Tell us what's wrong with your vehicle..."
@@ -537,7 +537,7 @@ export default function CustomerDashboard() {
                     <input
                       type="date"
                       value={appointmentData.date}
-                      onChange={(e) => setAppointmentData({...appointmentData, date: e.target.value})}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAppointmentData({...appointmentData, date: e.target.value})}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
                       min={new Date().toISOString().split('T')[0]}
                     />
@@ -548,7 +548,7 @@ export default function CustomerDashboard() {
                     </label>
                     <select
                       value={appointmentData.time}
-                      onChange={(e) => setAppointmentData({...appointmentData, time: e.target.value})}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAppointmentData({...appointmentData, time: e.target.value})}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent"
                     >
                       <option value="">Select time</option>
@@ -606,7 +606,7 @@ export default function CustomerDashboard() {
                         <input
                           type="checkbox"
                           checked={appointmentData.selectedIssues.includes(issue)}
-                          onChange={(e) => {
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                             if (e.target.checked) {
                               setAppointmentData({
                                 ...appointmentData,
