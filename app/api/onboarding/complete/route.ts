@@ -22,22 +22,29 @@ export async function POST(request: Request) {
     console.log('🔐 Extracted token length:', token?.length || 0);
     console.log('🔐 Token starts with:', token?.substring(0, 20) + '...');
     
-    // Create Supabase client - the route handler client should automatically handle auth
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // If we have a token, try to set it in the session
+    // Create Supabase client with explicit token in headers
+    let supabase;
     if (token) {
-      console.log('🔐 Token provided, attempting to set session...');
+      console.log('🔐 Creating Supabase client with explicit token in headers');
+      console.log('🔐 Token being used:', token.substring(0, 50) + '...');
+      
       try {
-        // Try to set the session with the provided token
-        const { data: sessionData, error: sessionError } = await (supabase.auth as any).setSession({
-          access_token: token,
-          refresh_token: null
+        supabase = createRouteHandlerClient({ 
+          cookies,
+          headers: { 
+            Authorization: `Bearer ${token}` 
+          } 
         });
-        console.log('🔐 Session set result:', !!sessionData, sessionError);
+        console.log('✅ Supabase client created successfully with token');
       } catch (error) {
-        console.log('🔐 Session set error (non-critical):', error);
+        console.error('❌ Error creating Supabase client with token:', error);
+        // Fallback to default client
+        supabase = createRouteHandlerClient({ cookies });
+        console.log('🔄 Fallback to default Supabase client');
       }
+    } else {
+      console.log('🔐 No token provided, using default Supabase client');
+      supabase = createRouteHandlerClient({ cookies })
     }
     
     if (!supabase) {
@@ -45,7 +52,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Database connection error' }, { status: 500 })
     }
     
-    // Get current user - this will validate the token from cookies or headers
+    // Get current user - this will validate the token from headers
     const { data: { user }, error: authError } = await (supabase.auth as any).getUser()
     
     console.log('🔐 Auth check result - user exists:', !!user);
@@ -154,6 +161,7 @@ export async function POST(request: Request) {
     console.log('📝 User email:', user.email, 'Phone:', onboardingData.phoneNumber, 'Auth method:', authMethod);
     console.log('📝 Provider:', user.app_metadata?.provider);
     console.log('📝 Key fields - onboarding_completed:', profileData.onboarding_completed, 'auth_method:', profileData.auth_method);
+    console.log('📝 Full profile data being sent to database:', JSON.stringify(profileData, null, 2));
 
     let updateResult;
     if (existingProfile) {
