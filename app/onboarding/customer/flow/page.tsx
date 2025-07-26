@@ -1582,18 +1582,28 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
           return
         }
 
+        // Determine auth method for phone user
+        let authMethod = 'phone'; // Default for phone-only users
+        
+        // Check if user also has email (from previous steps)
+        if (onboardingData.userId) {
+          // User has an email account, so they have both
+          authMethod = 'both';
+        }
+
         // Create user profile
         const profileData = {
           user_id: tempUserId,
           phone: normalizedPhone,
           onboarding_completed: true, // Phone-only users get full access immediately
           onboarding_type: 'customer',
-          auth_method: 'phone', // Track auth method for internal use
+          auth_method: authMethod, // Track auth method for internal use
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
 
-        console.log('📝 Creating phone-only user profile with data:', profileData);
+        console.log('📝 Creating phone user profile with auth_method:', authMethod);
+        console.log('📝 User has email account:', !!onboardingData.userId);
 
         const { data: profileResult, error: profileError } = await supabase
           .from('user_profiles')

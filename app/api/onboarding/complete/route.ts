@@ -49,6 +49,22 @@ export async function POST(request: Request) {
 
     console.log('📋 Current profile status - exists:', !!existingProfile, 'onboarding_completed:', existingProfile?.onboarding_completed, 'auth_method:', existingProfile?.auth_method);
 
+    // Determine auth method based on user data
+    let authMethod = 'email'; // Default to email
+    
+    if (user.email && onboardingData.phoneNumber) {
+      authMethod = 'both'; // User has both email and phone
+    } else if (onboardingData.phoneNumber && !user.email) {
+      authMethod = 'phone'; // User only has phone
+    } else if (user.email && !onboardingData.phoneNumber) {
+      // Check if it's Google auth or regular email
+      if (user.app_metadata?.provider === 'google') {
+        authMethod = 'google';
+      } else {
+        authMethod = 'email'; // Regular email auth
+      }
+    }
+
     // Prepare profile data
     const profileData = {
       email: user.email || '',
@@ -73,12 +89,13 @@ export async function POST(request: Request) {
       free_trial_ends_at: onboardingData.freeTrial ? 
         new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
       // Add auth method tracking
-      auth_method: user.email ? 'email' : 'phone',
+      auth_method: authMethod,
       updated_at: new Date().toISOString()
     }
 
     console.log('📝 Profile data prepared with onboarding_completed: true');
-    console.log('📝 User email:', user.email, 'Auth method:', user.email ? 'email' : 'phone');
+    console.log('📝 User email:', user.email, 'Phone:', onboardingData.phoneNumber, 'Auth method:', authMethod);
+    console.log('📝 Provider:', user.app_metadata?.provider);
 
     let updateResult;
     if (existingProfile) {
