@@ -179,10 +179,14 @@ export default function CustomerDashboard() {
       }
 
       console.log('✅ Profile loaded successfully:', profile);
+      console.log('🔍 Profile onboarding_completed value:', profile.onboarding_completed);
+      console.log('🔍 Profile auth_method:', profile.auth_method);
+      console.log('🔍 Profile user_id:', profile.user_id);
 
       // ONLY check if onboarding is completed - don't check individual fields
       if (!profile.onboarding_completed) {
         console.log('❌ Profile onboarding not completed, redirecting to onboarding...');
+        console.log('❌ Profile details - user_id:', profile.user_id, 'auth_method:', profile.auth_method, 'onboarding_completed:', profile.onboarding_completed);
         // Redirect to complete profile
         router.push('/onboarding/customer/flow');
         return;

@@ -1593,9 +1593,12 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
           updated_at: new Date().toISOString()
         }
 
-        const { error: profileError } = await supabase
+        console.log('📝 Creating phone-only user profile with data:', profileData);
+
+        const { data: profileResult, error: profileError } = await supabase
           .from('user_profiles')
           .insert(profileData)
+          .select('id, onboarding_completed')
 
         if (profileError) {
           console.error('❌ Error creating profile:', profileError)
@@ -1604,6 +1607,23 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
         }
 
         console.log('✅ Phone-based user created successfully:', tempUserId)
+        console.log('✅ Profile created with onboarding_completed:', profileResult?.[0]?.onboarding_completed)
+        
+        // Verify the profile was created correctly
+        const { data: verificationProfile, error: verificationError } = await supabase
+          .from('user_profiles')
+          .select('onboarding_completed')
+          .eq('user_id', tempUserId)
+          .single();
+          
+        if (verificationError) {
+          console.error('❌ Error verifying phone user profile:', verificationError);
+        } else {
+          console.log('✅ Phone user profile verification - onboarding_completed:', verificationProfile?.onboarding_completed);
+          if (!verificationProfile?.onboarding_completed) {
+            console.error('❌ CRITICAL: Phone user profile shows onboarding_completed: false!');
+          }
+        }
         
         // Update onboarding data with new user ID
         updateData({ 
@@ -2047,6 +2067,8 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
         if (pendingData) {
           const data = JSON.parse(pendingData)
           
+          console.log('📤 Calling onboarding completion API with data:', data);
+          
           // Call API to save onboarding data
           const response = await fetch('/api/onboarding/complete', {
             method: 'POST',
@@ -2057,10 +2079,33 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
           })
 
           if (!response.ok) {
-            console.error('Failed to save onboarding data')
+            const errorData = await response.json().catch(() => ({}));
+            console.error('❌ Failed to save onboarding data:', response.status, errorData);
+            throw new Error(`Onboarding completion failed: ${response.status}`);
           } else {
             console.log('✅ Onboarding data saved successfully');
+            
+            // Verify the profile was updated correctly
+            const { data: { user } } = await (supabase.auth as any).getUser();
+            if (user) {
+              const { data: profile, error: profileError } = await supabase
+                .from('user_profiles')
+                .select('onboarding_completed')
+                .eq('user_id', user.id)
+                .single();
+                
+              if (profileError) {
+                console.error('❌ Error verifying profile update:', profileError);
+              } else {
+                console.log('✅ Profile verification - onboarding_completed:', profile?.onboarding_completed);
+                if (!profile?.onboarding_completed) {
+                  console.warn('⚠️ Profile still shows onboarding_completed: false, but proceeding...');
+                }
+              }
+            }
           }
+        } else {
+          console.log('ℹ️ No pending onboarding data found in localStorage');
         }
 
         // Clear localStorage
@@ -2073,7 +2118,7 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
         }
         
         // Add a small delay to ensure session is properly established
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Increased delay
         
         console.log('🚀 Redirecting to customer dashboard...');
         // Redirect to customer dashboard

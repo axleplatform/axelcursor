@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     // Check if user profile exists first
     const { data: existingProfile, error: profileCheckError } = await supabase
       .from('user_profiles')
-      .select('id')
+      .select('id, onboarding_completed')
       .eq('user_id', user.id)
       .single()
 
@@ -46,6 +46,8 @@ export async function POST(request: Request) {
       }
       return NextResponse.json({ error: 'Failed to check user profile' }, { status: 500 })
     }
+
+    console.log('📋 Current profile status - exists:', !!existingProfile, 'onboarding_completed:', existingProfile?.onboarding_completed);
 
     // Prepare profile data
     const profileData = {
@@ -62,7 +64,7 @@ export async function POST(request: Request) {
       notifications_enabled: onboardingData.notifications,
       communication_preferences: { notifications: onboardingData.notifications },
       notification_settings: { enabled: onboardingData.notifications },
-      onboarding_completed: true,
+      onboarding_completed: true, // This is the key field that must be set to true
       onboarding_type: 'full',
       profile_completed_at: new Date().toISOString(),
       onboarding_data: onboardingData,
@@ -75,6 +77,8 @@ export async function POST(request: Request) {
       updated_at: new Date().toISOString()
     }
 
+    console.log('📝 Profile data prepared with onboarding_completed: true');
+
     let updateResult;
     if (existingProfile) {
       // Update existing profile
@@ -83,7 +87,7 @@ export async function POST(request: Request) {
         .from('user_profiles')
         .update(profileData)
         .eq('user_id', user.id)
-        .select()
+        .select('id, onboarding_completed')
     } else {
       // Create new profile
       console.log('📝 Creating new user profile...')
@@ -93,7 +97,7 @@ export async function POST(request: Request) {
           user_id: user.id,
           ...profileData
         })
-        .select()
+        .select('id, onboarding_completed')
     }
 
     if (updateResult.error) {
@@ -108,7 +112,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to save onboarding data' }, { status: 500 })
     }
 
-    console.log('✅ User profile updated successfully:', updateResult.data?.[0]?.id)
+    console.log('✅ User profile updated successfully:', updateResult.data?.[0]?.id);
+    console.log('✅ Profile onboarding_completed flag:', updateResult.data?.[0]?.onboarding_completed);
+    
+    // Double-check that the profile was actually updated
+    const { data: verificationProfile, error: verificationError } = await supabase
+      .from('user_profiles')
+      .select('onboarding_completed')
+      .eq('user_id', user.id)
+      .single();
+      
+    if (verificationError) {
+      console.error('❌ Error verifying profile update:', verificationError);
+    } else {
+      console.log('✅ Verification - Profile onboarding_completed:', verificationProfile?.onboarding_completed);
+      if (!verificationProfile?.onboarding_completed) {
+        console.error('❌ CRITICAL: Profile still shows onboarding_completed: false after update!');
+      }
+    }
+    
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('❌ Error in onboarding completion:', error)
