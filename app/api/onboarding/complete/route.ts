@@ -247,6 +247,31 @@ export async function POST(request: Request) {
     console.log('📝 Key fields - onboarding_completed:', profileData.onboarding_completed, 'auth_method:', profileData.auth_method);
     console.log('📝 Full profile data being sent to database:', JSON.stringify(profileData, null, 2));
 
+    // Check if auth_method column exists in user_profiles table
+    console.log('🔍 Checking if auth_method column exists in user_profiles table...');
+    try {
+      const { data: columnCheck, error: columnError } = await supabase
+        .from('user_profiles')
+        .select('auth_method')
+        .limit(1);
+      
+      if (columnError && columnError.code === '42703') {
+        console.error('❌ auth_method column does not exist in user_profiles table');
+        console.error('❌ Column error:', columnError);
+        
+        // Remove auth_method from profileData if column doesn't exist
+        console.log('🔧 Removing auth_method from profile data since column does not exist');
+        delete profileData.auth_method;
+        console.log('📝 Updated profile data without auth_method:', JSON.stringify(profileData, null, 2));
+      } else if (columnError) {
+        console.error('❌ Error checking auth_method column:', columnError);
+      } else {
+        console.log('✅ auth_method column exists in user_profiles table');
+      }
+    } catch (checkError) {
+      console.error('❌ Error checking column existence:', checkError);
+    }
+
     let updateResult;
     if (existingProfile) {
       // Update existing profile - use authenticated user's ID
@@ -283,14 +308,69 @@ export async function POST(request: Request) {
       console.error('❌ Error code:', updateResult.error.code)
       console.error('❌ Error message:', updateResult.error.message)
       console.error('❌ Error details:', updateResult.error.details)
+      console.error('❌ Error hint:', updateResult.error.hint)
+      console.error('❌ Full error object:', JSON.stringify(updateResult.error, null, 2))
+      
+      // Check for specific error types
+      if (updateResult.error.code === '42703') {
+        console.error('❌ COLUMN NOT FOUND ERROR: This indicates a missing column in the database')
+        console.error('❌ Likely missing column: auth_method')
+        return NextResponse.json({ 
+          error: 'Database schema error: Missing column. Please contact support.',
+          code: 'SCHEMA_ERROR',
+          details: updateResult.error.message,
+          hint: 'The auth_method column may not exist in the user_profiles table'
+        }, { status: 500 })
+      }
+      
+      if (updateResult.error.code === '23502') {
+        console.error('❌ NOT NULL CONSTRAINT ERROR: Required field is missing')
+        return NextResponse.json({ 
+          error: 'Missing required field in profile data.',
+          code: 'MISSING_REQUIRED_FIELD',
+          details: updateResult.error.message,
+          hint: 'Check that all required fields are provided'
+        }, { status: 400 })
+      }
+      
+      if (updateResult.error.code === '23505') {
+        console.error('❌ UNIQUE CONSTRAINT ERROR: Duplicate value')
+        return NextResponse.json({ 
+          error: 'Duplicate profile data detected.',
+          code: 'DUPLICATE_DATA',
+          details: updateResult.error.message,
+          hint: 'A profile with this data already exists'
+        }, { status: 409 })
+      }
+      
+      if (updateResult.error.code === '23514') {
+        console.error('❌ CHECK CONSTRAINT ERROR: Data validation failed')
+        return NextResponse.json({ 
+          error: 'Invalid profile data provided.',
+          code: 'INVALID_DATA',
+          details: updateResult.error.message,
+          hint: 'Check that all data values are valid'
+        }, { status: 400 })
+      }
+      
       if (updateResult.error.code === '406' || updateResult.error.code === '401') {
         console.warn('⚠️ RLS/Authentication issue detected. Check user permissions and RLS policies.')
         return NextResponse.json({ 
           error: 'Access denied. Please ensure you are logged in and have proper permissions.',
-          code: updateResult.error.code 
+          code: updateResult.error.code,
+          details: updateResult.error.message,
+          hint: 'Check RLS policies and user authentication'
         }, { status: updateResult.error.code })
       }
-      return NextResponse.json({ error: 'Failed to save onboarding data' }, { status: 500 })
+      
+      // Generic database error with full details
+      return NextResponse.json({ 
+        error: 'Database operation failed',
+        code: 'DATABASE_ERROR',
+        details: updateResult.error.message,
+        hint: updateResult.error.hint,
+        fullError: updateResult.error
+      }, { status: 500 })
     }
 
     console.log('✅ User profile updated successfully:', updateResult.data?.[0]?.id);
@@ -351,6 +431,31 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('❌ Error in onboarding completion:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('❌ Error type:', typeof error)
+    console.error('❌ Error constructor:', error?.constructor?.name)
+    console.error('❌ Error stack:', error?.stack)
+    console.error('❌ Full error object:', JSON.stringify(error, null, 2))
+    
+    // Provide more specific error information
+    let errorMessage = 'Internal server error'
+    let errorCode = 'INTERNAL_ERROR'
+    let errorDetails = 'An unexpected error occurred'
+    
+    if (error instanceof Error) {
+      errorMessage = error.message
+      errorDetails = error.stack || 'No stack trace available'
+    } else if (typeof error === 'string') {
+      errorMessage = error
+    } else if (error && typeof error === 'object') {
+      errorMessage = error.message || 'Unknown object error'
+      errorDetails = JSON.stringify(error)
+    }
+    
+    return NextResponse.json({ 
+      error: errorMessage,
+      code: errorCode,
+      details: errorDetails,
+      hint: 'Check server logs for more detailed error information'
+    }, { status: 500 })
   }
 }
