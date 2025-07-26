@@ -53,9 +53,10 @@ export async function POST(request: Request) {
       }
     }
     
-    // Create Supabase client - AVOID setSession to prevent frontend session interference
+    // Create Supabase client - CRITICAL: Use authenticated user context, NOT service role
     let supabase;
     let user = null;
+    let clientType = 'unknown';
     
     if (accessToken) {
       console.log('🔐 Creating Supabase client with token validation (no setSession)...');
@@ -65,7 +66,8 @@ export async function POST(request: Request) {
         // Method 1: Try with createRouteHandlerClient first (session-safe)
         console.log('🔐 Method 1: Using createRouteHandlerClient (session-safe)...');
         supabase = createRouteHandlerClient({ cookies });
-        console.log('✅ Supabase client created successfully');
+        clientType = 'route_handler';
+        console.log('✅ Supabase client created successfully - Type:', clientType);
         
         // AVOID setSession - instead validate token directly
         console.log('🔐 Validating token directly without setSession...');
@@ -76,8 +78,8 @@ export async function POST(request: Request) {
           console.error('❌ User error code:', userError.code);
           console.error('❌ User error message:', userError.message);
           
-          // Method 2: Try with service role client (session-safe)
-          console.log('🔐 Method 2: Trying with service role client (session-safe)...');
+          // Method 2: Try with service role client (session-safe) - BUT ONLY FOR VALIDATION
+          console.log('🔐 Method 2: Trying with service role client for token validation only...');
           try {
             const serviceClient = createServiceRoleClient();
             const { data: serviceUserData, error: serviceUserError } = await serviceClient.auth.getUser(accessToken);
@@ -90,9 +92,12 @@ export async function POST(request: Request) {
                 details: `User error: ${userError.message}, Service error: ${serviceUserError.message}`
               }, { status: 401 });
             } else {
-              console.log('✅ Service role client authentication successful');
+              console.log('✅ Service role client authentication successful - BUT SWITCHING BACK TO USER CLIENT');
               user = serviceUserData.user;
-              supabase = serviceClient;
+              // CRITICAL: Don't use service client for database operations - switch back to user client
+              supabase = createRouteHandlerClient({ cookies });
+              clientType = 'route_handler_after_validation';
+              console.log('🔄 Switched back to route handler client for database operations');
             }
           } catch (serviceError) {
             console.error('❌ Service role client error:', serviceError);
@@ -117,6 +122,7 @@ export async function POST(request: Request) {
     } else {
       console.log('🔐 No token provided, using default Supabase client');
       supabase = createRouteHandlerClient({ cookies });
+      clientType = 'route_handler_default';
     }
     
     if (!supabase) {
@@ -159,6 +165,8 @@ export async function POST(request: Request) {
     console.log('✅ User email:', user.email)
     console.log('✅ User metadata:', user.user_metadata)
     console.log('✅ User app metadata:', user.app_metadata)
+    console.log('🔐 Client type being used for database operations:', clientType)
+    console.log('🔐 CRITICAL: Ensuring we use authenticated user context, NOT service role')
 
     // Check if user profile exists first - use authenticated user's ID
     console.log('🔍 Checking for existing profile with authenticated user ID:', user.id);
@@ -279,6 +287,9 @@ export async function POST(request: Request) {
       console.log('📝 Using authenticated user ID for update:', user.id);
       console.log('📝 Existing profile - onboarding_completed:', existingProfile.onboarding_completed, 'auth_method:', existingProfile.auth_method);
       console.log('📝 Profile data to update:', JSON.stringify(profileData, null, 2));
+      console.log('🔐 CRITICAL: Client type for update operation:', clientType);
+      console.log('🔐 CRITICAL: Authenticated user ID:', user.id);
+      console.log('🔐 CRITICAL: Profile user_id should match:', user.id);
       
       updateResult = await supabase
         .from('user_profiles')
@@ -291,6 +302,9 @@ export async function POST(request: Request) {
       console.log('📝 Using authenticated user ID for creation:', user.id);
       console.log('📝 No existing profile found, creating new one');
       console.log('📝 Profile data to insert:', JSON.stringify({ user_id: user.id, ...profileData }, null, 2));
+      console.log('🔐 CRITICAL: Client type for insert operation:', clientType);
+      console.log('🔐 CRITICAL: Authenticated user ID:', user.id);
+      console.log('🔐 CRITICAL: Insert user_id will be:', user.id);
       
       updateResult = await supabase
         .from('user_profiles')
@@ -310,6 +324,16 @@ export async function POST(request: Request) {
       console.error('❌ Error details:', updateResult.error.details)
       console.error('❌ Error hint:', updateResult.error.hint)
       console.error('❌ Full error object:', JSON.stringify(updateResult.error, null, 2))
+      
+      // CRITICAL: Log authentication context for RLS debugging
+      console.error('🔐 CRITICAL RLS DEBUGGING INFO:')
+      console.error('🔐 - Client type used:', clientType)
+      console.error('🔐 - Authenticated user ID:', user.id)
+      console.error('🔐 - User email:', user.email)
+      console.error('🔐 - User app_metadata:', JSON.stringify(user.app_metadata, null, 2))
+      console.error('🔐 - User user_metadata:', JSON.stringify(user.user_metadata, null, 2))
+      console.error('🔐 - Access token provided:', !!accessToken)
+      console.error('🔐 - Access token length:', accessToken?.length || 0)
       
       // Check for specific error types
       if (updateResult.error.code === '42703') {
@@ -354,12 +378,27 @@ export async function POST(request: Request) {
       }
       
       if (updateResult.error.code === '406' || updateResult.error.code === '401') {
-        console.warn('⚠️ RLS/Authentication issue detected. Check user permissions and RLS policies.')
+        console.error('⚠️ RLS/Authentication issue detected. Check user permissions and RLS policies.')
+        console.error('🔐 RLS DEBUGGING - This is likely the issue:')
+        console.error('🔐 - Error code:', updateResult.error.code)
+        console.error('🔐 - Error message:', updateResult.error.message)
+        console.error('🔐 - Client type used:', clientType)
+        console.error('🔐 - Authenticated user ID:', user.id)
+        console.error('🔐 - Profile data user_id:', existingProfile ? 'update operation' : user.id)
+        console.error('🔐 - Operation type:', existingProfile ? 'UPDATE' : 'INSERT')
+        console.error('🔐 - RLS policies should allow authenticated users to insert/update their own profiles')
+        console.error('🔐 - Check if auth.uid() = user_id in RLS policies')
         return NextResponse.json({ 
           error: 'Access denied. Please ensure you are logged in and have proper permissions.',
           code: updateResult.error.code,
           details: updateResult.error.message,
-          hint: 'Check RLS policies and user authentication'
+          hint: 'Check RLS policies and user authentication',
+          debug: {
+            clientType,
+            authenticatedUserId: user.id,
+            operationType: existingProfile ? 'UPDATE' : 'INSERT',
+            rlsError: true
+          }
         }, { status: updateResult.error.code })
       }
       
@@ -369,7 +408,12 @@ export async function POST(request: Request) {
         code: 'DATABASE_ERROR',
         details: updateResult.error.message,
         hint: updateResult.error.hint,
-        fullError: updateResult.error
+        fullError: updateResult.error,
+        debug: {
+          clientType,
+          authenticatedUserId: user.id,
+          operationType: existingProfile ? 'UPDATE' : 'INSERT'
+        }
       }, { status: 500 })
     }
 
