@@ -2029,9 +2029,28 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
         
         const { data: sessionData } = await (supabase.auth as any).getSession();
         const accessToken = sessionData?.session?.access_token;
+        const refreshToken = sessionData?.session?.refresh_token;
         
         console.log('🔐 Session data available:', !!sessionData);
         console.log('🔐 Access token available:', !!accessToken);
+        console.log('🔐 Refresh token available:', !!refreshToken);
+        
+        // Log token details if available
+        if (accessToken) {
+          try {
+            const tokenParts = accessToken.split('.');
+            if (tokenParts.length === 3) {
+              const payload = JSON.parse(atob(tokenParts[1]));
+              console.log('🔐 Frontend - Token expiry:', new Date(payload.exp * 1000).toISOString());
+              console.log('🔐 Frontend - Token issued at:', new Date(payload.iat * 1000).toISOString());
+              console.log('🔐 Frontend - Token subject (user ID):', payload.sub);
+              console.log('🔐 Frontend - Current time:', new Date().toISOString());
+              console.log('🔐 Frontend - Token expired:', Date.now() > payload.exp * 1000);
+            }
+          } catch (e) {
+            console.log('🔐 Frontend - Could not decode token payload:', e);
+          }
+        }
         
         // Prepare onboarding data for API call
         const apiData = {
@@ -2055,8 +2074,15 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
           headers: {
             'Content-Type': 'application/json',
             ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
+            ...(refreshToken && { 'X-Refresh-Token': refreshToken }),
           },
-          body: JSON.stringify({ onboardingData: apiData }),
+          body: JSON.stringify({ 
+            onboardingData: apiData,
+            tokens: {
+              access_token: accessToken,
+              refresh_token: refreshToken
+            }
+          }),
         });
 
         console.log('📤 API response status:', response.status);
@@ -2332,9 +2358,11 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
           // Get user session and access token
           const { data: sessionData } = await (supabase.auth as any).getSession();
           const accessToken = sessionData?.session?.access_token;
+          const refreshToken = sessionData?.session?.refresh_token;
           
           console.log('🔐 DashboardRedirect - Session data available:', !!sessionData);
           console.log('🔐 DashboardRedirect - Access token available:', !!accessToken);
+          console.log('🔐 DashboardRedirect - Refresh token available:', !!refreshToken);
           
           // Call API to save onboarding data
           const response = await fetch('/api/onboarding/complete', {
@@ -2342,8 +2370,15 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
             headers: {
               'Content-Type': 'application/json',
               ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
+              ...(refreshToken && { 'X-Refresh-Token': refreshToken }),
             },
-            body: JSON.stringify({ onboardingData: data }),
+            body: JSON.stringify({ 
+              onboardingData: data,
+              tokens: {
+                access_token: accessToken,
+                refresh_token: refreshToken
+              }
+            }),
           })
 
           if (!response.ok) {

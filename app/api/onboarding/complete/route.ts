@@ -4,6 +4,7 @@ export const runtime = 'nodejs'
 import { NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
+import { createServiceRoleClient } from '@/lib/supabase'
 
 export async function POST(request: Request) {
   try {
@@ -16,40 +17,110 @@ export async function POST(request: Request) {
     // Extract authorization header and token
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
+    const refreshToken = request.headers.get('x-refresh-token');
+    
+    // Also check for tokens in request body
+    const bodyTokens = (onboardingData as any)?.tokens;
+    const bodyAccessToken = bodyTokens?.access_token;
+    const bodyRefreshToken = bodyTokens?.refresh_token;
+    
+    // Use body tokens if header token is not available
+    const accessToken = token || bodyAccessToken;
+    const finalRefreshToken = refreshToken || bodyRefreshToken;
     
     console.log('🔐 Authorization header present:', !!authHeader);
     console.log('🔐 Authorization header:', authHeader);
-    console.log('🔐 Extracted token length:', token?.length || 0);
-    console.log('🔐 Token starts with:', token?.substring(0, 20) + '...');
+    console.log('🔐 Extracted token length:', accessToken?.length || 0);
+    console.log('🔐 Token starts with:', accessToken?.substring(0, 20) + '...');
+    console.log('🔐 Refresh token from header:', !!refreshToken);
+    console.log('🔐 Refresh token from body:', !!bodyRefreshToken);
+    console.log('🔐 Final refresh token available:', !!finalRefreshToken);
+    
+    // Log token expiry if it's a JWT
+    if (accessToken) {
+      try {
+        const tokenParts = accessToken.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+          console.log('🔐 Token expiry:', new Date(payload.exp * 1000).toISOString());
+          console.log('🔐 Token issued at:', new Date(payload.iat * 1000).toISOString());
+          console.log('🔐 Token subject (user ID):', payload.sub);
+          console.log('🔐 Current time:', new Date().toISOString());
+          console.log('🔐 Token expired:', Date.now() > payload.exp * 1000);
+        }
+      } catch (e) {
+        console.log('🔐 Could not decode token payload:', e);
+      }
+    }
     
     // Create Supabase client with explicit token in headers
     let supabase;
     let sessionSetSuccessfully = false;
+    let user = null;
     
-    if (token) {
+    if (accessToken) {
       console.log('🔐 Creating Supabase client with explicit token in headers');
-      console.log('🔐 Token being used:', token.substring(0, 50) + '...');
+      console.log('🔐 Token being used:', accessToken.substring(0, 50) + '...');
       
       try {
+        // Method 1: Try with createRouteHandlerClient first
+        console.log('🔐 Method 1: Using createRouteHandlerClient with token...');
         supabase = createRouteHandlerClient({ cookies });
         console.log('✅ Supabase client created successfully');
         
         // Set the session with the provided token
         console.log('🔐 Setting session with access token...');
         const { data: sessionData, error: sessionError } = await (supabase.auth as any).setSession({
-          access_token: token,
-          refresh_token: ''
+          access_token: accessToken,
+          refresh_token: finalRefreshToken || ''
         });
         
         if (sessionError) {
           console.error('❌ Error setting session with token:', sessionError);
           console.error('❌ Session error code:', sessionError.code);
           console.error('❌ Session error message:', sessionError.message);
-          return NextResponse.json({ 
-            error: 'Failed to authenticate with provided token. Please ensure you are logged in.',
-            code: 'SESSION_SET_FAILED',
-            details: sessionError.message
-          }, { status: 401 });
+          
+          // Method 2: Try getUser directly with token
+          console.log('🔐 Method 2: Trying getUser directly with token...');
+          const { data: userData, error: userError } = await (supabase.auth as any).getUser(accessToken);
+          
+          if (userError) {
+            console.error('❌ Error getting user with token:', userError);
+            console.error('❌ User error code:', userError.code);
+            console.error('❌ User error message:', userError.message);
+            
+            // Method 3: Try with service role client
+            console.log('🔐 Method 3: Trying with service role client...');
+            try {
+              const serviceClient = createServiceRoleClient();
+              const { data: serviceUserData, error: serviceUserError } = await serviceClient.auth.getUser(accessToken);
+              
+              if (serviceUserError) {
+                console.error('❌ Error with service role client:', serviceUserError);
+                return NextResponse.json({ 
+                  error: 'Failed to authenticate with provided token. Please ensure you are logged in.',
+                  code: 'AUTH_FAILED_ALL_METHODS',
+                  details: `Session error: ${sessionError.message}, User error: ${userError.message}, Service error: ${serviceUserError.message}`
+                }, { status: 401 });
+              } else {
+                console.log('✅ Service role client authentication successful');
+                user = serviceUserData.user;
+                sessionSetSuccessfully = true;
+                supabase = serviceClient;
+              }
+            } catch (serviceError) {
+              console.error('❌ Service role client error:', serviceError);
+              return NextResponse.json({ 
+                error: 'Failed to authenticate with provided token. Please ensure you are logged in.',
+                code: 'AUTH_FAILED_ALL_METHODS',
+                details: `Session error: ${sessionError.message}, User error: ${userError.message}, Service error: ${serviceError instanceof Error ? serviceError.message : 'Unknown'}`
+              }, { status: 401 });
+            }
+          } else {
+            console.log('✅ Direct getUser authentication successful');
+            user = userData.user;
+            sessionSetSuccessfully = true;
+          }
         } else {
           console.log('✅ Session set successfully with token');
           sessionSetSuccessfully = true;
@@ -73,7 +144,7 @@ export async function POST(request: Request) {
     }
     
     // If we had a token but session setting failed, don't proceed
-    if (token && !sessionSetSuccessfully) {
+    if (accessToken && !sessionSetSuccessfully) {
       console.error('❌ Token provided but session setting failed, aborting');
       return NextResponse.json({ 
         error: 'Authentication failed. Please ensure you are logged in.',
@@ -82,30 +153,34 @@ export async function POST(request: Request) {
     }
     
     // Get current user - this will validate the token from headers
-    console.log('🔐 Getting user after session setup...');
-    const { data: { user }, error: authError } = await (supabase.auth as any).getUser()
-    
-    console.log('🔐 Auth check result - user exists:', !!user);
-    console.log('🔐 Auth check result - auth error:', authError);
-    console.log('🔐 User ID if exists:', user?.id);
-    
-    if (authError) {
-      console.error('❌ Authentication error:', authError)
-      console.error('❌ Auth error code:', authError.code);
-      console.error('❌ Auth error message:', authError.message);
-      return NextResponse.json({ 
-        error: 'Authentication failed. Please ensure you are logged in.',
-        code: 'AUTH_FAILED',
-        details: authError.message
-      }, { status: 401 })
-    }
-    
     if (!user) {
-      console.error('❌ No authenticated user found')
-      return NextResponse.json({ 
-        error: 'Not authenticated. Please create an account to save your onboarding data.',
-        code: 'AUTH_REQUIRED'
-      }, { status: 401 })
+      console.log('🔐 Getting user after session setup...');
+      const { data: { user: authUser }, error: authError } = await (supabase.auth as any).getUser()
+      
+      console.log('🔐 Auth check result - user exists:', !!authUser);
+      console.log('🔐 Auth check result - auth error:', authError);
+      console.log('🔐 User ID if exists:', authUser?.id);
+      
+      if (authError) {
+        console.error('❌ Authentication error:', authError)
+        console.error('❌ Auth error code:', authError.code);
+        console.error('❌ Auth error message:', authError.message);
+        return NextResponse.json({ 
+          error: 'Authentication failed. Please ensure you are logged in.',
+          code: 'AUTH_FAILED',
+          details: authError.message
+        }, { status: 401 })
+      }
+      
+      if (!authUser) {
+        console.error('❌ No authenticated user found')
+        return NextResponse.json({ 
+          error: 'Not authenticated. Please create an account to save your onboarding data.',
+          code: 'AUTH_REQUIRED'
+        }, { status: 401 })
+      }
+      
+      user = authUser;
     }
 
     console.log('✅ User authenticated for onboarding completion:', user.id)
@@ -142,7 +217,7 @@ export async function POST(request: Request) {
     console.log('📋 Profile details - profile_id:', existingProfile?.id);
 
     // Determine auth method - preserve existing if already set, otherwise determine based on user data
-    let authMethod = existingProfile?.auth_method; // Preserve existing auth_method if set
+    let authMethod = existingProfile?.auth_method;
     
     if (!authMethod) {
       // Only determine auth method if not already set
