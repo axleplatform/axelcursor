@@ -168,58 +168,23 @@ export async function POST(request: Request) {
     console.log('🔐 Client type being used for database operations:', clientType)
     console.log('🔐 CRITICAL: Ensuring we use authenticated user context, NOT service role')
 
-    // Check if user profile exists first - use authenticated user's ID
-    console.log('🔍 Checking for existing profile with authenticated user ID:', user.id);
-    const { data: existingProfile, error: profileCheckError } = await supabase
-      .from('user_profiles')
-      .select('id, onboarding_completed, auth_method, user_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-      console.error('❌ Profile check error:', profileCheckError)
-      console.error('❌ Profile check error code:', profileCheckError.code);
-      console.error('❌ Profile check error message:', profileCheckError.message);
-      if (profileCheckError.code === '406' || profileCheckError.code === '401') {
-        console.warn('⚠️ RLS/Authentication issue detected. Check user permissions and RLS policies.')
-        return NextResponse.json({ 
-          error: 'Access denied. Please ensure you are logged in and have proper permissions.',
-          code: profileCheckError.code 
-        }, { status: profileCheckError.code })
-      }
-      return NextResponse.json({ error: 'Failed to check user profile' }, { status: 500 })
-    }
-
-    console.log('📋 Current profile status - exists:', !!existingProfile);
-    console.log('📋 Profile details - onboarding_completed:', existingProfile?.onboarding_completed);
-    console.log('📋 Profile details - auth_method:', existingProfile?.auth_method);
-    console.log('📋 Profile details - user_id:', existingProfile?.user_id);
-    console.log('📋 Profile details - profile_id:', existingProfile?.id);
-
     // Determine auth method - preserve existing if already set, otherwise determine based on user data
-    let authMethod = existingProfile?.auth_method;
+    let authMethod = 'email'; // Default to email
     
-    if (!authMethod) {
-      // Only determine auth method if not already set
-      authMethod = 'email'; // Default to email
-      
-      if (user.email && onboardingData.phoneNumber) {
-        authMethod = 'both'; // User has both email and phone
-      } else if (onboardingData.phoneNumber && !user.email) {
-        authMethod = 'phone'; // User only has phone
-      } else if (user.email && !onboardingData.phoneNumber) {
-        // Check if it's Google auth or regular email
-        if (user.app_metadata?.provider === 'google') {
-          authMethod = 'google';
-        } else {
-          authMethod = 'email'; // Regular email auth
-        }
+    if (user.email && onboardingData.phoneNumber) {
+      authMethod = 'both'; // User has both email and phone
+    } else if (onboardingData.phoneNumber && !user.email) {
+      authMethod = 'phone'; // User only has phone
+    } else if (user.email && !onboardingData.phoneNumber) {
+      // Check if it's Google auth or regular email
+      if (user.app_metadata?.provider === 'google') {
+        authMethod = 'google';
+      } else {
+        authMethod = 'email'; // Regular email auth
       }
-      
-      console.log('🔐 Determined new auth method:', authMethod);
-    } else {
-      console.log('🔐 Preserving existing auth method:', authMethod);
     }
+    
+    console.log('🔐 Determined new auth method:', authMethod);
 
     // Prepare profile data
     const profileData = {
@@ -237,7 +202,7 @@ export async function POST(request: Request) {
       communication_preferences: { notifications: onboardingData.notifications },
       notification_settings: { enabled: onboardingData.notifications },
       onboarding_completed: true, // This is the key field that must be set to true
-      onboarding_type: 'full',
+      onboarding_type: onboardingData.onboardingType || 'full', // Use frontend value, fallback to 'full'
       profile_completed_at: new Date().toISOString(),
       onboarding_data: onboardingData,
       subscription_plan: onboardingData.plan,
@@ -253,6 +218,8 @@ export async function POST(request: Request) {
     console.log('📝 User email:', user.email, 'Phone:', onboardingData.phoneNumber, 'Auth method:', authMethod);
     console.log('📝 Provider:', user.app_metadata?.provider);
     console.log('📝 Key fields - onboarding_completed:', profileData.onboarding_completed, 'auth_method:', profileData.auth_method);
+    console.log('📝 Onboarding type from frontend:', onboardingData.onboardingType);
+    console.log('📝 Onboarding type being used:', profileData.onboarding_type);
     console.log('📝 Full profile data being sent to database:', JSON.stringify(profileData, null, 2));
 
     // Check if auth_method column exists in user_profiles table
@@ -280,25 +247,56 @@ export async function POST(request: Request) {
       console.error('❌ Error checking column existence:', checkError);
     }
 
-    let updateResult;
+    // CRITICAL: Check if profile exists before deciding INSERT vs UPDATE
+    console.log('🔍 Checking if user profile exists for user_id:', user.id);
+    const { data: profileCheck, error: profileCheckError } = await supabase
+      .from('user_profiles')
+      .select('id, onboarding_completed, auth_method, user_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+      console.error('❌ Error checking existing profile:', profileCheckError);
+      console.error('❌ Profile check error code:', profileCheckError.code);
+      console.error('❌ Profile check error message:', profileCheckError.message);
+      return NextResponse.json({ 
+        error: 'Failed to check existing profile',
+        code: 'PROFILE_CHECK_FAILED',
+        details: profileCheckError.message
+      }, { status: 500 });
+    }
+
+    const existingProfile = profileCheck;
+    console.log('📋 Profile existence check result:');
+    console.log('📋 - Profile exists:', !!existingProfile);
+    console.log('📋 - Profile ID if exists:', existingProfile?.id);
+    console.log('📋 - Profile onboarding_completed if exists:', existingProfile?.onboarding_completed);
+    console.log('📋 - Profile user_id if exists:', existingProfile?.user_id);
+
+    let profileOperationResult;
+    let operationType = 'unknown';
+    
     if (existingProfile) {
-      // Update existing profile - use authenticated user's ID
-      console.log('📝 Updating existing user profile...')
+      // UPDATE existing profile
+      operationType = 'UPDATE';
+      console.log('📝 UPDATING existing user profile...');
       console.log('📝 Using authenticated user ID for update:', user.id);
+      console.log('📝 Existing profile ID:', existingProfile.id);
       console.log('📝 Existing profile - onboarding_completed:', existingProfile.onboarding_completed, 'auth_method:', existingProfile.auth_method);
       console.log('📝 Profile data to update:', JSON.stringify(profileData, null, 2));
       console.log('🔐 CRITICAL: Client type for update operation:', clientType);
       console.log('🔐 CRITICAL: Authenticated user ID:', user.id);
       console.log('🔐 CRITICAL: Profile user_id should match:', user.id);
       
-      updateResult = await supabase
+      profileOperationResult = await supabase
         .from('user_profiles')
         .update(profileData)
         .eq('user_id', user.id) // Use authenticated user's ID
         .select('id, onboarding_completed, auth_method, user_id')
     } else {
-      // Create new profile - use authenticated user's ID
-      console.log('📝 Creating new user profile...')
+      // INSERT new profile
+      operationType = 'INSERT';
+      console.log('📝 INSERTING new user profile...');
       console.log('📝 Using authenticated user ID for creation:', user.id);
       console.log('📝 No existing profile found, creating new one');
       console.log('📝 Profile data to insert:', JSON.stringify({ user_id: user.id, ...profileData }, null, 2));
@@ -306,7 +304,7 @@ export async function POST(request: Request) {
       console.log('🔐 CRITICAL: Authenticated user ID:', user.id);
       console.log('🔐 CRITICAL: Insert user_id will be:', user.id);
       
-      updateResult = await supabase
+      profileOperationResult = await supabase
         .from('user_profiles')
         .insert({
           user_id: user.id, // Use authenticated user's ID
@@ -315,15 +313,16 @@ export async function POST(request: Request) {
         .select('id, onboarding_completed, auth_method, user_id')
     }
 
-    console.log('📝 Update result:', updateResult);
+    console.log('📝 Profile operation result:', profileOperationResult);
+    console.log('📝 Operation type performed:', operationType);
 
-    if (updateResult.error) {
-      console.error('❌ Error updating user profile:', updateResult.error)
-      console.error('❌ Error code:', updateResult.error.code)
-      console.error('❌ Error message:', updateResult.error.message)
-      console.error('❌ Error details:', updateResult.error.details)
-      console.error('❌ Error hint:', updateResult.error.hint)
-      console.error('❌ Full error object:', JSON.stringify(updateResult.error, null, 2))
+    if (profileOperationResult.error) {
+      console.error('❌ Error updating user profile:', profileOperationResult.error)
+      console.error('❌ Error code:', profileOperationResult.error.code)
+      console.error('❌ Error message:', profileOperationResult.error.message)
+      console.error('❌ Error details:', profileOperationResult.error.details)
+      console.error('❌ Error hint:', profileOperationResult.error.hint)
+      console.error('❌ Full error object:', JSON.stringify(profileOperationResult.error, null, 2))
       
       // CRITICAL: Log authentication context for RLS debugging
       console.error('🔐 CRITICAL RLS DEBUGGING INFO:')
@@ -336,52 +335,52 @@ export async function POST(request: Request) {
       console.error('🔐 - Access token length:', accessToken?.length || 0)
       
       // Check for specific error types
-      if (updateResult.error.code === '42703') {
+      if (profileOperationResult.error.code === '42703') {
         console.error('❌ COLUMN NOT FOUND ERROR: This indicates a missing column in the database')
         console.error('❌ Likely missing column: auth_method')
         return NextResponse.json({ 
           error: 'Database schema error: Missing column. Please contact support.',
           code: 'SCHEMA_ERROR',
-          details: updateResult.error.message,
+          details: profileOperationResult.error.message,
           hint: 'The auth_method column may not exist in the user_profiles table'
         }, { status: 500 })
       }
       
-      if (updateResult.error.code === '23502') {
+      if (profileOperationResult.error.code === '23502') {
         console.error('❌ NOT NULL CONSTRAINT ERROR: Required field is missing')
         return NextResponse.json({ 
           error: 'Missing required field in profile data.',
           code: 'MISSING_REQUIRED_FIELD',
-          details: updateResult.error.message,
+          details: profileOperationResult.error.message,
           hint: 'Check that all required fields are provided'
         }, { status: 400 })
       }
       
-      if (updateResult.error.code === '23505') {
+      if (profileOperationResult.error.code === '23505') {
         console.error('❌ UNIQUE CONSTRAINT ERROR: Duplicate value')
         return NextResponse.json({ 
           error: 'Duplicate profile data detected.',
           code: 'DUPLICATE_DATA',
-          details: updateResult.error.message,
+          details: profileOperationResult.error.message,
           hint: 'A profile with this data already exists'
         }, { status: 409 })
       }
       
-      if (updateResult.error.code === '23514') {
+      if (profileOperationResult.error.code === '23514') {
         console.error('❌ CHECK CONSTRAINT ERROR: Data validation failed')
         return NextResponse.json({ 
           error: 'Invalid profile data provided.',
           code: 'INVALID_DATA',
-          details: updateResult.error.message,
+          details: profileOperationResult.error.message,
           hint: 'Check that all data values are valid'
         }, { status: 400 })
       }
       
-      if (updateResult.error.code === '406' || updateResult.error.code === '401') {
+      if (profileOperationResult.error.code === '406' || profileOperationResult.error.code === '401') {
         console.error('⚠️ RLS/Authentication issue detected. Check user permissions and RLS policies.')
         console.error('🔐 RLS DEBUGGING - This is likely the issue:')
-        console.error('🔐 - Error code:', updateResult.error.code)
-        console.error('🔐 - Error message:', updateResult.error.message)
+        console.error('🔐 - Error code:', profileOperationResult.error.code)
+        console.error('🔐 - Error message:', profileOperationResult.error.message)
         console.error('🔐 - Client type used:', clientType)
         console.error('🔐 - Authenticated user ID:', user.id)
         console.error('🔐 - Profile data user_id:', existingProfile ? 'update operation' : user.id)
@@ -390,8 +389,8 @@ export async function POST(request: Request) {
         console.error('🔐 - Check if auth.uid() = user_id in RLS policies')
         return NextResponse.json({ 
           error: 'Access denied. Please ensure you are logged in and have proper permissions.',
-          code: updateResult.error.code,
-          details: updateResult.error.message,
+          code: profileOperationResult.error.code,
+          details: profileOperationResult.error.message,
           hint: 'Check RLS policies and user authentication',
           debug: {
             clientType,
@@ -399,16 +398,16 @@ export async function POST(request: Request) {
             operationType: existingProfile ? 'UPDATE' : 'INSERT',
             rlsError: true
           }
-        }, { status: updateResult.error.code })
+        }, { status: profileOperationResult.error.code })
       }
       
       // Generic database error with full details
       return NextResponse.json({ 
         error: 'Database operation failed',
         code: 'DATABASE_ERROR',
-        details: updateResult.error.message,
-        hint: updateResult.error.hint,
-        fullError: updateResult.error,
+        details: profileOperationResult.error.message,
+        hint: profileOperationResult.error.hint,
+        fullError: profileOperationResult.error,
         debug: {
           clientType,
           authenticatedUserId: user.id,
@@ -417,10 +416,10 @@ export async function POST(request: Request) {
       }, { status: 500 })
     }
 
-    console.log('✅ User profile updated successfully:', updateResult.data?.[0]?.id);
-    console.log('✅ Profile onboarding_completed flag:', updateResult.data?.[0]?.onboarding_completed);
-    console.log('✅ Profile auth_method:', updateResult.data?.[0]?.auth_method);
-    console.log('✅ Profile user_id:', updateResult.data?.[0]?.user_id);
+    console.log('✅ User profile updated successfully:', profileOperationResult.data?.[0]?.id);
+    console.log('✅ Profile onboarding_completed flag:', profileOperationResult.data?.[0]?.onboarding_completed);
+    console.log('✅ Profile auth_method:', profileOperationResult.data?.[0]?.auth_method);
+    console.log('✅ Profile user_id:', profileOperationResult.data?.[0]?.user_id);
     
     // CRITICAL: Update users table onboarding_completed status (primary source)
     console.log('🔐 Updating users table onboarding_completed status...');
@@ -496,9 +495,9 @@ export async function POST(request: Request) {
     
     const responseData = { 
       success: true, 
-      profile_id: updateResult.data?.[0]?.id,
-      onboarding_completed: updateResult.data?.[0]?.onboarding_completed,
-      auth_method: updateResult.data?.[0]?.auth_method
+      profile_id: profileOperationResult.data?.[0]?.id,
+      onboarding_completed: profileOperationResult.data?.[0]?.onboarding_completed,
+      auth_method: profileOperationResult.data?.[0]?.auth_method
     };
     
     console.log('🚀 Returning success response (session-safe):', responseData);
