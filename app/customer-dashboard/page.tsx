@@ -162,6 +162,7 @@ export default function CustomerDashboard() {
         if (profileError.code === 'PGRST116') {
           // No profile found - this might be expected for new users
           console.log('⚠️ No profile found for user, redirecting to onboarding...');
+          console.log('⚠️ User ID:', currentUser.id, 'Email:', currentUser.email);
           router.push('/onboarding/customer/flow');
           return;
         } else if (profileError.code === '406' || profileError.code === '409' || profileError.code === '400') {
@@ -174,6 +175,7 @@ export default function CustomerDashboard() {
 
       if (!profile) {
         console.log('❌ No profile returned, redirecting to onboarding...');
+        console.log('❌ User ID:', currentUser.id, 'Email:', currentUser.email);
         router.push('/onboarding/customer/flow');
         return;
       }
@@ -182,16 +184,26 @@ export default function CustomerDashboard() {
       console.log('🔍 Profile onboarding_completed value:', profile.onboarding_completed);
       console.log('🔍 Profile auth_method:', profile.auth_method);
       console.log('🔍 Profile user_id:', profile.user_id);
+      console.log('🔍 Profile exists:', !!profile);
 
-      // ONLY check if onboarding is completed - don't check individual fields
-      if (!profile.onboarding_completed) {
-        console.log('❌ Profile onboarding not completed, redirecting to onboarding...');
-        console.log('❌ Profile details - user_id:', profile.user_id, 'auth_method:', profile.auth_method, 'onboarding_completed:', profile.onboarding_completed);
+      // Check both profile existence AND onboarding completion
+      if (!profile || !profile.onboarding_completed) {
+        console.log('❌ Dashboard access denied - checking conditions:');
+        console.log('❌ - Profile exists:', !!profile);
+        console.log('❌ - Profile onboarding_completed:', profile?.onboarding_completed);
+        console.log('❌ - User ID:', currentUser.id);
+        console.log('❌ - Auth method:', profile?.auth_method);
+        console.log('❌ Redirecting to onboarding...');
         // Redirect to complete profile
         router.push('/onboarding/customer/flow');
         return;
       }
 
+      console.log('✅ Dashboard access granted - both conditions met:');
+      console.log('✅ - Profile exists:', !!profile);
+      console.log('✅ - Profile onboarding_completed:', profile.onboarding_completed);
+      console.log('✅ - User ID:', currentUser.id);
+      console.log('✅ - Auth method:', profile.auth_method);
       console.log('✅ Profile validated, loading customer data...');
 
       // Load all customer data in parallel

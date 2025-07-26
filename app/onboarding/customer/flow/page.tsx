@@ -2083,14 +2083,16 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
             console.error('❌ Failed to save onboarding data:', response.status, errorData);
             throw new Error(`Onboarding completion failed: ${response.status}`);
           } else {
+            const responseData = await response.json();
             console.log('✅ Onboarding data saved successfully');
+            console.log('✅ API Response:', responseData);
             
             // Verify the profile was updated correctly
             const { data: { user } } = await (supabase.auth as any).getUser();
             if (user) {
               const { data: profile, error: profileError } = await supabase
                 .from('user_profiles')
-                .select('onboarding_completed')
+                .select('onboarding_completed, auth_method, user_id')
                 .eq('user_id', user.id)
                 .single();
                 
@@ -2098,8 +2100,12 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
                 console.error('❌ Error verifying profile update:', profileError);
               } else {
                 console.log('✅ Profile verification - onboarding_completed:', profile?.onboarding_completed);
+                console.log('✅ Profile verification - auth_method:', profile?.auth_method);
+                console.log('✅ Profile verification - user_id:', profile?.user_id);
                 if (!profile?.onboarding_completed) {
                   console.warn('⚠️ Profile still shows onboarding_completed: false, but proceeding...');
+                } else {
+                  console.log('✅ SUCCESS: Profile verified with onboarding_completed: true');
                 }
               }
             }
