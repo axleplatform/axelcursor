@@ -97,23 +97,30 @@ export async function POST(request: Request) {
 
     console.log('📋 Current profile status - exists:', !!existingProfile, 'onboarding_completed:', existingProfile?.onboarding_completed, 'auth_method:', existingProfile?.auth_method);
 
-    // Determine auth method based on user data
-    let authMethod = 'email'; // Default to email
+    // Determine auth method - preserve existing if already set, otherwise determine based on user data
+    let authMethod = existingProfile?.auth_method; // Preserve existing auth_method if set
     
-    if (user.email && onboardingData.phoneNumber) {
-      authMethod = 'both'; // User has both email and phone
-    } else if (onboardingData.phoneNumber && !user.email) {
-      authMethod = 'phone'; // User only has phone
-    } else if (user.email && !onboardingData.phoneNumber) {
-      // Check if it's Google auth or regular email
-      if (user.app_metadata?.provider === 'google') {
-        authMethod = 'google';
-      } else {
-        authMethod = 'email'; // Regular email auth
+    if (!authMethod) {
+      // Only determine auth method if not already set
+      authMethod = 'email'; // Default to email
+      
+      if (user.email && onboardingData.phoneNumber) {
+        authMethod = 'both'; // User has both email and phone
+      } else if (onboardingData.phoneNumber && !user.email) {
+        authMethod = 'phone'; // User only has phone
+      } else if (user.email && !onboardingData.phoneNumber) {
+        // Check if it's Google auth or regular email
+        if (user.app_metadata?.provider === 'google') {
+          authMethod = 'google';
+        } else {
+          authMethod = 'email'; // Regular email auth
+        }
       }
+      
+      console.log('🔐 Determined new auth method:', authMethod);
+    } else {
+      console.log('🔐 Preserving existing auth method:', authMethod);
     }
-
-    console.log('🔐 Determined auth method:', authMethod);
 
     // Prepare profile data
     const profileData = {

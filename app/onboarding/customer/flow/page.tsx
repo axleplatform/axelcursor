@@ -1547,6 +1547,22 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
       return
     }
 
+    // Determine auth method based on user's choices
+    let authMethod = 'email'; // Default to email if user has account
+    
+    if (hasAccount && phoneNumber.trim()) {
+      authMethod = 'both'; // User has account AND entered phone
+    } else if (!hasAccount && phoneNumber.trim()) {
+      authMethod = 'phone'; // User skipped account but entered phone
+    } else if (hasAccount && !phoneNumber.trim()) {
+      authMethod = 'email'; // User has account but skipped phone
+    }
+    
+    console.log('🔐 Auth method determination:');
+    console.log('🔐 - User has account (Step 14):', hasAccount);
+    console.log('🔐 - User entered phone (Step 15):', !!phoneNumber.trim());
+    console.log('🔐 - Determined auth_method:', authMethod);
+
     if (!hasAccount && phoneNumber.trim()) {
       // Create phone-based user
       setIsCreatingPhoneUser(true)
@@ -1582,33 +1598,24 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
           return
         }
 
-        // Determine auth method for phone user
-        let authMethod = 'phone'; // Default for phone-only users
-        
-        // Check if user also has email (from previous steps)
-        if (onboardingData?.userId) {
-          // User has an email account, so they have both
-          authMethod = 'both';
-        }
-
-        // Create user profile
+        // Create user profile with determined auth method
         const profileData = {
           user_id: tempUserId,
           phone: normalizedPhone,
           onboarding_completed: true, // Phone-only users get full access immediately
           onboarding_type: 'customer',
-          auth_method: authMethod, // Track auth method for internal use
+          auth_method: authMethod, // Use determined auth method
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
 
         console.log('📝 Creating phone user profile with auth_method:', authMethod);
-        console.log('📝 User has email account:', !!onboardingData?.userId);
+        console.log('📝 Profile data:', profileData);
 
         const { data: profileResult, error: profileError } = await supabase
           .from('user_profiles')
           .insert(profileData)
-          .select('id, onboarding_completed')
+          .select('id, onboarding_completed, auth_method')
 
         if (profileError) {
           console.error('❌ Error creating profile:', profileError)
@@ -1618,20 +1625,27 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
 
         console.log('✅ Phone-based user created successfully:', tempUserId)
         console.log('✅ Profile created with onboarding_completed:', profileResult?.[0]?.onboarding_completed)
+        console.log('✅ Profile created with auth_method:', profileResult?.[0]?.auth_method)
         
         // Verify the profile was created correctly
         const { data: verificationProfile, error: verificationError } = await supabase
           .from('user_profiles')
-          .select('onboarding_completed')
+          .select('onboarding_completed, auth_method')
           .eq('user_id', tempUserId)
           .single();
           
         if (verificationError) {
           console.error('❌ Error verifying phone user profile:', verificationError);
         } else {
-          console.log('✅ Phone user profile verification - onboarding_completed:', verificationProfile?.onboarding_completed);
+          console.log('✅ Phone user profile verification:');
+          console.log('✅ - onboarding_completed:', verificationProfile?.onboarding_completed);
+          console.log('✅ - auth_method:', verificationProfile?.auth_method);
           if (!verificationProfile?.onboarding_completed) {
             console.error('❌ CRITICAL: Phone user profile shows onboarding_completed: false!');
+          }
+          if (verificationProfile?.auth_method !== authMethod) {
+            console.error('❌ CRITICAL: Phone user profile shows wrong auth_method!');
+            console.error('❌ Expected:', authMethod, 'Got:', verificationProfile?.auth_method);
           }
         }
         
@@ -1649,7 +1663,39 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
         setIsCreatingPhoneUser(false)
       }
     } else {
-      // User has account or phone is optional
+      // User has account or phone is optional - update existing profile with auth_method
+      if (hasAccount) {
+        console.log('📝 User has account, updating existing profile with auth_method:', authMethod);
+        
+        try {
+          // Get current user to find their profile
+          const { data: { user } } = await (supabase.auth as any).getUser();
+          if (user) {
+            // Update existing profile with auth_method
+            const { data: updateResult, error: updateError } = await supabase
+              .from('user_profiles')
+              .update({
+                phone: phoneNumber.trim() || null,
+                auth_method: authMethod,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', user.id)
+              .select('id, auth_method, phone');
+              
+            if (updateError) {
+              console.error('❌ Error updating profile with auth_method:', updateError);
+            } else {
+              console.log('✅ Profile updated successfully:');
+              console.log('✅ - auth_method:', updateResult?.[0]?.auth_method);
+              console.log('✅ - phone:', updateResult?.[0]?.phone);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error updating profile:', error);
+        }
+      }
+      
+      // Update onboarding data
       updateData({ phoneNumber })
       onNext()
     }
