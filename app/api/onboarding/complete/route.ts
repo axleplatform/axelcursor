@@ -1,23 +1,44 @@
 // Use Node.js runtime for Supabase v2+ compatibility
 export const runtime = 'nodejs'
 
+import { NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
     console.log('🚀 Onboarding completion API called');
-    console.log('📥 Request headers:', Object.fromEntries(request.headers.entries()));
+    console.log('📥 Request headers:', Array.from(request.headers.entries()));
     
     const { onboardingData } = await request.json()
     console.log('📥 Received onboarding data:', onboardingData);
     
-    // Extract authorization header
+    // Extract authorization header and token
     const authHeader = request.headers.get('authorization');
-    console.log('🔐 Authorization header present:', !!authHeader);
+    const token = authHeader?.replace('Bearer ', '');
     
+    console.log('🔐 Authorization header present:', !!authHeader);
+    console.log('🔐 Authorization header:', authHeader);
+    console.log('🔐 Extracted token length:', token?.length || 0);
+    console.log('🔐 Token starts with:', token?.substring(0, 20) + '...');
+    
+    // Create Supabase client - the route handler client should automatically handle auth
     const supabase = createRouteHandlerClient({ cookies })
+    
+    // If we have a token, try to set it in the session
+    if (token) {
+      console.log('🔐 Token provided, attempting to set session...');
+      try {
+        // Try to set the session with the provided token
+        const { data: sessionData, error: sessionError } = await (supabase.auth as any).setSession({
+          access_token: token,
+          refresh_token: null
+        });
+        console.log('🔐 Session set result:', !!sessionData, sessionError);
+      } catch (error) {
+        console.log('🔐 Session set error (non-critical):', error);
+      }
+    }
     
     if (!supabase) {
       console.error('❌ Supabase client not initialized')
@@ -29,6 +50,7 @@ export async function POST(request: Request) {
     
     console.log('🔐 Auth check result - user exists:', !!user);
     console.log('🔐 Auth check result - auth error:', authError);
+    console.log('🔐 User ID if exists:', user?.id);
     
     if (authError) {
       console.error('❌ Authentication error:', authError)
