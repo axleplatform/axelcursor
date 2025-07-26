@@ -147,4 +147,4 @@ BEGIN
     END IF;
 
     RAISE NOTICE 'Migration completed successfully! RLS policies are properly configured for user_profiles table.';
-END $$; 
+END $$;
