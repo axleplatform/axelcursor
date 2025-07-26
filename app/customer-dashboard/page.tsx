@@ -300,6 +300,98 @@ export default function CustomerDashboard() {
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="space-y-8">
+            {/* Profile Completion Section - Show if optional fields are missing */}
+            {profile && (!profile.phone || !profile.full_name) && (
+              <section className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold text-blue-900 mb-2">
+                      Complete Your Profile
+                    </h2>
+                    <p className="text-blue-700 mb-4">
+                      Add your phone number and full name to get the most out of your experience.
+                    </p>
+                    
+                    <div className="space-y-3">
+                      {!profile.full_name && (
+                        <div>
+                          <label className="block text-sm font-medium text-blue-800 mb-1">
+                            Full Name
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Enter your full name"
+                            className="w-full px-3 py-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            onChange={(e) => {
+                              // Update profile state immediately for better UX
+                              setProfile(prev => prev ? { ...prev, full_name: e.target.value } : prev);
+                            }}
+                          />
+                        </div>
+                      )}
+                      
+                      {!profile.phone && (
+                        <div>
+                          <label className="block text-sm font-medium text-blue-800 mb-1">
+                            Phone Number
+                          </label>
+                          <input
+                            type="tel"
+                            placeholder="Enter your phone number"
+                            className="w-full px-3 py-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            onChange={(e) => {
+                              // Update profile state immediately for better UX
+                              setProfile(prev => prev ? { ...prev, phone: e.target.value } : prev);
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <button
+                      onClick={async () => {
+                        try {
+                          const { error } = await supabase
+                            .from('user_profiles')
+                            .update({
+                              full_name: profile.full_name || undefined,
+                              phone: profile.phone || undefined,
+                              updated_at: new Date().toISOString()
+                            })
+                            .eq('user_id', user.id);
+                          
+                          if (error) {
+                            console.error('Error updating profile:', error);
+                            alert('Failed to update profile. Please try again.');
+                          } else {
+                            console.log('✅ Profile updated successfully');
+                            // Reload dashboard data to reflect changes
+                            await loadDashboardData(user);
+                          }
+                        } catch (error) {
+                          console.error('Error updating profile:', error);
+                          alert('Failed to update profile. Please try again.');
+                        }
+                      }}
+                      className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Save Profile
+                    </button>
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      // Hide the profile completion section
+                      setProfile(prev => prev ? { ...prev, _hideCompletion: true } : prev);
+                    }}
+                    className="text-blue-600 hover:text-blue-800 ml-4"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </section>
+            )}
+
             {/* Section 1: Your Vehicles */}
             <section className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-6">
