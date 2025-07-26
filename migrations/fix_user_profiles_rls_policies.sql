@@ -22,6 +22,7 @@ DROP POLICY IF EXISTS "Service role has full access" ON user_profiles;
 -- Step 3: Create comprehensive RLS policies for user_profiles table
 
 -- Allow users to insert their own profile (for signup/profile creation)
+-- This is the most critical policy for onboarding completion
 CREATE POLICY "Users can insert own profile" ON user_profiles
   FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = user_id);
@@ -144,6 +145,22 @@ BEGIN
         AND policyname = 'Users can insert own profile'
     ) THEN
         RAISE EXCEPTION 'Insert policy not found on user_profiles table';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'user_profiles' 
+        AND policyname = 'Users can update own profile'
+    ) THEN
+        RAISE EXCEPTION 'Update policy not found on user_profiles table';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'user_profiles' 
+        AND policyname = 'Service role has full access'
+    ) THEN
+        RAISE EXCEPTION 'Service role policy not found on user_profiles table';
     END IF;
 
     RAISE NOTICE 'Migration completed successfully! RLS policies are properly configured for user_profiles table.';
