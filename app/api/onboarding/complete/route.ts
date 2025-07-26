@@ -29,13 +29,21 @@ export async function POST(request: Request) {
       console.log('🔐 Token being used:', token.substring(0, 50) + '...');
       
       try {
-        supabase = createRouteHandlerClient({ 
-          cookies,
-          headers: { 
-            Authorization: `Bearer ${token}` 
-          } 
+        supabase = createRouteHandlerClient({ cookies });
+        console.log('✅ Supabase client created successfully');
+        
+        // Set the session with the provided token
+        console.log('🔐 Setting session with access token...');
+        const { data: sessionData, error: sessionError } = await (supabase.auth as any).setSession({
+          access_token: token,
+          refresh_token: ''
         });
-        console.log('✅ Supabase client created successfully with token');
+        
+        if (sessionError) {
+          console.error('❌ Error setting session with token:', sessionError);
+        } else {
+          console.log('✅ Session set successfully with token');
+        }
       } catch (error) {
         console.error('❌ Error creating Supabase client with token:', error);
         // Fallback to default client
