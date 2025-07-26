@@ -1,33 +1,13 @@
 // Use Node.js runtime for Supabase v2+ compatibility
 export const runtime = 'nodejs'
 
-import { createClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
-    // Check if service role key is available
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!serviceRoleKey) {
-      console.error('❌ SUPABASE_SERVICE_ROLE_KEY not found in environment variables')
-      return NextResponse.json({ 
-        error: 'Service role key not configured. Please check environment variables.' 
-      }, { status: 500 })
-    }
-    
     // Use service role client to bypass RLS for initial profile creation
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      serviceRoleKey, // This bypasses RLS
-      { 
-        auth: { 
-          persistSession: false,
-          autoRefreshToken: false
-        } 
-      }
-    )
-    
-    console.log('🔑 Service role client initialized successfully')
+    const supabaseAdmin = createServiceRoleClient()
     
     const { userId, email, phone, userType = 'customer', appointmentId } = await request.json()
     
