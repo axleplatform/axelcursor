@@ -145,16 +145,26 @@ export default function CustomerDashboard() {
         return;
       }
 
-      // Get customer profile data
+      // Get customer profile data - FIXED: use user_id instead of id
+      console.log('🔍 Fetching profile for user_id:', currentUser.id);
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('id', currentUser.id)
-        .single();
+        .eq('user_id', currentUser.id) // FIXED: Changed from 'id' to 'user_id'
+        .single(); // FIXED: Added .single() to expect exactly one row
 
       if (profileError) {
         console.error('❌ Profile error:', profileError);
-        if (profileError.code === '406' || profileError.code === '409' || profileError.code === '400') {
+        console.error('❌ Profile error code:', profileError.code);
+        console.error('❌ Profile error message:', profileError.message);
+        console.error('❌ Profile error details:', profileError.details);
+        
+        if (profileError.code === 'PGRST116') {
+          // No profile found - this might be expected for new users
+          console.log('⚠️ No profile found for user, redirecting to onboarding...');
+          router.push('/onboarding/customer/flow');
+          return;
+        } else if (profileError.code === '406' || profileError.code === '409' || profileError.code === '400') {
           setAuthError('Profile access denied. Please contact support.');
         } else {
           setAuthError('Failed to load profile data. Please try again.');
@@ -162,7 +172,15 @@ export default function CustomerDashboard() {
         return;
       }
 
-      if (!profile || !profile.onboarding_completed) {
+      if (!profile) {
+        console.log('❌ No profile returned, redirecting to onboarding...');
+        router.push('/onboarding/customer/flow');
+        return;
+      }
+
+      console.log('✅ Profile loaded successfully:', profile);
+
+      if (!profile.onboarding_completed) {
         console.log('❌ Profile incomplete, redirecting to onboarding...');
         // Redirect to complete profile
         router.push('/onboarding/customer/flow');
