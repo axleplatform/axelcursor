@@ -22,4 +22,4 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_user_profiles_auth_method ON user_profiles(auth_method);
 
 -- Add comment to the column
-COMMENT ON COLUMN user_profiles.auth_method IS 'Authentication method used by the user (email, phone, google, both, etc.)'; 
+COMMENT ON COLUMN user_profiles.auth_method IS 'Authentication method used by the user (email, phone, google, both, etc.)';

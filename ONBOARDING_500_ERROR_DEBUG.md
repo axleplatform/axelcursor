@@ -26,7 +26,7 @@ The onboarding completion API is failing with a 500 error: "Failed to save onboa
 - ✅ **Comprehensive Error Responses** - Return detailed error information
 
 **Key Error Handling Features**:
-```typescript
+\`\`\`typescript
 // Specific error code handling
 if (updateResult.error.code === '42703') {
   // Column not found error
@@ -48,7 +48,7 @@ if (columnError && columnError.code === '42703') {
   // Remove auth_method from profileData if column doesn't exist
   delete profileData.auth_method;
 }
-```
+\`\`\`
 
 ### 2. Database Schema Migration
 
@@ -59,7 +59,7 @@ if (columnError && columnError.code === '42703') {
 - ✅ **Index Creation** - Add index for better performance
 - ✅ **Column Documentation** - Add comment explaining the column purpose
 
-```sql
+\`\`\`sql
 -- Add auth_method column to user_profiles table if it doesn't exist
 DO $$
 BEGIN
@@ -70,7 +70,7 @@ BEGIN
         ALTER TABLE user_profiles ADD COLUMN auth_method TEXT;
     END IF;
 END $$;
-```
+\`\`\`
 
 ### 3. Enhanced Logging
 
@@ -88,68 +88,68 @@ END $$;
 Look for detailed error information in the API logs:
 
 **Expected Logs (Success)**:
-```
+\`\`\`
 📝 Profile data prepared with onboarding_completed: true
 🔍 Checking if auth_method column exists in user_profiles table...
 ✅ auth_method column exists in user_profiles table
 📝 Full profile data being sent to database: {...}
 📝 Update result: { data: [...], error: null }
 ✅ User profile updated successfully: [profile_id]
-```
+\`\`\`
 
 **Problematic Logs (Column Missing)**:
-```
+\`\`\`
 🔍 Checking if auth_method column exists in user_profiles table...
 ❌ auth_method column does not exist in user_profiles table
 🔧 Removing auth_method from profile data since column does not exist
 📝 Updated profile data without auth_method: {...}
-```
+\`\`\`
 
 **Problematic Logs (Database Error)**:
-```
+\`\`\`
 ❌ Error updating user profile: {...}
 ❌ Error code: 42703
 ❌ Error message: column "auth_method" does not exist
 ❌ Full error object: {...}
-```
+\`\`\`
 
 ### Step 2: Check Error Response
 Look for specific error codes in the API response:
 
 **Column Missing Error**:
-```json
+\`\`\`json
 {
   "error": "Database schema error: Missing column. Please contact support.",
   "code": "SCHEMA_ERROR",
   "details": "column \"auth_method\" does not exist",
   "hint": "The auth_method column may not exist in the user_profiles table"
 }
-```
+\`\`\`
 
 **RLS Error**:
-```json
+\`\`\`json
 {
   "error": "Access denied. Please ensure you are logged in and have proper permissions.",
   "code": "406",
   "details": "new row violates row-level security policy",
   "hint": "Check RLS policies and user authentication"
 }
-```
+\`\`\`
 
 **Data Validation Error**:
-```json
+\`\`\`json
 {
   "error": "Missing required field in profile data.",
   "code": "MISSING_REQUIRED_FIELD",
   "details": "null value in column \"email\" violates not-null constraint",
   "hint": "Check that all required fields are provided"
 }
-```
+\`\`\`
 
 ### Step 3: Check Database Schema
 Verify the database schema:
 
-```sql
+\`\`\`sql
 -- Check if auth_method column exists
 SELECT column_name, data_type, is_nullable 
 FROM information_schema.columns 
@@ -160,12 +160,12 @@ AND column_name = 'auth_method';
 SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual 
 FROM pg_policies 
 WHERE tablename = 'user_profiles';
-```
+\`\`\`
 
 ### Step 4: Check User Permissions
 Verify user authentication and permissions:
 
-```sql
+\`\`\`sql
 -- Check if user exists and is authenticated
 SELECT id, email, role, profile_status 
 FROM auth.users 
@@ -175,7 +175,7 @@ WHERE id = '[user_id]';
 SELECT id, user_id, email, onboarding_completed 
 FROM user_profiles 
 WHERE user_id = '[user_id]';
-```
+\`\`\`
 
 ## Common Issues and Solutions
 
@@ -202,13 +202,13 @@ WHERE user_id = '[user_id]';
 ## Testing the Fix
 
 ### 1. Run Database Migration
-```bash
+\`\`\`bash
 # Apply the auth_method column migration
 psql -d your_database -f migrations/add_auth_method_column.sql
-```
+\`\`\`
 
 ### 2. Test API with Enhanced Logging
-```bash
+\`\`\`bash
 # Start the development server
 npm run dev
 
@@ -216,15 +216,15 @@ npm run dev
 # - Column existence check
 # - Profile data being sent
 # - Any database errors
-```
+\`\`\`
 
 ### 3. Verify Database Schema
-```sql
+\`\`\`sql
 -- Verify auth_method column exists
 SELECT column_name FROM information_schema.columns 
 WHERE table_name = 'user_profiles' 
 AND column_name = 'auth_method';
-```
+\`\`\`
 
 ## Expected Behavior After Fix
 
@@ -252,4 +252,4 @@ AND column_name = 'auth_method';
 4. **Monitor Errors**: Watch for specific error patterns
 5. **Verify Schema**: Ensure all required columns exist
 
-The enhanced error handling and column existence check should resolve the 500 error and provide clear debugging information for any remaining issues. 
+The enhanced error handling and column existence check should resolve the 500 error and provide clear debugging information for any remaining issues.
