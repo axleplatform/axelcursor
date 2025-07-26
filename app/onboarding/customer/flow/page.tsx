@@ -1976,6 +1976,17 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
         // Always call the API to ensure onboarding is completed
         console.log('📤 ALWAYS calling onboarding completion API from SuccessStep...');
         
+        // Get user session and access token
+        if (!supabase) {
+          throw new Error('Supabase client not initialized');
+        }
+        
+        const { data: sessionData } = await (supabase.auth as any).getSession();
+        const accessToken = sessionData?.session?.access_token;
+        
+        console.log('🔐 Session data available:', !!sessionData);
+        console.log('🔐 Access token available:', !!accessToken);
+        
         // Prepare onboarding data for API call
         const apiData = {
           vehicle: onboardingData?.vehicle,
@@ -1997,6 +2008,7 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
           },
           body: JSON.stringify({ onboardingData: apiData }),
         });
@@ -2271,11 +2283,19 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
           
           console.log('📤 Calling onboarding completion API with data:', data);
           
+          // Get user session and access token
+          const { data: sessionData } = await (supabase.auth as any).getSession();
+          const accessToken = sessionData?.session?.access_token;
+          
+          console.log('🔐 DashboardRedirect - Session data available:', !!sessionData);
+          console.log('🔐 DashboardRedirect - Access token available:', !!accessToken);
+          
           // Call API to save onboarding data
           const response = await fetch('/api/onboarding/complete', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
             },
             body: JSON.stringify({ onboardingData: data }),
           })

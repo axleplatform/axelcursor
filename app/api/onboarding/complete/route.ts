@@ -8,8 +8,14 @@ import { NextResponse } from 'next/server'
 export async function POST(request: Request) {
   try {
     console.log('🚀 Onboarding completion API called');
+    console.log('📥 Request headers:', Object.fromEntries(request.headers.entries()));
+    
     const { onboardingData } = await request.json()
     console.log('📥 Received onboarding data:', onboardingData);
+    
+    // Extract authorization header
+    const authHeader = request.headers.get('authorization');
+    console.log('🔐 Authorization header present:', !!authHeader);
     
     const supabase = createRouteHandlerClient({ cookies })
     
@@ -18,11 +24,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Database connection error' }, { status: 500 })
     }
     
-    // Get current user
+    // Get current user - this will validate the token from cookies or headers
     const { data: { user }, error: authError } = await (supabase.auth as any).getUser()
     
-    if (authError || !user) {
+    console.log('🔐 Auth check result - user exists:', !!user);
+    console.log('🔐 Auth check result - auth error:', authError);
+    
+    if (authError) {
       console.error('❌ Authentication error:', authError)
+      console.error('❌ Auth error code:', authError.code);
+      console.error('❌ Auth error message:', authError.message);
+      return NextResponse.json({ 
+        error: 'Authentication failed. Please ensure you are logged in.',
+        code: 'AUTH_FAILED',
+        details: authError.message
+      }, { status: 401 })
+    }
+    
+    if (!user) {
+      console.error('❌ No authenticated user found')
       return NextResponse.json({ 
         error: 'Not authenticated. Please create an account to save your onboarding data.',
         code: 'AUTH_REQUIRED'
