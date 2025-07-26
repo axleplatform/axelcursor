@@ -1522,9 +1522,10 @@ const CreateAccountStep = ({ onNext, updateData, onboardingData, setSkippedSteps
   );
 };
 
-const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = true }: StepProps & { showButton?: boolean }) => {
+const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = true, onboardingData }: StepProps & { showButton?: boolean }) => {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [visibleItems, setVisibleItems] = useState(0)
+  const [isCreatingPhoneUser, setIsCreatingPhoneUser] = useState(false)
 
   // Animation effect for input
   useEffect(() => {
@@ -1537,7 +1538,98 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
     showItems()
   }, [])
 
+  // Check if user was created in Step 14
+  const hasAccount = onboardingData?.userId || false
+
+  const handleContinue = async () => {
+    if (!hasAccount && !phoneNumber.trim()) {
+      alert('Please enter your phone number to continue')
+      return
+    }
+
+    if (!hasAccount && phoneNumber.trim()) {
+      // Create phone-based user
+      setIsCreatingPhoneUser(true)
+      try {
+        console.log('📱 Creating phone-based user...')
+        
+        // Use existing phone auth pattern to create user
+        const normalizedPhone = phoneNumber.replace(/\D/g, '')
+        
+        // Create temporary user first (using existing pattern)
+        const { data: tempUserId, error: tempUserError } = await (supabase as any).rpc('create_temporary_user')
+        
+        if (tempUserError) {
+          console.error('❌ Error creating temporary user:', tempUserError)
+          alert('Failed to create account. Please try again.')
+          return
+        }
+
+        // Update user with phone number and proper account type
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({
+            phone: normalizedPhone,
+            account_type: 'phone_only',
+            profile_status: 'pending',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', tempUserId)
+
+        if (updateError) {
+          console.error('❌ Error updating user with phone:', updateError)
+          alert('Failed to create account. Please try again.')
+          return
+        }
+
+        // Create user profile
+        const profileData = {
+          user_id: tempUserId,
+          phone: normalizedPhone,
+          onboarding_completed: false,
+          onboarding_type: 'customer',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .insert(profileData)
+
+        if (profileError) {
+          console.error('❌ Error creating profile:', profileError)
+          alert('Failed to create profile. Please try again.')
+          return
+        }
+
+        console.log('✅ Phone-based user created successfully:', tempUserId)
+        
+        // Update onboarding data with new user ID
+        updateData({ 
+          phoneNumber: normalizedPhone,
+          userId: tempUserId 
+        })
+        
+        onNext()
+      } catch (error) {
+        console.error('❌ Error creating phone-based user:', error)
+        alert('Failed to create account. Please try again.')
+      } finally {
+        setIsCreatingPhoneUser(false)
+      }
+    } else {
+      // User has account or phone is optional
+      updateData({ phoneNumber })
+      onNext()
+    }
+  }
+
   const handleSkip = () => {
+    if (!hasAccount) {
+      alert('Please enter your phone number to continue')
+      return
+    }
+    
     if (setSkippedSteps) {
       setSkippedSteps((prev: number[]) => [...prev, 15])
     }
@@ -1549,7 +1641,10 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Phone Number</h2>
         <p className="text-gray-600 text-sm">
-          Add your phone number for appointment notifications
+          {hasAccount 
+            ? 'Add your phone number for appointment notifications'
+            : 'Enter your phone number to create your account'
+          }
         </p>
       </div>
       
@@ -1557,7 +1652,7 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
         visibleItems >= 1 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
       }`}>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Phone Number
+          Phone Number {!hasAccount && <span className="text-red-500">*</span>}
         </label>
         <input 
           type="tel" 
@@ -1565,31 +1660,32 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
           value={phoneNumber}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhoneNumber(e.target.value)}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#294a46] focus:border-transparent mb-8"
+          required={!hasAccount}
         />
       </div>
       
       {/* Only show button if showButton is true (desktop) */}
       {showButton && (
         <button 
-          onClick={() => {
-            updateData({ phoneNumber })
-            onNext()
-          }}
-          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+          onClick={handleContinue}
+          disabled={isCreatingPhoneUser || (!hasAccount && !phoneNumber.trim())}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:bg-gray-300"
         >
-          Continue
+          {isCreatingPhoneUser ? 'Creating Account...' : 'Continue'}
         </button>
       )}
 
-      {/* Skip button */}
-      <div className="mt-4 text-center">
-        <button
-          onClick={handleSkip}
-          className="text-gray-500 hover:text-gray-700 underline text-sm"
-        >
-          Skip for now
-        </button>
-      </div>
+      {/* Skip button - only show if user has account */}
+      {hasAccount && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={handleSkip}
+            className="text-gray-500 hover:text-gray-700 underline text-sm"
+          >
+            Skip for now
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -1909,9 +2005,11 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
       try {
         console.log('🔄 Completing onboarding and preparing for dashboard...');
         
-        // Check if required steps were completed
-        if (!onboardingData.userId) {
-          // User skipped account creation
+        // Check if user has either email-based account OR phone-based account
+        const hasAccount = onboardingData.userId || false
+        
+        if (!hasAccount) {
+          // No account created - this shouldn't happen with new logic
           alert('Please create an account to save your information')
           if (setCurrentStep) {
             setCurrentStep(14) // Go back to account creation

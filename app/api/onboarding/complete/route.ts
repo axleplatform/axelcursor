@@ -70,6 +70,8 @@ export async function POST(request: Request) {
       subscription_status: onboardingData.freeTrial ? 'trial' : 'inactive',
       free_trial_ends_at: onboardingData.freeTrial ? 
         new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
+      // Add auth method tracking
+      auth_method: user.email ? 'email' : 'phone',
       updated_at: new Date().toISOString()
     }
 

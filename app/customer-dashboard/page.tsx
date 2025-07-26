@@ -180,6 +180,14 @@ export default function CustomerDashboard() {
 
       console.log('✅ Profile loaded successfully:', profile);
 
+      // Check if profile has valid authentication (either email OR phone)
+      const hasValidAuth = profile.email || profile.phone;
+      if (!hasValidAuth) {
+        console.log('❌ Profile missing both email and phone, redirecting to onboarding...');
+        router.push('/onboarding/customer/flow');
+        return;
+      }
+
       if (!profile.onboarding_completed) {
         console.log('❌ Profile incomplete, redirecting to onboarding...');
         // Redirect to complete profile
