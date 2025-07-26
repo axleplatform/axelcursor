@@ -25,19 +25,19 @@ After onboarding completion, the API call succeeds and returns 200 OK, but immed
 - ✅ **No Set-Cookie headers** - Response doesn't set cookies that could override frontend session
 
 **Before (Problematic)**:
-```typescript
+\`\`\`typescript
 // This was interfering with frontend session
 const { data: sessionData, error: sessionError } = await (supabase.auth as any).setSession({
   access_token: accessToken,
   refresh_token: finalRefreshToken || ''
 });
-```
+\`\`\`
 
 **After (Session-Safe)**:
-```typescript
+\`\`\`typescript
 // Direct token validation without session interference
 const { data: userData, error: userError } = await (supabase.auth as any).getUser(accessToken);
-```
+\`\`\`
 
 ### 2. Enhanced Frontend Logging
 
@@ -52,7 +52,7 @@ const { data: userData, error: userError } = await (supabase.auth as any).getUse
 - ✅ **Session comparison** - Compare before/after session states
 
 **Key Logging Features**:
-```typescript
+\`\`\`typescript
 // Pre-API logging
 console.log('🔐 Session state BEFORE API call:');
 console.log('🔐 - Session exists:', !!sessionDataBefore?.session);
@@ -68,7 +68,7 @@ console.log('🍪 - Document cookies:', document.cookie);
 // Response header logging
 const setCookieHeader = response.headers.get('set-cookie');
 console.log('🍪 Set-Cookie header from API:', setCookieHeader);
-```
+\`\`\`
 
 ### 3. Session-Safe Response Headers
 
@@ -79,7 +79,7 @@ console.log('🍪 Set-Cookie header from API:', setCookieHeader);
 - ✅ **Cache control headers** - Prevent caching issues
 - ✅ **Session preservation** - Maintain frontend session state
 
-```typescript
+\`\`\`typescript
 // Return response WITHOUT any Set-Cookie headers to preserve frontend session
 return NextResponse.json(responseData, {
   headers: {
@@ -88,7 +88,7 @@ return NextResponse.json(responseData, {
     'Expires': '0'
   }
 })
-```
+\`\`\`
 
 ## Debugging Steps
 
@@ -96,7 +96,7 @@ return NextResponse.json(responseData, {
 Look for session state changes in browser console:
 
 **Expected Logs (Session Preserved)**:
-```
+\`\`\`
 🔐 Session state BEFORE API call:
 🔐 - Session exists: true
 🔐 - User exists: true
@@ -116,10 +116,10 @@ Look for session state changes in browser console:
 🔄 - Session before vs after: true -> true
 🔄 - User before vs after: true -> true
 🔄 - User ID before vs after: [user_id] -> [user_id]
-```
+\`\`\`
 
 **Problematic Logs (Session Lost)**:
-```
+\`\`\`
 🔐 Session state BEFORE API call:
 🔐 - Session exists: true
 🔐 - User exists: true
@@ -131,46 +131,46 @@ Look for session state changes in browser console:
 🔄 Session state comparison:
 🔄 - Session before vs after: true -> false
 🔄 - User before vs after: true -> false
-```
+\`\`\`
 
 ### Step 2: Check API Response Headers
 Look for Set-Cookie headers in API response:
 
 **Good (No Set-Cookie)**:
-```
+\`\`\`
 🍪 Set-Cookie header from API: null
-```
+\`\`\`
 
 **Problematic (Has Set-Cookie)**:
-```
+\`\`\`
 🍪 Set-Cookie header from API: [cookie value]
-```
+\`\`\`
 
 ### Step 3: Check Cookie Changes
 Monitor document.cookie changes:
 
 **Good (No Changes)**:
-```
+\`\`\`
 🍪 - Document cookies: [same before and after]
-```
+\`\`\`
 
 **Problematic (Cookie Changes)**:
-```
+\`\`\`
 🍪 - Document cookies: [different before and after]
-```
+\`\`\`
 
 ### Step 4: Check LocalStorage Changes
 Monitor localStorage changes:
 
 **Good (No Changes)**:
-```
+\`\`\`
 🍪 - LocalStorage keys: [same before and after]
-```
+\`\`\`
 
 **Problematic (LocalStorage Changes)**:
-```
+\`\`\`
 🍪 - LocalStorage keys: [different before and after]
-```
+\`\`\`
 
 ## Common Issues and Solutions
 
@@ -193,12 +193,12 @@ Monitor localStorage changes:
 ## Testing the Fix
 
 ### 1. Local Testing
-```bash
+\`\`\`bash
 npm run dev
 # Navigate to onboarding flow
 # Complete onboarding
 # Check console logs for session preservation
-```
+\`\`\`
 
 ### 2. Production Testing
 - Deploy changes
@@ -237,4 +237,4 @@ npm run dev
 4. **Performance Monitoring**: Ensure no performance impact
 5. **Error Tracking**: Monitor for any remaining session issues
 
-The primary fix (removing `setSession`) should resolve the session loss issue by preventing the API from interfering with the frontend's session state. 
+The primary fix (removing `setSession`) should resolve the session loss issue by preventing the API from interfering with the frontend's session state.
