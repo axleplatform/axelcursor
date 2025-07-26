@@ -332,7 +332,7 @@ export default function CustomerDashboard() {
                             className="w-full px-3 py-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             onChange={(e) => {
                               // Update profile state immediately for better UX
-                              setProfile(prev => prev ? { ...prev, full_name: e.target.value } : prev);
+                              setProfile((prev: any) => prev ? { ...prev, full_name: e.target.value } : prev);
                             }}
                           />
                         </div>
@@ -349,7 +349,7 @@ export default function CustomerDashboard() {
                             className="w-full px-3 py-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             onChange={(e) => {
                               // Update profile state immediately for better UX
-                              setProfile(prev => prev ? { ...prev, phone: e.target.value } : prev);
+                              setProfile((prev: any) => prev ? { ...prev, phone: e.target.value } : prev);
                             }}
                           />
                         </div>
@@ -390,7 +390,7 @@ export default function CustomerDashboard() {
                   <button
                     onClick={() => {
                       // Hide the profile completion section
-                      setProfile(prev => prev ? { ...prev, _hideCompletion: true } : prev);
+                      setProfile((prev: any) => prev ? { ...prev, _hideCompletion: true } : prev);
                     }}
                     className="text-blue-600 hover:text-blue-800 ml-4"
                   >
