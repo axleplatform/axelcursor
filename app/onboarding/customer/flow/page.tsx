@@ -1969,74 +1969,58 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
 
       try {
         console.log('🎯 SuccessStep: Immediately completing onboarding for user:', onboardingData.userId);
+        console.log('🎯 Onboarding data available:', onboardingData);
         setIsCompletingOnboarding(true);
         setError(null);
 
-        // Get pending onboarding data from localStorage
-        const pendingData = localStorage.getItem('pendingOnboarding');
-        if (pendingData) {
-          const data = JSON.parse(pendingData);
-          
-          console.log('📤 Calling onboarding completion API from SuccessStep...');
-          
-          // Call API to save onboarding data and set onboarding_completed: true
-          const response = await fetch('/api/onboarding/complete', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ onboardingData: data }),
-          });
+        // Always call the API to ensure onboarding is completed
+        console.log('📤 ALWAYS calling onboarding completion API from SuccessStep...');
+        
+        // Prepare onboarding data for API call
+        const apiData = {
+          vehicle: onboardingData.vehicle,
+          referralSource: onboardingData.referralSource,
+          usedOtherApps: onboardingData.usedOtherApps,
+          lastService: onboardingData.lastService,
+          location: onboardingData.location,
+          notifications: onboardingData.notifications,
+          additionalVehicles: onboardingData.additionalVehicles,
+          phoneNumber: onboardingData.phoneNumber,
+          plan: onboardingData.plan,
+          freeTrial: onboardingData.freeTrial
+        };
+        
+        console.log('📤 API request data:', apiData);
+        
+        // Call API to save onboarding data and set onboarding_completed: true
+        const response = await fetch('/api/onboarding/complete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ onboardingData: apiData }),
+        });
 
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('❌ Failed to complete onboarding:', response.status, errorData);
-            throw new Error(`Onboarding completion failed: ${response.status}`);
-          } else {
-            const responseData = await response.json();
-            console.log('✅ Onboarding completed successfully from SuccessStep:', responseData);
-            
-            // Verify the profile was updated correctly
-            if (!supabase) {
-              throw new Error('Supabase client not initialized');
-            }
+        console.log('📤 API response status:', response.status);
+        console.log('📤 API response headers:', Object.fromEntries(response.headers.entries()));
 
-            const { data: { user } } = await (supabase.auth as any).getUser();
-            if (user) {
-              const { data: profile, error: profileError } = await supabase
-                .from('user_profiles')
-                .select('onboarding_completed, auth_method, user_id')
-                .eq('user_id', user.id)
-                .single();
-                
-              if (profileError) {
-                console.error('❌ Error verifying profile after completion:', profileError);
-                throw new Error('Failed to verify profile completion');
-              } else {
-                console.log('✅ Profile verification after completion:');
-                console.log('✅ - onboarding_completed:', profile?.onboarding_completed);
-                console.log('✅ - auth_method:', profile?.auth_method);
-                console.log('✅ - user_id:', profile?.user_id);
-                
-                if (!profile?.onboarding_completed) {
-                  throw new Error('Profile still shows onboarding_completed: false after completion');
-                }
-                
-                setOnboardingCompleted(true);
-                console.log('✅ SUCCESS: Onboarding completion verified!');
-              }
-            }
-          }
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('❌ Failed to complete onboarding:', response.status, errorData);
+          throw new Error(`Onboarding completion failed: ${response.status} - ${JSON.stringify(errorData)}`);
         } else {
-          console.log('ℹ️ No pending onboarding data found, checking existing profile...');
+          const responseData = await response.json();
+          console.log('✅ Onboarding completed successfully from SuccessStep:', responseData);
           
-          // Check if profile already exists and is completed
+          // Verify the profile was updated correctly
           if (!supabase) {
             throw new Error('Supabase client not initialized');
           }
 
           const { data: { user } } = await (supabase.auth as any).getUser();
           if (user) {
+            console.log('🔍 Verifying profile update for user:', user.id);
+            
             const { data: profile, error: profileError } = await supabase
               .from('user_profiles')
               .select('onboarding_completed, auth_method, user_id')
@@ -2044,21 +2028,26 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
               .single();
               
             if (profileError) {
-              console.error('❌ Error checking existing profile:', profileError);
-              throw new Error('Failed to check existing profile');
+              console.error('❌ Error verifying profile after completion:', profileError);
+              throw new Error('Failed to verify profile completion');
             } else {
-              console.log('✅ Existing profile check:');
+              console.log('✅ Profile verification after completion:');
               console.log('✅ - onboarding_completed:', profile?.onboarding_completed);
               console.log('✅ - auth_method:', profile?.auth_method);
               console.log('✅ - user_id:', profile?.user_id);
               
-              if (profile?.onboarding_completed) {
-                setOnboardingCompleted(true);
-                console.log('✅ SUCCESS: Existing profile already completed!');
-              } else {
-                throw new Error('Existing profile not completed');
+              if (!profile?.onboarding_completed) {
+                console.error('❌ CRITICAL: Profile still shows onboarding_completed: false after API call!');
+                console.error('❌ Profile data:', profile);
+                throw new Error('Profile still shows onboarding_completed: false after completion');
               }
+              
+              setOnboardingCompleted(true);
+              console.log('✅ SUCCESS: Onboarding completion verified!');
             }
+          } else {
+            console.error('❌ No authenticated user found for verification');
+            throw new Error('No authenticated user found');
           }
         }
       } catch (error) {

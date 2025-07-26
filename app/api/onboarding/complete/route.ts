@@ -7,7 +7,10 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
+    console.log('🚀 Onboarding completion API called');
     const { onboardingData } = await request.json()
+    console.log('📥 Received onboarding data:', onboardingData);
+    
     const supabase = createRouteHandlerClient({ cookies })
     
     if (!supabase) {
@@ -27,6 +30,9 @@ export async function POST(request: Request) {
     }
 
     console.log('✅ User authenticated for onboarding completion:', user.id)
+    console.log('✅ User email:', user.email)
+    console.log('✅ User metadata:', user.user_metadata)
+    console.log('✅ User app metadata:', user.app_metadata)
 
     // Check if user profile exists first
     const { data: existingProfile, error: profileCheckError } = await supabase
@@ -65,6 +71,8 @@ export async function POST(request: Request) {
       }
     }
 
+    console.log('🔐 Determined auth method:', authMethod);
+
     // Prepare profile data
     const profileData = {
       email: user.email || '',
@@ -96,6 +104,7 @@ export async function POST(request: Request) {
     console.log('📝 Profile data prepared with onboarding_completed: true');
     console.log('📝 User email:', user.email, 'Phone:', onboardingData.phoneNumber, 'Auth method:', authMethod);
     console.log('📝 Provider:', user.app_metadata?.provider);
+    console.log('📝 Key fields - onboarding_completed:', profileData.onboarding_completed, 'auth_method:', profileData.auth_method);
 
     let updateResult;
     if (existingProfile) {
@@ -120,6 +129,8 @@ export async function POST(request: Request) {
         .select('id, onboarding_completed, auth_method')
     }
 
+    console.log('📝 Update result:', updateResult);
+
     if (updateResult.error) {
       console.error('❌ Error updating user profile:', updateResult.error)
       console.error('❌ Error code:', updateResult.error.code)
@@ -140,6 +151,7 @@ export async function POST(request: Request) {
     console.log('✅ Profile auth_method:', updateResult.data?.[0]?.auth_method);
     
     // Double-check that the profile was actually updated
+    console.log('🔍 Double-checking profile update...');
     const { data: verificationProfile, error: verificationError } = await supabase
       .from('user_profiles')
       .select('onboarding_completed, auth_method, user_id')
@@ -156,17 +168,21 @@ export async function POST(request: Request) {
       console.log('✅ Verification - Profile user_id:', verificationProfile?.user_id);
       if (!verificationProfile?.onboarding_completed) {
         console.error('❌ CRITICAL: Profile still shows onboarding_completed: false after update!');
+        console.error('❌ Full verification profile:', verificationProfile);
       } else {
         console.log('✅ SUCCESS: Profile properly updated with onboarding_completed: true');
       }
     }
     
-    return NextResponse.json({ 
+    const responseData = { 
       success: true, 
       profile_id: updateResult.data?.[0]?.id,
       onboarding_completed: updateResult.data?.[0]?.onboarding_completed,
       auth_method: updateResult.data?.[0]?.auth_method
-    })
+    };
+    
+    console.log('🚀 Returning success response:', responseData);
+    return NextResponse.json(responseData)
   } catch (error) {
     console.error('❌ Error in onboarding completion:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
