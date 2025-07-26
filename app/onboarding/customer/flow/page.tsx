@@ -2350,6 +2350,8 @@ export default function CustomerOnboarding() {
   }, [currentStep])
 
   // Get user auth state with proper error handling
+  // Note: Unauthenticated users are expected and supported in the onboarding flow
+  // They will use localStorage for tracking until they create an account
   useEffect(() => {
     const getUser = async () => {
       try {
@@ -2361,7 +2363,12 @@ export default function CustomerOnboarding() {
         const { data: { user }, error } = await (supabase.auth as any).getUser()
         
         if (error) {
-          console.error('❌ Error getting user:', error)
+          // Handle AuthSessionMissingError gracefully for unauthenticated users
+          if (error?.name === 'AuthSessionMissingError') {
+            console.log('ℹ️ No authenticated session - using localStorage for tracking')
+          } else {
+            console.error('❌ Error getting user:', error)
+          }
           // Don't return here - set user to null to indicate unauthenticated state
           setUser(null)
           return

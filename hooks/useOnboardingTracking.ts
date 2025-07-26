@@ -116,6 +116,11 @@ export function useOnboardingTracking({
 }: TrackingProps) {
   if (!supabase) throw new Error("Supabase client is not initialized");
   
+  // Note: This hook supports both authenticated and unauthenticated users
+  // - Authenticated users: Data is stored in the database with user_id
+  // - Unauthenticated users: Data is stored in localStorage (expected behavior for onboarding flow)
+  // This allows new customers to complete onboarding before creating an account
+  
   const sessionIdRef = useRef<string>();
   const trackingIdRef = useRef<string>();
   const stepStartTimeRef = useRef<number>(Date.now());
@@ -219,7 +224,7 @@ export function useOnboardingTracking({
 
         localStorage.setItem(trackingKey, JSON.stringify(trackingData));
         trackingIdRef.current = trackingData.id;
-        console.log('✅ Created tracking record in localStorage');
+        console.log('✅ Created tracking record in localStorage (unauthenticated mode)');
       }
     };
 
