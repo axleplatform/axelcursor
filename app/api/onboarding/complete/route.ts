@@ -53,77 +53,58 @@ export async function POST(request: Request) {
       }
     }
     
-    // Create Supabase client with explicit token in headers
+    // Create Supabase client - AVOID setSession to prevent frontend session interference
     let supabase;
-    let sessionSetSuccessfully = false;
     let user = null;
     
     if (accessToken) {
-      console.log('🔐 Creating Supabase client with explicit token in headers');
+      console.log('🔐 Creating Supabase client with token validation (no setSession)...');
       console.log('🔐 Token being used:', accessToken.substring(0, 50) + '...');
       
       try {
-        // Method 1: Try with createRouteHandlerClient first
-        console.log('🔐 Method 1: Using createRouteHandlerClient with token...');
+        // Method 1: Try with createRouteHandlerClient first (session-safe)
+        console.log('🔐 Method 1: Using createRouteHandlerClient (session-safe)...');
         supabase = createRouteHandlerClient({ cookies });
         console.log('✅ Supabase client created successfully');
         
-        // Set the session with the provided token
-        console.log('🔐 Setting session with access token...');
-        const { data: sessionData, error: sessionError } = await (supabase.auth as any).setSession({
-          access_token: accessToken,
-          refresh_token: finalRefreshToken || ''
-        });
+        // AVOID setSession - instead validate token directly
+        console.log('🔐 Validating token directly without setSession...');
+        const { data: userData, error: userError } = await (supabase.auth as any).getUser(accessToken);
         
-        if (sessionError) {
-          console.error('❌ Error setting session with token:', sessionError);
-          console.error('❌ Session error code:', sessionError.code);
-          console.error('❌ Session error message:', sessionError.message);
+        if (userError) {
+          console.error('❌ Error validating token:', userError);
+          console.error('❌ User error code:', userError.code);
+          console.error('❌ User error message:', userError.message);
           
-          // Method 2: Try getUser directly with token
-          console.log('🔐 Method 2: Trying getUser directly with token...');
-          const { data: userData, error: userError } = await (supabase.auth as any).getUser(accessToken);
-          
-          if (userError) {
-            console.error('❌ Error getting user with token:', userError);
-            console.error('❌ User error code:', userError.code);
-            console.error('❌ User error message:', userError.message);
+          // Method 2: Try with service role client (session-safe)
+          console.log('🔐 Method 2: Trying with service role client (session-safe)...');
+          try {
+            const serviceClient = createServiceRoleClient();
+            const { data: serviceUserData, error: serviceUserError } = await serviceClient.auth.getUser(accessToken);
             
-            // Method 3: Try with service role client
-            console.log('🔐 Method 3: Trying with service role client...');
-            try {
-              const serviceClient = createServiceRoleClient();
-              const { data: serviceUserData, error: serviceUserError } = await serviceClient.auth.getUser(accessToken);
-              
-              if (serviceUserError) {
-                console.error('❌ Error with service role client:', serviceUserError);
-                return NextResponse.json({ 
-                  error: 'Failed to authenticate with provided token. Please ensure you are logged in.',
-                  code: 'AUTH_FAILED_ALL_METHODS',
-                  details: `Session error: ${sessionError.message}, User error: ${userError.message}, Service error: ${serviceUserError.message}`
-                }, { status: 401 });
-              } else {
-                console.log('✅ Service role client authentication successful');
-                user = serviceUserData.user;
-                sessionSetSuccessfully = true;
-                supabase = serviceClient;
-              }
-            } catch (serviceError) {
-              console.error('❌ Service role client error:', serviceError);
+            if (serviceUserError) {
+              console.error('❌ Error with service role client:', serviceUserError);
               return NextResponse.json({ 
                 error: 'Failed to authenticate with provided token. Please ensure you are logged in.',
                 code: 'AUTH_FAILED_ALL_METHODS',
-                details: `Session error: ${sessionError.message}, User error: ${userError.message}, Service error: ${serviceError instanceof Error ? serviceError.message : 'Unknown'}`
+                details: `User error: ${userError.message}, Service error: ${serviceUserError.message}`
               }, { status: 401 });
+            } else {
+              console.log('✅ Service role client authentication successful');
+              user = serviceUserData.user;
+              supabase = serviceClient;
             }
-          } else {
-            console.log('✅ Direct getUser authentication successful');
-            user = userData.user;
-            sessionSetSuccessfully = true;
+          } catch (serviceError) {
+            console.error('❌ Service role client error:', serviceError);
+            return NextResponse.json({ 
+              error: 'Failed to authenticate with provided token. Please ensure you are logged in.',
+              code: 'AUTH_FAILED_ALL_METHODS',
+              details: `User error: ${userError.message}, Service error: ${serviceError instanceof Error ? serviceError.message : 'Unknown'}`
+            }, { status: 401 });
           }
         } else {
-          console.log('✅ Session set successfully with token');
-          sessionSetSuccessfully = true;
+          console.log('✅ Direct token validation successful');
+          user = userData.user;
         }
       } catch (error) {
         console.error('❌ Error creating Supabase client with token:', error);
@@ -143,18 +124,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Database connection error' }, { status: 500 })
     }
     
-    // If we had a token but session setting failed, don't proceed
-    if (accessToken && !sessionSetSuccessfully) {
-      console.error('❌ Token provided but session setting failed, aborting');
-      return NextResponse.json({ 
-        error: 'Authentication failed. Please ensure you are logged in.',
-        code: 'AUTH_FAILED'
-      }, { status: 401 });
-    }
-    
-    // Get current user - this will validate the token from headers
+    // Get current user - this will validate the token from headers (session-safe)
     if (!user) {
-      console.log('🔐 Getting user after session setup...');
+      console.log('🔐 Getting user from existing session (session-safe)...');
       const { data: { user: authUser }, error: authError } = await (supabase.auth as any).getUser()
       
       console.log('🔐 Auth check result - user exists:', !!authUser);
@@ -367,8 +339,16 @@ export async function POST(request: Request) {
       auth_method: updateResult.data?.[0]?.auth_method
     };
     
-    console.log('🚀 Returning success response:', responseData);
-    return NextResponse.json(responseData)
+    console.log('🚀 Returning success response (session-safe):', responseData);
+    
+    // Return response WITHOUT any Set-Cookie headers to preserve frontend session
+    return NextResponse.json(responseData, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    })
   } catch (error) {
     console.error('❌ Error in onboarding completion:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

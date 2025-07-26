@@ -2034,6 +2034,12 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
         console.log('🔐 - User ID:', userBefore?.id);
         console.log('🔐 - Session access token length:', sessionDataBefore?.session?.access_token?.length || 0);
         
+        // Log cookies and localStorage state
+        console.log('🍪 Cookies BEFORE API call:');
+        console.log('🍪 - Document cookies:', document.cookie);
+        console.log('🍪 - LocalStorage keys:', Object.keys(localStorage));
+        console.log('🍪 - SessionStorage keys:', Object.keys(sessionStorage));
+        
         if (!userBefore) {
           console.error('❌ No authenticated user found BEFORE API call');
           throw new Error('No authenticated user found before API call');
@@ -2102,6 +2108,16 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
 
         console.log('📤 API response status:', response.status);
         console.log('📤 API response headers:', Object.fromEntries(response.headers.entries()));
+        
+        // Check for Set-Cookie headers specifically
+        const setCookieHeader = response.headers.get('set-cookie');
+        console.log('🍪 Set-Cookie header from API:', setCookieHeader);
+        
+        // Log all response headers for debugging
+        console.log('📤 All response headers:');
+        response.headers.forEach((value, key) => {
+          console.log(`📤 - ${key}: ${value}`);
+        });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -2122,6 +2138,18 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
           console.log('🔐 - User ID:', userAfter?.id);
           console.log('🔐 - User error:', userErrorAfter);
           console.log('🔐 - Session access token length:', sessionDataAfter?.session?.access_token?.length || 0);
+          
+          // Log cookies and localStorage state after API call
+          console.log('🍪 Cookies AFTER API call:');
+          console.log('🍪 - Document cookies:', document.cookie);
+          console.log('🍪 - LocalStorage keys:', Object.keys(localStorage));
+          console.log('🍪 - SessionStorage keys:', Object.keys(sessionStorage));
+          
+          // Check for any changes in session state
+          console.log('🔄 Session state comparison:');
+          console.log('🔄 - Session before vs after:', !!sessionDataBefore?.session, '->', !!sessionDataAfter?.session);
+          console.log('🔄 - User before vs after:', !!userBefore, '->', !!userAfter);
+          console.log('🔄 - User ID before vs after:', userBefore?.id, '->', userAfter?.id);
           
           // Step 3: Handle session refresh if needed using existing utilities
           let finalUser = userAfter;
