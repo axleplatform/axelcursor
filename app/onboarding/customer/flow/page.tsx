@@ -11,7 +11,7 @@ import { SiteHeader } from '@/components/site-header'
 import Footer from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { useOnboardingTracking } from '@/hooks/useOnboardingTracking'
-import { validateSessionForNavigation, waitForSessionEstablishment } from '@/lib/session-utils'
+import { validateSessionForNavigation, waitForSessionEstablishment, validateSessionWithRetry } from '@/lib/session-utils'
 
 // Type definitions
 type Vehicle = {
@@ -2019,19 +2019,34 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
         setIsCompletingOnboarding(true);
         setError(null);
 
-        // Always call the API to ensure onboarding is completed
-        console.log('📤 ALWAYS calling onboarding completion API from SuccessStep...');
-        
-        // Get user session and access token
+        // Step 1: Check session state BEFORE API call
+        console.log('🔐 Step 1: Checking session state BEFORE API call...');
         if (!supabase) {
           throw new Error('Supabase client not initialized');
         }
         
-        const { data: sessionData } = await (supabase.auth as any).getSession();
-        const accessToken = sessionData?.session?.access_token;
-        const refreshToken = sessionData?.session?.refresh_token;
+        const { data: sessionDataBefore } = await (supabase.auth as any).getSession();
+        const { data: { user: userBefore } } = await (supabase.auth as any).getUser();
         
-        console.log('🔐 Session data available:', !!sessionData);
+        console.log('🔐 Session state BEFORE API call:');
+        console.log('🔐 - Session exists:', !!sessionDataBefore?.session);
+        console.log('🔐 - User exists:', !!userBefore);
+        console.log('🔐 - User ID:', userBefore?.id);
+        console.log('🔐 - Session access token length:', sessionDataBefore?.session?.access_token?.length || 0);
+        
+        if (!userBefore) {
+          console.error('❌ No authenticated user found BEFORE API call');
+          throw new Error('No authenticated user found before API call');
+        }
+
+        // Always call the API to ensure onboarding is completed
+        console.log('📤 ALWAYS calling onboarding completion API from SuccessStep...');
+        
+        // Get user session and access token
+        const accessToken = sessionDataBefore?.session?.access_token;
+        const refreshToken = sessionDataBefore?.session?.refresh_token;
+        
+        console.log('🔐 Session data available:', !!sessionDataBefore);
         console.log('🔐 Access token available:', !!accessToken);
         console.log('🔐 Refresh token available:', !!refreshToken);
         
@@ -2096,42 +2111,72 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
           const responseData = await response.json();
           console.log('✅ Onboarding completed successfully from SuccessStep:', responseData);
           
-          // Verify the profile was updated correctly
-          if (!supabase) {
-            throw new Error('Supabase client not initialized');
-          }
-
-          const { data: { user } } = await (supabase.auth as any).getUser();
-          if (user) {
-            console.log('🔍 Verifying profile update for user:', user.id);
+          // Step 2: Check session state AFTER API call
+          console.log('🔐 Step 2: Checking session state AFTER API call...');
+          const { data: sessionDataAfter } = await (supabase.auth as any).getSession();
+          const { data: { user: userAfter }, error: userErrorAfter } = await (supabase.auth as any).getUser();
+          
+          console.log('🔐 Session state AFTER API call:');
+          console.log('🔐 - Session exists:', !!sessionDataAfter?.session);
+          console.log('🔐 - User exists:', !!userAfter);
+          console.log('🔐 - User ID:', userAfter?.id);
+          console.log('🔐 - User error:', userErrorAfter);
+          console.log('🔐 - Session access token length:', sessionDataAfter?.session?.access_token?.length || 0);
+          
+          // Step 3: Handle session refresh if needed using existing utilities
+          let finalUser = userAfter;
+          if (!userAfter && userErrorAfter) {
+            console.log('🔐 Step 3: Session appears to be invalid, attempting refresh...');
             
-            const { data: profile, error: profileError } = await supabase
-              .from('user_profiles')
-              .select('onboarding_completed, auth_method, user_id')
-              .eq('user_id', user.id)
-              .single();
+            try {
+              // Use existing session validation utility
+              const sessionResult = await validateSessionWithRetry(2, 500);
               
-            if (profileError) {
-              console.error('❌ Error verifying profile after completion:', profileError);
-              throw new Error('Failed to verify profile completion');
-            } else {
-              console.log('✅ Profile verification after completion:');
-              console.log('✅ - onboarding_completed:', profile?.onboarding_completed);
-              console.log('✅ - auth_method:', profile?.auth_method);
-              console.log('✅ - user_id:', profile?.user_id);
-              
-              if (!profile?.onboarding_completed) {
-                console.error('❌ CRITICAL: Profile still shows onboarding_completed: false after API call!');
-                console.error('❌ Profile data:', profile);
-                throw new Error('Profile still shows onboarding_completed: false after completion');
+              if (sessionResult.success && sessionResult.user) {
+                console.log('✅ Session refreshed successfully using utility');
+                finalUser = sessionResult.user;
+                console.log('🔐 Refreshed user ID:', finalUser?.id);
+              } else {
+                console.error('❌ Session refresh failed using utility:', sessionResult.error);
+                throw new Error(`Session refresh failed: ${sessionResult.error}`);
               }
-              
-              setOnboardingCompleted(true);
-              console.log('✅ SUCCESS: Onboarding completion verified!');
+            } catch (refreshError) {
+              console.error('❌ Error during session refresh:', refreshError);
+              throw new Error('Failed to refresh session after onboarding completion');
             }
+          }
+          
+          // Step 4: Verify the profile was updated correctly
+          if (!finalUser) {
+            console.error('❌ No authenticated user found for verification after all attempts');
+            throw new Error('No authenticated user found after session refresh');
+          }
+          
+          console.log('🔍 Verifying profile update for user:', finalUser.id);
+          
+          const { data: profile, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('onboarding_completed, auth_method, user_id')
+            .eq('user_id', finalUser.id)
+            .single();
+            
+          if (profileError) {
+            console.error('❌ Error verifying profile after completion:', profileError);
+            throw new Error('Failed to verify profile completion');
           } else {
-            console.error('❌ No authenticated user found for verification');
-            throw new Error('No authenticated user found');
+            console.log('✅ Profile verification after completion:');
+            console.log('✅ - onboarding_completed:', profile?.onboarding_completed);
+            console.log('✅ - auth_method:', profile?.auth_method);
+            console.log('✅ - user_id:', profile?.user_id);
+            
+            if (!profile?.onboarding_completed) {
+              console.error('❌ CRITICAL: Profile still shows onboarding_completed: false after API call!');
+              console.error('❌ Profile data:', profile);
+              throw new Error('Profile still shows onboarding_completed: false after completion');
+            }
+            
+            setOnboardingCompleted(true);
+            console.log('✅ SUCCESS: Onboarding completion verified!');
           }
         }
       } catch (error) {
@@ -2164,17 +2209,52 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
         throw new Error('Supabase client not initialized');
       }
 
-      // Get current user
+      // Step 1: Check session state before dashboard access
+      console.log('🔐 Step 1: Checking session state before dashboard access...');
+      const { data: sessionData } = await (supabase.auth as any).getSession();
       const { data: { user }, error: userError } = await (supabase.auth as any).getUser();
-      if (userError || !user) {
-        throw new Error('User not authenticated');
+      
+      console.log('🔐 Session state before dashboard access:');
+      console.log('🔐 - Session exists:', !!sessionData?.session);
+      console.log('🔐 - User exists:', !!user);
+      console.log('🔐 - User ID:', user?.id);
+      console.log('🔐 - User error:', userError);
+      console.log('🔐 - Session access token length:', sessionData?.session?.access_token?.length || 0);
+      
+      // Step 2: Handle session refresh if needed
+      let finalUser = user;
+      if (!user && userError) {
+        console.log('🔐 Step 2: Session appears to be invalid, attempting refresh...');
+        
+        try {
+          // Use existing session validation utility
+          const sessionResult = await validateSessionWithRetry(2, 500);
+          
+          if (sessionResult.success && sessionResult.user) {
+            console.log('✅ Session refreshed successfully using utility');
+            finalUser = sessionResult.user;
+            console.log('🔐 Refreshed user ID:', finalUser?.id);
+          } else {
+            console.error('❌ Session refresh failed using utility:', sessionResult.error);
+            throw new Error(`Session refresh failed: ${sessionResult.error}`);
+          }
+        } catch (refreshError) {
+          console.error('❌ Error during session refresh:', refreshError);
+          throw new Error('Failed to refresh session before dashboard access');
+        }
+      }
+      
+      if (!finalUser) {
+        console.error('❌ No authenticated user found after session refresh');
+        throw new Error('User not authenticated after session refresh');
       }
 
-      // Verify profile exists and is completed
+      // Step 3: Verify profile exists and is completed
+      console.log('🔍 Step 3: Verifying profile completion...');
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('onboarding_completed, auth_method, user_id')
-        .eq('user_id', user.id)
+        .eq('user_id', finalUser.id)
         .single();
 
       if (profileError) {
@@ -2197,8 +2277,10 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
       console.log('✅ - onboarding_completed:', profile.onboarding_completed);
       console.log('✅ - auth_method:', profile.auth_method);
       console.log('✅ - user_id:', profile.user_id);
+      console.log('✅ - Authenticated user ID:', finalUser.id);
 
-      // Clear localStorage
+      // Step 4: Clear localStorage and proceed
+      console.log('🧹 Step 4: Clearing localStorage...');
       localStorage.removeItem('onboardingData');
       localStorage.removeItem('pendingOnboarding');
 
@@ -2410,6 +2492,37 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
                 } else {
                   console.log('✅ SUCCESS: Profile verified with onboarding_completed: true');
                 }
+              }
+            } else {
+              console.log('🔐 No user found after API call, attempting session refresh...');
+              
+              try {
+                // Use existing session validation utility
+                const sessionResult = await validateSessionWithRetry(2, 500);
+                
+                if (sessionResult.success && sessionResult.user) {
+                  console.log('✅ Session refreshed successfully after API call');
+                  console.log('✅ User found after session refresh:', sessionResult.user.id);
+                  
+                  // Verify profile with refreshed user
+                  const { data: profile, error: profileError } = await supabase
+                    .from('user_profiles')
+                    .select('onboarding_completed, auth_method, user_id')
+                    .eq('user_id', sessionResult.user.id)
+                    .single();
+                    
+                  if (profileError) {
+                    console.error('❌ Error verifying profile after refresh:', profileError);
+                  } else {
+                    console.log('✅ Profile verification after refresh - onboarding_completed:', profile?.onboarding_completed);
+                    console.log('✅ Profile verification after refresh - auth_method:', profile?.auth_method);
+                    console.log('✅ Profile verification after refresh - user_id:', profile?.user_id);
+                  }
+                } else {
+                  console.error('❌ Session refresh failed after API call:', sessionResult.error);
+                }
+              } catch (refreshError) {
+                console.error('❌ Error during session refresh after API call:', refreshError);
               }
             }
           }
