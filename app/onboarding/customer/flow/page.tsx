@@ -1945,30 +1945,202 @@ const LimitedOfferStep = ({ onNext, showButton = true }: StepProps & { showButto
 const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingData }: StepProps & { showButton?: boolean; skippedSteps?: number[] }) => {
   const [showSkippedSteps, setShowSkippedSteps] = useState(false)
   const [currentSkippedStep, setCurrentSkippedStep] = useState<number | null>(null)
+  const [isCompletingOnboarding, setIsCompletingOnboarding] = useState(false)
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleGoToDashboard = () => {
+  // Immediately complete onboarding when component mounts
+  useEffect(() => {
+    const completeOnboarding = async () => {
+      if (!onboardingData?.userId) {
+        console.log('⚠️ No user ID found in onboarding data');
+        return;
+      }
+
+      try {
+        console.log('🎯 SuccessStep: Immediately completing onboarding for user:', onboardingData.userId);
+        setIsCompletingOnboarding(true);
+        setError(null);
+
+        // Get pending onboarding data from localStorage
+        const pendingData = localStorage.getItem('pendingOnboarding');
+        if (pendingData) {
+          const data = JSON.parse(pendingData);
+          
+          console.log('📤 Calling onboarding completion API from SuccessStep...');
+          
+          // Call API to save onboarding data and set onboarding_completed: true
+          const response = await fetch('/api/onboarding/complete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ onboardingData: data }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('❌ Failed to complete onboarding:', response.status, errorData);
+            throw new Error(`Onboarding completion failed: ${response.status}`);
+          } else {
+            const responseData = await response.json();
+            console.log('✅ Onboarding completed successfully from SuccessStep:', responseData);
+            
+            // Verify the profile was updated correctly
+            if (!supabase) {
+              throw new Error('Supabase client not initialized');
+            }
+
+            const { data: { user } } = await (supabase.auth as any).getUser();
+            if (user) {
+              const { data: profile, error: profileError } = await supabase
+                .from('user_profiles')
+                .select('onboarding_completed, auth_method, user_id')
+                .eq('user_id', user.id)
+                .single();
+                
+              if (profileError) {
+                console.error('❌ Error verifying profile after completion:', profileError);
+                throw new Error('Failed to verify profile completion');
+              } else {
+                console.log('✅ Profile verification after completion:');
+                console.log('✅ - onboarding_completed:', profile?.onboarding_completed);
+                console.log('✅ - auth_method:', profile?.auth_method);
+                console.log('✅ - user_id:', profile?.user_id);
+                
+                if (!profile?.onboarding_completed) {
+                  throw new Error('Profile still shows onboarding_completed: false after completion');
+                }
+                
+                setOnboardingCompleted(true);
+                console.log('✅ SUCCESS: Onboarding completion verified!');
+              }
+            }
+          }
+        } else {
+          console.log('ℹ️ No pending onboarding data found, checking existing profile...');
+          
+          // Check if profile already exists and is completed
+          if (!supabase) {
+            throw new Error('Supabase client not initialized');
+          }
+
+          const { data: { user } } = await (supabase.auth as any).getUser();
+          if (user) {
+            const { data: profile, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('onboarding_completed, auth_method, user_id')
+              .eq('user_id', user.id)
+              .single();
+              
+            if (profileError) {
+              console.error('❌ Error checking existing profile:', profileError);
+              throw new Error('Failed to check existing profile');
+            } else {
+              console.log('✅ Existing profile check:');
+              console.log('✅ - onboarding_completed:', profile?.onboarding_completed);
+              console.log('✅ - auth_method:', profile?.auth_method);
+              console.log('✅ - user_id:', profile?.user_id);
+              
+              if (profile?.onboarding_completed) {
+                setOnboardingCompleted(true);
+                console.log('✅ SUCCESS: Existing profile already completed!');
+              } else {
+                throw new Error('Existing profile not completed');
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error completing onboarding in SuccessStep:', error);
+        setError(error instanceof Error ? error.message : 'Failed to complete onboarding');
+      } finally {
+        setIsCompletingOnboarding(false);
+      }
+    };
+
+    completeOnboarding();
+  }, [onboardingData?.userId]);
+
+  const handleGoToDashboard = async () => {
     if (skippedSteps.length > 0) {
-      setShowSkippedSteps(true)
-      setCurrentSkippedStep(skippedSteps[0])
-    } else {
-      onNext()
+      setShowSkippedSteps(true);
+      setCurrentSkippedStep(skippedSteps[0]);
+      return;
     }
-  }
+
+    // Final verification before dashboard access
+    try {
+      console.log('🔍 Final verification before dashboard access...');
+      
+      if (!onboardingData?.userId) {
+        throw new Error('No user ID found');
+      }
+
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+
+      // Get current user
+      const { data: { user }, error: userError } = await (supabase.auth as any).getUser();
+      if (userError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Verify profile exists and is completed
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('onboarding_completed, auth_method, user_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('❌ Final verification failed - profile error:', profileError);
+        throw new Error('Profile verification failed');
+      }
+
+      if (!profile) {
+        console.error('❌ Final verification failed - no profile found');
+        throw new Error('No profile found');
+      }
+
+      if (!profile.onboarding_completed) {
+        console.error('❌ Final verification failed - onboarding not completed');
+        throw new Error('Onboarding not completed');
+      }
+
+      console.log('✅ Final verification successful:');
+      console.log('✅ - Profile exists:', !!profile);
+      console.log('✅ - onboarding_completed:', profile.onboarding_completed);
+      console.log('✅ - auth_method:', profile.auth_method);
+      console.log('✅ - user_id:', profile.user_id);
+
+      // Clear localStorage
+      localStorage.removeItem('onboardingData');
+      localStorage.removeItem('pendingOnboarding');
+
+      console.log('🚀 All checks passed, proceeding to dashboard...');
+      onNext();
+    } catch (error) {
+      console.error('❌ Final verification failed:', error);
+      setError(error instanceof Error ? error.message : 'Dashboard access verification failed');
+    }
+  };
 
   const handleSkippedStepComplete = () => {
-    const remainingSteps = skippedSteps.filter(step => step !== currentSkippedStep)
+    const remainingSteps = skippedSteps.filter(step => step !== currentSkippedStep);
     if (remainingSteps.length > 0) {
-      setCurrentSkippedStep(remainingSteps[0])
+      setCurrentSkippedStep(remainingSteps[0]);
     } else {
-      onNext() // Go to dashboard
+      onNext(); // Go to dashboard
     }
-  }
+  };
 
   // If showing skipped steps, render the skipped step
   if (showSkippedSteps && currentSkippedStep) {
-    const step = ONBOARDING_STEPS.find(s => s.id === currentSkippedStep)
+    const step = ONBOARDING_STEPS.find(s => s.id === currentSkippedStep);
     if (step) {
-      const StepComponent = step.component
+      const StepComponent = step.component;
       return (
         <div>
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
@@ -1988,7 +2160,7 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
             <div>Loading...</div>
           )}
         </div>
-      )
+      );
     }
   }
 
@@ -2001,22 +2173,53 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
         </p>
       </div>
       
-      <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 mb-8">
-        <p className="text-green-900">You're all set to start tracking your vehicle maintenance!</p>
-      </div>
+      {isCompletingOnboarding && (
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
+            <p className="text-blue-900">Completing your onboarding...</p>
+          </div>
+        </div>
+      )}
 
-      {/* Only show button if showButton is true (desktop) */}
-      {showButton && (
+      {error && (
+        <div className="bg-red-50 border-2 border-red-200 rounded-lg p-6 mb-8">
+          <p className="text-red-900 font-semibold mb-2">⚠️ Setup Issue</p>
+          <p className="text-red-700 text-sm mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors text-sm"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {onboardingCompleted && !error && (
+        <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 mb-8">
+          <p className="text-green-900">✅ You're all set to start tracking your vehicle maintenance!</p>
+        </div>
+      )}
+
+      {/* Only show button if showButton is true (desktop) and onboarding is completed */}
+      {showButton && onboardingCompleted && !error && (
         <button 
           onClick={handleGoToDashboard}
-          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium"
+          disabled={isCompletingOnboarding}
+          className="w-full bg-[#294a46] text-white py-3 px-6 rounded-lg hover:bg-[#1e3632] transition-colors font-medium disabled:bg-gray-300"
         >
           Go to Dashboard
         </button>
       )}
+
+      {showButton && !onboardingCompleted && !error && !isCompletingOnboarding && (
+        <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 mb-8">
+          <p className="text-yellow-900">Please wait while we complete your setup...</p>
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};
 
 const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: { onboardingData: OnboardingData; setCurrentStep?: (step: number) => void; trackCompletion?: () => Promise<void> }) => {
   const router = useRouter()
