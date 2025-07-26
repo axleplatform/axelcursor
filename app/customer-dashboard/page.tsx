@@ -182,6 +182,7 @@ export default function CustomerDashboard() {
 
       console.log('✅ Profile loaded successfully:', profile);
       console.log('🔍 Profile onboarding_completed value:', profile.onboarding_completed);
+      console.log('🔍 Profile auth_method:', profile.auth_method);
       console.log('🔍 Profile user_id:', profile.user_id);
       console.log('🔍 Profile exists:', !!profile);
 
@@ -191,6 +192,7 @@ export default function CustomerDashboard() {
         console.log('❌ - Profile exists:', !!profile);
         console.log('❌ - Profile onboarding_completed:', profile?.onboarding_completed);
         console.log('❌ - User ID:', currentUser.id);
+        console.log('❌ - Auth method:', profile?.auth_method);
         console.log('❌ Redirecting to onboarding...');
         // Redirect to complete profile
         router.push('/onboarding/customer/flow');
@@ -201,6 +203,7 @@ export default function CustomerDashboard() {
       console.log('✅ - Profile exists:', !!profile);
       console.log('✅ - Profile onboarding_completed:', profile.onboarding_completed);
       console.log('✅ - User ID:', currentUser.id);
+      console.log('✅ - Auth method:', profile.auth_method);
       console.log('✅ Profile validated, loading customer data...');
 
       // Load all customer data in parallel
