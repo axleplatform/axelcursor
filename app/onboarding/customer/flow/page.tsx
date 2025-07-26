@@ -1588,7 +1588,6 @@ const PhoneNumberStep = ({ onNext, updateData, setSkippedSteps, showButton = tru
           phone: normalizedPhone,
           onboarding_completed: true, // Phone-only users get full access immediately
           onboarding_type: 'customer',
-          auth_method: 'phone', // Track auth method for internal use
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
@@ -1995,7 +1994,7 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
             if (user) {
               const { data: profile, error: profileError } = await supabase
                 .from('user_profiles')
-                .select('onboarding_completed, auth_method, user_id')
+                .select('onboarding_completed, user_id')
                 .eq('user_id', user.id)
                 .single();
                 
@@ -2005,7 +2004,6 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
               } else {
                 console.log('✅ Profile verification after completion:');
                 console.log('✅ - onboarding_completed:', profile?.onboarding_completed);
-                console.log('✅ - auth_method:', profile?.auth_method);
                 console.log('✅ - user_id:', profile?.user_id);
                 
                 if (!profile?.onboarding_completed) {
@@ -2029,7 +2027,7 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
           if (user) {
             const { data: profile, error: profileError } = await supabase
               .from('user_profiles')
-              .select('onboarding_completed, auth_method, user_id')
+              .select('onboarding_completed, user_id')
               .eq('user_id', user.id)
               .single();
               
@@ -2039,7 +2037,6 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
             } else {
               console.log('✅ Existing profile check:');
               console.log('✅ - onboarding_completed:', profile?.onboarding_completed);
-              console.log('✅ - auth_method:', profile?.auth_method);
               console.log('✅ - user_id:', profile?.user_id);
               
               if (profile?.onboarding_completed) {
@@ -2090,7 +2087,7 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
       // Verify profile exists and is completed
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('onboarding_completed, auth_method, user_id')
+        .select('onboarding_completed, user_id')
         .eq('user_id', user.id)
         .single();
 
@@ -2112,7 +2109,6 @@ const SuccessStep = ({ onNext, showButton = true, skippedSteps = [], onboardingD
       console.log('✅ Final verification successful:');
       console.log('✅ - Profile exists:', !!profile);
       console.log('✅ - onboarding_completed:', profile.onboarding_completed);
-      console.log('✅ - auth_method:', profile.auth_method);
       console.log('✅ - user_id:', profile.user_id);
 
       // Clear localStorage
@@ -2295,7 +2291,7 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
             if (user) {
               const { data: profile, error: profileError } = await supabase
                 .from('user_profiles')
-                .select('onboarding_completed, auth_method, user_id')
+                .select('onboarding_completed, user_id')
                 .eq('user_id', user.id)
                 .single();
                 
@@ -2303,7 +2299,6 @@ const DashboardRedirect = ({ onboardingData, setCurrentStep, trackCompletion }: 
                 console.error('❌ Error verifying profile update:', profileError);
               } else {
                 console.log('✅ Profile verification - onboarding_completed:', profile?.onboarding_completed);
-                console.log('✅ Profile verification - auth_method:', profile?.auth_method);
                 console.log('✅ Profile verification - user_id:', profile?.user_id);
                 if (!profile?.onboarding_completed) {
                   console.warn('⚠️ Profile still shows onboarding_completed: false, but proceeding...');
