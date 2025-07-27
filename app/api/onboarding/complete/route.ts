@@ -236,7 +236,7 @@ export async function POST(request: Request) {
         
         // Remove auth_method from profileData if column doesn't exist
         console.log('🔧 Removing auth_method from profile data since column does not exist');
-        delete profileData.auth_method;
+        delete (profileData as { auth_method?: string }).auth_method;
         console.log('📝 Updated profile data without auth_method:', JSON.stringify(profileData, null, 2));
       } else if (columnError) {
         console.error('❌ Error checking auth_method column:', columnError);
