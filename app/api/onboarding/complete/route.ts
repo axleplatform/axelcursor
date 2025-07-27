@@ -255,15 +255,29 @@ export async function POST(request: Request) {
       .eq('user_id', user.id)
       .single();
 
-    if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-      console.error('❌ Error checking existing profile:', profileCheckError);
-      console.error('❌ Profile check error code:', profileCheckError.code);
-      console.error('❌ Profile check error message:', profileCheckError.message);
-      return NextResponse.json({ 
-        error: 'Failed to check existing profile',
-        code: 'PROFILE_CHECK_FAILED',
-        details: profileCheckError.message
-      }, { status: 500 });
+    console.log('🔍 Profile check result:');
+    console.log('🔍 - Profile check data:', profileCheck);
+    console.log('🔍 - Profile check error:', profileCheckError);
+    console.log('🔍 - Profile check error code:', profileCheckError?.code);
+    console.log('🔍 - Profile check error message:', profileCheckError?.message);
+
+    if (profileCheckError) {
+      if (profileCheckError.code === 'PGRST116') {
+        // No profile found - this is expected for new users
+        console.log('📋 No existing profile found (PGRST116) - will INSERT new profile');
+        console.log('📋 - Profile check data: null');
+        console.log('📋 - Profile check error code: PGRST116 (no rows found)');
+      } else {
+        // Other error - this is unexpected
+        console.error('❌ Error checking existing profile:', profileCheckError);
+        console.error('❌ Profile check error code:', profileCheckError.code);
+        console.error('❌ Profile check error message:', profileCheckError.message);
+        return NextResponse.json({ 
+          error: 'Failed to check existing profile',
+          code: 'PROFILE_CHECK_FAILED',
+          details: profileCheckError.message
+        }, { status: 500 });
+      }
     }
 
     const existingProfile = profileCheck;
@@ -276,7 +290,7 @@ export async function POST(request: Request) {
     let profileOperationResult;
     let operationType = 'unknown';
     
-    if (existingProfile) {
+    if (existingProfile && existingProfile.id) {
       // UPDATE existing profile
       operationType = 'UPDATE';
       console.log('📝 UPDATING existing user profile...');
