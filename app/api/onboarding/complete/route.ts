@@ -261,12 +261,16 @@ export async function POST(request: Request) {
     console.log('🔍 - Profile check error code:', profileCheckError?.code);
     console.log('🔍 - Profile check error message:', profileCheckError?.message);
 
+    let existingProfile = null;
+    let operationType = 'unknown';
+
     if (profileCheckError) {
       if (profileCheckError.code === 'PGRST116') {
         // No profile found - this is expected for new users
         console.log('📋 No existing profile found (PGRST116) - will INSERT new profile');
         console.log('📋 - Profile check data: null');
         console.log('📋 - Profile check error code: PGRST116 (no rows found)');
+        operationType = 'INSERT';
       } else {
         // Other error - this is unexpected
         console.error('❌ Error checking existing profile:', profileCheckError);
@@ -278,54 +282,37 @@ export async function POST(request: Request) {
           details: profileCheckError.message
         }, { status: 500 });
       }
+    } else {
+      // Profile found
+      existingProfile = profileCheck;
+      operationType = 'UPDATE';
+      console.log('📋 Existing profile found - will UPDATE');
     }
 
-    const existingProfile = profileCheck;
     console.log('📋 Profile existence check result:');
     console.log('📋 - Profile exists:', !!existingProfile);
     console.log('📋 - Profile ID if exists:', existingProfile?.id);
     console.log('📋 - Profile onboarding_completed if exists:', existingProfile?.onboarding_completed);
     console.log('📋 - Profile user_id if exists:', existingProfile?.user_id);
+    console.log('📋 - Operation type determined:', operationType);
 
-    let profileOperationResult;
-    let operationType = 'unknown';
+    // CRITICAL: Use upsert to handle both INSERT and UPDATE automatically
+    console.log('📝 Using UPSERT to handle profile operation...');
+    console.log('📝 Operation type determined:', operationType);
+    console.log('📝 Using authenticated user ID:', user.id);
+    console.log('📝 Profile data to upsert:', JSON.stringify({ user_id: user.id, ...profileData }, null, 2));
+    console.log('🔐 CRITICAL: Client type for upsert operation:', clientType);
     
-    if (existingProfile && existingProfile.id) {
-      // UPDATE existing profile
-      operationType = 'UPDATE';
-      console.log('📝 UPDATING existing user profile...');
-      console.log('📝 Using authenticated user ID for update:', user.id);
-      console.log('📝 Existing profile ID:', existingProfile.id);
-      console.log('📝 Existing profile - onboarding_completed:', existingProfile.onboarding_completed, 'auth_method:', existingProfile.auth_method);
-      console.log('📝 Profile data to update:', JSON.stringify(profileData, null, 2));
-      console.log('🔐 CRITICAL: Client type for update operation:', clientType);
-      console.log('🔐 CRITICAL: Authenticated user ID:', user.id);
-      console.log('🔐 CRITICAL: Profile user_id should match:', user.id);
-      
-      profileOperationResult = await supabase
-        .from('user_profiles')
-        .update(profileData)
-        .eq('user_id', user.id) // Use authenticated user's ID
-        .select('id, onboarding_completed, auth_method, user_id')
-    } else {
-      // INSERT new profile
-      operationType = 'INSERT';
-      console.log('📝 INSERTING new user profile...');
-      console.log('📝 Using authenticated user ID for creation:', user.id);
-      console.log('📝 No existing profile found, creating new one');
-      console.log('📝 Profile data to insert:', JSON.stringify({ user_id: user.id, ...profileData }, null, 2));
-      console.log('🔐 CRITICAL: Client type for insert operation:', clientType);
-      console.log('🔐 CRITICAL: Authenticated user ID:', user.id);
-      console.log('🔐 CRITICAL: Insert user_id will be:', user.id);
-      
-      profileOperationResult = await supabase
-        .from('user_profiles')
-        .insert({
-          user_id: user.id, // Use authenticated user's ID
-          ...profileData
-        })
-        .select('id, onboarding_completed, auth_method, user_id')
-    }
+    const profileOperationResult = await supabase
+      .from('user_profiles')
+      .upsert({
+        user_id: user.id, // Use authenticated user's ID
+        ...profileData
+      }, {
+        onConflict: 'user_id', // Use user_id as the conflict resolution key
+        ignoreDuplicates: false // Update if exists, insert if not
+      })
+      .select('id, onboarding_completed, auth_method, user_id');
 
     console.log('📝 Profile operation result:', profileOperationResult);
     console.log('📝 Operation type performed:', operationType);
